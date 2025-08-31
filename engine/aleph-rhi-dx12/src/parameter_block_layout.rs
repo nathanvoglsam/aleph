@@ -27,13 +27,6 @@
 // SOFTWARE.
 //
 
-//! D3D12 has no "descriptor set layout" like object, it only has the root signature which is
-//! similar to the VkPipelineLayout object.
-//!
-//! We fake a 'VkDescriptorSetLayout' like object by just copying the input to the
-//! create_descriptor_set_layout call so we can collect and use it when we create the root
-//! signature.
-
 use std::num::NonZeroU64;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
@@ -396,16 +389,16 @@ pub struct CompiledResourceLayout {
     /// Instead, the resources will be flattened into _root descriptors_. These consume a lot of
     /// space in the root signature. Push descriptors are an optimization tool for small, frequently
     /// changing parameters that allows avoiding allocating parameter blocks entirely.
-    pub resource_table: Vec<D3D12_DESCRIPTOR_RANGE1>,
+    resource_table: Vec<D3D12_DESCRIPTOR_RANGE1>,
 
     /// A sibling to 'resource_table'. This field is used as the template for the path where the
     /// [`ParameterBlockFlags::PUSH_DESCRIPTOR`] flag is set.
     ///
     /// This will contain a flattened list of root descriptor parameters.
-    pub resource_desciptors: Vec<CompiledRootDescriptor>,
+    resource_desciptors: Vec<CompiledRootDescriptor>,
 
     /// The total number of descriptors, totalled across all parameters and their array dimension.
-    pub resource_num: u32,
+    resource_num: u32,
 }
 
 impl CompiledResourceLayout {
@@ -453,10 +446,10 @@ pub struct CompiledSamplerLayout {
     /// The downside is that samplers consume excessive root parameter space. Only a small number
     /// of samplers are typically used so the common case is not too bad. If the root parameter
     /// space is at a premium, use bindless samplers.
-    pub sampler_tables: Vec<D3D12_DESCRIPTOR_RANGE1>,
+    sampler_tables: Vec<D3D12_DESCRIPTOR_RANGE1>,
 
     /// The total number of samplers, totalled across all sampler params and their array dimension.
-    pub sampler_num: u32,
+    sampler_num: u32,
 }
 
 impl CompiledSamplerLayout {
@@ -491,6 +484,11 @@ pub struct CompiledParameterInfo {
     /// This is an offset into one of the 4 register types (c, b, t, u). This value encodes which
     /// register the parameter starts consuming registers from. The number of registers consumed
     /// depends on the array dimension the parameter is declared with.
+    ///
+    /// # Samplers
+    ///
+    /// For samplers this plays double duty as the offset into the sampler table inside
+    /// a [`crate::internal::parameter_block::ParameterBlock`].
     pub register_offset: u32,
 
     /// This is an offset into whatever the parameter's underlying storage mechanism is. How this is

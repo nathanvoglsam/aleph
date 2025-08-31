@@ -285,7 +285,6 @@ impl ISwapChain for SwapChain {
 
         let swap_image = AnyArc::new(SwapImage {
             swap_chain: self.this.upgrade().unwrap(),
-            index,
             texture,
         });
         let swap_image = AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v);

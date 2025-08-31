@@ -36,7 +36,6 @@ use crate::swap_chain::SwapChain;
 
 pub struct SwapImage {
     pub(crate) swap_chain: AnyArc<SwapChain>,
-    pub(crate) index: u32,
     pub(crate) texture: TextureHandle,
 }
 

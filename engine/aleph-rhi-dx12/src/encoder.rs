@@ -43,7 +43,6 @@ use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 
-use crate::binding_signature::BindingSignature;
 use crate::buffer::Buffer;
 use crate::command_list::{CommandList, ListState};
 use crate::internal::conv::{
@@ -51,7 +50,7 @@ use crate::internal::conv::{
     translate_barrier_texture_aspect_to_plane_range, translate_rendering_color_attachment,
     translate_rendering_depth_stencil_attachment,
 };
-use crate::internal::descriptor_set::DescriptorSet;
+use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::unwrap;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::texture::{ImageViewObject, Texture};
@@ -340,7 +339,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         for (set_index, set) in blocks.iter().enumerate() {
             // Safety: No checks, all up to the caller to ensure this is safe
             let v: NonNull<()> = (*set).into();
-            let v: NonNull<DescriptorSet> = v.cast();
+            let v: NonNull<ParameterBlock> = v.cast();
             let v = unsafe { v.as_ref() };
 
             // Computes the index of the set within the pipeline layout.

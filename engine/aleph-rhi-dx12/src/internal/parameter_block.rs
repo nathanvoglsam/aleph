@@ -35,12 +35,12 @@ use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
 use crate::parameter_block_layout::ParameterBlockLayout;
 
-/// This internal struct is a critical piece of the implementation of the descriptor sets API. The
-/// RHI API specifies [`ParameterBlockHandle`] as an opaque handle to a 'descriptor set object'. This
-/// *is* that object, for the D3D12 implementation.
+/// This internal struct is a critical piece of the implementation of the parameter block API. The
+/// RHI API specifies [`ParameterBlockHandle`] as an opaque handle to a 'descriptor set object'.
+/// This  *is* that object, for the D3D12 implementation.
 ///
 /// This tracks the necessary state to write descriptors and bind the set to a slot in the pipeline.
-pub struct DescriptorSet {
+pub struct ParameterBlock {
     /// The descriptor set layout of this set
     pub _layout: NonNull<ParameterBlockLayout>,
 
@@ -61,7 +61,7 @@ pub struct DescriptorSet {
     pub samplers: NonNull<[Option<GPUDescriptorHandle>]>,
 }
 
-impl DescriptorSet {
+impl ParameterBlock {
     #[track_caller]
     #[inline(always)]
     pub unsafe fn assume_r_handle(&self) -> (CPUDescriptorHandle, GPUDescriptorHandle) {
@@ -72,7 +72,7 @@ impl DescriptorSet {
         }
     }
 
-    /// Grabs the pointer inside a [`ParameterBlockHandle`] as a non-null [DescriptorSet] ptr
+    /// Grabs the pointer inside a [`ParameterBlockHandle`] as a non-null [`ParameterBlock`] ptr
     ///
     /// # Safety
     ///
@@ -85,7 +85,7 @@ impl DescriptorSet {
     /// - It is the caller's responsibility to ensure that no mutable reference can exist at the
     ///   same time as the reference this function creates. If it can't be proven statically then
     ///   locks must be used. This in general means:
-    ///     - DescriptorSet objects themselves are immutable, so access to the set object itself
+    ///     - ParameterBlock objects themselves are immutable, so access to the set object itself
     ///       requires no synchronization. But the descriptor memory that the sets point to
     ///       *is not* immutable. The caller must synchronize access to the descriptor memory.
     /// - It is the caller's responsibility to ensure the handle still points to a live set object.
@@ -102,11 +102,11 @@ impl DescriptorSet {
     ///       created from. If the two devices use different implementations then the handles
     ///       *will* be interpreted as the incorrect type.
     ///
-    pub fn ptr_from_handle(handle: ParameterBlockHandle) -> NonNull<DescriptorSet> {
+    pub fn ptr_from_handle(handle: ParameterBlockHandle) -> NonNull<ParameterBlock> {
         let inner: NonNull<()> = handle.into();
         inner.cast()
     }
 }
 
-unsafe impl Send for DescriptorSet {}
-unsafe impl Sync for DescriptorSet {}
+unsafe impl Send for ParameterBlock {}
+unsafe impl Sync for ParameterBlock {}

@@ -30,12 +30,9 @@
 use std::alloc::{Layout, handle_alloc_error};
 use std::any::TypeId;
 use std::mem::MaybeUninit;
-use std::ops::Deref;
 use std::ptr::NonNull;
-use std::sync::Arc;
 
 use aleph_any::{AnyArc, declare_interfaces};
-use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use allocator_api2::alloc::Allocator;
 use blink_alloc::BlinkAlloc;
@@ -43,8 +40,8 @@ use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
 use crate::device::Device;
 use crate::internal::descriptor_chunk::DescriptorChunk;
-use crate::internal::descriptor_set::DescriptorSet;
-use crate::internal::descriptor_set_pool::DescriptorSetPool;
+use crate::internal::parameter_block::ParameterBlock;
+use crate::internal::parameter_block_pool::ParameterBlockPool;
 use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct DescriptorPool {
@@ -55,7 +52,7 @@ pub struct DescriptorPool {
     pub(crate) resource_arena: Option<DescriptorChunk>,
 
     /// Object pool allocator that descriptor set objects are allocated from.
-    pub(crate) set_pool: DescriptorSetPool,
+    pub(crate) set_pool: ParameterBlockPool,
 
     /// A bump arena used to allocate the backing buffers for the sampler and dynamic cb arrays
     /// inside the set objects.
@@ -93,7 +90,7 @@ impl IDescriptorPool for DescriptorPool {
         let mut set = MaybeUninit::uninit();
         let num_from_free_list = self
             .set_pool
-            .allocate_sets(std::slice::from_mut(&mut set))
+            .allocate_blocks(std::slice::from_mut(&mut set))
             .ok_or(DescriptorPoolAllocateError::OutOfPoolMemory)?;
 
         // Safety: allocate_sets is requried to intialize this so this is safe
@@ -111,25 +108,14 @@ impl IDescriptorPool for DescriptorPool {
 
         unsafe {
             // Set pool is required to have an initialized object
-            let set_ptr = DescriptorSet::ptr_from_handle(set).as_mut();
+            let set_ptr = ParameterBlock::ptr_from_handle(set).as_mut();
 
-            set_ptr._layout = NonNull::from(Object::deref(&self._layout));
+            set_ptr._layout = NonNull::from(self._layout.as_ref());
 
-            let n = self._layout.dynamic_constant_buffers.len();
+            let num_samplers = self._layout.compiled.samplers.num_samplers() as usize;
+            let n = num_samplers;
             if n != 0 {
-                let layout = Layout::array::<u64>(n).unwrap();
-                let result = self.set_array_pool.allocate_zeroed(layout);
-                let result = match result {
-                    Ok(v) => v,
-                    Err(_) => handle_alloc_error(layout),
-                };
-                let slice = std::slice::from_raw_parts(result.cast::<u64>().as_ptr(), n);
-                set_ptr.dynamic_constant_buffers = NonNull::from(slice);
-            }
-
-            let n = self._layout.sampler_tables.len();
-            if n != 0 {
-                let layout = Layout::array::<u64>(n).unwrap();
+                let layout = Layout::array::<Option<GPUDescriptorHandle>>(n).unwrap();
                 let result = self.set_array_pool.allocate_zeroed(layout);
                 let result = match result {
                     Ok(v) => v,
@@ -158,31 +144,17 @@ impl IDescriptorPool for DescriptorPool {
         let mut sets = vec![MaybeUninit::uninit(); num_sets];
         let num_from_free_list = self
             .set_pool
-            .allocate_sets(&mut sets)
+            .allocate_blocks(&mut sets)
             .ok_or(DescriptorPoolAllocateError::OutOfPoolMemory)?;
 
-        let num_dynamic_cbs = self._layout.dynamic_constant_buffers.len();
-        let num_samplers = self._layout.sampler_tables.len();
+        let num_samplers = self._layout.compiled.samplers.num_samplers() as usize;
 
         unsafe {
             let uninitialized_sets = &mut sets[num_from_free_list..];
 
-            let n = num_dynamic_cbs * uninitialized_sets.len();
-            let dynamic_cbs = if n != 0 {
-                let layout = Layout::array::<u64>(n).unwrap();
-                let result = self.set_array_pool.allocate_zeroed(layout);
-                let result = match result {
-                    Ok(v) => v,
-                    Err(_) => handle_alloc_error(layout),
-                };
-                std::slice::from_raw_parts(result.cast::<u64>().as_ptr(), n)
-            } else {
-                &[]
-            };
-
             let n = num_samplers * uninitialized_sets.len();
             let samplers = if n != 0 {
-                let layout = Layout::array::<u64>(n).unwrap();
+                let layout = Layout::array::<Option<GPUDescriptorHandle>>(n).unwrap();
                 let result = self.set_array_pool.allocate_zeroed(layout);
                 let result = match result {
                     Ok(v) => v,
@@ -195,15 +167,8 @@ impl IDescriptorPool for DescriptorPool {
 
             for (i, v) in uninitialized_sets.iter_mut().enumerate() {
                 let v = v.assume_init();
-                let v = DescriptorSet::ptr_from_handle(v).as_mut();
-                v._layout = NonNull::from(Object::deref(&self._layout));
-
-                if num_dynamic_cbs != 0 {
-                    let start = i * num_dynamic_cbs;
-                    let end = start + num_dynamic_cbs;
-                    let dynamic_cbs = &dynamic_cbs[start..end];
-                    v.dynamic_constant_buffers = NonNull::from(dynamic_cbs);
-                }
+                let v = ParameterBlock::ptr_from_handle(v).as_mut();
+                v._layout = NonNull::from(self._layout.as_ref());
 
                 if num_samplers != 0 {
                     let start = i * num_samplers;
@@ -220,7 +185,7 @@ impl IDescriptorPool for DescriptorPool {
     }
 
     unsafe fn free(&mut self, sets: &[ParameterBlockHandle]) {
-        self.set_pool.free_sets(sets);
+        self.set_pool.free_blocks(sets);
     }
 
     unsafe fn reset(&mut self) {

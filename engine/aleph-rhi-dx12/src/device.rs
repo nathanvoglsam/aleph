@@ -27,29 +27,29 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
-use std::cell::Cell;
-use std::collections::HashMap;
-use std::mem::{ManuallyDrop, size_of, transmute_copy};
-use std::ops::Deref;
-use std::ptr::NonNull;
-use std::sync::atomic::AtomicU64;
-
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::bump_cell::BumpCell;
+use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
 use aleph_rhi_impl_utils::owned_desc::{
     OwnedBufferDesc, OwnedParameterBlockDesc, OwnedSamplerDesc, OwnedTextureDesc,
 };
+use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use allocator_api2::alloc::Allocator;
+use allocator_api2::vec::Vec as BVec;
 use blink_alloc::BlinkAlloc;
 use bumpalo::Bump;
-use bumpalo::collections::Vec as BVec;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
+use std::any::TypeId;
+use std::cell::Cell;
+use std::mem::{ManuallyDrop, size_of, transmute_copy};
+use std::ops::Deref;
+use std::ptr::NonNull;
+use std::sync::atomic::AtomicU64;
 use windows::Win32::Foundation::*;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -67,20 +67,19 @@ use crate::descriptor_arena::{DescriptorArenaHeap, DescriptorArenaLinear};
 use crate::descriptor_pool::DescriptorPool;
 use crate::fence::Fence;
 use crate::internal::conv::{
-    blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12_static, compare_op_to_dx12,
-    cull_mode_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12, primitive_topology_to_dx12,
-    queue_type_to_dx12, sampler_address_mode_to_dx12, sampler_filters_to_dx12,
-    shader_visibility_to_dx12, stencil_op_to_dx12, texture_create_clear_value_to_dx12,
-    texture_create_desc_to_dx12, texture_format_to_dxgi,
+    blend_factor_to_dx12, blend_op_to_dx12, compare_op_to_dx12, cull_mode_to_dx12,
+    front_face_order_to_dx12, polygon_mode_to_dx12, primitive_topology_to_dx12, queue_type_to_dx12,
+    stencil_op_to_dx12, texture_create_clear_value_to_dx12, texture_create_desc_to_dx12,
+    texture_format_to_dxgi,
 };
 use crate::internal::descriptor_chunk::DescriptorChunk;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::internal::descriptor_heaps::DescriptorHeaps;
-use crate::internal::descriptor_set::DescriptorSet;
-use crate::internal::descriptor_set_pool::DescriptorSetPool;
 use crate::internal::graphics_pipeline_state_stream::{
     GraphicsPipelineStateStream, GraphicsPipelineStateStreamBuilder,
 };
+use crate::internal::parameter_block::ParameterBlock;
+use crate::internal::parameter_block_pool::ParameterBlockPool;
 use crate::internal::register_message_callback::device_unregister_message_callback;
 use crate::internal::root_signature_blob::RootSignatureBlob;
 use crate::internal::set_name::set_name;
@@ -214,7 +213,7 @@ impl IDevice for Device {
                 let desc = BindingSignature::translate_root_signature_desc(
                     &parameter_block_layouts,
                     &compiled,
-                    bump.deref(),
+                    bump.allocator(),
                 );
                 let blob = RootSignatureBlob::new(&desc)
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
@@ -231,7 +230,7 @@ impl IDevice for Device {
                 this: v.clone(),
                 _device: self.this.upgrade().unwrap(),
                 id: self.object_counter.next_binding_signature(),
-                parameter_block_layouts,
+                _parameter_block_layouts: parameter_block_layouts,
                 root_signature,
                 compiled,
             });
@@ -262,7 +261,7 @@ impl IDevice for Device {
             let builder = builder.root_signature(binding_signature.root_signature.clone());
 
             let (input_binding_strides, input_layout) =
-                Self::translate_vertex_input_state_desc(&bump, desc.vertex_layout);
+                Self::translate_vertex_input_state_desc(bump.allocator(), desc.vertex_layout);
             let builder = builder.input_layout(&input_layout);
 
             let (builder, primitive_topology) =
@@ -282,7 +281,8 @@ impl IDevice for Device {
             let builder = builder.sample_mask(u32::MAX);
 
             // Render target format translation is straight forward, just convert the formats and add
-            let mut rtv_formats = BVec::with_capacity_in(desc.render_target_formats.len(), &bump);
+            let mut rtv_formats =
+                BVec::with_capacity_in(desc.render_target_formats.len(), bump.allocator());
             for v in desc.render_target_formats.iter().copied() {
                 rtv_formats.push(texture_format_to_dxgi(v))
             }
@@ -381,20 +381,22 @@ impl IDevice for Device {
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
         let layout = unwrap::parameter_block_layout(desc.layout);
 
+        let num_resources = layout.compiled.resources.num_resources();
+        let num_samplers = layout.compiled.samplers.num_samplers();
+
         let resource_arena = DescriptorChunk::new(
             self.descriptor_heaps.gpu_view_heap(),
-            desc.num_sets * layout.resource_num,
+            desc.num_blocks * num_resources,
         )?;
 
-        let dynamic_cbs_size = layout.dynamic_constant_buffers.len() * size_of::<u64>();
-        let samplers_size = layout.sampler_tables.len() * size_of::<Option<GPUDescriptorHandle>>();
-        let array_pool_size = dynamic_cbs_size + samplers_size;
+        let samplers_size = num_samplers as usize * size_of::<Option<GPUDescriptorHandle>>();
+        let array_pool_size = samplers_size;
 
         let pool = Box::new(DescriptorPool {
             _device: self.this.upgrade().unwrap(),
             _layout: layout.this.upgrade().unwrap(),
             resource_arena,
-            set_pool: DescriptorSetPool::new(desc.num_sets),
+            set_pool: ParameterBlockPool::new(desc.num_blocks),
             set_array_pool: BlinkAlloc::with_chunk_size(array_pool_size),
             descriptor_bump_index: 0,
         });
@@ -413,22 +415,22 @@ impl IDevice for Device {
             DescriptorArenaType::Linear => {
                 let resource_arena = DescriptorChunk::new(
                     self.descriptor_heaps.gpu_view_heap(),
-                    desc.num_sets * 16,
+                    desc.num_blocks * 16,
                 )?
                 .unwrap();
 
-                let set_size = DescriptorArenaLinear::descriptor_set_allocation_layout(1, 1)
+                let set_size = DescriptorArenaLinear::descriptor_set_allocation_layout(1)
                     .unwrap()
                     .size();
-                let set_pool_capacity = set_size * desc.num_sets as usize;
+                let set_pool_capacity = set_size * desc.num_blocks as usize;
 
                 let pool = Box::new(DescriptorArenaLinear {
                     _device: self.this.upgrade().unwrap(),
                     resource_arena,
                     set_pool: BlinkAlloc::with_chunk_size(set_pool_capacity),
                     descriptor_bump_index: Cell::new(0),
-                    num_sets: Cell::new(0),
-                    set_capacity: desc.num_sets,
+                    num_blocks: Cell::new(0),
+                    set_capacity: desc.num_blocks,
                 });
 
                 Ok(pool)
@@ -436,19 +438,19 @@ impl IDevice for Device {
             DescriptorArenaType::Heap => {
                 let resource_block = DescriptorChunk::new(
                     self.descriptor_heaps.gpu_view_heap(),
-                    desc.num_sets * 16,
+                    desc.num_blocks * 16,
                 )?
                 .unwrap();
 
                 let resource_pool =
-                    OffsetAllocator::new(resource_block.num_descriptors, desc.num_sets * 2);
+                    OffsetAllocator::new(resource_block.num_descriptors, desc.num_blocks * 2);
                 let resource_pool = Box::new(resource_pool);
 
                 let pool = Box::new(DescriptorArenaHeap {
                     _device: self.this.upgrade().unwrap(),
                     resource_block,
                     resource_pool: Cell::new(Some(resource_pool)),
-                    set_pool: DescriptorSetPool::new(desc.num_sets),
+                    set_pool: ParameterBlockPool::new(desc.num_blocks),
                     live_handles: Cell::new(Vec::with_capacity(128)),
                 });
 
@@ -587,37 +589,11 @@ impl IDevice for Device {
 
         // TODO: we probably need to validate the sampler description to keep this API safe.
 
-        let static_desc = D3D12_STATIC_SAMPLER_DESC {
-            Filter: sampler_filters_to_dx12(
-                desc.min_filter,
-                desc.mag_filter,
-                desc.mip_filter,
-                desc.compare_op.is_some(),
-                desc.enable_anisotropy,
-            ),
-            AddressU: sampler_address_mode_to_dx12(desc.address_mode_u),
-            AddressV: sampler_address_mode_to_dx12(desc.address_mode_v),
-            AddressW: sampler_address_mode_to_dx12(desc.address_mode_w),
-            MipLODBias: desc.lod_bias,
-            MaxAnisotropy: desc.max_anisotropy,
-            ComparisonFunc: desc
-                .compare_op
-                .map(compare_op_to_dx12)
-                .unwrap_or(D3D12_COMPARISON_FUNC(0)),
-            BorderColor: border_color_to_dx12_static(desc.border_color),
-            MinLOD: desc.min_lod,
-            MaxLOD: desc.max_lod,
-            ShaderRegister: 0,
-            RegisterSpace: 0,
-            ShaderVisibility: D3D12_SHADER_VISIBILITY_ALL,
-        };
-
         let out = Sampler {
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_sampler(),
             desc: OwnedSamplerDesc::new(desc.clone()),
             gpu_handle,
-            static_desc,
         };
         let out = Object::new_arc_opaque(out);
         unsafe { Ok(SamplerHandle::new(out)) }
@@ -731,12 +707,109 @@ impl IDevice for Device {
 
     unsafe fn update_parameter_block(
         &self,
-        _layout: &dyn IParameterBlockLayout,
-        _block: ParameterBlockHandle,
-        _base: u32,
-        _writes: &[ParameterWrite],
+        layout: &dyn IParameterBlockLayout,
+        block: ParameterBlockHandle,
+        base: u32,
+        writes: &[ParameterWrite],
     ) {
-        todo!()
+        let layout = unwrap::parameter_block_layout(layout);
+        let block = unsafe { ParameterBlock::ptr_from_handle(block).as_mut() };
+
+        let visitor =
+            ParameterBlockLayoutVisitor::new(layout.desc.get(), base as u64, writes).unwrap();
+        for v in visitor {
+            let param = &layout.compiled.mapping.params[v.binding as usize];
+
+            if v.ty.is_sampler() {
+                let base_offset = param.register_offset as usize;
+                let base_offset = base_offset + v.element as usize;
+
+                for (i, write) in v.writes.iter().enumerate() {
+                    let final_offset = base_offset + i;
+
+                    match write {
+                        ParameterWrite::Sampler(write) => unsafe {
+                            let src = Sampler::get(write.sampler);
+                            let dst = block.samplers.as_mut();
+                            dst[final_offset] = Some(src.gpu_handle);
+                        },
+                        _ => unreachable!(),
+                    }
+                }
+            } else {
+                let base_offset = param.storage_offset as usize;
+                let base_offset = base_offset + v.element as usize;
+
+                for (i, write) in v.writes.iter().enumerate() {
+                    let final_offset = base_offset + i;
+                    let (dst, _) = unsafe { block.assume_r_handle() };
+                    let dst = dst.add_increments(
+                        final_offset,
+                        self.descriptor_heap_info.resource_inc as usize,
+                    );
+
+                    match write {
+                        ParameterWrite::Sampler(_) => unreachable!(),
+                        ParameterWrite::Texture(write) => unsafe {
+                            // SAFETY: It is the caller's responsibility to ensure that the view
+                            //         points to a live and valid ImageViewObject. The objects are
+                            //         immutable so parallel access is safe implicitly.
+                            let src = ImageViewObject::handle_to_ref(&write.image_view);
+                            let src = src.handle;
+
+                            self.device.CopyDescriptorsSimple(
+                                1,
+                                dst.into(),
+                                src.into(),
+                                D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+                            );
+                        },
+                        ParameterWrite::Buffer(write) => unsafe {
+                            let buffer = Buffer::get(write.buffer);
+                            match v.ty {
+                                ParameterType::ConstantBuffer => {
+                                    self.update_uniform_buffer_descriptor(buffer, write, dst);
+                                }
+                                ParameterType::StructuredBuffer => {
+                                    self.update_structured_buffer_descriptor_srv(
+                                        buffer, write, dst,
+                                    );
+                                }
+                                ParameterType::RWStructuredBuffer => {
+                                    self.update_structured_buffer_descriptor_uav(
+                                        buffer, write, dst,
+                                    );
+                                }
+                                ParameterType::ByteAddressBuffer => {
+                                    self.update_byte_address_buffer_descriptor_srv(
+                                        buffer, write, dst,
+                                    );
+                                }
+                                ParameterType::RWByteAddressBuffer => {
+                                    self.update_byte_address_buffer_descriptor_uav(
+                                        buffer, write, dst,
+                                    );
+                                }
+                                ParameterType::AccelerationStructure => unimplemented!(),
+                                _ => unreachable!(),
+                            }
+                        },
+                        ParameterWrite::TextureBuffer(write) => unsafe {
+                            let buffer = Buffer::get(write.buffer);
+                            match v.ty {
+                                ParameterType::Buffer => {
+                                    self.update_texel_buffer_descriptor_srv(buffer, write, dst)
+                                }
+                                ParameterType::RWBuffer => {
+                                    self.update_texel_buffer_descriptor_uav(buffer, write, dst)
+                                }
+                                _ => unreachable!(),
+                            }
+                        },
+                    }
+                }
+            }
+        }
     }
 
     // ========================================================================================== //
@@ -827,9 +900,10 @@ impl IDevice for Device {
 
                     // Unwrap the fences into the form accepted by D3D12, and produce a matching array
                     // of values filled with the expected value for a signalled fence.
-                    let mut inner_fences: BVec<Option<ID3D12Fence>> =
-                        BVec::with_capacity_in(fences.len(), &bump);
-                    let mut wait_values: BVec<u64> = BVec::with_capacity_in(fences.len(), &bump);
+                    let mut inner_fences: BVec<Option<ID3D12Fence>, _> =
+                        BVec::with_capacity_in(fences.len(), bump.allocator());
+                    let mut wait_values: BVec<u64, _> =
+                        BVec::with_capacity_in(fences.len(), bump.allocator());
                     for fence in fences.iter().copied().map(Fence::get) {
                         inner_fences.push(Some(fence.fence.clone()));
                         wait_values.push(fence.get_wait_value());
@@ -1040,10 +1114,10 @@ impl Device {
 
     /// Internal function for translating the [VertexInputStateDesc] field of a pipeline
     /// description
-    fn translate_vertex_input_state_desc<'a>(
-        bump: &'a Bump,
+    fn translate_vertex_input_state_desc<'a, A: Allocator + 'a>(
+        allocator: A,
         desc: &VertexInputStateDesc,
-    ) -> ([u32; 16], BVec<'a, D3D12_INPUT_ELEMENT_DESC>) {
+    ) -> ([u32; 16], BVec<D3D12_INPUT_ELEMENT_DESC, A>) {
         // Copy the input binding strides into a buffer the pipeline will hold on to so it can be
         // used in the command encoders. Vulkan bakes these in the pipeline, d3d12 gets the values
         // when the input bindings are bound
@@ -1053,7 +1127,7 @@ impl Device {
         }
 
         // Translate the vertex input description
-        let mut input_layout = BVec::with_capacity_in(desc.input_attributes.len(), bump);
+        let mut input_layout = BVec::with_capacity_in(desc.input_attributes.len(), allocator);
         for attribute in desc.input_attributes {
             // DX12 describes vertex attributes differently. The RHI exposes the Vulkan way as it
             // is easier to map vulkan->dx12 here than the other way around, and is more robust.
@@ -1299,257 +1373,10 @@ impl Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn update_descriptor_set(&self, set_write: &DescriptorWriteDesc) {
-        unsafe {
-            let mut set = DescriptorSet::ptr_from_handle(set_write.set);
-            let set_layout = {
-                let set = set.as_ref();
-                let layout = set._layout.as_ref();
-                layout
-            };
-            let binding_layout = set_layout
-                .get_binding_info(set_write.binding)
-                .unwrap()
-                .layout;
-
-            match set_write.writes {
-                DescriptorWrites::Sampler(writes) => {
-                    self.update_sampler_descriptors(set_write.binding, set, &binding_layout, writes)
-                }
-                DescriptorWrites::TexelBufferRW(writes) | DescriptorWrites::TexelBuffer(writes) => {
-                    self.update_texel_buffer_descriptors(
-                        set_write.array_element,
-                        set,
-                        binding_layout,
-                        writes,
-                        set_write.writes.descriptor_type(),
-                    )
-                }
-                DescriptorWrites::TextureRW(writes) | DescriptorWrites::Texture(writes) => self
-                    .update_image_descriptors(set_write.array_element, set, binding_layout, writes),
-                DescriptorWrites::ByteAddressBufferRW(writes)
-                | DescriptorWrites::ByteAddressBuffer(writes)
-                | DescriptorWrites::StructuredBufferRW(writes)
-                | DescriptorWrites::StructuredBuffer(writes)
-                | DescriptorWrites::UniformBuffer(writes) => self.update_buffer_descriptors(
-                    set_write.array_element,
-                    set,
-                    binding_layout,
-                    writes,
-                    set_write.writes.descriptor_type(),
-                ),
-                DescriptorWrites::UniformBufferDynamic(writes) => {
-                    let dynamic_cb_index = set_layout
-                        .dynamic_constant_buffers
-                        .iter()
-                        .enumerate()
-                        .find(|v| v.1.ShaderRegister == set_write.binding)
-                        .map(|v| v.0)
-                        .unwrap();
-                    let set = set.as_mut();
-                    let dynamic_cbs = set.dynamic_constant_buffers.as_mut();
-                    let dynamic_cbs = &mut dynamic_cbs[dynamic_cb_index..];
-
-                    for (i, v) in writes.iter().enumerate() {
-                        let buffer = Buffer::get(v.buffer);
-                        let buffer = buffer.base_address.add(v.offset);
-                        dynamic_cbs[i] = buffer.get_inner().get();
-                    }
-                }
-                DescriptorWrites::InputAttachment(_) => {
-                    unimplemented!()
-                }
-            };
-        }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    unsafe fn update_sampler_descriptors(
-        &self,
-        binding: u32,
-        mut set: NonNull<DescriptorSet>,
-        _binding_layout: &DescriptorBindingLayout,
-        writes: &[SamplerDescriptorWrite],
-    ) {
-        let set = unsafe { set.as_mut() };
-
-        // Find which index in the set's sampler array maps to the binding we're writing to.
-        //
-        // Linear search is best here as the 'sampler_tables' array is rarely if _ever_ going to
-        // have more than a few elements. Linear search is best for tiny search spaces on modern
-        // GPUs.
-        let sampler_index = unsafe {
-            set._layout
-                .as_ref()
-                .sampler_tables
-                .iter()
-                .enumerate()
-                .find_map(|(i, v)| {
-                    if v.BaseShaderRegister == binding {
-                        Some(i)
-                    } else {
-                        None
-                    }
-                })
-                .unwrap()
-        };
-
-        // We don't support sampler arrays so we assert if someone tries to write one
-        debug_assert_eq!(writes.len(), 1, "No support for sampler arrays currently");
-
-        for (_i, v) in writes.iter().enumerate() {
-            let target = unsafe { set.samplers.as_mut() };
-            let sampler = Sampler::get(v.sampler);
-
-            // Copy the gpu descriptor handle into the descriptor set's internal list of samplers.
-            // This internal list will be consumed at bind time to set each sampler as samplers are
-            // always encoded as single entry descriptor tables to work around tight sampler limit
-            // foot guns.
-            //
-            // This makes adopting Vulkan's binding style friendlier to the developer at the cost of
-            // not being able to support 'update after bind' for sampler descriptors.
-            let src = sampler.gpu_handle;
-            target[sampler_index] = Some(src);
-        }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    unsafe fn update_image_descriptors(
-        &self,
-        array_base: u32,
-        set: NonNull<DescriptorSet>,
-        binding_layout: DescriptorBindingLayout,
-        writes: &[ImageDescriptorWrite],
-    ) {
-        unsafe {
-            let set = set.as_ref();
-
-            for (i, v) in writes.iter().enumerate() {
-                // SAFETY: It is the caller's responsibility to ensure that the view points to a live
-                //         and valid ImageViewObject. The objects are immutable so parallel access is
-                //         safe implicitly.
-                let src = std::mem::transmute::<_, *const ImageViewObject>(v.image_view);
-                let src = (*src).handle;
-
-                let (dst, _) = set.assume_r_handle();
-                let dst = Self::calculate_dst_handle(
-                    dst,
-                    self.descriptor_heap_info.resource_inc,
-                    binding_layout.base,
-                    array_base,
-                    i,
-                );
-
-                self.device.CopyDescriptorsSimple(
-                    1,
-                    dst.into(),
-                    src.into(),
-                    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-                );
-            }
-        }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    unsafe fn update_buffer_descriptors(
-        &self,
-        array_base: u32,
-        set: NonNull<DescriptorSet>,
-        binding_layout: DescriptorBindingLayout,
-        writes: &[BufferDescriptorWrite],
-        d_type: DescriptorType,
-    ) {
-        unsafe {
-            let set = set.as_ref();
-
-            for (i, v) in writes.iter().enumerate() {
-                let (dst, _) = set.assume_r_handle();
-
-                let buffer = Buffer::get(v.buffer);
-
-                let dst = Self::calculate_dst_handle(
-                    dst,
-                    self.descriptor_heap_info.resource_inc,
-                    binding_layout.base,
-                    array_base,
-                    i,
-                );
-
-                match d_type {
-                    DescriptorType::UniformBuffer => {
-                        self.update_uniform_buffer_descriptor(v, buffer, dst);
-                    }
-                    DescriptorType::ByteAddressBuffer => {
-                        self.update_byte_address_buffer_descriptor_srv(v, buffer, dst);
-                    }
-                    DescriptorType::ByteAddressBufferRW => {
-                        self.update_byte_address_buffer_descriptor_uav(v, buffer, dst);
-                    }
-                    DescriptorType::StructuredBuffer => {
-                        self.update_structured_buffer_descriptor_srv(v, buffer, dst);
-                    }
-                    DescriptorType::StructuredBufferRW => {
-                        self.update_structured_buffer_descriptor_uav(v, buffer, dst);
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    unsafe fn update_texel_buffer_descriptors(
-        &self,
-        array_base: u32,
-        set: NonNull<DescriptorSet>,
-        binding_layout: DescriptorBindingLayout,
-        writes: &[TexelBufferDescriptorWrite],
-        d_type: DescriptorType,
-    ) {
-        unsafe {
-            let set = set.as_ref();
-
-            for (i, v) in writes.iter().enumerate() {
-                let (dst, _) = set.assume_r_handle();
-
-                let buffer = Buffer::get(v.buffer);
-
-                let dst = Self::calculate_dst_handle(
-                    dst,
-                    self.descriptor_heap_info.resource_inc,
-                    binding_layout.base,
-                    array_base,
-                    i,
-                );
-
-                match d_type {
-                    DescriptorType::TexelBuffer => {
-                        self.update_texel_buffer_descriptor_srv(v, buffer, dst);
-                    }
-                    DescriptorType::TexelBufferRW => {
-                        self.update_texel_buffer_descriptor_uav(v, buffer, dst);
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
     unsafe fn update_uniform_buffer_descriptor(
         &self,
-        write: &BufferDescriptorWrite,
         buffer: &Buffer,
+        write: &BufferWrite,
         dst: CPUDescriptorHandle,
     ) {
         unsafe {
@@ -1571,8 +1398,8 @@ impl Device {
 
     unsafe fn update_byte_address_buffer_descriptor_srv(
         &self,
-        write: &BufferDescriptorWrite,
         buffer: &Buffer,
+        write: &BufferWrite,
         dst: CPUDescriptorHandle,
     ) {
         unsafe {
@@ -1601,8 +1428,8 @@ impl Device {
 
     unsafe fn update_byte_address_buffer_descriptor_uav(
         &self,
-        write: &BufferDescriptorWrite,
         buffer: &Buffer,
+        write: &BufferWrite,
         dst: CPUDescriptorHandle,
     ) {
         unsafe {
@@ -1635,8 +1462,8 @@ impl Device {
 
     unsafe fn update_structured_buffer_descriptor_srv(
         &self,
-        write: &BufferDescriptorWrite,
         buffer: &Buffer,
+        write: &BufferWrite,
         dst: CPUDescriptorHandle,
     ) {
         unsafe {
@@ -1667,8 +1494,8 @@ impl Device {
 
     unsafe fn update_structured_buffer_descriptor_uav(
         &self,
-        write: &BufferDescriptorWrite,
         buffer: &Buffer,
+        write: &BufferWrite,
         dst: CPUDescriptorHandle,
     ) {
         unsafe {
@@ -1703,8 +1530,8 @@ impl Device {
 
     unsafe fn update_texel_buffer_descriptor_srv(
         &self,
-        write: &TexelBufferDescriptorWrite,
         buffer: &Buffer,
+        write: &TextureBufferWrite,
         dst: CPUDescriptorHandle,
     ) {
         unsafe {
@@ -1737,8 +1564,8 @@ impl Device {
 
     unsafe fn update_texel_buffer_descriptor_uav(
         &self,
-        write: &TexelBufferDescriptorWrite,
         buffer: &Buffer,
+        write: &TextureBufferWrite,
         dst: CPUDescriptorHandle,
     ) {
         unsafe {
@@ -1769,69 +1596,6 @@ impl Device {
             );
         }
     }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    /// Calculates the destination descriptor handle based on the given increment size and a set of
-    /// descriptor offsets.
-    ///
-    /// This function is intended to be used to calculate [CPUDescriptorHandle] values for writing
-    /// descriptors into descriptor sets. The expected usage pattern can be described as:
-    ///
-    /// - I have the address of a descriptor set 'handle'
-    /// - I want the address of the beginning of some binding that starts 'binding_base' descriptors
-    ///   after 'handle'
-    /// - Assuming I'm working with an array binding, I want the address of the 'array_base'th
-    ///   element in that array. This could be thought of taking a sub-slice of the larger array
-    ///   binding.
-    /// - Assuming I want to index the sub-slice I just got the beginning of, I want the 'i'th
-    ///   element in the sub-array. This could be thought of as indexing the sub-array.
-    ///
-    /// All of this assumes a common descriptor increment 'increment'.
-    ///
-    /// # Arguments
-    ///
-    /// - 'handle': The descriptor handle for the beginning of the descriptor set we're offsetting
-    ///   into.
-    /// - 'increment': The descriptor increment for the descriptor type we're working with.
-    /// - 'set_base': The offset in descriptors from 'handle' the target binding begins at.
-    /// - 'array_base': The offset in descriptors from the combined 'handle + binding' where the
-    ///   target base array element beings.
-    /// - 'i': The offset in descriptors from the combined 'handle + binding + array_base' where the
-    ///   target array element begins.
-    const fn calculate_dst_handle(
-        handle: CPUDescriptorHandle,
-        increment: u32,
-        binding_base: u32,
-        array_base_element: u32,
-        i: usize,
-    ) -> CPUDescriptorHandle {
-        // The offset from the start of the descriptor set where the target binding begins
-        let binding_base_offset = binding_base as usize * increment as usize;
-
-        // The offset from the start of the binding where the target array element begins
-        let binding_array_offset = array_base_element as usize * increment as usize;
-
-        // The offset from the start of the array where the target write element begins
-        let binding_element_offset = i * increment as usize;
-
-        handle.add(binding_base_offset + binding_array_offset + binding_element_offset)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    /// Calculate the number of descriptors by finding the highest offset from the base of
-    /// the table that any of the ranges requires.
-    fn calculate_descriptor_num(ranges: &[D3D12_DESCRIPTOR_RANGE1]) -> u32 {
-        let mut highest_offset = 0;
-        for table in ranges {
-            highest_offset =
-                highest_offset.max(table.OffsetInDescriptorsFromTableStart + table.NumDescriptors);
-        }
-        highest_offset
-    }
 }
 
 impl Drop for Device {
@@ -1846,7 +1610,7 @@ impl Drop for Device {
 }
 
 thread_local! {
-    pub static DEVICE_BUMP: BumpCell = BumpCell::with_capacity(8192 * 2);
+    pub static DEVICE_BUMP: BlinkCell = BlinkCell::new();
 }
 
 pub struct CommandListPool {

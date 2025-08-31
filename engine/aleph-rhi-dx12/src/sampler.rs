@@ -33,7 +33,6 @@ use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedSamplerDesc;
-use windows::Win32::Graphics::Direct3D12::*;
 use windows::utils::GPUDescriptorHandle;
 
 use crate::device::Device;
@@ -43,10 +42,6 @@ pub struct Sampler {
     pub(crate) id: NonZeroU64,
     pub(crate) desc: OwnedSamplerDesc,
     pub(crate) gpu_handle: GPUDescriptorHandle,
-
-    /// A cache of a mostly pre-translated static sampler desc. May as well create this upfront
-    /// right?
-    pub(crate) static_desc: D3D12_STATIC_SAMPLER_DESC,
 }
 
 unsafe_impl_iobject!(Sampler, "01944ff1-2d02-79d0-a95d-5d22dd91e235");
@@ -58,7 +53,7 @@ impl Sampler {
             .expect("Unknown Sampler implementation!")
     }
 
-    pub(crate) const fn desc(&self) -> &SamplerDesc {
+    pub(crate) const fn desc(&self) -> &SamplerDesc<'_> {
         self.desc.get()
     }
 }

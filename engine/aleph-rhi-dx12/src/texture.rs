@@ -428,7 +428,7 @@ impl Texture {
         self.id
     }
 
-    pub(crate) const fn desc(&self) -> &TextureDesc {
+    pub(crate) const fn desc(&self) -> &TextureDesc<'_> {
         self.desc.get()
     }
 
@@ -588,4 +588,13 @@ impl Drop for Texture {
 pub struct ImageViewObject {
     pub handle: CPUDescriptorHandle,
     pub format: DXGI_FORMAT,
+}
+
+impl ImageViewObject {
+    pub unsafe fn handle_to_ref(v: &ImageView) -> &ImageViewObject {
+        unsafe {
+            let ptr = std::mem::transmute::<ImageView, NonNull<ImageViewObject>>(*v);
+            ptr.as_ref()
+        }
+    }
 }

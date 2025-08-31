@@ -28,7 +28,7 @@
 //
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
-use aleph_object_system::{Object, unsafe_impl_iobject};
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use allocator_api2::alloc::Allocator;
 use allocator_api2::vec::Vec as BVec;
@@ -43,7 +43,7 @@ pub struct BindingSignature {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
-    pub(crate) parameter_block_layouts: Vec<AnyArc<ParameterBlockLayout>>,
+    pub(crate) _parameter_block_layouts: Vec<AnyArc<ParameterBlockLayout>>,
     pub(crate) root_signature: ID3D12RootSignature,
     pub(crate) compiled: CompiledBindingSignature,
 }

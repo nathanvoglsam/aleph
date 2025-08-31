@@ -42,8 +42,8 @@ use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
 use crate::device::Device;
 use crate::internal::descriptor_chunk::DescriptorChunk;
-use crate::internal::descriptor_set::DescriptorSet;
-use crate::internal::descriptor_set_pool::DescriptorSetPool;
+use crate::internal::parameter_block::ParameterBlock;
+use crate::internal::parameter_block_pool::ParameterBlockPool;
 use crate::internal::unwrap;
 use crate::parameter_block_layout::ParameterBlockLayout;
 
@@ -81,7 +81,7 @@ impl DescriptorArenaLinear {
         layout: &ParameterBlockLayout,
         index: u32,
     ) -> (Option<CPUDescriptorHandle>, Option<GPUDescriptorHandle>) {
-        if layout.resource_num != 0 {
+        if layout.compiled.resources.num_resources() != 0 {
             let (cpu, gpu) = self.resource_arena.get_handles_for_index(index);
             (Some(cpu), Some(gpu))
         } else {
@@ -140,16 +140,16 @@ impl DescriptorArenaLinear {
             return Err(DescriptorArenaAllocateError::OutOfMemory);
         }
 
-        if self.descriptor_bump_index.get() + layout.resource_num
-            > self.resource_arena.num_descriptors
-        {
+        let num_resources = layout.compiled.resources.num_resources();
+        let num_samplers = layout.compiled.samplers.num_samplers();
+        let bumped_index = self.descriptor_bump_index.get() + num_resources;
+        if bumped_index > self.resource_arena.num_descriptors {
             return Err(DescriptorArenaAllocateError::OutOfPoolMemory);
         }
 
         // Bump allocate the required number of descriptors from the set
         let set_index = self.descriptor_bump_index.get();
-        self.descriptor_bump_index
-            .set(self.descriptor_bump_index.get() + layout.resource_num);
+        self.descriptor_bump_index.set(bumped_index);
 
         let (resource_handle_cpu, resource_handle_gpu) =
             self.get_optional_handles_for_index(layout, set_index);
@@ -158,8 +158,7 @@ impl DescriptorArenaLinear {
             Self::heap_allocate(
                 &&self.set_pool,
                 layout,
-                layout.dynamic_constant_buffers.len(),
-                layout.sampler_tables.len(),
+                num_samplers as usize,
                 resource_handle_cpu,
                 resource_handle_gpu,
             )
@@ -171,34 +170,27 @@ impl DescriptorArenaLinear {
     pub fn heap_allocate(
         allocator: &impl Allocator,
         layout: &ParameterBlockLayout,
-        num_dynamic_cbs: usize,
         num_samplers: usize,
         resource_handle_cpu: Option<CPUDescriptorHandle>,
         resource_handle_gpu: Option<GPUDescriptorHandle>,
     ) -> Option<ParameterBlockHandle> {
         // Make sure we can just allocate some u64 off the end of the set with no alignment issues
-        assert_eq!(
-            std::mem::align_of::<DescriptorSet>(),
-            std::mem::align_of::<u64>()
-        );
+        assert_eq!(align_of::<ParameterBlock>(), align_of::<u64>());
 
         // The size is equal to one constant buffer object + num_dynamic_cbs u64s + num_samplers
         // u64s.
-        let mem_layout =
-            Self::descriptor_set_allocation_layout(num_dynamic_cbs, num_samplers).unwrap();
+        let mem_layout = Self::descriptor_set_allocation_layout(num_samplers).unwrap();
         let mut set = match allocator.allocate_zeroed(mem_layout) {
-            Ok(v) => v.cast::<MaybeUninit<DescriptorSet>>(),
+            Ok(v) => v.cast::<MaybeUninit<ParameterBlock>>(),
             Err(_) => return None,
         };
 
-        let (dynamic_constant_buffers, samplers) =
-            Self::get_allocated_arrays(set, num_dynamic_cbs, num_samplers);
+        let samplers = Self::get_allocated_arrays(set, num_samplers);
 
         unsafe {
             let set_uninit = set.as_mut();
-            set_uninit.write(DescriptorSet {
+            set_uninit.write(ParameterBlock {
                 _layout: NonNull::from(layout),
-                dynamic_constant_buffers,
                 resource_allocation: Default::default(),
                 resource_handle_cpu,
                 resource_handle_gpu,
@@ -210,46 +202,31 @@ impl DescriptorArenaLinear {
     }
 
     pub const fn descriptor_set_allocation_layout(
-        num_dynamic_cbs: usize,
         num_samplers: usize,
     ) -> Result<Layout, LayoutError> {
-        let size = std::mem::size_of::<DescriptorSet>();
-        let size = size + num_dynamic_cbs * std::mem::size_of::<u64>();
-        let size = size + num_samplers * std::mem::size_of::<u64>();
-        let align = std::mem::align_of::<DescriptorSet>();
+        let size = size_of::<ParameterBlock>();
+        let size = size + num_samplers * size_of::<Option<GPUDescriptorHandle>>();
+        let align = align_of::<ParameterBlock>();
 
-        std::alloc::Layout::from_size_align(size, align)
+        Layout::from_size_align(size, align)
     }
 
     fn get_allocated_arrays(
-        set: NonNull<MaybeUninit<DescriptorSet>>,
-        num_dynamic_cbs: usize,
+        set: NonNull<MaybeUninit<ParameterBlock>>,
         num_samplers: usize,
-    ) -> (NonNull<[u64]>, NonNull<[Option<GPUDescriptorHandle>]>) {
+    ) -> NonNull<[Option<GPUDescriptorHandle>]> {
         unsafe {
-            let dynamic_constant_buffers = set.as_ptr().add(1).cast::<u64>();
-            let samplers = dynamic_constant_buffers
-                .add(num_dynamic_cbs)
-                .cast::<Option<GPUDescriptorHandle>>();
+            let samplers = set.as_ptr().add(1).cast::<Option<GPUDescriptorHandle>>();
 
             // We use alloc-zeroed so we know that these arrays will be zero initialized so we don't
             // need to do anything here
-
-            let dynamic_constant_buffers = if num_dynamic_cbs != 0 {
-                std::slice::from_raw_parts_mut(dynamic_constant_buffers, num_dynamic_cbs)
-            } else {
-                &mut []
-            };
             let samplers = if num_samplers != 0 {
                 std::slice::from_raw_parts_mut(samplers, num_samplers)
             } else {
                 &mut []
             };
 
-            (
-                NonNull::from(dynamic_constant_buffers),
-                NonNull::from(samplers),
-            )
+            NonNull::from(samplers)
         }
     }
 }
@@ -280,7 +257,7 @@ pub struct DescriptorArenaHeap {
     pub(crate) resource_pool: Cell<Option<Box<OffsetAllocator>>>,
 
     /// Object pool allocator that descriptor set objects are allocated from.
-    pub(crate) set_pool: DescriptorSetPool,
+    pub(crate) set_pool: ParameterBlockPool,
 
     /// A list of all the handles that are currently live. Used so we can fully clean up after the
     /// arena when it's being dropped.
@@ -304,7 +281,7 @@ impl IDescriptorArena for DescriptorArenaHeap {
 
         let mut set = MaybeUninit::uninit();
         self.set_pool
-            .allocate_sets(std::slice::from_mut(&mut set))
+            .allocate_blocks(std::slice::from_mut(&mut set))
             .ok_or(DescriptorArenaAllocateError::OutOfPoolMemory)?;
 
         // Safety: allocate_sets is requried to intialize this so this is safe
@@ -320,7 +297,7 @@ impl IDescriptorArena for DescriptorArenaHeap {
                 }
                 None => {
                     // Return the set back to the pool
-                    self.set_pool.free_sets(&[set]);
+                    self.set_pool.free_blocks(&[set]);
                     Err(DescriptorArenaAllocateError::OutOfMemory)
                 }
             };
@@ -340,7 +317,7 @@ impl IDescriptorArena for DescriptorArenaHeap {
 
         let mut sets = vec![MaybeUninit::uninit(); num_blocks];
         self.set_pool
-            .allocate_sets(&mut sets)
+            .allocate_blocks(&mut sets)
             .ok_or(DescriptorArenaAllocateError::OutOfPoolMemory)?;
 
         debug_assert_eq!(sets.len(), sets.capacity());
@@ -361,7 +338,7 @@ impl IDescriptorArena for DescriptorArenaHeap {
                     }
                     None => {
                         // Return the set back to the pool
-                        self.set_pool.free_sets(&[handle]);
+                        self.set_pool.free_blocks(&[handle]);
                         break;
                     }
                 };
@@ -399,7 +376,7 @@ impl IDescriptorArena for DescriptorArenaHeap {
         self.resource_pool.set(Some(resource_pool));
         self.live_handles.set(live_handles);
 
-        self.set_pool.free_sets(sets)
+        self.set_pool.free_blocks(sets)
     }
 
     unsafe fn reset(&self) {
@@ -417,17 +394,16 @@ impl DescriptorArenaHeap {
     unsafe fn inner_allocate_block(
         &self,
         resource_pool: &mut OffsetAllocator,
-        set_layout: &ParameterBlockLayout,
+        block_layout: &ParameterBlockLayout,
         handle: ParameterBlockHandle,
     ) -> Option<()> {
         let global_alloc = Global;
 
-        let num_dynamic_cbs = set_layout.dynamic_constant_buffers.len();
-        let num_samplers = set_layout.sampler_tables.len();
-        let num_resources = set_layout.resource_num;
+        let num_resources = block_layout.compiled.resources.num_resources();
+        let num_samplers = block_layout.compiled.samplers.num_samplers() as usize;
 
-        let v = unsafe { DescriptorSet::ptr_from_handle(handle).as_mut() };
-        v._layout = NonNull::from(set_layout);
+        let v = unsafe { ParameterBlock::ptr_from_handle(handle).as_mut() };
+        v._layout = NonNull::from(block_layout);
 
         if num_resources != 0 {
             let allocation = resource_pool.allocate(num_resources);
@@ -445,29 +421,15 @@ impl DescriptorArenaHeap {
         }
 
         // OOM here is a panic as if we OOM on the global alloc we're probably hosed.
-        if num_dynamic_cbs != 0 {
-            let layout = Layout::array::<u64>(num_dynamic_cbs).unwrap();
-            let result = global_alloc.allocate_zeroed(layout);
-            let result = match result {
-                Ok(v) => v,
-                Err(_) => handle_alloc_error(layout),
-            };
-            let dynamic_cbs =
-                unsafe { std::slice::from_raw_parts(result.cast().as_ptr(), num_dynamic_cbs) };
-            v.dynamic_constant_buffers = NonNull::from(dynamic_cbs);
-        } else {
-            v.dynamic_constant_buffers = NonNull::from(&[])
-        }
-
         if num_samplers != 0 {
-            let layout = Layout::array::<u64>(num_samplers).unwrap();
+            let layout = Layout::array::<Option<GPUDescriptorHandle>>(num_samplers).unwrap();
             let result = global_alloc.allocate_zeroed(layout);
             let result = match result {
                 Ok(v) => v,
                 Err(_) => handle_alloc_error(layout),
             };
             let samplers =
-                unsafe { std::slice::from_raw_parts(result.cast().as_ptr(), num_dynamic_cbs) };
+                unsafe { std::slice::from_raw_parts(result.cast().as_ptr(), num_samplers) };
             v.samplers = NonNull::from(samplers);
         } else {
             v.samplers = NonNull::from(&[])
@@ -480,13 +442,7 @@ impl DescriptorArenaHeap {
         unsafe {
             let global_alloc = Global;
 
-            let set = DescriptorSet::ptr_from_handle(handle).as_mut();
-
-            let dynamic_cbs = set.dynamic_constant_buffers.as_ref();
-            if !dynamic_cbs.is_empty() {
-                let layout = Layout::for_value(dynamic_cbs);
-                global_alloc.deallocate(set.dynamic_constant_buffers.cast(), layout);
-            }
+            let set = ParameterBlock::ptr_from_handle(handle).as_mut();
 
             let samplers = set.samplers.as_ref();
             if !samplers.is_empty() {

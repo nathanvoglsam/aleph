@@ -74,7 +74,7 @@ impl IGetPlatformInterface for Adapter {
 }
 
 impl Adapter {
-    fn create_queue(device: &Device, queue_type: QueueType, debug: bool) -> Option<AnyArc<Queue>> {
+    fn create_queue(device: &Device, queue_type: QueueType) -> Option<AnyArc<Queue>> {
         unsafe {
             let desc = D3D12_COMMAND_QUEUE_DESC {
                 Type: queue_type_to_dx12(queue_type),
@@ -86,7 +86,7 @@ impl Adapter {
                 .device
                 .CreateCommandQueue(&desc)
                 .ok()
-                .map(|v| Queue::new(device, queue_type, debug, v))
+                .map(|v| Queue::new(device, queue_type, v))
         }
     }
 }
@@ -104,7 +104,7 @@ impl IAdapter for Adapter {
         self.this.weak_count()
     }
 
-    fn description(&self) -> AdapterDescription {
+    fn description(&self) -> AdapterDescription<'_> {
         AdapterDescription {
             name: &self.name,
             vendor: self.vendor,
@@ -129,13 +129,11 @@ impl IAdapter for Adapter {
         })
         .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
-        let debug_queue = self.context.debug.is_some() && pix::is_library_available();
-
-        fn create_queues(v: &mut Device, debug_queue: bool) {
+        fn create_queues(v: &mut Device) {
             // Load our 3 queues
-            v.general_queue = Adapter::create_queue(v, QueueType::General, debug_queue);
-            v.compute_queue = Adapter::create_queue(v, QueueType::Compute, debug_queue);
-            v.transfer_queue = Adapter::create_queue(v, QueueType::Transfer, debug_queue);
+            v.general_queue = Adapter::create_queue(v, QueueType::General);
+            v.compute_queue = Adapter::create_queue(v, QueueType::Compute);
+            v.transfer_queue = Adapter::create_queue(v, QueueType::Transfer);
         }
 
         let debug_message_cookie = if self.context.debug.is_some() {
@@ -187,7 +185,7 @@ impl IAdapter for Adapter {
                 command_list_pool: CommandListPool::new(),
                 object_counter: ObjectCounter::new(),
             };
-            create_queues(&mut v, debug_queue);
+            create_queues(&mut v);
             v
         });
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))

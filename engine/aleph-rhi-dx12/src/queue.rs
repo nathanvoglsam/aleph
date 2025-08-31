@@ -38,7 +38,6 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
-use pix::{begin_event_cstr_on_queue, end_event_on_queue, set_marker_cstr_on_queue};
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
 use windows::core::Interface;
@@ -57,14 +56,6 @@ pub struct Queue {
 
     /// Lock used to serialize submissions to the command queue.
     pub(crate) submit_lock: Mutex<()>,
-
-    /// Flags whether the user is allowed to query the IQueueDebug interface. Support is only
-    /// enabled when a debug context is created and the PIX library is linked.
-    pub(crate) is_queue_debug_available: bool,
-
-    /// Internal tracker used to mark the depth of the debug marker stack. Used to ensure that the
-    /// user doesn't call 'end_event' without an associated 'begin_event'
-    pub(crate) debug_marker_depth: AtomicU64,
 
     /// A special fence used specifically for tracking the work that is in-flight on this queue.
     /// This is signalled and waited using submission indices.
@@ -89,7 +80,7 @@ pub struct Queue {
 // Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
 impl IAny for Queue {
     #[allow(bare_trait_objects)]
-    fn __query_interface(&self, target: TypeId) -> Option<TraitObject> {
+    fn __query_interface(&self, target: TypeId) -> Option<TraitObject<'_>> {
         unsafe {
             if target == TypeId::of::<dyn IQueue>() {
                 return Some(transmute(self as &dyn IQueue));
@@ -123,7 +114,6 @@ impl Queue {
     pub(crate) fn new(
         device: &Device,
         queue_type: QueueType,
-        debug: bool,
         handle: ID3D12CommandQueue,
     ) -> AnyArc<Self> {
         unsafe {
@@ -133,8 +123,6 @@ impl Queue {
                 queue_type,
                 handle,
                 submit_lock: Mutex::new(()),
-                is_queue_debug_available: debug,
-                debug_marker_depth: Default::default(),
                 fence: device.device.CreateFence(0, D3D12_FENCE_FLAG_NONE).unwrap(),
                 last_submitted_index: Default::default(),
                 last_completed_index: Default::default(),
