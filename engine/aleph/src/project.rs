@@ -636,10 +636,10 @@ impl<'a> AlephProject<'a> {
         name: &Utf8Path,
     ) -> anyhow::Result<Option<Utf8PathBuf>> {
         let mut search_set = Vec::new();
-        search_set.push(self.ndk_path.as_path());
-        search_set.push(self.dxc_path.as_path().parent().unwrap());
-        search_set.push(self.slang_path.as_path().parent().unwrap());
-        search_set.push(self.ninja_path.as_path().parent().unwrap());
+        search_set.push(self.ndk_path());
+        search_set.push(self.dxc_path().parent().unwrap());
+        search_set.push(self.slang_path().parent().unwrap());
+        search_set.push(self.ninja_path().parent().unwrap());
 
         // God help us all if this fails
         let path_env = std::env::var("PATH")?;

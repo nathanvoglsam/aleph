@@ -35,7 +35,6 @@ use crate::shader_system::{
 use crate::utils::{BuildPlatform, dunce_utf8};
 use aleph_shader_db::{ParameterBlockDesc, ShaderDatabase, ShaderEntry};
 use aleph_target::Profile;
-use aleph_target::build::target_platform;
 use anyhow::anyhow;
 use blink_alloc::Blink;
 use camino::{Utf8Path, Utf8PathBuf};
@@ -84,27 +83,6 @@ impl ISubcommand for BuildShaderProj {
 }
 
 fn run_shader_ninja_build(project: &AlephProject) -> anyhow::Result<()> {
-    fn push_path_if_tool_exists(v: &mut String, tool: &Utf8Path) {
-        if tool.exists() {
-            let dir = dunce_utf8::simplified(tool.parent().unwrap());
-            log::trace!("Tool found!: '{}' in '{}'", tool, dir);
-            push_path_str(v, dir.as_str());
-        } else {
-            log::trace!("Tool is missing!: '{}'", tool);
-        }
-    }
-
-    fn push_path_str(v: &mut String, s: &str) {
-        let sep = if target_platform().is_windows() {
-            ";"
-        } else {
-            ":"
-        };
-
-        v.push_str(s);
-        v.push_str(sep);
-    }
-
     // If we have a bundled ninja exe use that, otherwise just rely on what's in the path
     let ninja = project.ninja_path();
     let ninja = if ninja.exists() {
@@ -115,18 +93,6 @@ fn run_shader_ninja_build(project: &AlephProject) -> anyhow::Result<()> {
 
     let mut command = std::process::Command::new(ninja);
     command.current_dir(project.shader_build_path());
-
-    let mut path_string = String::new();
-    let dxc = project.dxc_path();
-    let slang = project.slang_path();
-
-    push_path_if_tool_exists(&mut path_string, dxc);
-    push_path_if_tool_exists(&mut path_string, slang);
-
-    let inherit_path = std::env::var("PATH")?;
-    push_path_str(&mut path_string, &inherit_path);
-
-    command.env("PATH", path_string);
 
     log::info!("Running Ninja!");
     let status = command.status()?;
