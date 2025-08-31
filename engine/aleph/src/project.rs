@@ -30,7 +30,7 @@
 use std::collections::HashMap;
 
 use aleph_target::build::{target_architecture, target_platform};
-use aleph_target::{Architecture, Profile};
+use aleph_target::{Architecture, Platform, Profile};
 use anyhow::{Context, anyhow};
 use blink_alloc::Blink;
 use camino::{Utf8Path, Utf8PathBuf};
@@ -83,17 +83,19 @@ pub struct AlephProject<'a> {
     /// Path to the uwp aarch64 project in the '.aleph/proj' directory
     uwp_aarch64_proj_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdks/ndk' folder for this project
+    // /// The path to the '.aleph/sdk/{platform}/{arch}' folder appropriate for the host system,
+    // sdk_path: Utf8PathBuf,
+    /// The path to the '.aleph/sdk/**/ndk' folder for this project
     ndk_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdks/dxc/bin/{platform}/dxc' executable for this project
+    /// The path to the '.aleph/sdk/**/dxc/bin/{platform}/dxc' executable for this project
     dxc_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdks/slang/bin/{platform}/release/slangc' executable for this
+    /// The path to the '.aleph/sdk/**/slang/bin/{platform}/release/slangc' executable for this
     /// project
     slang_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdks/ninja/ninja' executable for this project
+    /// The path to the '.aleph/sdk/**/ninja/ninja' executable for this project
     ninja_path: Utf8PathBuf,
 
     /// The path to the Cargo.toml file adjacent to the aleph-project.toml
@@ -150,12 +152,15 @@ impl<'a> AlephProject<'a> {
         // let assets_build_path = dot_aleph_path.join("data").join("assets");
         let configs_build_path = dot_aleph_path.join("configs");
 
-        let mut ndk_path = dot_aleph_path.clone();
-        ndk_path.push("sdks");
+        let mut sdk_path = dot_aleph_path.clone();
+        sdk_path.push("sdk");
+        sdk_path.push(sdk_platform_name());
+        sdk_path.push(target_architecture().name());
+
+        let mut ndk_path = sdk_path.clone();
         ndk_path.push("ndk");
 
-        let mut dxc_path = dot_aleph_path.clone();
-        dxc_path.push("sdks");
+        let mut dxc_path = sdk_path.clone();
         dxc_path.push("dxc");
         dxc_path.push("bin");
         if target_platform().is_windows() {
@@ -170,8 +175,7 @@ impl<'a> AlephProject<'a> {
             dxc_path.push("dxc");
         }
 
-        let mut slang_path = dot_aleph_path.clone();
-        slang_path.push("sdks");
+        let mut slang_path = sdk_path.clone();
         slang_path.push("slang");
         slang_path.push("bin");
         if target_platform().is_windows() {
@@ -180,8 +184,7 @@ impl<'a> AlephProject<'a> {
             slang_path.push("slangc");
         }
 
-        let mut ninja_path = dot_aleph_path.clone();
-        ninja_path.push("sdks");
+        let mut ninja_path = sdk_path.clone();
         ninja_path.push("ninja");
         if target_platform().is_windows() {
             ninja_path.push("ninja.exe");
@@ -189,8 +192,7 @@ impl<'a> AlephProject<'a> {
             ninja_path.push("ninja");
         }
 
-        let mut haxe_path = dot_aleph_path.clone();
-        haxe_path.push("sdks");
+        let mut haxe_path = sdk_path.clone();
         haxe_path.push("haxe");
         if target_platform().is_windows() {
             haxe_path.push("haxe.exe");
@@ -209,6 +211,7 @@ impl<'a> AlephProject<'a> {
             android_proj_path,
             uwp_x86_64_proj_path,
             uwp_aarch64_proj_path,
+            // sdk_path,
             ndk_path,
             dxc_path,
             slang_path,
@@ -318,27 +321,33 @@ impl<'a> AlephProject<'a> {
         &self.cargo_target_dir
     }
 
-    /// Returns the path to the project's bundled NDK, in '.aleph/sdks/ndk'. This path may not exist
-    /// so check before using!
+    // /// Returns the path to the project's bundled NDK, in '.aleph/sdk/**/ndk'. This path may not
+    // /// exist so check before using!
+    // pub fn sdk_path(&self) -> &Utf8Path {
+    //     &self.sdk_path
+    // }
+
+    /// Returns the path to the project's bundled NDK, in '.aleph/sdk/**/ndk'. This path may not
+    /// exist so check before using!
     pub fn ndk_path(&self) -> &Utf8Path {
         &self.ndk_path
     }
 
-    /// Returns the path to the project's bundled dxc, in '.aleph/sdks/dxc/bin/{platform}/dxc'. This
-    /// path may not exist so check before using!
+    /// Returns the path to the project's bundled dxc, in '.aleph/sdk/**/dxc/bin/{platform}/dxc'.
+    /// This path may not exist so check before using!
     pub fn dxc_path(&self) -> &Utf8Path {
         &self.dxc_path
     }
 
     /// Returns the path to the project's bundled dxc, in
-    /// '.aleph/sdks/slang/bin/{platform}/release/slang'. This path may not exist so check before
+    /// '.aleph/sdk/**/slang/bin/{platform}/release/slang'. This path may not exist so check before
     /// using!
     pub fn slang_path(&self) -> &Utf8Path {
         &self.slang_path
     }
 
-    /// Returns the path to the project's bundled ninja, in '.aleph/sdks/ninja/ninja'. This path may
-    /// not exist so check before using!
+    /// Returns the path to the project's bundled ninja, in '.aleph/sdk/**/ninja/ninja'. This path
+    /// may not exist so check before using!
     pub fn ninja_path(&self) -> &Utf8Path {
         &self.ninja_path
     }
@@ -619,6 +628,37 @@ impl<'a> AlephProject<'a> {
     //         Ok(package_indices)
     //     })
     // }
+
+    /// Utility that
+    pub fn find_tool(
+        &self,
+        mode: SearchMode,
+        name: &Utf8Path,
+    ) -> anyhow::Result<Option<Utf8PathBuf>> {
+        let mut search_set = Vec::new();
+        search_set.push(self.ndk_path.as_path());
+        search_set.push(self.dxc_path.as_path().parent().unwrap());
+        search_set.push(self.slang_path.as_path().parent().unwrap());
+        search_set.push(self.ninja_path.as_path().parent().unwrap());
+
+        // God help us all if this fails
+        let path_env = std::env::var("PATH")?;
+
+        if matches!(mode, SearchMode::IncludeSystemPath) {
+            let sep = if target_platform().is_windows() {
+                ";"
+            } else {
+                ":"
+            };
+            search_set.extend(path_env.split(sep).map(Utf8Path::new));
+        }
+
+        let entry = search_set.iter().find_map(|v| {
+            let tool = v.join(name);
+            if tool.is_file() { Some(tool) } else { None }
+        });
+        Ok(entry)
+    }
 }
 
 impl<'a> AlephProject<'a> {
@@ -663,5 +703,28 @@ impl<'a> AlephProject<'a> {
                 target.platform.name()
             )),
         }
+    }
+}
+
+#[derive(Copy, Clone)]
+pub enum SearchMode {
+    #[allow(dead_code)]
+    IncludeSystemPath,
+
+    #[allow(dead_code)]
+    OnlySdkPath,
+}
+
+fn sdk_platform_name() -> &'static str {
+    match target_platform() {
+        Platform::UniversalWindowsGNU => panic!("How???"),
+        Platform::UniversalWindowsMSVC => panic!("How???"),
+        Platform::WindowsGNU => "windows",
+        Platform::WindowsMSVC => "windows",
+        Platform::Linux => "linux",
+        Platform::Android => panic!("Uuuuh, no?"),
+        Platform::MacOS => "macos",
+        Platform::IOS => panic!("What are you doing???????"),
+        Platform::Unknown => panic!("Unknown host platform"),
     }
 }

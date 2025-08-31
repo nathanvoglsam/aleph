@@ -29,21 +29,21 @@
 
 use std::io::Write;
 
-use aleph_target::Profile;
-use anyhow::anyhow;
-use blink_alloc::Blink;
-use camino::{Utf8Path, Utf8PathBuf};
-use clap::ArgMatches;
-use rayon::prelude::*;
-
 use crate::commands::{ISubcommand, config_arg, platform_arg};
-use crate::project::AlephProject;
+use crate::project::{AlephProject, SearchMode};
 use crate::shader_system::{
     ShaderCompilationParams, ShaderCrateContext, ShaderFile, ShaderModuleContext,
     ShaderModuleDefinition, ShaderModuleDefinitionFile, ShaderProjectContext, ShaderSubproject,
     ShaderTargetLanguage,
 };
 use crate::utils::{BuildPlatform, dunce_utf8, ninja};
+use aleph_target::build::target_platform;
+use aleph_target::{Platform, Profile};
+use anyhow::anyhow;
+use blink_alloc::Blink;
+use camino::{Utf8Path, Utf8PathBuf};
+use clap::ArgMatches;
+use rayon::prelude::*;
 
 pub struct GenShaderProj {}
 
@@ -79,16 +79,68 @@ impl ISubcommand for GenShaderProj {
         ShaderSubproject::ensure_build_directories(&project_ctx)?;
         ShaderSubproject::ensure_build_files(&project_ctx)?;
 
-        generate_shader_module_ninja_files(platform, &project_ctx)?;
+        let tool_paths = ToolPaths::new(project)?;
+
+        generate_shader_module_ninja_files(platform, &project_ctx, &tool_paths)?;
         generate_shader_name_bindings(&project_ctx)?;
 
         Ok(())
     }
 }
 
+struct ToolPaths {
+    dxcompiler_path: Option<Utf8PathBuf>,
+    slang_path: Utf8PathBuf,
+}
+
+impl ToolPaths {
+    fn new(project: &AlephProject) -> anyhow::Result<Self> {
+        let dxcompiler_name = dxcompiler_library();
+        log::trace!("Searching for {dxcompiler_name}");
+        let dxcompiler_path = project.find_tool(SearchMode::IncludeSystemPath, dxcompiler_name)?;
+
+        let slang_name = slang_executable();
+        log::trace!("Searching for {slang_name}");
+        let slang_path = project.find_tool(SearchMode::IncludeSystemPath, slang_name)?;
+
+        let dxcompiler_path = dxcompiler_path.map(|v| {
+            // Simplify, then strip the extension as slang fails when the extension is included
+            let out = dunce_utf8::simplified(&v).with_extension("");
+            log::info!("Selected DXC tool = '{out}'");
+            out
+        });
+        let slang_path = slang_path.map(|v| {
+            // Simplfy
+            let out = dunce_utf8::simplified(&v).to_path_buf();
+            log::info!("Selected Slang tool = '{out}'");
+            out
+        });
+
+        // Slang is always required
+        let slang_path = if let Some(v) = slang_path {
+            v
+        } else {
+            log::error!("Failed to find Slang tool!");
+            return Err(anyhow!("Failed to find Slang tool!"));
+        };
+
+        // DXC is only needed on windows
+        if target_platform().is_windows() && dxcompiler_path.is_none() {
+            log::error!("Failed to find DXC tool!");
+            return Err(anyhow!("Failed to find DXC tool!"));
+        }
+
+        Ok(Self {
+            dxcompiler_path,
+            slang_path,
+        })
+    }
+}
+
 fn generate_shader_module_ninja_files(
     platform: BuildPlatform,
     project_ctx: &ShaderProjectContext,
+    tool_paths: &ToolPaths,
 ) -> anyhow::Result<()> {
     // Walk through all the dependency packages that have shaders and create a build.ninja
     // file for them so we can compile the shaders using ninja
@@ -116,6 +168,13 @@ fn generate_shader_module_ninja_files(
         .create(true)
         .truncate(true)
         .open(project_ctx.meta.root_ninja_file)?;
+
+    writeln!(&mut build_file, "cc = {}", tool_paths.slang_path)?;
+    if let Some(v) = tool_paths.dxcompiler_path.as_deref() {
+        writeln!(&mut build_file, "dxcompiler_path = {v}")?;
+    }
+    writeln!(&mut build_file)?;
+
     writeln!(&mut build_file, "include rules.ninja")?;
     writeln!(&mut build_file)?;
 
@@ -460,4 +519,32 @@ fn write_imports(output: &mut impl std::fmt::Write, indent: &str) -> std::fmt::R
     )?;
     writeln!(output)?;
     Ok(())
+}
+
+fn dxcompiler_library() -> &'static Utf8Path {
+    match target_platform() {
+        Platform::UniversalWindowsGNU => panic!("No, you've made a mistake"),
+        Platform::UniversalWindowsMSVC => panic!("No, you've made a mistake"),
+        Platform::WindowsGNU => Utf8Path::new("dxcompiler.dll"),
+        Platform::WindowsMSVC => Utf8Path::new("dxcompiler.dll"),
+        Platform::Linux => Utf8Path::new("libdxcompiler.so"),
+        Platform::Android => panic!("Perhaps you should reconsider"),
+        Platform::MacOS => Utf8Path::new("libdxcompiler.dylib"),
+        Platform::IOS => panic!("How did we get here?"),
+        Platform::Unknown => panic!("Unknown host platform"),
+    }
+}
+
+fn slang_executable() -> &'static Utf8Path {
+    match target_platform() {
+        Platform::UniversalWindowsGNU => panic!("No, you've made a mistake"),
+        Platform::UniversalWindowsMSVC => panic!("No, you've made a mistake"),
+        Platform::WindowsGNU => Utf8Path::new("slangc.exe"),
+        Platform::WindowsMSVC => Utf8Path::new("slangc.exe"),
+        Platform::Linux => Utf8Path::new("slangc"),
+        Platform::Android => panic!("Perhaps you should reconsider"),
+        Platform::MacOS => Utf8Path::new("slangc"),
+        Platform::IOS => panic!("How did we get here?"),
+        Platform::Unknown => panic!("Unknown host platform"),
+    }
 }

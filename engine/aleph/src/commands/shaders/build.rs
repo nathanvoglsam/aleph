@@ -87,7 +87,7 @@ fn run_shader_ninja_build(project: &AlephProject) -> anyhow::Result<()> {
     fn push_path_if_tool_exists(v: &mut String, tool: &Utf8Path) {
         if tool.exists() {
             let dir = dunce_utf8::simplified(tool.parent().unwrap());
-            log::trace!("Tool found!: '{}'", tool);
+            log::trace!("Tool found!: '{}' in '{}'", tool, dir);
             push_path_str(v, dir.as_str());
         } else {
             log::trace!("Tool is missing!: '{}'", tool);

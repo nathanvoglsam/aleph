@@ -1,7 +1,9 @@
 #
 # VULKAN BUILD RULES
 #
-cc = slangc
+
+# REQUIRES 'cc'
+# REQUIRES 'dxcompiler_path'
 
 ## Will be overriden by build commands
 module_include =
@@ -66,7 +68,7 @@ rule compute_shader_msl
 #
 # DXIL BUILD RULES
 #
-dx_target = -target dxil -profile sm_6_0 -DTARGET_DXIL
+dx_target = -target dxil -profile sm_6_0 -DTARGET_DXIL -dxc-path $dxcompiler_path
 rule fragment_shader_dxil
     depfile = $out.d
     deps = gcc
