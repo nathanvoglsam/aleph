@@ -113,7 +113,7 @@ impl Into<aleph_rhi_dx12::D3D12Config> for D3D12Config {
 #[derive(Clone, Hash, PartialEq, Eq, Debug, Default, Deserialize)]
 pub struct MetalConfig {}
 
-#[cfg(any(windows, target_os = "macos", target_os = "ios"))]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 impl Into<aleph_rhi_metal::MetalConfig> for MetalConfig {
     fn into(self) -> aleph_rhi_metal::MetalConfig {
         aleph_rhi_metal::MetalConfig {}
