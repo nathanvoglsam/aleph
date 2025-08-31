@@ -36,6 +36,7 @@ use crate::device::Device;
 use crate::parameter_block_layout::ParameterBlockLayout;
 use crate::surface::Surface;
 use crate::swap_chain::SwapChain;
+use crate::swap_image::SwapImage;
 
 conversion_function!(
     ICommandList,
@@ -54,7 +55,6 @@ conversion_function!(
     surface_d,
     surface_iter
 );
-
 conversion_function!(
     ISwapChain,
     SwapChain,
@@ -63,7 +63,14 @@ conversion_function!(
     swap_chain_d,
     swap_chain_iter
 );
-
+conversion_function!(
+    ISwapImage,
+    SwapImage,
+    swap_image,
+    swap_image_owned,
+    swap_image_d,
+    swap_image_iter
+);
 conversion_function!(
     IParameterBlockLayout,
     ParameterBlockLayout,

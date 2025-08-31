@@ -391,9 +391,10 @@ impl IQueue for Queue {
         }
     }
 
-    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
+    unsafe fn present(&self, swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
         unsafe {
-            let swap_chain = unwrap::swap_chain(desc.swap_chain);
+            let swap_image = unwrap::swap_image_owned(swap_image);
+            let swap_chain = swap_image.swap_chain.as_ref();
             let swap_state = swap_chain.inner.lock();
 
             // Checks if the queue supports present operations. While this could use a debug_assert
@@ -409,13 +410,6 @@ impl IQueue for Queue {
             // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
             // either.
             let _lock = self.submit_lock.lock();
-
-            for semaphore in desc.wait_semaphores {
-                let semaphore = Semaphore::get(semaphore);
-                semaphore
-                    .wait_on_queue(&self.handle)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-            }
 
             let flags = if swap_state
                 .dxgi_flags

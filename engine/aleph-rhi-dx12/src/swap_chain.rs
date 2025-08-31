@@ -46,8 +46,8 @@ use windows::core::IUnknown;
 
 use crate::device::Device;
 use crate::internal::set_name::set_name;
-use crate::semaphore::Semaphore;
 use crate::surface::Surface;
+use crate::swap_image::SwapImage;
 use crate::texture::{ImageViewObject, Texture};
 
 pub struct SwapChain {
@@ -266,18 +266,9 @@ impl ISwapChain for SwapChain {
         Ok(inner.config.clone())
     }
 
-    fn get_images(&self, images: &mut [Option<TextureHandle>]) {
-        let lock = self.inner.lock();
-        let textures = &lock.textures;
+    unsafe fn acquire_next_image(&self) -> Result<AcquiredImage, ImageAcquireError> {
+        let inner = self.inner.lock();
 
-        for (out, v) in images.iter_mut().zip(textures.iter()) {
-            let t = ArcObject::from_object(v.clone());
-            let t = unsafe { Some(TextureHandle::new(t)) };
-            *out = t;
-        }
-    }
-
-    unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
         if self
             .acquired
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
@@ -288,14 +279,17 @@ impl ISwapChain for SwapChain {
 
         let index = unsafe { self.swap_chain.GetCurrentBackBufferIndex() };
 
-        let semaphore = Semaphore::get(desc.signal_semaphore);
-        unsafe {
-            semaphore
-                .signal_from_cpu()
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-        }
+        let texture = inner.textures[index as usize].clone();
+        let texture = ArcObject::from_object(texture);
+        let texture = unsafe { TextureHandle::new(texture) };
 
-        Ok(index)
+        let swap_image = AnyArc::new(SwapImage {
+            swap_chain: self.this.upgrade().unwrap(),
+            index,
+            texture,
+        });
+        let swap_image = AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v);
+        Ok(AcquiredImage::Ok(swap_image))
     }
 }
 

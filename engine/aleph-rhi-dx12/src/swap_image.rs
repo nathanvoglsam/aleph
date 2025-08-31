@@ -27,32 +27,33 @@
 // SOFTWARE.
 //
 
-#![cfg(windows)]
+use std::any::TypeId;
 
-pub extern crate aleph_dx12_alloc as d3d12ma;
-pub extern crate aleph_pix as pix;
-pub extern crate aleph_windows as windows;
+use aleph_any::{AnyArc, declare_interfaces};
+use aleph_rhi_api::*;
 
-mod adapter;
-mod binding_signature;
-mod buffer;
-mod command_list;
-mod context;
-mod descriptor_arena;
-mod descriptor_pool;
-mod device;
-mod encoder;
-mod fence;
-mod internal;
-mod parameter_block_layout;
-mod pipeline;
-mod queue;
-mod rhi_backend;
-mod sampler;
-mod semaphore;
-mod surface;
-mod swap_chain;
-mod swap_image;
-mod texture;
+use crate::swap_chain::SwapChain;
 
-pub use rhi_backend::{D3D12Config, D3D12Loader, RHI_BACKEND_OBJECT};
+pub struct SwapImage {
+    pub(crate) swap_chain: AnyArc<SwapChain>,
+    pub(crate) index: u32,
+    pub(crate) texture: TextureHandle,
+}
+
+declare_interfaces!(SwapImage, [ISwapImage]);
+
+impl IGetPlatformInterface for SwapImage {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
+    }
+}
+
+impl ISwapImage for SwapImage {
+    fn texture(&self) -> &TextureHandle {
+        &self.texture
+    }
+
+    fn texture_desc(&self) -> &TextureDesc<'_> {
+        self.swap_chain.device.get_texture_desc(&self.texture)
+    }
+}

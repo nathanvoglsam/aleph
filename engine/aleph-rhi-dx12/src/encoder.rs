@@ -347,7 +347,8 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             let set_global_index = first_block as usize + set_index;
 
             // Fetch the base root parameter index for this set from the pipeline layout
-            let param_index = binding_signature.compiled.block_offsets[set_global_index].root_parameter_index;
+            let param_index =
+                binding_signature.compiled.block_offsets[set_global_index].root_parameter_index;
 
             let bound_sets = match bind_point {
                 PipelineBindPoint::Compute => &mut self.bound_compute_sets,
