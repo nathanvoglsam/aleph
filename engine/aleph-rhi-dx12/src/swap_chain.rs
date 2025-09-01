@@ -37,7 +37,7 @@ use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use aleph_rhi_impl_utils::{manually_drop, try_clone_value_into_slot};
-use bumpalo::Bump;
+use blink_alloc::Blink;
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -111,7 +111,7 @@ impl SwapChain {
                 views: Default::default(),
                 rtvs: Default::default(),
                 dsvs: Default::default(),
-                image_views: Mutex::new(Bump::with_capacity(size_of::<ImageViewObject>() * 8)),
+                image_views: Mutex::new(Blink::with_chunk_size(size_of::<ImageViewObject>() * 8)),
             };
             let texture = Object::new_arc(texture);
             state.textures.push(texture);

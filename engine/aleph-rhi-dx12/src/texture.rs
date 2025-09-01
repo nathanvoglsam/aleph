@@ -39,7 +39,7 @@ use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use bumpalo::Bump;
+use blink_alloc::Blink;
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -61,7 +61,7 @@ pub struct Texture {
     pub(crate) views: Mutex<HashMap<ImageViewDesc, NonNull<ImageViewObject>>>,
     pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, NonNull<ImageViewObject>>>,
     pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, NonNull<ImageViewObject>>>,
-    pub(crate) image_views: Mutex<Bump>,
+    pub(crate) image_views: Mutex<Blink>,
 }
 
 unsafe_impl_iobject!(Texture, "01944eed-1f79-7102-bbe9-d7ecf341fd63");
@@ -102,7 +102,7 @@ impl Texture {
         format: DXGI_FORMAT,
     ) -> NonNull<ImageViewObject> {
         let views = self.image_views.lock();
-        let view = views.alloc(ImageViewObject {
+        let view = views.put_no_drop(ImageViewObject {
             handle: view,
             format,
         });

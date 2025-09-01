@@ -36,8 +36,8 @@ use std::sync::Arc;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use bumpalo::Bump;
-use bumpalo::collections::Vec as BumpVec;
+use allocator_api2::vec::Vec as BVec;
+use blink_alloc::Blink;
 use pix::{begin_event_cstr_on_list, end_event_on_list, set_marker_cstr_on_list};
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -62,7 +62,7 @@ pub struct Encoder<'a> {
     pub(crate) bound_graphics_pipeline: Option<Arc<Object<GraphicsPipeline>>>,
     pub(crate) bound_compute_pipeline: Option<Arc<Object<ComputePipeline>>>,
     pub(crate) input_binding_strides: [u32; 16],
-    pub(crate) arena: Bump,
+    pub(crate) arena: Blink,
     pub(crate) bound_graphics_sets: Box<[Option<ParameterBlockHandle>]>,
     pub(crate) bound_compute_sets: Box<[Option<ParameterBlockHandle>]>,
 }
@@ -112,8 +112,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
     ) {
-        let mut views: BumpVec<D3D12_VERTEX_BUFFER_VIEW> =
-            BumpVec::with_capacity_in(bindings.len(), &self.arena);
+        let mut views: BVec<D3D12_VERTEX_BUFFER_VIEW, _> =
+            BVec::with_capacity_in(bindings.len(), self.arena.allocator());
         for (i, v) in bindings.iter().enumerate() {
             let buffer = Buffer::get(v.buffer);
 
@@ -162,8 +162,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 
     unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
-        let mut new_viewports: BumpVec<D3D12_VIEWPORT> =
-            BumpVec::with_capacity_in(viewports.len(), &self.arena);
+        let mut new_viewports: BVec<D3D12_VIEWPORT, _> =
+            BVec::with_capacity_in(viewports.len(), self.arena.allocator());
         for v in viewports {
             new_viewports.push(D3D12_VIEWPORT {
                 TopLeftX: v.x,
@@ -181,7 +181,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
-        let mut new_rects: BumpVec<RECT> = BumpVec::with_capacity_in(rects.len(), &self.arena);
+        let mut new_rects: BVec<RECT, _> =
+            BVec::with_capacity_in(rects.len(), self.arena.allocator());
         for v in rects {
             new_rects.push(RECT {
                 left: v.x as i32,
@@ -225,7 +226,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
         let mut color_attachments =
-            BumpVec::with_capacity_in(info.color_attachments.len(), &self.arena);
+            BVec::with_capacity_in(info.color_attachments.len(), self.arena.allocator());
 
         for attachment in info.color_attachments {
             unsafe {
@@ -407,12 +408,12 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         #![allow(non_snake_case)]
 
         let mut translated_global_barriers =
-            BumpVec::with_capacity_in(global_barriers.len(), &self.arena);
+            BVec::with_capacity_in(global_barriers.len(), self.arena.allocator());
         let mut translated_buffer_barriers =
-            BumpVec::with_capacity_in(buffer_barriers.len(), &self.arena);
+            BVec::with_capacity_in(buffer_barriers.len(), self.arena.allocator());
         let mut translated_texture_barriers =
-            BumpVec::with_capacity_in(texture_barriers.len(), &self.arena);
-        let mut barrier_groups = BumpVec::with_capacity_in(3, &self.arena);
+            BVec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
+        let mut barrier_groups = BVec::with_capacity_in(3, self.arena.allocator());
 
         if !buffer_barriers.is_empty() {
             for barrier in global_barriers {
