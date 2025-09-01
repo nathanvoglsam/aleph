@@ -29,15 +29,14 @@
 
 mod system_access;
 
-pub use system_access::{
-    Res, ResMut, ResMutState, ResState, SystemParam, SystemParamFetch, SystemParamFunction,
-    SystemParamState,
-};
-
 use std::any::Any;
 
 use aleph_label::Label;
 use aleph_typed_table::TypedTable;
+pub use system_access::{
+    Res, ResMut, ResMutState, ResState, SystemParam, SystemParamFetch, SystemParamFunction,
+    SystemParamState,
+};
 
 use crate::{AccessDescriptor, ScheduleArgs};
 

@@ -34,14 +34,13 @@ mod equirectangular_conversion;
 mod integrate_irradiance;
 mod octahedral_conversion;
 
+use aleph_math::Vec3;
 pub use cube_conversion::*;
 pub use cube_sample::CubeSampler;
 pub use directional_sampler::*;
 pub use equirectangular_conversion::*;
 pub use integrate_irradiance::*;
 pub use octahedral_conversion::*;
-
-use aleph_math::Vec3;
 use thiserror::Error;
 
 /// Semi-private trate used as part of the parametrization of [`equi_to_cube`]. Represents a compile

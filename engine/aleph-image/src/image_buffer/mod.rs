@@ -31,7 +31,6 @@ mod dynamic_image_buffer;
 
 use aleph_math::UVec2;
 pub use dynamic_image_buffer::{ColorType, DowncastImageBuffer, DynamicImageBuffer};
-
 use half::f16;
 
 use crate::{FromImagePixel, PixR, PixRG, PixRGB, PixRGBA, PixelChannelType, PixelFormat};

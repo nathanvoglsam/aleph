@@ -29,6 +29,14 @@
 
 use std::io::Write;
 
+use aleph_target::build::target_platform;
+use aleph_target::{Platform, Profile};
+use anyhow::anyhow;
+use blink_alloc::Blink;
+use camino::{Utf8Path, Utf8PathBuf};
+use clap::ArgMatches;
+use rayon::prelude::*;
+
 use crate::commands::{ISubcommand, config_arg, platform_arg};
 use crate::project::{AlephProject, SearchMode};
 use crate::shader_system::{
@@ -37,13 +45,6 @@ use crate::shader_system::{
     ShaderTargetLanguage,
 };
 use crate::utils::{BuildPlatform, dunce_utf8, ninja};
-use aleph_target::build::target_platform;
-use aleph_target::{Platform, Profile};
-use anyhow::anyhow;
-use blink_alloc::Blink;
-use camino::{Utf8Path, Utf8PathBuf};
-use clap::ArgMatches;
-use rayon::prelude::*;
 
 pub struct GenShaderProj {}
 

@@ -27,19 +27,21 @@
 // SOFTWARE.
 //
 
-use crate::commands::{ISubcommand, config_arg, platform_arg};
-use crate::project::AlephProject;
-use crate::shader_system::{
-    ShaderCrateContext, ShaderFile, ShaderProjectContext, ShaderSubproject,
-};
-use crate::utils::{BuildPlatform, dunce_utf8};
+use std::collections::hash_map::Entry;
+
 use aleph_shader_db::{ParameterBlockDesc, ShaderDatabase, ShaderEntry};
 use aleph_target::Profile;
 use anyhow::anyhow;
 use blink_alloc::Blink;
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::ArgMatches;
-use std::collections::hash_map::Entry;
+
+use crate::commands::{ISubcommand, config_arg, platform_arg};
+use crate::project::AlephProject;
+use crate::shader_system::{
+    ShaderCrateContext, ShaderFile, ShaderProjectContext, ShaderSubproject,
+};
+use crate::utils::{BuildPlatform, dunce_utf8};
 
 pub struct BuildShaderProj {}
 

@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::{IShaderDatabase, ShaderName, ShaderStage};
 use aleph_rhi_api::IShaderCodeSource;
+
+use crate::{IShaderDatabase, ShaderName, ShaderStage};
 
 pub trait IShaderDatabaseExt: IShaderDatabase {
     fn get<T: ShaderStage>(&self, name: ShaderName<T>) -> Option<&Self::Entry>;

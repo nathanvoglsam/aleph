@@ -321,8 +321,7 @@ macro_rules! unsafe_impl_iobject {
         impl $t {
             #[doc(hidden)]
             const fn __internal_node() -> &'static $crate::ObjectTypeListNode {
-                static VTABLE: $crate::ObjectTypeListNode =
-                    $crate::ObjectTypeListNode::new(<$t>::__internal_vtable());
+                static VTABLE: $crate::ObjectTypeListNode = $crate::ObjectTypeListNode::new(<$t>::__internal_vtable());
                 &VTABLE
             }
 

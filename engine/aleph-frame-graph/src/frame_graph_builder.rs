@@ -58,10 +58,10 @@ use allocator_api2::vec::Vec as BVec;
 use blink_alloc::{Blink, BlinkAlloc};
 use thiserror::Error;
 
+use crate::internal::*;
 use crate::render_pass::{CallbackRenderPass, PassArgs};
 use crate::resource::ResourceId;
-use crate::{FrameGraph, FrameGraphResources, IRenderPass, ResourceMut, ResourceRef};
-use crate::{GraphChannel, internal::*};
+use crate::{FrameGraph, FrameGraphResources, GraphChannel, IRenderPass, ResourceMut, ResourceRef};
 
 #[derive(Error, Debug)]
 pub enum GraphBuildError {

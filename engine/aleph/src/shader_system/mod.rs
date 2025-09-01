@@ -30,12 +30,13 @@
 pub mod reflection;
 mod subproject;
 
-use anyhow::anyhow;
-use camino::{Utf8Path, Utf8PathBuf};
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::Formatter;
+
+use anyhow::anyhow;
+use camino::{Utf8Path, Utf8PathBuf};
+use serde::{Deserialize, Serialize};
 pub use subproject::{
     ShaderCrateContext, ShaderModuleContext, ShaderProjectContext, ShaderSubproject,
 };

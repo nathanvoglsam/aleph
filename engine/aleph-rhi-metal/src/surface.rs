@@ -37,8 +37,7 @@ use objc2_quartz_core::CAMetalLayer;
 use parking_lot::Mutex;
 
 use crate::context::Context;
-use crate::internal::conv;
-use crate::internal::unwrap;
+use crate::internal::{conv, unwrap};
 use crate::swap_chain::{SwapChain, SwapChainObjects, SwapChainState};
 
 pub struct Surface {

@@ -31,6 +31,8 @@ mod crate_context;
 mod module_context;
 mod project_context;
 
+use std::fmt::Debug;
+
 use allocator_api2::alloc::Global;
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::{Blink, BlinkAlloc};
@@ -38,7 +40,6 @@ use cargo_metadata::Package;
 pub use crate_context::SubprojectCrateContext;
 pub use module_context::SubprojectModuleContext;
 pub use project_context::SubprojectProjectContext;
-use std::fmt::Debug;
 
 use crate::crate_metadata::AlephCrateMetadata;
 use crate::project::AlephProject;

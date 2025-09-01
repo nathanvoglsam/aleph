@@ -29,17 +29,16 @@
 
 mod standard_material;
 
-use aleph_any::AnyArc;
-pub use standard_material::{StandardMaterial, StandardMaterialLayout};
-
 use std::num::NonZero;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use aleph_shader_db::{Fragment, ShaderName, Vertex};
 use smallbox::space::S2;
 use smallbox::{SmallBox, smallbox};
+pub use standard_material::{StandardMaterial, StandardMaterialLayout};
 
 use crate::{BufferPool, MaterialBinding, MaterialInstanceObject, TexturePool};
 

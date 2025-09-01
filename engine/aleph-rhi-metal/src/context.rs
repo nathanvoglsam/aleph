@@ -33,7 +33,6 @@ use std::ptr::NonNull;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
-
 use objc2::rc::Retained;
 use objc2_metal::*;
 use objc2_quartz_core::CAMetalLayer;

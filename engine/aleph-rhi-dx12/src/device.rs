@@ -27,6 +27,13 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+use std::cell::Cell;
+use std::mem::{ManuallyDrop, size_of, transmute_copy};
+use std::ops::Deref;
+use std::ptr::NonNull;
+use std::sync::atomic::AtomicU64;
+
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
@@ -44,12 +51,6 @@ use blink_alloc::BlinkAlloc;
 use bumpalo::Bump;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
-use std::any::TypeId;
-use std::cell::Cell;
-use std::mem::{ManuallyDrop, size_of, transmute_copy};
-use std::ops::Deref;
-use std::ptr::NonNull;
-use std::sync::atomic::AtomicU64;
 use windows::Win32::Foundation::*;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;

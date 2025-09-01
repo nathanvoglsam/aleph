@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::{ParameterBlockDesc, ShaderType};
 use aleph_rhi_api::{IShaderCodeSource, ParameterArraySize, ParameterDesc, PushConstantBlock};
+
+use crate::{ParameterBlockDesc, ShaderType};
 
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Default)]
 pub struct ShaderEntry {

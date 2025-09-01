@@ -206,8 +206,7 @@ pub fn sample_spherical_map(s: Vec3) -> Vec2 {
 /// vector that it represents in an equirectangular map.
 #[inline]
 pub fn equirectangular_uv_to_direction(uv: Vec2) -> Vec3 {
-    use std::f32::consts::FRAC_PI_2;
-    use std::f32::consts::PI;
+    use std::f32::consts::{FRAC_PI_2, PI};
 
     let u = (uv.x * 2.0) - 1.0;
     let v = (uv.y * 2.0) - 1.0;

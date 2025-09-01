@@ -27,9 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::{ArchivedShaderEntry, ShaderEntry};
-use aleph_rhi_api::IShaderCodeSource;
 use std::collections::HashMap;
+
+use aleph_rhi_api::IShaderCodeSource;
+
+use crate::{ArchivedShaderEntry, ShaderEntry};
 
 pub trait IShaderDatabase {
     type Entry: IShaderCodeSource;

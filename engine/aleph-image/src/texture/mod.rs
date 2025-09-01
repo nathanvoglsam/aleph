@@ -29,9 +29,8 @@
 
 mod dynamic_texture_buffer;
 
-pub use dynamic_texture_buffer::DynamicTextureBuffer;
-
 use aleph_math::{UVec2, Vec3};
+pub use dynamic_texture_buffer::DynamicTextureBuffer;
 use half::f16;
 
 use crate::{

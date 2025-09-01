@@ -36,21 +36,16 @@ mod mouse;
 mod sdl_main_wrapper;
 mod window;
 
-pub use clipboard::Clipboard;
-pub use events::Events;
-pub use frame_timer::FrameTimer;
-pub use gamepad::Gamepads;
-pub use keyboard::Keyboard;
-pub use mouse::Mouse;
-pub use sdl_main_wrapper::intercept_main;
-pub use window::Window;
-
 use std::any::TypeId;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
 
+pub use clipboard::Clipboard;
+pub use events::Events;
+pub use frame_timer::FrameTimer;
+pub use gamepad::Gamepads;
 use interfaces::any::{AnyArc, IAny};
 use interfaces::label::make_label;
 use interfaces::platform::{
@@ -59,8 +54,12 @@ use interfaces::platform::{
 };
 use interfaces::plugin::{IQuitHandle, IRegistryAccessor};
 use interfaces::schedule::CoreStage;
+pub use keyboard::Keyboard;
+pub use mouse::Mouse;
 use parking_lot::RwLockWriteGuard;
+pub use sdl_main_wrapper::intercept_main;
 use sdl2::mouse::SystemCursor;
+pub use window::Window;
 
 pub(crate) fn platform_interfaces() -> [TypeId; 7] {
     [

@@ -42,8 +42,9 @@ use crate::buffer::Buffer;
 use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::device::Device;
+use crate::internal::conv::*;
+use crate::internal::unwrap;
 use crate::internal::write_descriptors::translate_descriptor_writes;
-use crate::internal::{conv::*, unwrap};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::texture::Texture;
 
