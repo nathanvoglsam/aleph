@@ -35,18 +35,18 @@ use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::utils::DynamicLoadCell;
 
-pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE> =
-    DynamicLoadCell::new(
-        &utf16_null!("d3d12.dll"),
-        "D3D12SerializeVersionedRootSignature\0",
-    );
-
 #[repr(transparent)]
 pub struct RootSignatureBlob(pub(crate) ID3DBlob);
 
 impl RootSignatureBlob {
     #[inline]
     pub unsafe fn new(desc: &D3D12_VERSIONED_ROOT_SIGNATURE_DESC) -> windows::core::Result<Self> {
+        pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE> =
+            DynamicLoadCell::new(
+                &utf16_null!("d3d12.dll"),
+                "D3D12SerializeVersionedRootSignature\0",
+            );
+
         unsafe {
             let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
             let mut blob: Option<ID3DBlob> = None;

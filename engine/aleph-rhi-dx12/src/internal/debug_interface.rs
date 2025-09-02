@@ -35,15 +35,15 @@ use windows::Win32::Graphics::Direct3D12::*;
 use windows::core::Interface;
 use windows::utils::DynamicLoadCell;
 
-pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_GET_DEBUG_INTERFACE> =
-    DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12GetDebugInterface\0");
-
 #[repr(transparent)]
 pub struct DebugInterface(pub(crate) ID3D12Debug);
 
 impl DebugInterface {
     #[inline]
     pub unsafe fn new() -> windows::core::Result<Self> {
+        pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_GET_DEBUG_INTERFACE> =
+            DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12GetDebugInterface\0");
+
         unsafe {
             let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
             let mut debug: Option<ID3D12Debug> = None;
@@ -80,5 +80,3 @@ impl DebugInterface {
         }
     }
 }
-
-unsafe impl Send for DebugInterface {}

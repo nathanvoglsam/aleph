@@ -28,6 +28,7 @@
 //
 
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use aleph_rhi_api::SamplerDesc;
@@ -38,7 +39,6 @@ use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use crate::internal::conv::{
     border_color_to_dx12, compare_op_to_dx12, sampler_address_mode_to_dx12, sampler_filters_to_dx12,
 };
-use crate::internal::sampler_cache_key::SamplerCacheKey;
 
 /// This data structure owns and manages the GPU visible sampler heap. Samplers need special
 /// treatment because of the extremely limited gpu visible heap size of 2048. We can't allocate them
@@ -211,4 +211,90 @@ impl SamplerCache {
             .add_increments(index as u64, self.descriptor_increment as u64);
         (cpu, gpu)
     }
+}
+
+#[repr(transparent)]
+pub struct SamplerCacheKey<'a>(SamplerDesc<'a>);
+
+impl<'a> SamplerCacheKey<'a> {
+    pub fn new(desc: SamplerDesc<'a>) -> SamplerCacheKey<'a> {
+        Self(desc)
+    }
+
+    pub unsafe fn from_desc<'b>(desc: &'b SamplerDesc<'a>) -> &'b SamplerCacheKey<'a> {
+        unsafe {
+            let info = desc as *const SamplerDesc<'a> as *const SamplerCacheKey<'a>;
+            // Safety: This is safe because both types have the same layout (repr transparent) and the
+            //         lifetime is correctly passed across. This is just a slightly different view of
+            //         the same type
+            &*info
+        }
+    }
+}
+
+impl<'a> From<SamplerCacheKey<'a>> for SamplerDesc<'a> {
+    fn from(val: SamplerCacheKey<'a>) -> Self {
+        val.0
+    }
+}
+
+impl<'a> Hash for SamplerCacheKey<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.min_filter.hash(state);
+        self.0.mag_filter.hash(state);
+        self.0.mip_filter.hash(state);
+        self.0.address_mode_u.hash(state);
+        self.0.address_mode_v.hash(state);
+        self.0.address_mode_w.hash(state);
+        hash_f32(self.0.lod_bias, state);
+        hash_f32(self.0.min_lod, state);
+        hash_f32(self.0.max_lod, state);
+        self.0.enable_anisotropy.hash(state);
+        self.0.max_anisotropy.hash(state);
+        self.0.compare_op.hash(state);
+        self.0.border_color.hash(state);
+    }
+}
+
+impl<'a> PartialEq for SamplerCacheKey<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        let compare = |l: &Self, r: &Self| {
+            cmp(&l.0.min_filter, &r.0.min_filter)?;
+            cmp(&l.0.mag_filter, &r.0.mag_filter)?;
+            cmp(&l.0.mip_filter, &r.0.mip_filter)?;
+            cmp(&l.0.address_mode_u, &r.0.address_mode_u)?;
+            cmp(&l.0.address_mode_v, &r.0.address_mode_v)?;
+            cmp(&l.0.address_mode_w, &r.0.address_mode_w)?;
+            cmp_f32(&l.0.lod_bias, &r.0.lod_bias)?;
+            cmp_f32(&l.0.min_lod, &r.0.min_lod)?;
+            cmp_f32(&l.0.max_lod, &r.0.max_lod)?;
+            cmp(&l.0.enable_anisotropy, &r.0.enable_anisotropy)?;
+            cmp(&l.0.max_anisotropy, &r.0.max_anisotropy)?;
+            cmp(&l.0.compare_op, &r.0.compare_op)?;
+            cmp(&l.0.border_color, &r.0.border_color)?;
+            Some(())
+        };
+
+        compare(self, other).is_some()
+    }
+}
+
+impl<'a> Eq for SamplerCacheKey<'a> {}
+
+fn cmp<T: PartialEq + Eq>(l: &T, r: &T) -> Option<()> {
+    if l.eq(r) { Some(()) } else { None }
+}
+
+fn cmp_f32(l: &f32, r: &f32) -> Option<()> {
+    debug_assert!(l.is_finite());
+    debug_assert!(r.is_finite());
+    let l: u32 = l.to_bits();
+    let r: u32 = r.to_bits();
+    if l.eq(&r) { Some(()) } else { None }
+}
+
+fn hash_f32<H: Hasher>(v: f32, state: &mut H) {
+    debug_assert!(v.is_finite());
+    let v: u32 = v.to_bits();
+    v.hash(state);
 }

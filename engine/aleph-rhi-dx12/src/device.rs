@@ -73,7 +73,6 @@ use crate::internal::conv::{
     texture_format_to_dxgi,
 };
 use crate::internal::descriptor_chunk::DescriptorChunk;
-use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::internal::descriptor_heaps::DescriptorHeaps;
 use crate::internal::graphics_pipeline_state_stream::{
     GraphicsPipelineStateStream, GraphicsPipelineStateStreamBuilder,
@@ -98,7 +97,6 @@ pub struct Device {
     pub(crate) device: ID3D12Device10,
     pub(crate) allocator: d3d12ma::Allocator,
     pub(crate) debug_message_cookie: Option<u32>,
-    pub(crate) descriptor_heap_info: DescriptorHeapInfo,
     pub(crate) descriptor_heaps: DescriptorHeaps,
     pub(crate) general_queue: Option<AnyArc<Queue>>,
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
@@ -745,7 +743,7 @@ impl IDevice for Device {
                     let (dst, _) = unsafe { block.assume_r_handle() };
                     let dst = dst.add_increments(
                         final_offset,
-                        self.descriptor_heap_info.resource_inc as usize,
+                        self.descriptor_heaps.gpu_view_heap().descriptor_increment() as usize,
                     );
 
                     match write {

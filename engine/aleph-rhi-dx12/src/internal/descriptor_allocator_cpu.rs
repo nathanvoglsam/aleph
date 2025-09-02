@@ -35,6 +35,17 @@ use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::utils::CPUDescriptorHandle;
 
+/// A thread-safe, sharable allocator that can be used to allocate single descriptor handles from
+/// a non-shader-visible heap.
+///
+/// This provides an object pool for CPU-only descriptors. The intended use-case is for creating
+/// texture views in 'Texture' objects. Each view will get a single handle from one of these
+/// allocators and pre-compute a valid descriptor into it. That descriptor will then be copied using
+/// 'CopyDescriptors' into shader-visible heaps.
+///
+/// # Note
+///
+/// Descriptors allocated by this data structure are not, and never will be, shader-visible.
 pub struct DescriptorAllocatorCPU {
     /// Device handle so we can create new blocks on demand
     device: ID3D12Device,
@@ -87,6 +98,16 @@ impl DescriptorAllocatorCPU {
     pub fn free(&self, slot: CPUDescriptorHandle) {
         // Free-ing a descriptor is as simple as adding it to the free list
         self.free_list.push(slot);
+    }
+
+    #[allow(unused)]
+    pub const fn heap_type(&self) -> D3D12_DESCRIPTOR_HEAP_TYPE {
+        self.heap_info.heap_type
+    }
+
+    #[allow(unused)]
+    pub const fn descriptor_increment(&self) -> u32 {
+        self.heap_info.increment_size
     }
 
     fn bump_alloc(&self) -> Option<CPUDescriptorHandle> {

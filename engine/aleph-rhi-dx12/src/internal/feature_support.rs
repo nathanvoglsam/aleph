@@ -71,6 +71,15 @@ pub struct FeatureSupport {
     options_10: D3D12_FEATURE_DATA_D3D12_OPTIONS10,
     options_11: D3D12_FEATURE_DATA_D3D12_OPTIONS11,
     options_12: D3D12_FEATURE_DATA_D3D12_OPTIONS12,
+    options_13: D3D12_FEATURE_DATA_D3D12_OPTIONS13,
+    options_14: D3D12_FEATURE_DATA_D3D12_OPTIONS14,
+    options_15: D3D12_FEATURE_DATA_D3D12_OPTIONS15,
+    options_16: D3D12_FEATURE_DATA_D3D12_OPTIONS16,
+    options_17: D3D12_FEATURE_DATA_D3D12_OPTIONS17,
+    options_18: D3D12_FEATURE_DATA_D3D12_OPTIONS18,
+    options_19: D3D12_FEATURE_DATA_D3D12_OPTIONS19,
+    options_20: D3D12_FEATURE_DATA_D3D12_OPTIONS20,
+    options_21: D3D12_FEATURE_DATA_D3D12_OPTIONS21,
 }
 
 impl FeatureSupport {
@@ -214,6 +223,74 @@ impl FeatureSupport {
                     RelaxedFormatCastingSupported: BOOL(0),
                 });
 
+            let options_13 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS13)
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS13 {
+                    UnrestrictedBufferTextureCopyPitchSupported: BOOL(0),
+                    UnrestrictedVertexElementAlignmentSupported: BOOL(0),
+                    InvertedViewportHeightFlipsYSupported: BOOL(0),
+                    InvertedViewportDepthFlipsZSupported: BOOL(0),
+                    TextureCopyBetweenDimensionsSupported: BOOL(0),
+                    AlphaBlendFactorSupported: BOOL(0),
+                });
+
+            let options_14 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS14)
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS14 {
+                    AdvancedTextureOpsSupported: BOOL(0),
+                    WriteableMSAATexturesSupported: BOOL(0),
+                    IndependentFrontAndBackStencilRefMaskSupported: BOOL(0),
+                });
+
+            let options_15 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS15)
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS15 {
+                    TriangleFanSupported: BOOL(0),
+                    DynamicIndexBufferStripCutSupported: BOOL(0),
+                });
+
+            let options_16 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS16)
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS16 {
+                    DynamicDepthBiasSupported: BOOL(0),
+                    GPUUploadHeapSupported: BOOL(0),
+                });
+
+            let options_17 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS17)
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS17 {
+                    NonNormalizedCoordinateSamplersSupported: BOOL(0),
+                    ManualWriteTrackingResourceSupported: BOOL(0),
+                });
+
+            let options_18 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS18)
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS18 {
+                    RenderPassesValid: BOOL(0),
+                });
+
+            let options_19 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS19)
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS19 {
+                    MismatchingOutputDimensionsSupported: BOOL(0),
+                    SupportedSampleCountsWithNoOutputs: 0,
+                    PointSamplingAddressesNeverRoundUp: BOOL(0),
+                    RasterizerDesc2Supported: BOOL(0),
+                    NarrowQuadrilateralLinesSupported: BOOL(0),
+                    AnisoFilterWithPointMipSupported: BOOL(0),
+                    MaxSamplerDescriptorHeapSize: 0,
+                    MaxSamplerDescriptorHeapSizeWithStaticSamplers: 0,
+                    MaxViewDescriptorHeapSize: 0,
+                    ComputeOnlyCustomHeapSupported: BOOL(0),
+                });
+
+            let options_20 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS20)
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS20 {
+                    ComputeOnlyWriteWatchSupported: BOOL(0),
+                    RecreateAtTier: D3D12_RECREATE_AT_TIER_NOT_SUPPORTED,
+                });
+
+            let options_21 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS21)
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS21 {
+                    WorkGraphsTier: D3D12_WORK_GRAPHS_TIER_NOT_SUPPORTED,
+                    ExecuteIndirectTier: D3D12_EXECUTE_INDIRECT_TIER::default(),
+                    SampleCmpGradientAndBiasSupported: BOOL(0),
+                    ExtendedCommandInfoSupported: BOOL(0),
+                });
+
             let node_count = device.GetNodeCount();
             let mut serialization = Vec::with_capacity(node_count as _);
             let mut architecture_1 = Vec::with_capacity(node_count as _);
@@ -225,7 +302,7 @@ impl FeatureSupport {
                 let result: Result<(), _> = device.CheckFeatureSupport(
                     D3D12_FEATURE_ARCHITECTURE1,
                     &mut node_architecture_1 as *mut D3D12_FEATURE_DATA_ARCHITECTURE1 as *mut _,
-                    std::mem::size_of_val(&node_architecture_1) as u32,
+                    size_of_val(&node_architecture_1) as u32,
                 );
 
                 if result.is_err() {
@@ -236,7 +313,7 @@ impl FeatureSupport {
                     let result: Result<(), _> = device.CheckFeatureSupport(
                         D3D12_FEATURE_ARCHITECTURE,
                         &mut node_architecture as *mut D3D12_FEATURE_DATA_ARCHITECTURE as *mut _,
-                        std::mem::size_of_val(&node_architecture) as u32,
+                        size_of_val(&node_architecture) as u32,
                     );
 
                     if result.is_err() {
@@ -259,7 +336,7 @@ impl FeatureSupport {
                 let result: Result<(), _> = device.CheckFeatureSupport(
                     D3D12_FEATURE_SERIALIZATION,
                     &mut node_serialization as *mut D3D12_FEATURE_DATA_SERIALIZATION as *mut _,
-                    std::mem::size_of_val(&node_serialization) as u32,
+                    size_of_val(&node_serialization) as u32,
                 );
 
                 if result.is_err() {
@@ -297,6 +374,15 @@ impl FeatureSupport {
                 options_10,
                 options_11,
                 options_12,
+                options_13,
+                options_14,
+                options_15,
+                options_16,
+                options_17,
+                options_18,
+                options_19,
+                options_20,
+                options_21,
             })
         }
     }
@@ -324,7 +410,7 @@ impl FeatureSupport {
                 device.CheckFeatureSupport(
                     D3D12_FEATURE_SHADER_MODEL,
                     &mut data as *mut D3D12_FEATURE_DATA_SHADER_MODEL as *mut _,
-                    std::mem::size_of_val(&data) as u32,
+                    size_of_val(&data) as u32,
                 )
             };
 
@@ -365,7 +451,7 @@ impl FeatureSupport {
                 device.CheckFeatureSupport(
                     D3D12_FEATURE_ROOT_SIGNATURE,
                     &mut data as *mut D3D12_FEATURE_DATA_ROOT_SIGNATURE as *mut _,
-                    std::mem::size_of_val(&data) as u32,
+                    size_of_val(&data) as u32,
                 )
             };
 
@@ -415,7 +501,7 @@ impl FeatureSupport {
             device.CheckFeatureSupport(
                 D3D12_FEATURE_FEATURE_LEVELS,
                 &mut levels as *mut D3D12_FEATURE_DATA_FEATURE_LEVELS as *mut _,
-                std::mem::size_of_val(&levels) as u32,
+                size_of_val(&levels) as u32,
             )
         };
 
@@ -537,7 +623,7 @@ impl FeatureSupport {
                 .CheckFeatureSupport(
                     D3D12_FEATURE_FORMAT_SUPPORT,
                     &mut support as *mut D3D12_FEATURE_DATA_FORMAT_SUPPORT as *mut _,
-                    std::mem::size_of_val(&support) as u32,
+                    size_of_val(&support) as u32,
                 )
                 .ok()
                 .map(|_| (support.Support1, support.Support2))
@@ -564,7 +650,7 @@ impl FeatureSupport {
                 .CheckFeatureSupport(
                     D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
                     &mut levels as *mut D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS as *mut _,
-                    std::mem::size_of_val(&levels) as u32,
+                    size_of_val(&levels) as u32,
                 )
                 .ok()
                 .map(|_| (levels.NumQualityLevels))
@@ -584,7 +670,7 @@ impl FeatureSupport {
                 .CheckFeatureSupport(
                     D3D12_FEATURE_FORMAT_INFO,
                     &mut format_info as *mut D3D12_FEATURE_DATA_FORMAT_INFO as *mut _,
-                    std::mem::size_of_val(&format_info) as u32,
+                    size_of_val(&format_info) as u32,
                 )
                 .ok()
                 .map(|_| (format_info.PlaneCount))
@@ -657,7 +743,7 @@ impl FeatureSupport {
                 .CheckFeatureSupport(
                     D3D12_FEATURE_COMMAND_QUEUE_PRIORITY,
                     &mut priority as *mut D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY as *mut _,
-                    std::mem::size_of_val(&priority) as u32,
+                    size_of_val(&priority) as u32,
                 )
                 .is_ok();
             if !success {
@@ -774,22 +860,71 @@ impl FeatureSupport {
     feature_support_get!(bool, options_12, EnhancedBarriersSupported);
     feature_support_get!(bool, options_12, RelaxedFormatCastingSupported);
 
-    // // 42: Options13
-    // feature_support_get!(bool, options_13, UnrestrictedBufferTextureCopyPitchSupported);
-    // feature_support_get!(bool, options_13, UnrestrictedVertexElementAlignmentSupported);
-    // feature_support_get!(bool, options_13, InvertedViewportHeightFlipsYSupported);
-    // feature_support_get!(bool, options_13, InvertedViewportDepthFlipsZSupported);
-    // feature_support_get!(bool, options_13, TextureCopyBetweenDimensionsSupported);
-    // feature_support_get!(bool, options_13, AlphaBlendFactorSupported);
-    //
-    // // 43: Options14
-    // feature_support_get!(bool, options_14, AdvancedTextureOpsSupported);
-    // feature_support_get!(bool, options_14, WriteableMSAATexturesSupported);
-    // feature_support_get!(bool, options_14, IndependentFrontAndBackStencilRefMaskSupported);
-    //
-    // // 44: Options15
-    // feature_support_get!(bool, options_15, TriangleFanSupported);
-    // feature_support_get!(bool, options_15, DynamicIndexBufferStripCutSupported);
+    // 42: Options13
+    feature_support_get!(
+        bool,
+        options_13,
+        UnrestrictedBufferTextureCopyPitchSupported
+    );
+    feature_support_get!(
+        bool,
+        options_13,
+        UnrestrictedVertexElementAlignmentSupported
+    );
+    feature_support_get!(bool, options_13, InvertedViewportHeightFlipsYSupported);
+    feature_support_get!(bool, options_13, InvertedViewportDepthFlipsZSupported);
+    feature_support_get!(bool, options_13, TextureCopyBetweenDimensionsSupported);
+    feature_support_get!(bool, options_13, AlphaBlendFactorSupported);
+
+    // 43: Options14
+    feature_support_get!(bool, options_14, AdvancedTextureOpsSupported);
+    feature_support_get!(bool, options_14, WriteableMSAATexturesSupported);
+    feature_support_get!(
+        bool,
+        options_14,
+        IndependentFrontAndBackStencilRefMaskSupported
+    );
+
+    // 44: Options15
+    feature_support_get!(bool, options_15, TriangleFanSupported);
+    feature_support_get!(bool, options_15, DynamicIndexBufferStripCutSupported);
+
+    // 45: Options16
+    feature_support_get!(bool, options_16, DynamicDepthBiasSupported);
+    feature_support_get!(bool, options_16, GPUUploadHeapSupported);
+
+    // 46: Options17
+    feature_support_get!(bool, options_17, NonNormalizedCoordinateSamplersSupported);
+    feature_support_get!(bool, options_17, ManualWriteTrackingResourceSupported);
+
+    // 47: Options18
+    feature_support_get!(bool, options_18, RenderPassesValid);
+
+    // 48: Options19
+    feature_support_get!(bool, options_19, MismatchingOutputDimensionsSupported);
+    feature_support_get!(u32, options_19, SupportedSampleCountsWithNoOutputs);
+    feature_support_get!(bool, options_19, PointSamplingAddressesNeverRoundUp);
+    feature_support_get!(bool, options_19, RasterizerDesc2Supported);
+    feature_support_get!(bool, options_19, NarrowQuadrilateralLinesSupported);
+    feature_support_get!(bool, options_19, AnisoFilterWithPointMipSupported);
+    feature_support_get!(u32, options_19, MaxSamplerDescriptorHeapSize);
+    feature_support_get!(
+        u32,
+        options_19,
+        MaxSamplerDescriptorHeapSizeWithStaticSamplers
+    );
+    feature_support_get!(u32, options_19, MaxViewDescriptorHeapSize);
+    feature_support_get!(bool, options_19, ComputeOnlyCustomHeapSupported);
+
+    // 49: Options20
+    feature_support_get!(bool, options_20, ComputeOnlyWriteWatchSupported);
+    feature_support_get!(D3D12_RECREATE_AT_TIER, options_20, RecreateAtTier);
+
+    // 50: Options21
+    feature_support_get!(D3D12_WORK_GRAPHS_TIER, options_21, WorkGraphsTier);
+    feature_support_get!(D3D12_EXECUTE_INDIRECT_TIER, options_21, ExecuteIndirectTier);
+    feature_support_get!(bool, options_21, SampleCmpGradientAndBiasSupported);
+    feature_support_get!(bool, options_21, ExtendedCommandInfoSupported);
 }
 
 unsafe fn load_options_or_default<T>(
@@ -801,7 +936,7 @@ unsafe fn load_options_or_default<T>(
         let result: Result<(), _> = device.CheckFeatureSupport(
             feature,
             data.as_mut_ptr() as *mut _,
-            std::mem::size_of_val(&data) as u32,
+            size_of_val(&data) as u32,
         );
         result.map(|_| data.assume_init())
     }

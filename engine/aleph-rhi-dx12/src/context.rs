@@ -46,7 +46,7 @@ use windows::Win32::Graphics::Dxgi::*;
 use windows::core::Interface;
 
 use crate::adapter::Adapter;
-use crate::internal::adapter_description_decoder::adapter_description_string;
+use crate::internal::adapter_description_string;
 use crate::internal::create_device::create_device;
 use crate::internal::debug_interface::DebugInterface;
 use crate::internal::feature_support::FeatureSupport;

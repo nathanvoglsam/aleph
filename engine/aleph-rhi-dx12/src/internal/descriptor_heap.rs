@@ -35,6 +35,12 @@ use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
+/// Wrapper over a [`ID3D12DescriptorHeap`] paired with [`OffsetAllocator`] that enables general
+/// purpose allocation out of the descriptor heap.
+///
+/// The intended use-case for this data structure is to create a descriptor heap with the largest
+/// possible heap size. The heap will then be sub-allocated from to provide access to the heap to
+/// other users.
 pub struct DescriptorHeap {
     /// The device the heap belongs to
     device: ID3D12Device,
