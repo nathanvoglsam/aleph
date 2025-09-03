@@ -47,3 +47,4 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
 blink-alloc = { workspace = true }
+allocator-api2 = { workspace = true }
