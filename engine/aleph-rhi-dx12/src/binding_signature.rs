@@ -204,11 +204,11 @@ impl CompiledBindingSignature {
 
         let mut block_offsets = Vec::with_capacity(block_layouts.len());
         for layout in block_layouts {
-            num_parameters += layout.compiled.num_root_parameters;
-            num_dwords += layout.compiled.num_dwords;
             block_offsets.push(CompiledBlockOffset {
                 root_parameter_index: num_parameters,
             });
+            num_parameters += layout.compiled.num_root_parameters;
+            num_dwords += layout.compiled.num_dwords;
         }
 
         let push_constant_block = if let Some(block) = desc.push_constant_block.as_ref() {
