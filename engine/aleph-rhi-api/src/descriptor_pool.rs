@@ -46,7 +46,7 @@ pub trait IDescriptorPool: IAny + IGetPlatformInterface + Send {
     /// Vulkan requires this behavior for valid API usage. Other implementations may re-use
     /// previously freed parameter blocks without zeroing out their contents meaning you may reuse
     /// stale descriptors.
-    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorPoolAllocateError>;
+    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorAllocateError>;
 
     /// Allocates `num_blocks` descriptors from the pool. Some implementations may be able to
     /// implement this more efficiently than naively calling [IDescriptorPool::allocate_block] in a
@@ -58,7 +58,7 @@ pub trait IDescriptorPool: IAny + IGetPlatformInterface + Send {
     fn allocate_blocks(
         &mut self,
         num_blocks: usize,
-    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorPoolAllocateError> {
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         let mut sets = Vec::with_capacity(num_blocks);
         for _ in 0..num_blocks {
             sets.push(self.allocate_block()?);
@@ -109,7 +109,7 @@ pub struct DescriptorPoolDesc<'a> {
 }
 
 #[derive(Error, Debug)]
-pub enum DescriptorPoolAllocateError {
+pub enum DescriptorAllocateError {
     #[error("The descriptor pool's backing memory has been exhausted due to pool fragmentation")]
     FragmentedPool,
 
@@ -122,4 +122,4 @@ pub enum DescriptorPoolAllocateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(DescriptorPoolAllocateError);
+error_enum_from_unit_type!(DescriptorAllocateError);

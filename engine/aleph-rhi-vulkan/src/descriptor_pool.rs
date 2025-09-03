@@ -55,22 +55,20 @@ impl IGetPlatformInterface for DescriptorPool {
 }
 
 impl DescriptorPool {
-    pub fn handle_allocate_result<T>(v: VkResult<T>) -> Result<T, DescriptorPoolAllocateError> {
+    pub fn handle_allocate_result<T>(v: VkResult<T>) -> Result<T, DescriptorAllocateError> {
         match v {
             Ok(v) => Ok(v),
             Err(e) => match e {
                 vk::Result::ERROR_OUT_OF_POOL_MEMORY => {
-                    Err(DescriptorPoolAllocateError::OutOfPoolMemory)
+                    Err(DescriptorAllocateError::OutOfPoolMemory)
                 }
                 vk::Result::ERROR_OUT_OF_DEVICE_MEMORY | vk::Result::ERROR_OUT_OF_HOST_MEMORY => {
-                    Err(DescriptorPoolAllocateError::OutOfMemory)
+                    Err(DescriptorAllocateError::OutOfMemory)
                 }
-                vk::Result::ERROR_FRAGMENTED_POOL => {
-                    Err(DescriptorPoolAllocateError::FragmentedPool)
-                }
+                vk::Result::ERROR_FRAGMENTED_POOL => Err(DescriptorAllocateError::FragmentedPool),
                 _ => {
                     log::error!("Platform Error: {:#?}", e);
-                    Err(DescriptorPoolAllocateError::Platform)
+                    Err(DescriptorAllocateError::Platform)
                 }
             },
         }
@@ -78,7 +76,7 @@ impl DescriptorPool {
 }
 
 impl IDescriptorPool for DescriptorPool {
-    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorPoolAllocateError> {
+    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
         let set_layouts = [self._layout.descriptor_set_layout];
 
         let allocate_info = vk::DescriptorSetAllocateInfo::default()
@@ -105,7 +103,7 @@ impl IDescriptorPool for DescriptorPool {
     fn allocate_blocks(
         &mut self,
         num_blocks: usize,
-    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorPoolAllocateError> {
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         let mut set_layouts = Vec::with_capacity(num_blocks);
         for _ in 0..num_blocks {
             set_layouts.push(self._layout.descriptor_set_layout);

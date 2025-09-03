@@ -47,7 +47,7 @@ impl IDescriptorArena for NullDescriptorArena {
     fn allocate_block(
         &self,
         _layout: &dyn IParameterBlockLayout,
-    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
+    ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
         let handle = self.counter.get();
         self.counter.set(self.counter.get() + 1);
         Ok(unsafe { ParameterBlockHandle::from_raw_int(handle).unwrap() })

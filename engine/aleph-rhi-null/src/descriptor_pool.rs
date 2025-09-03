@@ -44,7 +44,7 @@ declare_interfaces!(NullDescriptorPool, [IDescriptorPool]);
 crate::impl_platform_interface_passthrough!(NullDescriptorPool);
 
 impl IDescriptorPool for NullDescriptorPool {
-    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorPoolAllocateError> {
+    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
         let handle = self.counter;
         self.counter += 1;
         Ok(unsafe { ParameterBlockHandle::from_raw_int(handle).unwrap() })

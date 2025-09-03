@@ -49,14 +49,14 @@ impl IGetPlatformInterface for DescriptorPool {
 }
 
 impl IDescriptorPool for DescriptorPool {
-    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorPoolAllocateError> {
+    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
         todo!()
     }
 
     fn allocate_blocks(
         &mut self,
         num_blocks: usize,
-    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorPoolAllocateError> {
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         todo!()
     }
 

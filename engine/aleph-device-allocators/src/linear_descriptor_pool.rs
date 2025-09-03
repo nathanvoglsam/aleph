@@ -81,8 +81,8 @@ impl LinearDescriptorPool {
     pub fn allocate_block(
         &self,
         layout: &dyn IParameterBlockLayout,
-    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
-        use DescriptorArenaAllocateError::*;
+    ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
+        use DescriptorAllocateError::*;
 
         let active = self.active.take().unwrap();
         match active.allocate_block(layout) {
@@ -112,8 +112,8 @@ impl LinearDescriptorPool {
         &self,
         layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
-    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorArenaAllocateError> {
-        use DescriptorArenaAllocateError::*;
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
+        use DescriptorAllocateError::*;
 
         let active = self.active.take().unwrap();
         match active.allocate_blocks(layout, num_blocks) {
@@ -134,8 +134,8 @@ impl LinearDescriptorPool {
     fn grow(
         &self,
         active: Box<dyn IDescriptorArena>,
-    ) -> Result<Box<dyn IDescriptorArena>, DescriptorArenaAllocateError> {
-        use DescriptorArenaAllocateError::*;
+    ) -> Result<Box<dyn IDescriptorArena>, DescriptorAllocateError> {
+        use DescriptorAllocateError::*;
 
         // Immediately move the active arena into the exhausted set before trying to allocate a new
         // pool

@@ -54,22 +54,20 @@ impl IGetPlatformInterface for DescriptorArena {
 }
 
 impl DescriptorArena {
-    pub fn handle_allocate_result<T>(v: VkResult<T>) -> Result<T, DescriptorArenaAllocateError> {
+    pub fn handle_allocate_result<T>(v: VkResult<T>) -> Result<T, DescriptorAllocateError> {
         match v {
             Ok(v) => Ok(v),
             Err(e) => match e {
                 vk::Result::ERROR_OUT_OF_POOL_MEMORY => {
-                    Err(DescriptorArenaAllocateError::OutOfPoolMemory)
+                    Err(DescriptorAllocateError::OutOfPoolMemory)
                 }
                 vk::Result::ERROR_OUT_OF_DEVICE_MEMORY | vk::Result::ERROR_OUT_OF_HOST_MEMORY => {
-                    Err(DescriptorArenaAllocateError::OutOfMemory)
+                    Err(DescriptorAllocateError::OutOfMemory)
                 }
-                vk::Result::ERROR_FRAGMENTED_POOL => {
-                    Err(DescriptorArenaAllocateError::FragmentedPool)
-                }
+                vk::Result::ERROR_FRAGMENTED_POOL => Err(DescriptorAllocateError::FragmentedPool),
                 _ => {
                     log::error!("Platform Error: {:#?}", e);
-                    Err(DescriptorArenaAllocateError::Platform)
+                    Err(DescriptorAllocateError::Platform)
                 }
             },
         }
@@ -80,7 +78,7 @@ impl IDescriptorArena for DescriptorArena {
     fn allocate_block(
         &self,
         layout: &dyn IParameterBlockLayout,
-    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
+    ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
         let layout = unwrap::parameter_block_layout(layout);
         let set_layouts = [layout.descriptor_set_layout];
 
@@ -109,7 +107,7 @@ impl IDescriptorArena for DescriptorArena {
         &self,
         layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
-    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorArenaAllocateError> {
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         let layout = unwrap::parameter_block_layout(layout);
         let mut set_layouts = Vec::with_capacity(num_blocks);
         for _ in 0..num_blocks {

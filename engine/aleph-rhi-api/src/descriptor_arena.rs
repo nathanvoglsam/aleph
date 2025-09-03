@@ -28,7 +28,6 @@
 //
 
 use aleph_any::IAny;
-use thiserror::Error;
 
 use crate::*;
 
@@ -49,7 +48,7 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
     fn allocate_block(
         &self,
         layout: &dyn IParameterBlockLayout,
-    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError>;
+    ) -> Result<ParameterBlockHandle, DescriptorAllocateError>;
 
     /// Allocates `num_blocks` descriptors from the pool. Some implementations may be able to
     /// implement this more efficiently than naively calling [`IDescriptorArena::allocate_block`] in
@@ -62,7 +61,7 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
         &self,
         layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
-    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorArenaAllocateError> {
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         let mut sets = Vec::with_capacity(num_blocks);
         for _ in 0..num_blocks {
             sets.push(self.allocate_block(layout)?);
@@ -134,19 +133,3 @@ impl Default for DescriptorArenaType {
         Self::Linear
     }
 }
-
-#[derive(Error, Debug)]
-pub enum DescriptorArenaAllocateError {
-    #[error("The descriptor pool's backing memory has been exhausted due to pool fragmentation")]
-    FragmentedPool,
-
-    #[error("The descriptor pool's backing memory has been exhausted")]
-    OutOfPoolMemory,
-
-    #[error("The host or device's memory has been exhausted")]
-    OutOfMemory,
-
-    #[error("An internal backend error has occurred. Details were logged.")]
-    Platform,
-}
-error_enum_from_unit_type!(DescriptorArenaAllocateError);

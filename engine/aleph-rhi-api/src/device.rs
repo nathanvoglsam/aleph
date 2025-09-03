@@ -338,11 +338,11 @@ error_enum_from_unit_type!(SemaphoreCreateError);
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum ResourceMapError {
-    #[error("An internal backend error has occurred. Details were logged.")]
-    Platform,
-
     #[error("The backend got a null pointer when attempting to map the buffer memory")]
     MappedNullPointer,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
 error_enum_from_unit_type!(ResourceMapError);
 
@@ -350,11 +350,11 @@ error_enum_from_unit_type!(ResourceMapError);
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum ResourceUnmapError {
-    #[error("An internal backend error has occurred. Details were logged.")]
-    Platform,
-
     #[error("The buffer was not mapped yet was asked to be unmapped.")]
     NotMapped,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
 error_enum_from_unit_type!(ResourceUnmapError);
 

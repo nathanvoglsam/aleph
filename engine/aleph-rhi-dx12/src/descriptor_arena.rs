@@ -94,7 +94,7 @@ impl IDescriptorArena for DescriptorArenaLinear {
     fn allocate_block(
         &self,
         layout: &dyn IParameterBlockLayout,
-    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
+    ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
         let layout = unwrap::parameter_block_layout(layout);
         self.allocate_set_internal(layout)
     }
@@ -103,7 +103,7 @@ impl IDescriptorArena for DescriptorArenaLinear {
         &self,
         layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
-    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorArenaAllocateError> {
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         let layout = unwrap::parameter_block_layout(layout);
         let mut sets = Vec::with_capacity(num_blocks);
         for _ in 0..num_blocks {
@@ -135,16 +135,16 @@ impl DescriptorArenaLinear {
     fn allocate_set_internal(
         &self,
         layout: &ParameterBlockLayout,
-    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
+    ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
         if self.num_blocks.get() == self.set_capacity {
-            return Err(DescriptorArenaAllocateError::OutOfMemory);
+            return Err(DescriptorAllocateError::OutOfMemory);
         }
 
         let num_resources = layout.compiled.resources.num_resources();
         let num_samplers = layout.compiled.samplers.num_samplers();
         let bumped_index = self.descriptor_bump_index.get() + num_resources;
         if bumped_index > self.resource_arena.num_descriptors {
-            return Err(DescriptorArenaAllocateError::OutOfPoolMemory);
+            return Err(DescriptorAllocateError::OutOfPoolMemory);
         }
 
         // Bump allocate the required number of descriptors from the set
@@ -164,7 +164,7 @@ impl DescriptorArenaLinear {
             )
         };
 
-        handle.ok_or(DescriptorArenaAllocateError::OutOfMemory)
+        handle.ok_or(DescriptorAllocateError::OutOfMemory)
     }
 
     pub fn heap_allocate(
@@ -276,13 +276,13 @@ impl IDescriptorArena for DescriptorArenaHeap {
     fn allocate_block(
         &self,
         layout: &dyn IParameterBlockLayout,
-    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
+    ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
         let block_layout = unwrap::parameter_block_layout(layout);
 
         let mut set = MaybeUninit::uninit();
         self.set_pool
             .allocate_blocks(std::slice::from_mut(&mut set))
-            .ok_or(DescriptorArenaAllocateError::OutOfPoolMemory)?;
+            .ok_or(DescriptorAllocateError::OutOfPoolMemory)?;
 
         // Safety: allocate_sets is requried to intialize this so this is safe
         let set = unsafe { set.assume_init() };
@@ -298,7 +298,7 @@ impl IDescriptorArena for DescriptorArenaHeap {
                 None => {
                     // Return the set back to the pool
                     self.set_pool.free_blocks(&[set]);
-                    Err(DescriptorArenaAllocateError::OutOfMemory)
+                    Err(DescriptorAllocateError::OutOfMemory)
                 }
             };
             self.resource_pool.set(Some(resource_pool));
@@ -312,13 +312,13 @@ impl IDescriptorArena for DescriptorArenaHeap {
         &self,
         layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
-    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorArenaAllocateError> {
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         let block_layout = unwrap::parameter_block_layout(layout);
 
         let mut sets = vec![MaybeUninit::uninit(); num_blocks];
         self.set_pool
             .allocate_blocks(&mut sets)
-            .ok_or(DescriptorArenaAllocateError::OutOfPoolMemory)?;
+            .ok_or(DescriptorAllocateError::OutOfPoolMemory)?;
 
         debug_assert_eq!(sets.len(), sets.capacity());
         debug_assert_eq!(sets.len(), num_blocks);

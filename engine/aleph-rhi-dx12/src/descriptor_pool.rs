@@ -86,12 +86,12 @@ impl DescriptorPool {
 }
 
 impl IDescriptorPool for DescriptorPool {
-    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorPoolAllocateError> {
+    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
         let mut set = MaybeUninit::uninit();
         let num_from_free_list = self
             .set_pool
             .allocate_blocks(std::slice::from_mut(&mut set))
-            .ok_or(DescriptorPoolAllocateError::OutOfPoolMemory)?;
+            .ok_or(DescriptorAllocateError::OutOfPoolMemory)?;
 
         // Safety: allocate_sets is requried to intialize this so this is safe
         let set = unsafe { set.assume_init() };
@@ -140,12 +140,12 @@ impl IDescriptorPool for DescriptorPool {
     fn allocate_blocks(
         &mut self,
         num_sets: usize,
-    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorPoolAllocateError> {
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         let mut sets = vec![MaybeUninit::uninit(); num_sets];
         let num_from_free_list = self
             .set_pool
             .allocate_blocks(&mut sets)
-            .ok_or(DescriptorPoolAllocateError::OutOfPoolMemory)?;
+            .ok_or(DescriptorAllocateError::OutOfPoolMemory)?;
 
         let num_samplers = self._layout.compiled.samplers.num_samplers() as usize;
 

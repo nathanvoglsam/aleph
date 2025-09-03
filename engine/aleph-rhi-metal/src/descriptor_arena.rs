@@ -53,7 +53,7 @@ impl IDescriptorArena for DescriptorArena {
     fn allocate_block(
         &self,
         layout: &dyn IParameterBlockLayout,
-    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
+    ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
         let layout = unwrap::parameter_block_layout(layout);
         todo!()
     }
@@ -62,7 +62,7 @@ impl IDescriptorArena for DescriptorArena {
         &self,
         layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
-    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorArenaAllocateError> {
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         let layout = unwrap::parameter_block_layout(layout);
         todo!()
     }

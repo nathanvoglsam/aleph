@@ -52,6 +52,11 @@ impl ParameterBlockHandle {
         ParameterBlockHandle(v)
     }
 
+    /// The inverse of [`ParameterBlockHandle::from_Raw`].
+    pub fn into_raw<U>(self) -> NonNull<U> {
+        self.0.cast()
+    }
+
     /// # Safety
     ///
     /// See [ParameterBlockHandle::from_raw]
