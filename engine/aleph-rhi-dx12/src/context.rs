@@ -45,12 +45,9 @@ use windows::Win32::Graphics::Dxgi::*;
 use windows::core::{BOOL, Interface};
 
 use crate::adapter::Adapter;
-use crate::internal::adapter_description_string;
-use crate::internal::create_device::create_device;
 use crate::internal::debug_interface::DebugInterface;
 use crate::internal::feature_support::FeatureSupport;
-use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
-use crate::internal::unwrap;
+use crate::internal::{adapter_description_string, create_device, dxgi_create_swap_chain, unwrap};
 use crate::surface::Surface;
 
 pub struct Context {

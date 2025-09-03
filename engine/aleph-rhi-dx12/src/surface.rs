@@ -39,8 +39,7 @@ use windows::core::BOOL;
 
 use crate::context::Context;
 use crate::internal::conv::texture_format_to_dxgi;
-use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
-use crate::internal::unwrap;
+use crate::internal::{dxgi_create_swap_chain, unwrap};
 use crate::swap_chain::{SwapChain, SwapChainState};
 
 pub struct Surface {

@@ -45,7 +45,7 @@ use windows::Win32::Graphics::Dxgi::*;
 use windows::core::IUnknown;
 
 use crate::device::Device;
-use crate::internal::set_name::set_name;
+use crate::internal::set_name;
 use crate::surface::Surface;
 use crate::swap_image::SwapImage;
 use crate::texture::{ImageViewObject, Texture};

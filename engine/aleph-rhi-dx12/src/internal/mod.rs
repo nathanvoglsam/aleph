@@ -34,7 +34,7 @@ use windows::Win32::Foundation::{HWND, WAIT_EVENT};
 use windows::Win32::Graphics::Direct3D::D3D_FEATURE_LEVEL;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
-use windows::core::{GUID, IInspectable, IUnknown, Interface, PCWSTR};
+use windows::core::{GUID, IInspectable, IUnknown, Interface, PCWSTR, Ref};
 use windows::utils::DynamicLoadCell;
 
 pub mod conv;
@@ -53,20 +53,22 @@ pub mod root_signature_blob;
 pub mod sampler_cache;
 pub mod unwrap;
 
+pub static DEVICE_CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
+    DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12CreateDevice\0");
+
 pub fn create_device<'a>(
-    adapter: impl Into<Option<&'a IDXGIAdapter1>>,
+    adapter: impl Into<&'a IDXGIAdapter1>,
     minimum_feature_level: D3D_FEATURE_LEVEL,
 ) -> windows::core::Result<ID3D12Device10> {
-    pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
-        DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12CreateDevice\0");
-
     unsafe {
-        let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
+        let create_fn = DEVICE_CREATE_FN
+            .get()
+            .expect("Failed to load d3d12.dll")
+            .unwrap();
 
-        // create_fn won't decrement the reference counter if we clone the adapter (which
-        // increments the counter). To work around this we use transmute_copy to make a copy without
-        // incrementing the reference count. Otherwise we leak a reference to the adapter
-        let adapter: Option<IUnknown> = adapter.into().map(|v| std::mem::transmute_copy(v));
+        let adapter: &IUnknown = adapter.into().into();
+        let adapter = Some(adapter.clone());
+        let adapter = Ref::<IUnknown>::from(&adapter);
 
         let mut device: Option<ID3D12Device10> = None;
 
@@ -77,19 +79,16 @@ pub fn create_device<'a>(
     }
 }
 
+type DxgiFactoryCreateFn =
+    extern "system" fn(u32, *const GUID, *mut *mut ::std::ffi::c_void) -> windows::core::HRESULT;
+
+pub static DXGI_CREATE_FN: DynamicLoadCell<DxgiFactoryCreateFn> =
+    DynamicLoadCell::new(&utf16_null!("dxgi.dll"), "CreateDXGIFactory2\0");
+
 #[inline]
 pub fn create_dxgi_factory(debug: bool) -> windows::core::Result<IDXGIFactory2> {
-    type CreateFn = extern "system" fn(
-        u32,
-        *const GUID,
-        *mut *mut ::std::ffi::c_void,
-    ) -> windows::core::HRESULT;
-
-    pub static CREATE_FN: DynamicLoadCell<CreateFn> =
-        DynamicLoadCell::new(&utf16_null!("dxgi.dll"), "CreateDXGIFactory2\0");
-
     unsafe {
-        let create_fn = *CREATE_FN.get().expect("Failed to load dxgi.dll");
+        let create_fn = *DXGI_CREATE_FN.get().expect("Failed to load dxgi.dll");
 
         let flags = if debug { 0x1 } else { 0x0 };
 

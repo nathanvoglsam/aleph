@@ -33,6 +33,7 @@ use std::ops::Deref;
 use utf16_lit::utf16_null;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
+use windows::core::OutRef;
 use windows::utils::DynamicLoadCell;
 
 #[repr(transparent)]
@@ -51,8 +52,7 @@ impl RootSignatureBlob {
             let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
             let mut blob: Option<ID3DBlob> = None;
             let mut err: Option<ID3DBlob> = None;
-            let result =
-                create_fn(desc, &mut blob, &mut err).map(|| RootSignatureBlob(blob.unwrap()));
+            let result = create_fn(desc, OutRef::from(&mut blob), OutRef::from(&mut err));
 
             // Log the error message
             if let Some(err) = err {
@@ -63,7 +63,7 @@ impl RootSignatureBlob {
                 log::debug!("Root signature creation failed with message: \"{}\"", v);
             }
 
-            result
+            result.map(|| RootSignatureBlob(blob.unwrap()))
         }
     }
 

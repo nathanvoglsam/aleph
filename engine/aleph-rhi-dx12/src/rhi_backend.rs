@@ -6,10 +6,9 @@ use parking_lot::Mutex;
 use windows::Win32::Graphics::Dxgi::*;
 
 use crate::context::Context;
-use crate::internal::create_dxgi_factory::create_dxgi_factory;
 use crate::internal::debug_interface::DebugInterface;
 use crate::internal::dxgi_debug_interface::dxgi_get_debug_interface;
-use crate::internal::{create_device, create_dxgi_factory};
+use crate::internal::{DEVICE_CREATE_FN, DXGI_CREATE_FN, create_dxgi_factory};
 
 pub static RHI_BACKEND_OBJECT: D3D12Loader = D3D12Loader {
     context_made: AtomicBool::new(false),
@@ -25,9 +24,7 @@ pub struct D3D12Loader {
 
 impl D3D12Loader {
     pub fn is_available(&self) -> bool {
-        unsafe {
-            create_dxgi_factory::CREATE_FN.get().is_ok() && create_device::CREATE_FN.get().is_ok()
-        }
+        unsafe { DXGI_CREATE_FN.get().is_ok() && DEVICE_CREATE_FN.get().is_ok() }
     }
 
     pub fn make_context(

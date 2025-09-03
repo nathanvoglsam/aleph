@@ -42,7 +42,7 @@ use windows::Win32::Graphics::Dxgi::*;
 use crate::context::Context;
 use crate::device::{CommandListPool, Device};
 use crate::internal::conv::queue_type_to_dx12;
-use crate::internal::create_device::create_device;
+use crate::internal::create_device;
 use crate::internal::descriptor_heaps::DescriptorHeaps;
 use crate::internal::register_message_callback::{
     category_name, device_register_message_callback, message_id_name,
