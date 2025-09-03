@@ -55,7 +55,7 @@ use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::System::Threading::*;
-use windows::core::PCSTR;
+use windows::core::{BOOL, PCSTR};
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
 use crate::adapter::Adapter;

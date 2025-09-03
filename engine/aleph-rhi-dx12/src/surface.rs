@@ -33,9 +33,9 @@ use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
 use raw_window_handle::{HandleError, HasWindowHandle, RawWindowHandle, WindowHandle};
-use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::Graphics::Dxgi::*;
+use windows::core::BOOL;
 
 use crate::context::Context;
 use crate::internal::conv::texture_format_to_dxgi;

@@ -38,7 +38,7 @@ use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::Graphics::Dxgi::*;
-use windows::core::{Error, HRESULT};
+use windows::core::{BOOL, Error, HRESULT};
 
 #[derive(Debug)]
 pub struct FeatureSupport {

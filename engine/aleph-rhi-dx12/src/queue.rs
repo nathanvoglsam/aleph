@@ -38,6 +38,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
+use windows::Win32::Foundation::HANDLE;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
 use windows::core::Interface;
@@ -293,7 +294,7 @@ impl IQueue for Queue {
                 let last_completed = self.last_completed_index.load(Ordering::Relaxed);
                 let last_submitted = self.last_submitted_index.load(Ordering::Relaxed);
                 self.fence
-                    .SetEventOnCompletion(last_submitted, None)
+                    .SetEventOnCompletion(last_submitted, HANDLE::default())
                     .unwrap();
                 match self.last_completed_index.compare_exchange(
                     last_completed,

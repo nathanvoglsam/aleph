@@ -372,7 +372,7 @@ impl CompiledParameterBlockLayout {
 
 /// Internal struct, encapsulates the data compiled from [`ParameterBlockDesc`] for the non-sampler
 /// resources declared on the parameter block layout.
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct CompiledResourceLayout {
     /// Precompiled list of descriptor ranges that map the resource registers into the root
     /// signature.
@@ -425,7 +425,7 @@ impl CompiledResourceLayout {
 
 /// Internal struct, encapsulates the data compiled from [`ParameterBlockDesc`] for the sampler
 /// resources declared on the parameter block layout.
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct CompiledSamplerLayout {
     /// Precompiled list of descriptor ranges that map the sampler registers into the root
     /// signature.

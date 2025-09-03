@@ -29,10 +29,10 @@
 
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::decode_u32_color_to_float;
-use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
+use windows::core::BOOL;
 
 /// Internal function for converting texture format to DXGI_FORMAT
 pub const fn texture_format_to_dxgi(format: Format) -> DXGI_FORMAT {

@@ -34,11 +34,10 @@ use std::ffi::c_void;
 use std::num::NonZeroU64;
 
 use bitflags::bitflags;
-use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 use windows::Win32::Graphics::Dxgi::IDXGIAdapter;
-use windows::core::{GUID, HRESULT};
+use windows::core::{BOOL, GUID, HRESULT};
 use windows::utils::WeakRef;
 
 use crate::Allocation;
@@ -302,7 +301,7 @@ bitflags! {
 }
 
 #[repr(C)]
-#[derive(Clone, PartialEq, Eq, Default)]
+#[derive(Clone, PartialEq, Default)]
 pub struct POOL_DESC {
     /// Flags.
     pub Flags: POOL_FLAGS,
