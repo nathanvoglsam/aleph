@@ -34,6 +34,7 @@ use std::sync::Arc;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 
+use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::{get_as_unwrapped, unwrap};
 use crate::texture::{ValidationImageView, ValidationViewType};
 use crate::{
@@ -271,7 +272,7 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
         unsafe {
             let blocks: Vec<_> = blocks
                 .iter()
-                .map(|&v| get_as_unwrapped::parameter_block_handle(v, None))
+                .map(|&v| v.into_raw::<ParameterBlock>().as_ref().inner.unwrap())
                 .collect();
 
             self.inner

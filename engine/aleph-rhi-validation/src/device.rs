@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::cell::Cell;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -35,6 +34,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
 use crossbeam::atomic::AtomicCell;
 
 use crate::fence::FenceState;
@@ -285,13 +285,14 @@ impl IDevice for ValidationDevice {
         let inner_desc = get_as_unwrapped::descriptor_pool_desc(desc);
         let inner = self.inner.create_descriptor_pool(&inner_desc)?;
 
+        let factory = crate::descriptor_pool::PoolBlockFactory {
+            pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
+            inner_pool: inner,
+        };
         let pool = Box::new(ValidationDescriptorPool {
             _device: self._this.upgrade().unwrap(),
             _layout: layout.this.upgrade().unwrap(),
-            inner,
-            pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
-            block_objects: Vec::with_capacity(desc.num_blocks as usize),
-            free_list: Vec::with_capacity(128),
+            pool: ParameterBlockPool::new(factory, desc.num_blocks as usize),
         });
 
         Ok(pool)
@@ -306,12 +307,14 @@ impl IDevice for ValidationDevice {
     ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
         let inner = self.inner.create_descriptor_arena(desc)?;
 
+        let factory = crate::descriptor_arena::ArenaBlockFactory {
+            pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
+            inner_pool: inner,
+        };
         let pool = Box::new(ValidationDescriptorArena {
             _device: self._this.upgrade().unwrap(),
-            inner,
-            pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
-            block_objects: Cell::new(Vec::with_capacity(desc.num_blocks as usize)),
-            free_list: Cell::new(Vec::with_capacity(128)),
+            pool: ParameterBlockPool::new(factory, desc.num_blocks as usize),
+            arena_type: desc.arena_type,
         });
 
         Ok(pool)
@@ -437,7 +440,7 @@ impl IDevice for ValidationDevice {
         layout.validate_updates(base, writes);
 
         let layout_inner = layout.inner.as_ref();
-        let block = unsafe { ParameterBlock::ref_from_handle(&block).inner };
+        let block = unsafe { ParameterBlock::ref_from_handle(&block).inner.unwrap() };
 
         let new_writes = unsafe { get_as_unwrapped::parameter_writes(writes) };
 

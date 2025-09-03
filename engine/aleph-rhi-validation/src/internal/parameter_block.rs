@@ -50,7 +50,7 @@ pub struct ParameterBlock {
     pub _layout: AnyArc<ValidationParameterBlockLayout>,
 
     /// The inner handle
-    pub inner: ParameterBlockHandle,
+    pub inner: Option<ParameterBlockHandle>,
 }
 
 impl ParameterBlock {
@@ -58,32 +58,26 @@ impl ParameterBlock {
     pub const MAGIC_HEADER_VAL: u64 = 0x56214203605621;
 
     #[inline(always)]
-    pub unsafe fn validate(handle: ParameterBlockHandle, expected_pool_id: Option<u64>) {
-        unsafe {
-            let inner: NonNull<()> = handle.into();
-            let inner: NonNull<Self> = inner.cast();
-            let inner = inner.as_ref();
+    pub fn validate(&self, expected_pool_id: Option<u64>) {
+        // To validate that the ParameterBlockHandle points to an object of type ParameterBlock
+        // we use a magic header field that will *always* be initialized to the same value.
+        // Checking for the correct value can reject the assumption that the pointer is valid.
+        //
+        // It can't prove it though.
+        assert_eq!(
+            self._magic_header,
+            ParameterBlock::MAGIC_HEADER_VAL,
+            "ParameterBlock header doesn't match expected value. Garbage pointer detected."
+        );
 
-            // To validate that the ParameterBlockHandle points to an object of type ParameterBlock
-            // we use a magic header field that will *always* be initialized to the same value.
-            // Checking for the correct value can reject the assumption that the pointer is valid.
-            //
-            // It can't prove it though.
+        if let Some(expected_pool_id) = expected_pool_id {
+            // To validate the set goes back to the correct pool we generate a globally unique ID
+            // for the pool and store it in all the sets it allocates. If we get a set that has a
+            // different pool id then we know it must be from another pool.
             assert_eq!(
-                inner._magic_header,
-                ParameterBlock::MAGIC_HEADER_VAL,
-                "ParameterBlock header doesn't match expected value. Garbage pointer detected."
+                self._pool_id, expected_pool_id,
+                "Released a ParameterBlock to a pool other than where it was allocated from."
             );
-
-            if let Some(expected_pool_id) = expected_pool_id {
-                // To validate the set goes back to the correct pool we generate a globally unique ID
-                // for the pool and store it in all the sets it allocates. If we get a set that has a
-                // different pool id then we know it must be from another pool.
-                assert_eq!(
-                    inner._pool_id, expected_pool_id,
-                    "Released a ParameterBlock to a pool other than where it was allocated from."
-                );
-            }
         }
     }
 

@@ -33,12 +33,10 @@
 //!
 
 use std::cell::Cell;
-use std::ptr::NonNull;
 
 use aleph_any::{QueryInterface, box_downcast};
 use aleph_rhi_api::*;
 
-use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::unwrap;
 use crate::texture::ValidationImageView;
 use crate::{
@@ -60,19 +58,6 @@ pub fn texture(texture: &TextureHandle) -> &TextureHandle {
         .downcast_ref::<ValidationTexture>()
         .expect("Unknown Texture Implementation")
         .inner
-}
-
-pub unsafe fn parameter_block_handle(
-    handle: ParameterBlockHandle,
-    expected_pool_id: Option<u64>,
-) -> ParameterBlockHandle {
-    unsafe {
-        // Unwrap and validate to get the inner ParameterBlockHandle
-        ParameterBlock::validate(handle, expected_pool_id);
-        let inner: NonNull<()> = handle.into();
-        let inner: NonNull<ParameterBlock> = inner.cast();
-        inner.as_ref().inner
-    }
 }
 
 pub unsafe fn parameter_writes<'a>(writes: &[ParameterWrite<'a>]) -> Vec<ParameterWrite<'a>> {

@@ -27,15 +27,17 @@
 // SOFTWARE.
 //
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::mem::{MaybeUninit, needs_drop};
 use std::ptr::NonNull;
+
+use aleph_rhi_api::{DescriptorAllocateError, ParameterBlockHandle};
 
 /// A generic object pool intended to be used as part of [`aleph_rhi_api::IDescriptorPool`] and
 /// [`aleph_rhi_api::IDescriptorArena`].
 ///
 /// This is used as a backing object pool for parameter block objects. These are the objects that
-/// are behind the [`aleph_rhi_api::ParameterBlockHandle`] handle/pointers.
+/// are behind the [`ParameterBlockHandle`] handle/pointers.
 ///
 /// This data structure is a fixed-size object pool. It must be paired with a [`IBlockFactory`]
 /// factory type and instance in order to construct the parameter block objects themselves, as well
@@ -44,24 +46,24 @@ use std::ptr::NonNull;
 /// Several different backends need a data structure like this.
 pub struct ParameterBlockPool<I: IBlockFactory> {
     /// Pool we allocate block objects from
-    pub pool: NonNull<[MaybeUninit<I::T>]>,
+    pool: PoolStorage<I>,
 
     /// The number of objects allocated into 'pool'. This is the number of block objects that have
     /// been initialized into 'pool', not the number of block objects that are live and in use
     /// outside the pool. This must never exceed 'capacity'.
-    pub num_allocated: Cell<usize>,
+    num_allocated: Cell<usize>,
 
     /// The number of live blocks. This is strictly <= 'num_allocated' and should be equal to
     /// 'num_allocated - free_list.len()'. This represents the total number of live blocks that are
     /// in use outside the pool.
-    pub num_blocks: Cell<usize>,
+    num_blocks: Cell<usize>,
 
     /// Free list of descriptors
-    pub free_list: Cell<Vec<NonNull<I::T>>>,
+    free_list: Cell<Vec<ParameterBlockHandle>>,
 
     /// Generic initializer object that handles creating the underlying parameter block objects
     /// once they have been allocated
-    pub factory: I,
+    pub factory: RefCell<I>,
 }
 
 impl<I: IBlockFactory> ParameterBlockPool<I> {
@@ -70,8 +72,11 @@ impl<I: IBlockFactory> ParameterBlockPool<I> {
         let num_allocated = Cell::new(0);
         let num_blocks = Cell::new(0);
         let free_list = Cell::new(Vec::with_capacity(64));
+        let factory = RefCell::new(factory);
         Self {
-            pool: NonNull::from(Box::leak(pool)),
+            pool: PoolStorage {
+                buf: NonNull::from(Box::leak(pool)),
+            },
             num_allocated,
             num_blocks,
             free_list,
@@ -82,19 +87,19 @@ impl<I: IBlockFactory> ParameterBlockPool<I> {
     /// Allocate the requested number of blocks into the given array.
     pub fn allocate_blocks(
         &self,
-        p: &I::Params,
-        blocks: &mut [MaybeUninit<NonNull<I::T>>],
-    ) -> Option<()> {
+        p: &I::Param,
+        blocks: &mut [MaybeUninit<ParameterBlockHandle>],
+    ) -> Result<(), DescriptorAllocateError> {
         // We can't ever allocate more than 'capacity' blocks so just immediately exit
-        if blocks.len() > self.pool.len() {
-            return None;
+        if blocks.len() > self.pool.buf.len() {
+            return Err(DescriptorAllocateError::OutOfMemory);
         }
 
         // Same if we're asking for more block objects than this pool can provide
         let old_num_blocks = self.num_blocks.get();
         let new_num_blocks = old_num_blocks + blocks.len();
-        if new_num_blocks > self.pool.len() {
-            return None;
+        if new_num_blocks > self.pool.buf.len() {
+            return Err(DescriptorAllocateError::OutOfMemory);
         }
 
         // First try and take from the block object free list
@@ -108,7 +113,13 @@ impl<I: IBlockFactory> ParameterBlockPool<I> {
             debug_assert_eq!(reused_blocks.len(), num_from_list);
 
             // Revive the blocks from the free list using the factory object.
-            self.factory.reuse_blocks(p, reused_blocks.iter().copied());
+            self.factory.borrow_mut().reuse_blocks(
+                p,
+                reused_blocks
+                    .iter()
+                    .copied()
+                    .map(ParameterBlockHandle::into_raw::<I::T>),
+            )?;
 
             // Now take that tail of handles from the free list and copy it into the output 'blocks'
             // array as the objects are now ready to use.
@@ -153,10 +164,10 @@ impl<I: IBlockFactory> ParameterBlockPool<I> {
             // Allocate a fresh batch of block objects from our internal pool, then pass that list
             // into our initializer object so it can fill those objects out.
             let base_addr = unsafe {
-                let addr: NonNull<MaybeUninit<I::T>> = self.pool.cast();
+                let addr: NonNull<MaybeUninit<I::T>> = self.pool.buf.cast();
                 let addr = addr.add(num_allocated);
                 let new_blocks = NonNull::slice_from_raw_parts(addr, num_from_new).as_mut();
-                self.factory.init_blocks(p, new_blocks);
+                self.factory.borrow_mut().init_blocks(p, new_blocks)?;
                 addr
             };
 
@@ -164,7 +175,7 @@ impl<I: IBlockFactory> ParameterBlockPool<I> {
             let mut addr = base_addr;
             for dst in remaining {
                 unsafe {
-                    dst.write(addr.cast());
+                    dst.write(ParameterBlockHandle::from_raw(addr.cast()));
                     addr = addr.add(1);
                 }
             }
@@ -178,14 +189,19 @@ impl<I: IBlockFactory> ParameterBlockPool<I> {
             self.num_allocated.set(new_num_blocks);
         }
 
-        Some(())
+        Ok(())
     }
 
     /// Free the requested number of blocks
-    pub fn free_blocks(&self, blocks: &[NonNull<I::T>]) {
+    pub fn free_blocks(&self, blocks: &[ParameterBlockHandle]) {
         // First we give the list of blocks to free to the factory so it can free any internal
         // allocations in the blocks.
-        self.factory.free_blocks(blocks.iter().copied());
+        self.factory.borrow_mut().free_blocks(
+            blocks
+                .iter()
+                .copied()
+                .map(ParameterBlockHandle::into_raw::<I::T>),
+        );
 
         // Add the freed blocks to the free list
         let mut free_list = self.free_list.take();
@@ -202,10 +218,10 @@ impl<I: IBlockFactory> ParameterBlockPool<I> {
             // Reset all the blocks in the pool back to the empty state. This is done by calling
             // into the factory. Factory implementations beware: All objects will be initialized,
             // but some may not be live (i.e. have been freed).
-            let data: NonNull<I::T> = self.pool.cast();
+            let data: NonNull<I::T> = self.pool.buf.cast();
             let mut all_blocks: NonNull<[I::T]> =
                 NonNull::slice_from_raw_parts(data, self.num_allocated.get());
-            self.factory.reset_blocks(all_blocks.as_mut());
+            self.factory.borrow_mut().reset_blocks(all_blocks.as_mut());
 
             // Clear the free list
             let mut free_list = self.free_list.take();
@@ -224,15 +240,15 @@ impl<I: IBlockFactory> Drop for ParameterBlockPool<I> {
         unsafe {
             // Walk through all live block objects and pass them to the initializer to free their
             // internal allocations.
-            let data: NonNull<I::T> = self.pool.cast();
+            let data: NonNull<I::T> = self.pool.buf.cast();
             let mut all_blocks: NonNull<[I::T]> =
                 NonNull::slice_from_raw_parts(data, self.num_allocated.get());
-            self.factory.reset_blocks(all_blocks.as_mut());
+            self.factory.get_mut().reset_blocks(all_blocks.as_mut());
 
             // Once the initializer has been able to release the internal allocations we can
             // drop the objects if needed.
             if needs_drop::<I::T>() {
-                let mut addr: NonNull<I::T> = self.pool.cast();
+                let mut addr: NonNull<I::T> = self.pool.buf.cast();
                 for _ in 0..self.num_allocated.get() {
                     addr.drop_in_place();
                     addr = addr.add(1);
@@ -240,10 +256,16 @@ impl<I: IBlockFactory> Drop for ParameterBlockPool<I> {
             }
 
             // Now we can free the backing pool allocation.
-            drop(Box::from_raw(self.pool.as_ptr()));
+            drop(Box::from_raw(self.pool.buf.as_ptr()));
         }
     }
 }
+
+struct PoolStorage<I: IBlockFactory> {
+    buf: NonNull<[MaybeUninit<I::T>]>,
+}
+
+unsafe impl<I: IBlockFactory> Send for PoolStorage<I> {}
 
 /// Factory object for creating parameter block objects within a [`ParameterBlockPool`].
 ///
@@ -251,20 +273,26 @@ impl<I: IBlockFactory> Drop for ParameterBlockPool<I> {
 /// There is also a hook for re-using blocks from the free-list, as some regimes can re-use the
 /// allocations inside a parameter block.
 pub unsafe trait IBlockFactory {
-    /// Extra type that allows passing required parameters into the block creation functions. This
-    /// is typically where you'd pass the [`aleph_rhi_api::IParameterBlockLayout`] in.
-    type Params;
+    type Param;
 
     /// The actual type of the parameter block object. Must be sized.
-    type T: Sized;
+    type T: Sized + Send + Sync + 'static;
 
     /// Initializes each block in the given list in-place to be fully ready for use.
-    fn init_blocks(&self, p: &Self::Params, blocks: &mut [MaybeUninit<Self::T>]);
+    fn init_blocks(
+        &mut self,
+        p: &Self::Param,
+        blocks: &mut [MaybeUninit<Self::T>],
+    ) -> Result<(), DescriptorAllocateError>;
 
     /// Given a list of parameter block objects (pointers), this hook enables reviving them so they
     /// can be reused. It's possible in some cases to re-use the allocations, this hook allows
     /// checking and replacing them if they can't be.
-    fn reuse_blocks(&self, p: &Self::Params, blocks: impl Iterator<Item = NonNull<Self::T>>);
+    fn reuse_blocks(
+        &mut self,
+        p: &Self::Param,
+        blocks: impl Iterator<Item = NonNull<Self::T>>,
+    ) -> Result<(), DescriptorAllocateError>;
 
     /// Release all internal allocations in the given block while leaving the blocks as live
     /// objects. It is invalid to use a parameter block after calling this hook on it. Only after
@@ -272,7 +300,7 @@ pub unsafe trait IBlockFactory {
     ///
     /// All blocks given to this function are assumed to be live. Giving this function a block
     /// object that is not in the live state is considered a user-after-free bug.
-    fn free_blocks(&self, blocks: impl Iterator<Item = NonNull<Self::T>>);
+    fn free_blocks(&mut self, blocks: impl Iterator<Item = NonNull<Self::T>>);
 
     /// Release all internal allocations in the given block while leaving the blocks as live
     /// objects. It is invalid to use a parameter block after calling this hook on it. Only after
@@ -282,5 +310,5 @@ pub unsafe trait IBlockFactory {
     /// of [`IBlockFactory::free_blocks`]. The blocks in the given array may or may not be live.
     /// You must be able ot handle block objects that have already had
     /// [`IBlockFactory::free_blocks`] called on them.
-    fn reset_blocks(&self, blocks: &mut [Self::T]);
+    fn reset_blocks(&mut self, blocks: &mut [Self::T]);
 }
