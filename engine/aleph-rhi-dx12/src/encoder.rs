@@ -34,6 +34,7 @@ use std::sync::Arc;
 
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::Blink;
@@ -52,6 +53,7 @@ use crate::internal::conv::{
 use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::unwrap;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
+use crate::sampler::Sampler;
 use crate::texture::{ImageViewObject, Texture};
 
 pub struct Encoder<'a> {
@@ -379,13 +381,68 @@ impl<'a> IComputeEncoder for Encoder<'a> {
 
     unsafe fn push_parameters(
         &mut self,
-        _binding_signature: &dyn IBindingSignature,
-        _bind_point: PipelineBindPoint,
-        _block: u32,
-        _base: u32,
-        _writes: &[ParameterWrite],
+        binding_signature: &dyn IBindingSignature,
+        bind_point: PipelineBindPoint,
+        block: u32,
+        base: u32,
+        writes: &[ParameterWrite],
     ) {
-        todo!()
+        let binding_signature = unwrap::binding_signature(binding_signature);
+
+        let layout_desc = binding_signature._parameter_block_layouts[block as usize]
+            .desc
+            .get();
+
+        let base_param_index =
+            binding_signature.compiled.block_offsets[block as usize].root_parameter_index;
+
+        let set_table = match bind_point {
+            PipelineBindPoint::Compute => set_compute_descriptor_table,
+            PipelineBindPoint::Graphics => set_graphics_descriptor_table,
+        };
+        let set_cbv = match bind_point {
+            PipelineBindPoint::Compute => set_compute_root_cbv,
+            PipelineBindPoint::Graphics => set_graphics_root_cbv,
+        };
+        let set_srv = match bind_point {
+            PipelineBindPoint::Compute => set_compute_root_srv,
+            PipelineBindPoint::Graphics => set_graphics_root_srv,
+        };
+        let set_uav = match bind_point {
+            PipelineBindPoint::Compute => set_compute_root_uav,
+            PipelineBindPoint::Graphics => set_graphics_root_uav,
+        };
+
+        let visitor = ParameterBlockLayoutVisitor::new(layout_desc, base as u64, writes).unwrap();
+        for v in visitor {
+            let param_index = base_param_index + v.index as u32;
+            for write in v.writes {
+                match write {
+                    ParameterWrite::Sampler(write) => unsafe {
+                        let src = Sampler::get(write.sampler);
+                        set_table(self, param_index, src.gpu_handle.into());
+                    },
+                    ParameterWrite::Buffer(write) => unsafe {
+                        let buffer = Buffer::get(write.buffer);
+                        let base_addr = buffer.base_address.add(write.offset).get_inner().get();
+                        match v.ty {
+                            ParameterType::ConstantBuffer => set_cbv(self, param_index, base_addr),
+                            ParameterType::StructuredBuffer | ParameterType::ByteAddressBuffer => {
+                                set_srv(self, param_index, base_addr)
+                            }
+                            ParameterType::RWStructuredBuffer
+                            | ParameterType::RWByteAddressBuffer => {
+                                set_uav(self, param_index, base_addr)
+                            }
+                            ParameterType::AccelerationStructure => unimplemented!(),
+                            _ => unreachable!(),
+                        }
+                    },
+                    ParameterWrite::Texture(_) => unreachable!(),
+                    ParameterWrite::TextureBuffer(_) => unimplemented!(),
+                }
+            }
+        }
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
@@ -778,26 +835,48 @@ impl<'a> Encoder<'a> {
     }
 }
 
-unsafe fn set_compute_root_constant_buffer_view(
-    encoder: &Encoder,
-    rootparameterindex: u32,
-    buffer_location: u64,
-) {
+unsafe fn set_compute_root_cbv(encoder: &Encoder, rootparameterindex: u32, buffer_location: u64) {
     unsafe {
         encoder
             ._list
             .SetComputeRootConstantBufferView(rootparameterindex, buffer_location)
     }
 }
-unsafe fn set_graphics_root_constant_buffer_view(
-    encoder: &Encoder,
-    rootparameterindex: u32,
-    buffer_location: u64,
-) {
+unsafe fn set_graphics_root_cbv(encoder: &Encoder, rootparameterindex: u32, buffer_location: u64) {
     unsafe {
         encoder
             ._list
             .SetGraphicsRootConstantBufferView(rootparameterindex, buffer_location)
+    }
+}
+
+unsafe fn set_compute_root_srv(encoder: &Encoder, rootparameterindex: u32, buffer_location: u64) {
+    unsafe {
+        encoder
+            ._list
+            .SetComputeRootShaderResourceView(rootparameterindex, buffer_location)
+    }
+}
+unsafe fn set_graphics_root_srv(encoder: &Encoder, rootparameterindex: u32, buffer_location: u64) {
+    unsafe {
+        encoder
+            ._list
+            .SetGraphicsRootShaderResourceView(rootparameterindex, buffer_location)
+    }
+}
+
+unsafe fn set_compute_root_uav(encoder: &Encoder, rootparameterindex: u32, buffer_location: u64) {
+    unsafe {
+        encoder
+            ._list
+            .SetComputeRootShaderResourceView(rootparameterindex, buffer_location)
+    }
+}
+unsafe fn set_graphics_root_uav(encoder: &Encoder, rootparameterindex: u32, buffer_location: u64) {
+    unsafe {
+        encoder
+            ._list
+            .SetGraphicsRootShaderResourceView(rootparameterindex, buffer_location)
     }
 }
 
