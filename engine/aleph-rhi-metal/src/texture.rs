@@ -123,7 +123,7 @@ impl Texture {
                 // Allocate the view into the internal bump allocator
                 let alloc = self.image_views.lock();
                 let view = NonNull::from(alloc.put(ImageViewObject { texture: view }));
-                std::mem::transmute::<_, ImageView>(view)
+                ImageView::from_raw(view.cast())
             };
 
             views.insert(desc.clone(), view);

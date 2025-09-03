@@ -42,11 +42,3 @@ pub struct ImageViewObject {
 // Safety: none, up to the caller to use this correctly.
 unsafe impl Send for ImageViewObject {}
 unsafe impl Sync for ImageViewObject {}
-
-impl ImageViewObject {
-    pub unsafe fn from_view(view: &ImageView) -> &ImageViewObject {
-        let view = *view;
-        // Safety: none, lmao. it's up to the caller to use this correctly.
-        unsafe { std::mem::transmute::<ImageView, &ImageViewObject>(view) }
-    }
-}

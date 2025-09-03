@@ -473,7 +473,7 @@ impl Texture {
             view
         };
 
-        unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
+        unsafe { Ok(ImageView::from_raw(view.cast())) }
     }
 
     pub(crate) fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
@@ -503,7 +503,7 @@ impl Texture {
             view
         };
 
-        unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
+        unsafe { Ok(ImageView::from_raw(view.cast())) }
     }
 
     pub(crate) fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
@@ -533,7 +533,7 @@ impl Texture {
             view
         };
 
-        unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
+        unsafe { Ok(ImageView::from_raw(view.cast())) }
     }
 }
 
@@ -588,13 +588,4 @@ impl Drop for Texture {
 pub struct ImageViewObject {
     pub handle: CPUDescriptorHandle,
     pub format: DXGI_FORMAT,
-}
-
-impl ImageViewObject {
-    pub unsafe fn handle_to_ref(v: &ImageView) -> &ImageViewObject {
-        unsafe {
-            let ptr = std::mem::transmute::<ImageView, NonNull<ImageViewObject>>(*v);
-            ptr.as_ref()
-        }
-    }
 }

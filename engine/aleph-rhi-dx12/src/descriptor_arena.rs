@@ -402,7 +402,7 @@ impl DescriptorArenaHeap {
         let num_resources = block_layout.compiled.resources.num_resources();
         let num_samplers = block_layout.compiled.samplers.num_samplers() as usize;
 
-        let v = unsafe { ParameterBlock::ptr_from_handle(handle).as_mut() };
+        let v = unsafe { handle.into_raw::<ParameterBlock>().as_mut() };
         v._layout = NonNull::from(block_layout);
 
         if num_resources != 0 {
@@ -442,7 +442,7 @@ impl DescriptorArenaHeap {
         unsafe {
             let global_alloc = Global;
 
-            let set = ParameterBlock::ptr_from_handle(handle).as_mut();
+            let set = handle.into_raw::<ParameterBlock>().as_mut();
 
             let samplers = set.samplers.as_ref();
             if !samplers.is_empty() {

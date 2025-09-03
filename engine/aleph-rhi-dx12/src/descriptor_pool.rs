@@ -108,7 +108,7 @@ impl IDescriptorPool for DescriptorPool {
 
         unsafe {
             // Set pool is required to have an initialized object
-            let set_ptr = ParameterBlock::ptr_from_handle(set).as_mut();
+            let set_ptr = set.into_raw::<ParameterBlock>().as_mut();
 
             set_ptr._layout = NonNull::from(self._layout.as_ref());
 
@@ -167,7 +167,7 @@ impl IDescriptorPool for DescriptorPool {
 
             for (i, v) in uninitialized_sets.iter_mut().enumerate() {
                 let v = v.assume_init();
-                let v = ParameterBlock::ptr_from_handle(v).as_mut();
+                let v = v.into_raw::<ParameterBlock>().as_mut();
                 v._layout = NonNull::from(self._layout.as_ref());
 
                 if num_samplers != 0 {

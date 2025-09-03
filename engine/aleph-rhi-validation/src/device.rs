@@ -440,7 +440,7 @@ impl IDevice for ValidationDevice {
         layout.validate_updates(base, writes);
 
         let layout_inner = layout.inner.as_ref();
-        let block = unsafe { ParameterBlock::ref_from_handle(&block).inner.unwrap() };
+        let block = unsafe { block.into_raw::<ParameterBlock>().as_ref().inner.unwrap() };
 
         let new_writes = unsafe { get_as_unwrapped::parameter_writes(writes) };
 

@@ -710,7 +710,7 @@ impl IDevice for Device {
         writes: &[ParameterWrite],
     ) {
         let layout = unwrap::parameter_block_layout(layout);
-        let block = unsafe { ParameterBlock::ptr_from_handle(block).as_mut() };
+        let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
 
         let visitor =
             ParameterBlockLayoutVisitor::new(layout.desc.get(), base as u64, writes).unwrap();
@@ -751,7 +751,7 @@ impl IDevice for Device {
                             // SAFETY: It is the caller's responsibility to ensure that the view
                             //         points to a live and valid ImageViewObject. The objects are
                             //         immutable so parallel access is safe implicitly.
-                            let src = ImageViewObject::handle_to_ref(&write.image_view);
+                            let src = write.image_view.into_raw::<ImageViewObject>().as_ref();
                             let src = src.handle;
 
                             self.device.CopyDescriptorsSimple(

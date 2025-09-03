@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-use std::ptr::NonNull;
-
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
@@ -78,50 +76,6 @@ impl ParameterBlock {
                 self._pool_id, expected_pool_id,
                 "Released a ParameterBlock to a pool other than where it was allocated from."
             );
-        }
-    }
-
-    /// Grabs the pointer inside a [ParameterBlockHandle] as a non-null [ParameterBlock] ptr
-    pub fn ptr_from_handle(handle: ParameterBlockHandle) -> NonNull<ParameterBlock> {
-        let inner: NonNull<()> = handle.into();
-        inner.cast()
-    }
-
-    /// Constructs a reference to a [`ParameterBlock`] from the given handle, with the lifetime
-    /// attached to the lifetime of the handle.
-    ///
-    /// # Safety
-    ///
-    /// This function has all the same soundness requirements as creating a reference from a raw
-    /// pointer. At the very least a [`ParameterBlockHandle`] is guaranteed to be non-null, but many
-    /// things are not known at this call-site without the caller tracking these things themselves.
-    ///
-    /// - It is the caller's responsibility to ensure that no mutable reference can exist at the
-    ///   same time as the reference this function creates. If it can't be proven statically then
-    ///   locks must be used. This in general means:
-    ///     - [`ParameterBlock`] objects themselves are immutable, so access to the set object
-    ///       itself  requires no synchronization. But the descriptor memory that the sets point to
-    ///       *is not* immutable. The caller must synchronize access to the descriptor memory.
-    /// - It is the caller's responsibility to ensure the handle still points to a live set object.
-    ///   This means:
-    ///     - The caller must ensure that they do not use any sets after the pool they were
-    ///       allocated from are destroyed.
-    /// - It is the caller's responsibility to ensure the handle points to a value of the correct
-    ///   type. This is more subtle, but:
-    ///     - Handles allocated from a different device will point to a different type. They will
-    ///       also point to descriptor memory on another device. Thus it becomes a rust soundness
-    ///       issue *as well as* an API soundness issue as using a set from one device on another
-    ///       device is invalid as the set allocation is local to the device it was created from.
-    ///     - The caller must ensure that they only use set handles with the device they were
-    ///       created from. If the two devices use different implementations then the handles
-    ///       *will* be interpreted as the incorrect type.
-    ///
-    pub unsafe fn ref_from_handle(handle: &ParameterBlockHandle) -> &ParameterBlock {
-        unsafe {
-            let ptr = Self::ptr_from_handle(*handle);
-
-            // Safety: all left to the caller lmao
-            ptr.as_ref()
         }
     }
 }

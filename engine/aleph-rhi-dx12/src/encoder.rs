@@ -30,7 +30,6 @@
 use std::any::TypeId;
 use std::mem::transmute_copy;
 use std::ops::Deref;
-use std::ptr::NonNull;
 use std::sync::Arc;
 
 use aleph_object_system::Object;
@@ -339,8 +338,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
 
         for (set_index, set) in blocks.iter().enumerate() {
             // Safety: No checks, all up to the caller to ensure this is safe
-            let v: NonNull<()> = (*set).into();
-            let v: NonNull<ParameterBlock> = v.cast();
+            let v = set.into_raw::<ParameterBlock>();
             let v = unsafe { v.as_ref() };
 
             // Computes the index of the set within the pipeline layout.

@@ -65,12 +65,6 @@ impl ParameterBlockHandle {
     }
 }
 
-impl From<ParameterBlockHandle> for NonNull<()> {
-    fn from(val: ParameterBlockHandle) -> Self {
-        val.0
-    }
-}
-
 unsafe impl Send for ParameterBlockHandle {}
 unsafe impl Sync for ParameterBlockHandle {}
 

@@ -54,6 +54,33 @@ impl ImageView {
     pub fn get_uav_for(device: &dyn IDevice, texture: &TextureHandle) -> Result<Self, ()> {
         device.get_texture_view(texture, &ImageViewDesc::uav_for_texture(device, texture))
     }
+
+    /// Unsafe utility function for constructing a new [`ImageView`] from a raw pointer.
+    ///
+    /// # Safety
+    ///
+    /// This technically doesn't cause immediate UB, the implementation is safe, but doing this
+    /// outside of an RHI implementation is almost certainly incorrect. This function is marked as
+    /// unsafe to discourage using it. There should be zero need to call this unless you're
+    /// constructing handles from internal RHI types.
+    ///
+    /// This function exists to avoid using *actual* unsafe via [core::mem::transmute] to allow
+    /// RHI implementations to construct this otherwise opaque type safely.
+    pub unsafe fn from_raw(v: NonNull<()>) -> Self {
+        Self(v)
+    }
+
+    /// The inverse of [`ImageView::from_raw`].
+    pub fn into_raw<U>(self) -> NonNull<U> {
+        self.0.cast()
+    }
+
+    /// # Safety
+    ///
+    /// See [`ImageView::from_raw`]
+    pub unsafe fn from_raw_int(v: u64) -> Option<Self> {
+        NonNull::new(v as *mut ()).map(Self)
+    }
 }
 
 unsafe impl Send for ImageView {}

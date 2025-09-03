@@ -61,14 +61,14 @@ impl NullTexture {
     }
 
     pub(crate) fn get_view(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        Ok(unsafe { std::mem::transmute(NonNull::<()>::dangling()) })
+        Ok(unsafe { ImageView::from_raw(NonNull::<()>::dangling()) })
     }
 
     pub(crate) fn get_rtv(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        Ok(unsafe { std::mem::transmute(NonNull::<()>::dangling()) })
+        Ok(unsafe { ImageView::from_raw(NonNull::<()>::dangling()) })
     }
 
     pub(crate) fn get_dsv(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        Ok(unsafe { std::mem::transmute(NonNull::<()>::dangling()) })
+        Ok(unsafe { ImageView::from_raw(NonNull::<()>::dangling()) })
     }
 }
