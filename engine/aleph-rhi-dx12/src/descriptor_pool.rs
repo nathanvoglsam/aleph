@@ -31,13 +31,14 @@ use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
+use aleph_any::{AnyArc, declare_interfaces};
+use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
+
 use crate::descriptor_arena::LinearBlockFactory;
 use crate::device::Device;
 use crate::internal::descriptor_chunk::DescriptorChunk;
 use crate::parameter_block_layout::ParameterBlockLayout;
-use aleph_any::{AnyArc, declare_interfaces};
-use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
 
 pub struct DescriptorPool {
     pub(crate) _device: AnyArc<Device>,
