@@ -36,7 +36,7 @@ use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_nstr::{NStr, nstr};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiGlobal;
+use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use ash::vk::{self, Handle};
 use parking_lot::Mutex;
@@ -473,8 +473,8 @@ pub struct SwapChainState {
     pub present_mode: PresentationMode,
     pub vk_present_mode: vk::PresentModeKHR,
     pub extent: vk::Extent2D,
-    pub images: BVec<Arc<Object<Texture>>, RhiGlobal>,
-    pub semaphore_pools: BVec<Arc<SemaphorePool>, RhiGlobal>,
+    pub images: BVec<Arc<Object<Texture>>, RhiSystem>,
+    pub semaphore_pools: BVec<Arc<SemaphorePool>, RhiSystem>,
 }
 
 impl SwapChainState {

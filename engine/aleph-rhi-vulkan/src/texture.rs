@@ -33,7 +33,7 @@ use aleph_alloc::{DefaultHashBuilder, HashMap};
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiGlobal;
+use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use ash::vk;
 use parking_lot::Mutex;
@@ -51,9 +51,9 @@ pub struct Texture {
     // pub(crate) created_usage: vk::ImageUsageFlags,
     pub(crate) allocation: Option<vma::Allocation>,
     pub(crate) is_owned: bool,
-    pub(crate) views: Mutex<HashMap<ImageViewDesc, vk::ImageView, DefaultHashBuilder, RhiGlobal>>,
-    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, vk::ImageView, DefaultHashBuilder, RhiGlobal>>,
-    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, vk::ImageView, DefaultHashBuilder, RhiGlobal>>,
+    pub(crate) views: Mutex<HashMap<ImageViewDesc, vk::ImageView, DefaultHashBuilder, RhiSystem>>,
+    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, vk::ImageView, DefaultHashBuilder, RhiSystem>>,
+    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, vk::ImageView, DefaultHashBuilder, RhiSystem>>,
     pub(crate) desc: OwnedTextureDesc,
 }
 

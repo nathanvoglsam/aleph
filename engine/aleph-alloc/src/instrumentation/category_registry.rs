@@ -51,6 +51,12 @@ pub unsafe trait IAllocationCategory: Sized {
     fn info() -> &'static CategoryInfo;
 }
 
+/// Utility function that allows checking if two different category types are the same, in a const
+/// context.
+pub const fn is_same_category<A: IAllocationCategory, B: IAllocationCategory>() -> bool {
+    A::ID.as_u128() == B::ID.as_u128()
+}
+
 /// FFI portable category description table. Contains all the information exposed by
 /// [`IAllocationCategory`] wrapped in a neat little struct that can be safely sent across FFI
 /// boundaries.

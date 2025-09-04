@@ -35,7 +35,7 @@ use aleph_alloc::boxed::Box as BBox;
 use aleph_alloc::vec::Vec as BVec;
 use aleph_rhi_api::{DescriptorAllocateError, ParameterBlockHandle};
 
-use crate::RhiGlobal;
+use crate::RhiSystem;
 
 /// A generic object pool intended to be used as part of [`aleph_rhi_api::IDescriptorPool`] and
 /// [`aleph_rhi_api::IDescriptorArena`].
@@ -63,7 +63,7 @@ pub struct ParameterBlockPool<I: IBlockFactory> {
     num_blocks: Cell<usize>,
 
     /// Free list of descriptors
-    free_list: RefCell<BVec<ParameterBlockHandle, RhiGlobal>>,
+    free_list: RefCell<BVec<ParameterBlockHandle, RhiSystem>>,
 
     /// Generic initializer object that handles creating the underlying parameter block objects
     /// once they have been allocated
@@ -72,10 +72,10 @@ pub struct ParameterBlockPool<I: IBlockFactory> {
 
 impl<I: IBlockFactory> ParameterBlockPool<I> {
     pub fn new(factory: I, capacity: usize) -> Self {
-        let pool = BBox::new_uninit_slice_in(capacity, RhiGlobal::default());
+        let pool = BBox::new_uninit_slice_in(capacity, RhiSystem::default());
         let num_allocated = Cell::new(0);
         let num_blocks = Cell::new(0);
-        let free_list = RefCell::new(BVec::with_capacity_in(64, RhiGlobal::default()));
+        let free_list = RefCell::new(BVec::with_capacity_in(64, RhiSystem::default()));
         let factory = RefCell::new(factory);
         Self {
             pool: PoolStorage {
@@ -259,7 +259,7 @@ impl<I: IBlockFactory> Drop for ParameterBlockPool<I> {
             // Now we can free the backing pool allocation.
             drop(BBox::from_raw_in(
                 self.pool.buf.as_ptr(),
-                RhiGlobal::default(),
+                RhiSystem::default(),
             ));
         }
     }

@@ -34,8 +34,8 @@ use std::mem::{align_of, size_of};
 use std::ptr::NonNull;
 
 use aleph_alloc::BlinkAlloc;
-use aleph_alloc::alloc::{Allocator, Global};
-use aleph_alloc::instrumentation::InstrumentedGlobal;
+use aleph_alloc::alloc::Allocator;
+use aleph_alloc::instrumentation::{InstrumentedSystem, system};
 use ash::vk;
 
 /// Takes an [Allocator] and returns a [vk::AllocationCallbacks] wrapper that adapts the rust
@@ -62,7 +62,7 @@ unsafe extern "system" fn allocation<A: Allocator>(
 ) -> *mut c_void {
     unsafe {
         let allocator = NonNull::new_unchecked(p_user_data)
-            .cast::<VulkanGlobal>()
+            .cast::<VulkanSystem>()
             .as_ref();
 
         let alignment = alignment.min(align_of::<Layout>());
@@ -124,7 +124,7 @@ unsafe extern "system" fn free<A: Allocator>(p_user_data: *mut c_void, p_memory:
 
     unsafe {
         let allocator = NonNull::new_unchecked(p_user_data)
-            .cast::<VulkanGlobal>()
+            .cast::<VulkanSystem>()
             .as_ref();
 
         // Pull the layout from the block directly behind the allocation pointer
@@ -144,18 +144,18 @@ unsafe extern "system" fn free<A: Allocator>(p_user_data: *mut c_void, p_memory:
 pub static GLOBAL: Option<&'static vk::AllocationCallbacks<'static>> = Some(&GLOBAL_CALLBACKS);
 
 pub static GLOBAL_CALLBACKS: vk::AllocationCallbacks<'static> = vk::AllocationCallbacks {
-    p_user_data: &GLOBAL_OBJECT as *const VulkanGlobal as *mut VulkanGlobal as *mut c_void,
-    pfn_allocation: Some(allocation::<VulkanGlobal>),
-    pfn_reallocation: Some(reallocation::<VulkanGlobal>),
-    pfn_free: Some(free::<VulkanGlobal>),
+    p_user_data: &GLOBAL_OBJECT as *const VulkanSystem as *mut VulkanSystem as *mut c_void,
+    pfn_allocation: Some(allocation::<VulkanSystem>),
+    pfn_reallocation: Some(reallocation::<VulkanSystem>),
+    pfn_free: Some(free::<VulkanSystem>),
     pfn_internal_allocation: None,
     pfn_internal_free: None,
     _marker: PhantomData,
 };
 
-static GLOBAL_OBJECT: VulkanGlobal = VulkanGlobal::new(Global);
+static GLOBAL_OBJECT: VulkanSystem = system();
 
 pub struct Vulkan;
 aleph_alloc::new_alloc_category!(Vulkan, "01991523-55ad-7942-a26e-477ae9cf712d");
 
-pub type VulkanGlobal = InstrumentedGlobal<Vulkan>;
+pub type VulkanSystem = InstrumentedSystem<Vulkan>;

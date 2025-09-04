@@ -86,6 +86,20 @@ macro_rules! finish_frame {
 }
 
 #[inline]
+pub unsafe fn emit_alloc(ptr: *mut u8, size: usize) {
+    tracy_client::Client::start();
+    let ptr = ptr as *const u8 as *const std::os::raw::c_void;
+    unsafe { tracy_client::sys::___tracy_emit_memory_alloc_callstack(ptr, size, 62, 1) }
+}
+
+#[inline]
+pub unsafe fn emit_free(ptr: *mut u8) {
+    tracy_client::Client::start();
+    let ptr = ptr as *const u8 as *const std::os::raw::c_void;
+    unsafe { tracy_client::sys::___tracy_emit_memory_free_callstack(ptr, 62, 1) }
+}
+
+#[inline]
 pub unsafe fn emit_alloc_n(ptr: *mut u8, size: usize, name: &'static std::ffi::CStr) {
     tracy_client::Client::start();
     let ptr = ptr as *const u8 as *const std::os::raw::c_void;

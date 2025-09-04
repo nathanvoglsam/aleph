@@ -27,14 +27,13 @@
 // SOFTWARE.
 //
 
-use std::alloc::Layout;
+use std::alloc::{Layout, System};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 use std::sync::atomic::Ordering;
 
+use crate::instrumentation::{IAllocationCategory, Uncategorized, is_same_category};
 use allocator_api2::alloc::{AllocError, Allocator, Global};
-
-use crate::instrumentation::IAllocationCategory;
 
 /// An allocator wrapper type that will instrument all allocations made into it with the associated
 /// category.
@@ -73,6 +72,28 @@ impl<T: IAllocationCategory, A: Allocator> Instrumented<T, A> {
     }
 
     #[inline]
+    unsafe fn emit_alloc(ptr: *mut u8, size: usize) {
+        unsafe {
+            if is_same_category::<T, Uncategorized>() {
+                aleph_profile::emit_alloc(ptr, size);
+            } else {
+                aleph_profile::emit_alloc_n(ptr, size, T::NAME.to_cstr());
+            }
+        }
+    }
+
+    #[inline]
+    unsafe fn emit_free(ptr: *mut u8) {
+        unsafe {
+            if is_same_category::<T, Uncategorized>() {
+                aleph_profile::emit_free(ptr);
+            } else {
+                aleph_profile::emit_free_n(ptr, T::NAME.to_cstr());
+            }
+        }
+    }
+
+    #[inline]
     unsafe fn handle_resized(
         result: Result<NonNull<[u8]>, AllocError>,
         ptr: NonNull<u8>,
@@ -83,12 +104,12 @@ impl<T: IAllocationCategory, A: Allocator> Instrumented<T, A> {
             Ok(v) => unsafe {
                 let ptr = v.cast::<u8>();
                 Self::add(new_layout.size());
-                aleph_profile::emit_alloc_n(ptr.as_ptr(), new_layout.size(), T::NAME.to_cstr());
+                Self::emit_alloc(ptr.as_ptr(), new_layout.size());
                 Ok(v)
             },
             v @ Err(_) => unsafe {
                 Self::add(old_layout.size());
-                aleph_profile::emit_alloc_n(ptr.as_ptr(), new_layout.size(), T::NAME.to_cstr());
+                Self::emit_alloc(ptr.as_ptr(), new_layout.size());
                 v
             },
         }
@@ -112,11 +133,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         Self::add(layout.size());
         match self.inner.allocate(layout) {
             Ok(v) => unsafe {
-                aleph_profile::emit_alloc_n(
-                    v.cast::<u8>().as_ptr(),
-                    layout.size(),
-                    T::NAME.to_cstr(),
-                );
+                Self::emit_alloc(v.cast::<u8>().as_ptr(), layout.size());
                 Ok(v)
             },
             v @ Err(_) => v,
@@ -127,11 +144,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         Self::add(layout.size());
         match self.inner.allocate_zeroed(layout) {
             Ok(v) => unsafe {
-                aleph_profile::emit_alloc_n(
-                    v.cast::<u8>().as_ptr(),
-                    layout.size(),
-                    T::NAME.to_cstr(),
-                );
+                Self::emit_alloc(v.cast::<u8>().as_ptr(), layout.size());
                 Ok(v)
             },
             v @ Err(_) => v,
@@ -140,7 +153,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         unsafe {
-            aleph_profile::emit_free_n(ptr.as_ptr(), T::NAME.to_cstr());
+            Self::emit_free(ptr.as_ptr());
             self.inner.deallocate(ptr, layout);
         }
         Self::sub(layout.size());
@@ -153,7 +166,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
         unsafe {
-            aleph_profile::emit_free_n(ptr.as_ptr(), T::NAME.to_cstr());
+            Self::emit_free(ptr.as_ptr());
             Self::sub(old_layout.size());
             let out = self.inner.grow(ptr, old_layout, new_layout);
             Self::handle_resized(out, ptr, old_layout, new_layout)
@@ -167,7 +180,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
         unsafe {
-            aleph_profile::emit_free_n(ptr.as_ptr(), T::NAME.to_cstr());
+            Self::emit_free(ptr.as_ptr());
             Self::sub(old_layout.size());
             let out = self.inner.grow_zeroed(ptr, old_layout, new_layout);
             Self::handle_resized(out, ptr, old_layout, new_layout)
@@ -181,7 +194,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
         unsafe {
-            aleph_profile::emit_free_n(ptr.as_ptr(), T::NAME.to_cstr());
+            Self::emit_free(ptr.as_ptr());
             Self::sub(old_layout.size());
             let out = self.inner.shrink(ptr, old_layout, new_layout);
             Self::handle_resized(out, ptr, old_layout, new_layout)
@@ -189,5 +202,5 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
     }
 }
 
-/// Alias for 'Instrumented<T, Global>'.
-pub type InstrumentedGlobal<T> = Instrumented<T, Global>;
+/// Alias for 'Instrumented<T, System>'.
+pub type InstrumentedSystem<T> = Instrumented<T, System>;

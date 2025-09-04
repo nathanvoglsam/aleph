@@ -89,6 +89,16 @@ macro_rules! finish_frame {
 }
 
 #[inline]
+pub unsafe fn emit_alloc(_ptr: *mut u8, _size: usize) {
+    // Intentional no-op
+}
+
+#[inline]
+pub unsafe fn emit_free(_ptr: *mut u8) {
+    // Intentional no-op
+}
+
+#[inline]
 pub unsafe fn emit_alloc_n(_ptr: *mut u8, _size: usize, _name: &'static std::ffi::CStr) {
     // Intentional no-op
 }

@@ -35,7 +35,7 @@ use aleph_alloc::vec::Vec as BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiGlobal;
+use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::owned_desc::{
@@ -229,7 +229,7 @@ impl IDevice for Device {
             let bump = bump_cell.scope();
 
             let mut block_layouts =
-                BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiGlobal::default());
+                BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiSystem::default());
             let mut set_layouts =
                 BVec::with_capacity_in(desc.parameter_block_layouts.len(), bump.allocator());
             for v in desc.parameter_block_layouts {

@@ -33,7 +33,7 @@ use std::sync::atomic::Ordering;
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
-use crate::instrumentation::{IAllocationCategory, Uncategorized, global};
+use crate::instrumentation::{IAllocationCategory, Uncategorized, system};
 
 /// Wrapper that is intended to be registered using `#[global_allocator]` to direct all un-tagged
 /// allocations towards the [`Uncategorized`] memory category. This delegates to [`System`].
@@ -41,15 +41,15 @@ pub struct SystemUncategorized;
 
 unsafe impl Allocator for SystemUncategorized {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        global::<Uncategorized>().allocate(layout)
+        system::<Uncategorized>().allocate(layout)
     }
 
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        global::<Uncategorized>().allocate_zeroed(layout)
+        system::<Uncategorized>().allocate_zeroed(layout)
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        unsafe { global::<Uncategorized>().deallocate(ptr, layout) }
+        unsafe { system::<Uncategorized>().deallocate(ptr, layout) }
     }
 
     unsafe fn grow(
@@ -58,7 +58,7 @@ unsafe impl Allocator for SystemUncategorized {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { global::<Uncategorized>().grow(ptr, old_layout, new_layout) }
+        unsafe { system::<Uncategorized>().grow(ptr, old_layout, new_layout) }
     }
 
     unsafe fn grow_zeroed(
@@ -67,7 +67,7 @@ unsafe impl Allocator for SystemUncategorized {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { global::<Uncategorized>().grow_zeroed(ptr, old_layout, new_layout) }
+        unsafe { system::<Uncategorized>().grow_zeroed(ptr, old_layout, new_layout) }
     }
 
     unsafe fn shrink(
@@ -76,7 +76,7 @@ unsafe impl Allocator for SystemUncategorized {
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        unsafe { global::<Uncategorized>().shrink(ptr, old_layout, new_layout) }
+        unsafe { system::<Uncategorized>().shrink(ptr, old_layout, new_layout) }
     }
 }
 
@@ -85,7 +85,7 @@ unsafe impl GlobalAlloc for SystemUncategorized {
         unsafe {
             let out = System.alloc(layout);
             Self::add(layout.size());
-            aleph_profile::emit_alloc_n(out, layout.size(), Uncategorized::NAME.to_cstr());
+            aleph_profile::emit_alloc(out, layout.size());
             out
         }
     }
@@ -93,7 +93,7 @@ unsafe impl GlobalAlloc for SystemUncategorized {
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         unsafe {
             Self::sub(layout.size());
-            aleph_profile::emit_free_n(ptr, Uncategorized::NAME.to_cstr());
+            aleph_profile::emit_free(ptr);
             System.dealloc(ptr, layout);
         }
     }
@@ -102,7 +102,7 @@ unsafe impl GlobalAlloc for SystemUncategorized {
         unsafe {
             let out = System.alloc_zeroed(layout);
             Self::add(layout.size());
-            aleph_profile::emit_alloc_n(out, layout.size(), Uncategorized::NAME.to_cstr());
+            aleph_profile::emit_alloc(out, layout.size());
             out
         }
     }
@@ -110,12 +110,12 @@ unsafe impl GlobalAlloc for SystemUncategorized {
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         unsafe {
             Self::sub(layout.size());
-            aleph_profile::emit_free_n(ptr, Uncategorized::NAME.to_cstr());
+            aleph_profile::emit_free(ptr);
 
             let out = System.realloc(ptr, layout, new_size);
 
             Self::add(new_size);
-            aleph_profile::emit_alloc_n(out, new_size, Uncategorized::NAME.to_cstr());
+            aleph_profile::emit_alloc(out, new_size);
             out
         }
     }

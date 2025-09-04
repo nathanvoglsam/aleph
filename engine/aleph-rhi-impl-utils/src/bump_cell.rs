@@ -30,19 +30,18 @@
 use std::cell::Cell;
 use std::ops::{Deref, DerefMut};
 
-use aleph_alloc::alloc::Global;
 use aleph_alloc::{Blink, BlinkAlloc};
 
-use crate::RhiGlobal;
+use crate::RhiSystem;
 
-pub type BlinkCellAlloc = Blink<BlinkAlloc<RhiGlobal>>;
+pub type BlinkCellAlloc = Blink<BlinkAlloc<RhiSystem>>;
 
 pub struct BlinkCell(Cell<Option<Box<BlinkCellAlloc>>>);
 
 impl BlinkCell {
     #[inline]
     pub fn new() -> Self {
-        let v = RhiGlobal::new(Global);
+        let v = RhiSystem::default();
         let v = BlinkAlloc::new_in(v);
         let v = Blink::new_in(v);
         let v = Box::new(v);

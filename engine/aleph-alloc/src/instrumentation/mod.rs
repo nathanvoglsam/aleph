@@ -31,14 +31,14 @@ mod category_registry;
 mod global;
 mod instrumented;
 
-use allocator_api2::alloc::Global;
+use allocator_api2::alloc::System;
 pub use category_registry::*;
 pub use global::*;
 pub use instrumented::*;
 
 /// Utility for getting an [`Allocator`] instance wrapping [`Global`] with the given category.
-pub const fn global<T: IAllocationCategory>() -> InstrumentedGlobal<T> {
-    InstrumentedGlobal::new(Global)
+pub const fn system<T: IAllocationCategory>() -> InstrumentedSystem<T> {
+    InstrumentedSystem::new(System)
 }
 
 /// The default allocation category.
