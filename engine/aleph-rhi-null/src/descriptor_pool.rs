@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use std::ptr::NonNull;
+
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
-use std::ptr::NonNull;
 
 use crate::NullDevice;
 use crate::parameter_block_layout::NullParameterBlockLayout;

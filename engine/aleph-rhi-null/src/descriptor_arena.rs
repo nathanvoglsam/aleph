@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
-use aleph_any::{AnyArc, declare_interfaces};
-use aleph_rhi_api::*;
 use std::cell::Cell;
 use std::ptr::NonNull;
+
+use aleph_any::{AnyArc, declare_interfaces};
+use aleph_rhi_api::*;
 
 use crate::NullDevice;
 
