@@ -27,12 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::instrumentation::IAllocationCategory;
-use allocator_api2::alloc::{AllocError, Allocator, Global};
 use std::alloc::Layout;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 use std::sync::atomic::Ordering;
+
+use allocator_api2::alloc::{AllocError, Allocator, Global};
+
+use crate::instrumentation::IAllocationCategory;
 
 /// An allocator wrapper type that will instrument all allocations made into it with the associated
 /// category.

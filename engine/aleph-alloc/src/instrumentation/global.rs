@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::instrumentation::{IAllocationCategory, Uncategorized, global};
-use allocator_api2::alloc::{AllocError, Allocator};
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::ptr::NonNull;
 use std::sync::atomic::Ordering;
+
+use allocator_api2::alloc::{AllocError, Allocator};
+
+use crate::instrumentation::{IAllocationCategory, Uncategorized, global};
 
 /// Wrapper that is intended to be registered using `#[global_allocator]` to direct all un-tagged
 /// allocations towards the [`Uncategorized`] memory category. This delegates to [`System`].

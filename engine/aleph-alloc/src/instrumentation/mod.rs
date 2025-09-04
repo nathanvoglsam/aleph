@@ -31,11 +31,10 @@ mod category_registry;
 mod global;
 mod instrumented;
 
+use allocator_api2::alloc::Global;
 pub use category_registry::*;
 pub use global::*;
 pub use instrumented::*;
-
-use allocator_api2::alloc::Global;
 
 /// Utility for getting an [`Allocator`] instance wrapping [`Global`] with the given category.
 pub const fn global<T: IAllocationCategory>() -> InstrumentedGlobal<T> {
