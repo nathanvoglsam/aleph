@@ -85,9 +85,9 @@ impl<I: IBlockFactory> ParameterBlockPool<I> {
     }
 
     /// Allocate the requested number of blocks into the given array.
-    pub fn allocate_blocks(
+    pub fn allocate_blocks<'a>(
         &self,
-        p: &I::Param,
+        p: I::Param<'a>,
         blocks: &mut [MaybeUninit<ParameterBlockHandle>],
     ) -> Result<(), DescriptorAllocateError> {
         // We can't ever allocate more than 'capacity' blocks so just immediately exit
@@ -273,24 +273,24 @@ unsafe impl<I: IBlockFactory> Send for PoolStorage<I> {}
 /// There is also a hook for re-using blocks from the free-list, as some regimes can re-use the
 /// allocations inside a parameter block.
 pub unsafe trait IBlockFactory {
-    type Param;
+    type Param<'a>: Copy;
 
     /// The actual type of the parameter block object. Must be sized.
     type T: Sized + Send + Sync + 'static;
 
     /// Initializes each block in the given list in-place to be fully ready for use.
-    fn init_blocks(
+    fn init_blocks<'a>(
         &mut self,
-        p: &Self::Param,
+        p: Self::Param<'a>,
         blocks: &mut [MaybeUninit<Self::T>],
     ) -> Result<(), DescriptorAllocateError>;
 
     /// Given a list of parameter block objects (pointers), this hook enables reviving them so they
     /// can be reused. It's possible in some cases to re-use the allocations, this hook allows
     /// checking and replacing them if they can't be.
-    fn reuse_blocks(
+    fn reuse_blocks<'a>(
         &mut self,
-        p: &Self::Param,
+        p: Self::Param<'a>,
         blocks: impl Iterator<Item = NonNull<Self::T>>,
     ) -> Result<(), DescriptorAllocateError>;
 

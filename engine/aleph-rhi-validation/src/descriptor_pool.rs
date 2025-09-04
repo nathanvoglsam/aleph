@@ -81,12 +81,12 @@ pub struct PoolBlockFactory {
 }
 
 unsafe impl IBlockFactory for PoolBlockFactory {
-    type Param = ValidationParameterBlockLayout;
+    type Param<'a> = &'a ValidationParameterBlockLayout;
     type T = ParameterBlock;
 
-    fn init_blocks(
+    fn init_blocks<'a>(
         &mut self,
-        p: &Self::Param,
+        p: Self::Param<'a>,
         blocks: &mut [MaybeUninit<Self::T>],
     ) -> Result<(), DescriptorAllocateError> {
         for block in blocks {
@@ -101,9 +101,9 @@ unsafe impl IBlockFactory for PoolBlockFactory {
         Ok(())
     }
 
-    fn reuse_blocks(
+    fn reuse_blocks<'a>(
         &mut self,
-        p: &Self::Param,
+        p: Self::Param<'a>,
         blocks: impl Iterator<Item = NonNull<Self::T>>,
     ) -> Result<(), DescriptorAllocateError> {
         for mut block in blocks {
