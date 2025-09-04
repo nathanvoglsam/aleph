@@ -27,44 +27,29 @@
 // SOFTWARE.
 //
 
-use std::alloc::{Layout, LayoutError, handle_alloc_error};
+use std::alloc::{Layout, handle_alloc_error};
 use std::any::TypeId;
-use std::cell::Cell;
-use std::mem::{MaybeUninit, transmute};
+use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
+use aleph_rhi_impl_utils::parameter_block_pool::{IBlockFactory, ParameterBlockPool};
 use allocator_api2::alloc::{Allocator, Global};
 use blink_alloc::BlinkAlloc;
-use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
+use windows::utils::GPUDescriptorHandle;
 
 use crate::device::Device;
 use crate::internal::descriptor_chunk::DescriptorChunk;
 use crate::internal::parameter_block::ParameterBlock;
-use crate::internal::parameter_block_pool::ParameterBlockPool;
 use crate::internal::unwrap;
 use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct DescriptorArenaLinear {
     pub(crate) _device: AnyArc<Device>,
-
-    /// The base address of the arena this pool allocates resource descriptors from
     pub(crate) resource_arena: DescriptorChunk,
-
-    /// Bump allocator that descriptor set objects are allocated from
-    pub(crate) set_pool: BlinkAlloc,
-
-    /// The bump state for the descriptor pool. Used to bump allocate descriptor blocks from the
-    /// resource arena.
-    pub(crate) descriptor_bump_index: Cell<u32>,
-
-    /// The number of descriptor set objects currently allocated from the arena.
-    pub(crate) num_blocks: Cell<u32>,
-
-    /// The maximum number of descriptor sets that can be allocated from the pool
-    pub(crate) set_capacity: u32,
+    pub(crate) pool: ParameterBlockPool<LinearBlockFactory>,
 }
 
 declare_interfaces!(DescriptorArenaLinear, [IDescriptorArena]);
@@ -75,28 +60,21 @@ impl IGetPlatformInterface for DescriptorArenaLinear {
     }
 }
 
-impl DescriptorArenaLinear {
-    fn get_optional_handles_for_index(
-        &self,
-        layout: &ParameterBlockLayout,
-        index: u32,
-    ) -> (Option<CPUDescriptorHandle>, Option<GPUDescriptorHandle>) {
-        if layout.compiled.resources.num_resources() != 0 {
-            let (cpu, gpu) = self.resource_arena.get_handles_for_index(index);
-            (Some(cpu), Some(gpu))
-        } else {
-            (None, None)
-        }
-    }
-}
-
 impl IDescriptorArena for DescriptorArenaLinear {
     fn allocate_block(
         &self,
         layout: &dyn IParameterBlockLayout,
     ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
         let layout = unwrap::parameter_block_layout(layout);
-        self.allocate_set_internal(layout)
+
+        let mut blocks: [MaybeUninit<_>; 1] = [MaybeUninit::uninit(); 1];
+        self.pool
+            .allocate_blocks((Some(&self.resource_arena), layout), &mut blocks)?;
+
+        unsafe {
+            let block = blocks[0].assume_init();
+            Ok(block)
+        }
     }
 
     fn allocate_blocks(
@@ -105,129 +83,24 @@ impl IDescriptorArena for DescriptorArenaLinear {
         num_blocks: usize,
     ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         let layout = unwrap::parameter_block_layout(layout);
-        let mut sets = Vec::with_capacity(num_blocks);
-        for _ in 0..num_blocks {
-            sets.push(self.allocate_set_internal(layout)?);
-        }
 
-        debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_blocks);
-        Ok(sets.into_boxed_slice())
+        let mut blocks = Box::new_uninit_slice(num_blocks);
+        self.pool
+            .allocate_blocks((Some(&self.resource_arena), layout), &mut blocks)?;
+
+        let blocks = Box::leak(blocks);
+        let blocks = NonNull::from(blocks);
+        let blocks =
+            NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
+        unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
     }
 
     unsafe fn free(&self, _blocks: &[ParameterBlockHandle]) {
-        unimplemented!()
+        unreachable!("It is illegal to call 'free' on a 'linear' descriptor arena");
     }
 
     unsafe fn reset(&self) {
-        unsafe {
-            self.descriptor_bump_index.set(0);
-            self.num_blocks.set(0);
-            self.set_pool.reset_unchecked();
-        }
-    }
-}
-
-impl DescriptorArenaLinear {
-    /// Internal version of [IDescriptorArena::allocate_set] that takes an unwrapped set layout
-    /// so we don't repeatedly unwrap the same object in a loop when calling
-    /// [IDescriptorArena::allocate_sets].
-    fn allocate_set_internal(
-        &self,
-        layout: &ParameterBlockLayout,
-    ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
-        if self.num_blocks.get() == self.set_capacity {
-            return Err(DescriptorAllocateError::OutOfMemory);
-        }
-
-        let num_resources = layout.compiled.resources.num_resources();
-        let num_samplers = layout.compiled.samplers.num_samplers();
-        let bumped_index = self.descriptor_bump_index.get() + num_resources;
-        if bumped_index > self.resource_arena.num_descriptors {
-            return Err(DescriptorAllocateError::OutOfPoolMemory);
-        }
-
-        // Bump allocate the required number of descriptors from the set
-        let set_index = self.descriptor_bump_index.get();
-        self.descriptor_bump_index.set(bumped_index);
-
-        let (resource_handle_cpu, resource_handle_gpu) =
-            self.get_optional_handles_for_index(layout, set_index);
-
-        let handle = {
-            Self::heap_allocate(
-                &&self.set_pool,
-                layout,
-                num_samplers as usize,
-                resource_handle_cpu,
-                resource_handle_gpu,
-            )
-        };
-
-        handle.ok_or(DescriptorAllocateError::OutOfMemory)
-    }
-
-    pub fn heap_allocate(
-        allocator: &impl Allocator,
-        layout: &ParameterBlockLayout,
-        num_samplers: usize,
-        resource_handle_cpu: Option<CPUDescriptorHandle>,
-        resource_handle_gpu: Option<GPUDescriptorHandle>,
-    ) -> Option<ParameterBlockHandle> {
-        // Make sure we can just allocate some u64 off the end of the set with no alignment issues
-        assert_eq!(align_of::<ParameterBlock>(), align_of::<u64>());
-
-        // The size is equal to one constant buffer object + num_dynamic_cbs u64s + num_samplers
-        // u64s.
-        let mem_layout = Self::descriptor_set_allocation_layout(num_samplers).unwrap();
-        let mut set = match allocator.allocate_zeroed(mem_layout) {
-            Ok(v) => v.cast::<MaybeUninit<ParameterBlock>>(),
-            Err(_) => return None,
-        };
-
-        let samplers = Self::get_allocated_arrays(set, num_samplers);
-
-        unsafe {
-            let set_uninit = set.as_mut();
-            set_uninit.write(ParameterBlock {
-                _layout: NonNull::from(layout),
-                resource_allocation: Default::default(),
-                resource_handle_cpu,
-                resource_handle_gpu,
-                samplers,
-            });
-        }
-
-        unsafe { Some(ParameterBlockHandle::from_raw(set.cast())) }
-    }
-
-    pub const fn descriptor_set_allocation_layout(
-        num_samplers: usize,
-    ) -> Result<Layout, LayoutError> {
-        let size = size_of::<ParameterBlock>();
-        let size = size + num_samplers * size_of::<Option<GPUDescriptorHandle>>();
-        let align = align_of::<ParameterBlock>();
-
-        Layout::from_size_align(size, align)
-    }
-
-    fn get_allocated_arrays(
-        set: NonNull<MaybeUninit<ParameterBlock>>,
-        num_samplers: usize,
-    ) -> NonNull<[Option<GPUDescriptorHandle>]> {
-        unsafe {
-            let samplers = set.as_ptr().add(1).cast::<Option<GPUDescriptorHandle>>();
-
-            // We use alloc-zeroed so we know that these arrays will be zero initialized so we don't
-            // need to do anything here
-            let samplers = if num_samplers != 0 {
-                std::slice::from_raw_parts_mut(samplers, num_samplers)
-            } else {
-                &mut []
-            };
-
-            NonNull::from(samplers)
-        }
+        unsafe { self.pool.reset_pool() }
     }
 }
 
@@ -247,21 +120,114 @@ impl Drop for DescriptorArenaLinear {
     }
 }
 
+pub struct LinearBlockFactory {
+    /// Bump allocator offset into 'resource_arena'.
+    pub next_resource_index: usize,
+
+    /// A bump arena used to allocate the backing buffers for the sampler and dynamic cb arrays
+    /// inside the set objects.
+    pub arena: BlinkAlloc,
+}
+
+unsafe impl IBlockFactory for LinearBlockFactory {
+    type Param<'a> = (Option<&'a DescriptorChunk>, &'a ParameterBlockLayout);
+    type T = ParameterBlock;
+
+    fn init_blocks<'a>(
+        &mut self,
+        p: Self::Param<'a>,
+        blocks: &mut [MaybeUninit<Self::T>],
+    ) -> Result<(), DescriptorAllocateError> {
+        let (resource_arena, block_layout) = p;
+        let num_resources = block_layout.compiled.resources.num_resources() as usize;
+        let num_samplers = block_layout.compiled.samplers.num_samplers() as usize;
+
+        debug_assert!(
+            !(resource_arena.is_none() && num_resources != 0),
+            "The resource layout needs a resource arena, but none was given!"
+        );
+
+        // Check if the given arena has enough space to serve the requested number of resources.
+        if let Some(resource_arena) = resource_arena {
+            let total_num_resources = num_resources * blocks.len();
+            let end = self.next_resource_index + total_num_resources;
+            if end > resource_arena.num_descriptors as usize {
+                return Err(DescriptorAllocateError::OutOfMemory);
+            }
+        }
+
+        for block in blocks {
+            // Create the sampler array, only if the layout requires them.
+            let samplers = if num_samplers == 0 {
+                NonNull::slice_from_raw_parts(NonNull::dangling(), 0)
+            } else {
+                let layout = Layout::array::<Option<GPUDescriptorHandle>>(num_samplers).unwrap();
+                let result = self.arena.allocate_zeroed(layout);
+                let result = match result {
+                    Ok(v) => v,
+                    Err(_) => handle_alloc_error(layout),
+                };
+                NonNull::slice_from_raw_parts(result.cast(), num_samplers)
+            };
+
+            // Get the sub-slice of the resource arena that we've allocated for this parameter
+            // block.
+            let (cpu, gpu) = if let Some(resource_arena) = resource_arena {
+                let (cpu, gpu) =
+                    resource_arena.get_handles_for_index(self.next_resource_index as u32);
+                self.next_resource_index += num_resources;
+                (Some(cpu), Some(gpu))
+            } else {
+                (None, None)
+            };
+
+            let new = ParameterBlock {
+                _layout: NonNull::from(block_layout),
+                resource_allocation: Default::default(), // Never used here
+                resource_handle_cpu: cpu,
+                resource_handle_gpu: gpu,
+                samplers,
+            };
+            block.write(new);
+        }
+        Ok(())
+    }
+
+    fn reuse_blocks(
+        &mut self,
+        _p: Self::Param<'_>,
+        _blocks: impl Iterator<Item = NonNull<Self::T>>,
+    ) -> Result<(), DescriptorAllocateError> {
+        // Intentional no-op
+        Ok(())
+    }
+
+    fn free_blocks(&mut self, _blocks: impl Iterator<Item = NonNull<Self::T>>) {
+        // Intentional no-op
+    }
+
+    fn reset_blocks(&mut self, blocks: &mut [Self::T]) {
+        for block in blocks {
+            // block.resource_allocation is unused in this use case
+            block.resource_handle_cpu = None;
+            block.resource_handle_gpu = None;
+            block.samplers = NonNull::slice_from_raw_parts(NonNull::dangling(), 0);
+        }
+        self.arena.reset();
+    }
+
+    fn drop_blocks(&mut self, _blocks: &mut [Self::T]) {
+        // Intentional no-op
+        //
+        // All allocations made by 'LinearBlockFactory' are from internal pools. There's no work
+        // that needs to be done here, the pools clean themselves up while being dropped.
+    }
+}
+
 pub struct DescriptorArenaHeap {
     pub(crate) _device: AnyArc<Device>,
-
-    /// The base address of the arena this pool allocates resource descriptors from
     pub(crate) resource_block: DescriptorChunk,
-
-    /// Allocation state used for allocating from the resource arena
-    pub(crate) resource_pool: Cell<Option<Box<OffsetAllocator>>>,
-
-    /// Object pool allocator that descriptor set objects are allocated from.
-    pub(crate) set_pool: ParameterBlockPool,
-
-    /// A list of all the handles that are currently live. Used so we can fully clean up after the
-    /// arena when it's being dropped.
-    pub(crate) live_handles: Cell<Vec<ParameterBlockHandle>>,
+    pub(crate) pool: ParameterBlockPool<HeapBlockFactory>,
 }
 
 declare_interfaces!(DescriptorArenaHeap, [IDescriptorArena]);
@@ -277,34 +243,15 @@ impl IDescriptorArena for DescriptorArenaHeap {
         &self,
         layout: &dyn IParameterBlockLayout,
     ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
-        let block_layout = unwrap::parameter_block_layout(layout);
+        let layout = unwrap::parameter_block_layout(layout);
 
-        let mut set = MaybeUninit::uninit();
-        self.set_pool
-            .allocate_blocks(std::slice::from_mut(&mut set))
-            .ok_or(DescriptorAllocateError::OutOfPoolMemory)?;
-
-        // Safety: allocate_sets is requried to intialize this so this is safe
-        let set = unsafe { set.assume_init() };
+        let mut blocks: [MaybeUninit<_>; 1] = [MaybeUninit::uninit(); 1];
+        self.pool
+            .allocate_blocks((&self.resource_block, layout), &mut blocks)?;
 
         unsafe {
-            let mut resource_pool = self.resource_pool.take().unwrap();
-            let mut live_handles = self.live_handles.take();
-            let out = match self.inner_allocate_block(&mut resource_pool, block_layout, set) {
-                Some(_) => {
-                    live_handles.push(set);
-                    Ok(set)
-                }
-                None => {
-                    // Return the set back to the pool
-                    self.set_pool.free_blocks(&[set]);
-                    Err(DescriptorAllocateError::OutOfMemory)
-                }
-            };
-            self.resource_pool.set(Some(resource_pool));
-            self.live_handles.set(live_handles);
-
-            out
+            let block = blocks[0].assume_init();
+            Ok(block)
         }
     }
 
@@ -313,164 +260,32 @@ impl IDescriptorArena for DescriptorArenaHeap {
         layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
     ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
-        let block_layout = unwrap::parameter_block_layout(layout);
+        let layout = unwrap::parameter_block_layout(layout);
 
-        let mut sets = vec![MaybeUninit::uninit(); num_blocks];
-        self.set_pool
-            .allocate_blocks(&mut sets)
-            .ok_or(DescriptorAllocateError::OutOfPoolMemory)?;
+        let mut blocks = Box::new_uninit_slice(num_blocks);
+        self.pool
+            .allocate_blocks((&self.resource_block, layout), &mut blocks)?;
 
-        debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_blocks);
-        let sets = sets.into_boxed_slice();
-        let sets: Box<[ParameterBlockHandle]> = unsafe { transmute(sets) };
-
-        unsafe {
-            let mut resource_pool = self.resource_pool.take().unwrap();
-            let mut live_handles = self.live_handles.take();
-
-            let mut num_allocated = 0usize;
-            for &handle in sets.iter() {
-                match self.inner_allocate_block(&mut resource_pool, block_layout, handle) {
-                    Some(_) => {
-                        live_handles.push(handle);
-                        num_allocated += 1;
-                    }
-                    None => {
-                        // Return the set back to the pool
-                        self.set_pool.free_blocks(&[handle]);
-                        break;
-                    }
-                };
-            }
-
-            self.resource_pool.set(Some(resource_pool));
-            self.live_handles.set(live_handles);
-
-            // If we failed to allocate enough sets (i.e we got OOM in the allocation loop) we need
-            // to go and free the ones we did successfully allocate. Thankfully we can just call
-            // 'free'.
-            if num_allocated != sets.len() {
-                self.free(&sets[0..num_allocated])
-            }
-        }
-
-        Ok(sets)
+        let blocks = Box::leak(blocks);
+        let blocks = NonNull::from(blocks);
+        let blocks =
+            NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
+        unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
     }
 
-    unsafe fn free(&self, sets: &[ParameterBlockHandle]) {
-        let mut live_handles = self.live_handles.take();
-        let mut resource_pool = self.resource_pool.take().unwrap();
-
-        for &handle in sets {
-            unsafe { Self::deallocate_set(&mut resource_pool, handle) };
-
-            let index = live_handles
-                .iter()
-                .enumerate()
-                .find_map(|(i, &v)| if v == handle { Some(i) } else { None })
-                .unwrap();
-            live_handles.swap_remove(index);
-        }
-
-        self.resource_pool.set(Some(resource_pool));
-        self.live_handles.set(live_handles);
-
-        self.set_pool.free_blocks(sets)
+    unsafe fn free(&self, blocks: &[ParameterBlockHandle]) {
+        self.pool.free_blocks(blocks);
     }
 
     unsafe fn reset(&self) {
         unsafe {
-            self.set_pool.reset_pool();
-        }
-
-        let mut resource_pool = self.resource_pool.take().unwrap();
-        resource_pool.reset();
-        self.resource_pool.set(Some(resource_pool));
-    }
-}
-
-impl DescriptorArenaHeap {
-    unsafe fn inner_allocate_block(
-        &self,
-        resource_pool: &mut OffsetAllocator,
-        block_layout: &ParameterBlockLayout,
-        handle: ParameterBlockHandle,
-    ) -> Option<()> {
-        let global_alloc = Global;
-
-        let num_resources = block_layout.compiled.resources.num_resources();
-        let num_samplers = block_layout.compiled.samplers.num_samplers() as usize;
-
-        let v = unsafe { handle.into_raw::<ParameterBlock>().as_mut() };
-        v._layout = NonNull::from(block_layout);
-
-        if num_resources != 0 {
-            let allocation = resource_pool.allocate(num_resources);
-
-            if allocation.is_fail() {
-                return None;
-            }
-
-            let (cpu, gpu) = self.resource_block.get_handles_for_index(allocation.offset);
-            v.resource_handle_cpu = Some(cpu);
-            v.resource_handle_gpu = Some(gpu);
-        } else {
-            v.resource_handle_cpu = None;
-            v.resource_handle_gpu = None;
-        }
-
-        // OOM here is a panic as if we OOM on the global alloc we're probably hosed.
-        if num_samplers != 0 {
-            let layout = Layout::array::<Option<GPUDescriptorHandle>>(num_samplers).unwrap();
-            let result = global_alloc.allocate_zeroed(layout);
-            let result = match result {
-                Ok(v) => v,
-                Err(_) => handle_alloc_error(layout),
-            };
-            let samplers =
-                unsafe { std::slice::from_raw_parts(result.cast().as_ptr(), num_samplers) };
-            v.samplers = NonNull::from(samplers);
-        } else {
-            v.samplers = NonNull::from(&[])
-        }
-
-        Some(())
-    }
-
-    unsafe fn deallocate_set(resource_pool: &mut OffsetAllocator, handle: ParameterBlockHandle) {
-        unsafe {
-            let global_alloc = Global;
-
-            let set = handle.into_raw::<ParameterBlock>().as_mut();
-
-            let samplers = set.samplers.as_ref();
-            if !samplers.is_empty() {
-                let layout = Layout::for_value(samplers);
-                global_alloc.deallocate(set.samplers.cast(), layout);
-            }
-
-            if !set.resource_allocation.is_fail() {
-                resource_pool.free(set.resource_allocation);
-                set.resource_allocation = Default::default();
-            }
-
-            set.resource_handle_cpu = None;
-            set.resource_handle_gpu = None;
+            self.pool.reset_pool();
         }
     }
 }
 
 impl Drop for DescriptorArenaHeap {
     fn drop(&mut self) {
-        let live_handles = self.live_handles.take();
-        let mut resource_pool = self.resource_pool.take().unwrap();
-        for handle in live_handles {
-            unsafe {
-                Self::deallocate_set(&mut resource_pool, handle);
-            }
-        }
-
         // Safety:
         // It's not possible to use the DescriptorArena, and thus the Chunk, again as we're in
         // the drop implementation.
@@ -481,6 +296,189 @@ impl Drop for DescriptorArenaHeap {
         unsafe {
             self.resource_block
                 .release_allocation_to_heap(self._device.descriptor_heaps.gpu_view_heap());
+        }
+    }
+}
+
+pub struct HeapBlockFactory {
+    /// Allocation state used for allocating from the resource arena
+    pub(crate) resource_pool: Box<OffsetAllocator>,
+}
+
+unsafe impl IBlockFactory for HeapBlockFactory {
+    type Param<'a> = (&'a DescriptorChunk, &'a ParameterBlockLayout);
+    type T = ParameterBlock;
+
+    fn init_blocks<'a>(
+        &mut self,
+        p: Self::Param<'a>,
+        blocks: &mut [MaybeUninit<Self::T>],
+    ) -> Result<(), DescriptorAllocateError> {
+        let (resource_arena, block_layout) = p;
+        let num_resources = block_layout.compiled.resources.num_resources() as usize;
+        let num_samplers = block_layout.compiled.samplers.num_samplers() as usize;
+
+        for block in blocks {
+            // Create the sampler array, only if the layout requires them.
+            let samplers = if num_samplers == 0 {
+                NonNull::slice_from_raw_parts(NonNull::dangling(), 0)
+            } else {
+                let layout = Layout::array::<Option<GPUDescriptorHandle>>(num_samplers).unwrap();
+                let result = Global.allocate_zeroed(layout);
+                let result = match result {
+                    Ok(v) => v,
+                    Err(_) => handle_alloc_error(layout),
+                };
+                NonNull::slice_from_raw_parts(result.cast(), num_samplers)
+            };
+
+            // Only allocate a resource block if we need some. We always free the resource block
+            // and never recycle them like the sampler arrays.
+            let (alloc, cpu, gpu) = if num_resources != 0 {
+                let alloc = self.resource_pool.allocate(num_resources as u32);
+
+                if alloc.is_fail() {
+                    return Err(DescriptorAllocateError::OutOfMemory);
+                }
+
+                let (cpu, gpu) = resource_arena.get_handles_for_index(alloc.offset);
+                (alloc, Some(cpu), Some(gpu))
+            } else {
+                (Default::default(), None, None)
+            };
+
+            let new = ParameterBlock {
+                _layout: NonNull::from(block_layout),
+                resource_allocation: alloc,
+                resource_handle_cpu: cpu,
+                resource_handle_gpu: gpu,
+                samplers,
+            };
+            block.write(new);
+        }
+        Ok(())
+    }
+
+    fn reuse_blocks(
+        &mut self,
+        p: Self::Param<'_>,
+        blocks: impl Iterator<Item = NonNull<Self::T>>,
+    ) -> Result<(), DescriptorAllocateError> {
+        let (resource_arena, block_layout) = p;
+        let num_resources = block_layout.compiled.resources.num_resources() as usize;
+        let num_samplers = block_layout.compiled.samplers.num_samplers() as usize;
+
+        for mut block in blocks {
+            unsafe {
+                let block = block.as_mut();
+                match (num_samplers, block.samplers.len()) {
+                    // Doesn't need samplers, do nothing! We're done!
+                    (0, _) => {}
+
+                    // Needs samplers, but doesn't have any? Allocate a new array!
+                    (needs, 0) => {
+                        let layout = Layout::array::<Option<GPUDescriptorHandle>>(needs).unwrap();
+                        let result = Global.allocate_zeroed(layout);
+                        let result = match result {
+                            Ok(v) => v,
+                            Err(_) => handle_alloc_error(layout),
+                        };
+                        block.samplers = NonNull::slice_from_raw_parts(result.cast(), needs)
+                    }
+
+                    // Needs samplers, and has some already? Check if we have enough, otherwise
+                    // make a new array.
+                    (needs, has) => {
+                        // Only need to allocate if there isn't enough space in the existing array
+                        if needs > has {
+                            // Free the old array
+                            let layout = Layout::for_value(block.samplers.as_ref());
+                            Global.deallocate(block.samplers.cast(), layout);
+
+                            // And make a new one!
+                            let layout =
+                                Layout::array::<Option<GPUDescriptorHandle>>(needs).unwrap();
+                            let result = Global.allocate_zeroed(layout);
+                            let result = match result {
+                                Ok(v) => v,
+                                Err(_) => handle_alloc_error(layout),
+                            };
+                            block.samplers = NonNull::slice_from_raw_parts(result.cast(), needs)
+                        }
+                    }
+                }
+
+                // Only allocate a resource block if we need some. We always free the resource block
+                // and never recycle them like the sampler arrays.
+                if num_resources != 0 {
+                    let allocation = self.resource_pool.allocate(num_resources as u32);
+
+                    if allocation.is_fail() {
+                        return Err(DescriptorAllocateError::OutOfMemory);
+                    }
+
+                    let (cpu, gpu) = resource_arena.get_handles_for_index(allocation.offset);
+                    block.resource_allocation = allocation;
+                    block.resource_handle_cpu = Some(cpu);
+                    block.resource_handle_gpu = Some(gpu);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn free_blocks(&mut self, blocks: impl Iterator<Item = NonNull<Self::T>>) {
+        for mut block in blocks {
+            unsafe {
+                let block = block.as_mut();
+
+                // Intentionally skip free-ing the sampler array as we are likely to be able to
+                // re-use it in-place
+
+                // Free the GPU descriptor heap allocation
+                if !block.resource_allocation.is_fail() {
+                    self.resource_pool.free(block.resource_allocation);
+                    block.resource_allocation = Default::default();
+                    block.resource_handle_cpu = None;
+                    block.resource_handle_gpu = None;
+                }
+            }
+        }
+    }
+
+    fn reset_blocks(&mut self, blocks: &mut [Self::T]) {
+        for block in blocks {
+            // Free the samplers using the global allocator
+            unsafe {
+                if !block.samplers.is_empty() {
+                    let layout = Layout::for_value(block.samplers.as_ref());
+                    Global.deallocate(block.samplers.cast(), layout);
+                    block.samplers = NonNull::slice_from_raw_parts(NonNull::dangling(), 0);
+                }
+            }
+
+            // Free the GPU descriptor heap allocation
+            if !block.resource_allocation.is_fail() {
+                self.resource_pool.free(block.resource_allocation);
+                block.resource_allocation = Default::default();
+                block.resource_handle_cpu = None;
+                block.resource_handle_gpu = None;
+            }
+        }
+    }
+
+    fn drop_blocks(&mut self, blocks: &mut [Self::T]) {
+        // We skip freeing the 'resource_allocation' in 'drop_blocks'. The pool is going to be
+        // dropped too so there's no point, the memory will be cleaned up in bulk.
+        for block in blocks {
+            // Free the samplers using the global allocator
+            unsafe {
+                if !block.samplers.is_empty() {
+                    let layout = Layout::for_value(block.samplers.as_ref());
+                    Global.deallocate(block.samplers.cast(), layout);
+                    block.samplers = NonNull::slice_from_raw_parts(NonNull::dangling(), 0);
+                }
+            }
         }
     }
 }

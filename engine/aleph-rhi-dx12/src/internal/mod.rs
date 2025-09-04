@@ -47,7 +47,6 @@ pub mod dxgi_debug_interface;
 pub mod feature_support;
 pub mod graphics_pipeline_state_stream;
 pub mod parameter_block;
-pub mod parameter_block_pool;
 pub mod register_message_callback;
 pub mod root_signature_blob;
 pub mod sampler_cache;

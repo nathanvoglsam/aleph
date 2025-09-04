@@ -28,7 +28,6 @@
 //
 
 use std::any::TypeId;
-use std::cell::Cell;
 use std::mem::{ManuallyDrop, size_of, transmute_copy};
 use std::ops::Deref;
 use std::ptr::NonNull;
@@ -44,6 +43,7 @@ use aleph_rhi_impl_utils::owned_desc::{
     OwnedBufferDesc, OwnedParameterBlockDesc, OwnedSamplerDesc, OwnedTextureDesc,
 };
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
+use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use allocator_api2::alloc::Allocator;
 use allocator_api2::vec::Vec as BVec;
@@ -78,7 +78,6 @@ use crate::internal::graphics_pipeline_state_stream::{
     GraphicsPipelineStateStream, GraphicsPipelineStateStreamBuilder,
 };
 use crate::internal::parameter_block::ParameterBlock;
-use crate::internal::parameter_block_pool::ParameterBlockPool;
 use crate::internal::register_message_callback::device_unregister_message_callback;
 use crate::internal::root_signature_blob::RootSignatureBlob;
 use crate::internal::{handle_wait_result, set_name, unwrap};
@@ -376,26 +375,27 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
+        use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
         let layout = unwrap::parameter_block_layout(desc.layout);
 
         let num_resources = layout.compiled.resources.num_resources();
-        let num_samplers = layout.compiled.samplers.num_samplers();
 
         let resource_arena = DescriptorChunk::new(
             self.descriptor_heaps.gpu_view_heap(),
             desc.num_blocks * num_resources,
         )?;
 
-        let samplers_size = num_samplers as usize * size_of::<Option<GPUDescriptorHandle>>();
-        let array_pool_size = samplers_size;
+        let factory = crate::descriptor_arena::LinearBlockFactory {
+            next_resource_index: 0,
+            arena: BlinkAlloc::new(),
+        };
+        let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
 
         let pool = Box::new(DescriptorPool {
             _device: self.this.upgrade().unwrap(),
             _layout: layout.this.upgrade().unwrap(),
             resource_arena,
-            set_pool: ParameterBlockPool::new(desc.num_blocks),
-            set_array_pool: BlinkAlloc::with_chunk_size(array_pool_size),
-            descriptor_bump_index: 0,
+            pool,
         });
 
         Ok(pool)
@@ -416,18 +416,16 @@ impl IDevice for Device {
                 )?
                 .unwrap();
 
-                let set_size = DescriptorArenaLinear::descriptor_set_allocation_layout(1)
-                    .unwrap()
-                    .size();
-                let set_pool_capacity = set_size * desc.num_blocks as usize;
+                let factory = crate::descriptor_arena::LinearBlockFactory {
+                    next_resource_index: 0,
+                    arena: BlinkAlloc::new(),
+                };
+                let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
 
                 let pool = Box::new(DescriptorArenaLinear {
                     _device: self.this.upgrade().unwrap(),
                     resource_arena,
-                    set_pool: BlinkAlloc::with_chunk_size(set_pool_capacity),
-                    descriptor_bump_index: Cell::new(0),
-                    num_blocks: Cell::new(0),
-                    set_capacity: desc.num_blocks,
+                    pool,
                 });
 
                 Ok(pool)
@@ -443,12 +441,13 @@ impl IDevice for Device {
                     OffsetAllocator::new(resource_block.num_descriptors, desc.num_blocks * 2);
                 let resource_pool = Box::new(resource_pool);
 
+                let factory = crate::descriptor_arena::HeapBlockFactory { resource_pool };
+                let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
+
                 let pool = Box::new(DescriptorArenaHeap {
                     _device: self.this.upgrade().unwrap(),
                     resource_block,
-                    resource_pool: Cell::new(Some(resource_pool)),
-                    set_pool: ParameterBlockPool::new(desc.num_blocks),
-                    live_handles: Cell::new(Vec::with_capacity(128)),
+                    pool,
                 });
 
                 Ok(pool)

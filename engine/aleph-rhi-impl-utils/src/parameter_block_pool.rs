@@ -243,7 +243,7 @@ impl<I: IBlockFactory> Drop for ParameterBlockPool<I> {
             let data: NonNull<I::T> = self.pool.buf.cast();
             let mut all_blocks: NonNull<[I::T]> =
                 NonNull::slice_from_raw_parts(data, self.num_allocated.get());
-            self.factory.get_mut().reset_blocks(all_blocks.as_mut());
+            self.factory.get_mut().drop_blocks(all_blocks.as_mut());
 
             // Once the initializer has been able to release the internal allocations we can
             // drop the objects if needed.
@@ -311,4 +311,18 @@ pub unsafe trait IBlockFactory {
     /// You must be able ot handle block objects that have already had
     /// [`IBlockFactory::free_blocks`] called on them.
     fn reset_blocks(&mut self, blocks: &mut [Self::T]);
+
+    /// An alternate form of [`IBlockFactory::reset_blocks`] that will be called only when the
+    /// parameter block pool itself is being dropped. This should free all internal allocations in
+    /// the parameter block, similar to 'reset_blocks'.
+    ///
+    /// This function allows for implementations to skip freeing certain internal allocations when
+    /// the pool is being dropped. For example, if the allocation is from some internal pool where
+    /// the work to free the allocation is pointless because the whole pool will be dropped too.
+    ///
+    /// The default implementation makes this an alias for [`IBlockFactory::reset_blocks`]. It is
+    /// up to the implementation to provide an optimized version, and to ensure both are correct.
+    fn drop_blocks(&mut self, blocks: &mut [Self::T]) {
+        self.reset_blocks(blocks)
+    }
 }
