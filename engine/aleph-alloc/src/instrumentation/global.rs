@@ -90,9 +90,9 @@ unsafe impl GlobalAlloc for SystemUncategorized {
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         unsafe {
-            System.dealloc(ptr, layout);
             Self::sub(layout.size());
             aleph_profile::emit_free_n(ptr, Uncategorized::NAME.to_cstr());
+            System.dealloc(ptr, layout);
         }
     }
 
@@ -107,10 +107,12 @@ unsafe impl GlobalAlloc for SystemUncategorized {
 
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         unsafe {
-            let out = System.realloc(ptr, layout, new_size);
             Self::sub(layout.size());
-            Self::add(new_size);
             aleph_profile::emit_free_n(ptr, Uncategorized::NAME.to_cstr());
+
+            let out = System.realloc(ptr, layout, new_size);
+
+            Self::add(new_size);
             aleph_profile::emit_alloc_n(out, new_size, Uncategorized::NAME.to_cstr());
             out
         }

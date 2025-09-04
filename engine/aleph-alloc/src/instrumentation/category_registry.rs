@@ -95,8 +95,7 @@ macro_rules! new_alloc_category {
     ($t: path, $id: literal) => {
         unsafe impl $crate::instrumentation::IAllocationCategory for $t {
             const ID: $crate::uuid::Uuid = $crate::uuid::uuid!($id);
-            const NAME: &'static $crate::nstr::NStr =
-                $crate::nstr::nstr!(concat!(module_path!(), "::", stringify!($t)));
+            const NAME: &'static $crate::nstr::NStr = $crate::nstr::nstr!(stringify!($t));
 
             #[inline(always)]
             fn info() -> &'static $crate::instrumentation::CategoryInfo {

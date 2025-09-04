@@ -56,16 +56,40 @@ impl<T: IAllocationCategory, A: Allocator> Instrumented<T, A> {
         self.inner
     }
 
+    #[inline]
     fn add(bytes: usize) {
         T::info()
             .bytes_allocated
             .fetch_add(bytes, Ordering::Relaxed);
     }
 
+    #[inline]
     fn sub(bytes: usize) {
         T::info()
             .bytes_allocated
             .fetch_sub(bytes, Ordering::Relaxed);
+    }
+
+    #[inline]
+    unsafe fn handle_resized(
+        result: Result<NonNull<[u8]>, AllocError>,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        match result {
+            Ok(v) => unsafe {
+                let ptr = v.cast::<u8>();
+                Self::add(new_layout.size());
+                aleph_profile::emit_alloc_n(ptr.as_ptr(), new_layout.size(), T::NAME.to_cstr());
+                Ok(v)
+            },
+            v @ Err(_) => unsafe {
+                Self::add(old_layout.size());
+                aleph_profile::emit_alloc_n(ptr.as_ptr(), new_layout.size(), T::NAME.to_cstr());
+                v
+            },
+        }
     }
 }
 
@@ -120,20 +144,11 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        let out = unsafe { self.inner.grow(ptr, old_layout, new_layout) };
-        Self::sub(old_layout.size());
-        Self::add(new_layout.size());
-        match out {
-            Ok(v) => unsafe {
-                aleph_profile::emit_free_n(ptr.as_ptr(), T::NAME.to_cstr());
-                aleph_profile::emit_alloc_n(
-                    v.cast::<u8>().as_ptr(),
-                    new_layout.size(),
-                    T::NAME.to_cstr(),
-                );
-                Ok(v)
-            },
-            v @ Err(_) => v,
+        unsafe {
+            aleph_profile::emit_free_n(ptr.as_ptr(), T::NAME.to_cstr());
+            Self::sub(old_layout.size());
+            let out = self.inner.grow(ptr, old_layout, new_layout);
+            Self::handle_resized(out, ptr, old_layout, new_layout)
         }
     }
 
@@ -143,20 +158,11 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        let out = unsafe { self.inner.grow_zeroed(ptr, old_layout, new_layout) };
-        Self::sub(old_layout.size());
-        Self::add(new_layout.size());
-        match out {
-            Ok(v) => unsafe {
-                aleph_profile::emit_free_n(ptr.as_ptr(), T::NAME.to_cstr());
-                aleph_profile::emit_alloc_n(
-                    v.cast::<u8>().as_ptr(),
-                    new_layout.size(),
-                    T::NAME.to_cstr(),
-                );
-                Ok(v)
-            },
-            v @ Err(_) => v,
+        unsafe {
+            aleph_profile::emit_free_n(ptr.as_ptr(), T::NAME.to_cstr());
+            Self::sub(old_layout.size());
+            let out = self.inner.grow_zeroed(ptr, old_layout, new_layout);
+            Self::handle_resized(out, ptr, old_layout, new_layout)
         }
     }
 
@@ -166,20 +172,11 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        let out = unsafe { self.inner.shrink(ptr, old_layout, new_layout) };
-        Self::sub(old_layout.size());
-        Self::add(new_layout.size());
-        match out {
-            Ok(v) => unsafe {
-                aleph_profile::emit_free_n(ptr.as_ptr(), T::NAME.to_cstr());
-                aleph_profile::emit_alloc_n(
-                    v.cast::<u8>().as_ptr(),
-                    new_layout.size(),
-                    T::NAME.to_cstr(),
-                );
-                Ok(v)
-            },
-            v @ Err(_) => v,
+        unsafe {
+            aleph_profile::emit_free_n(ptr.as_ptr(), T::NAME.to_cstr());
+            Self::sub(old_layout.size());
+            let out = self.inner.shrink(ptr, old_layout, new_layout);
+            Self::handle_resized(out, ptr, old_layout, new_layout)
         }
     }
 }
