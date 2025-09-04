@@ -84,3 +84,27 @@ macro_rules! finish_frame {
             .frame_mark();
     };
 }
+
+#[inline]
+pub unsafe fn emit_alloc_n(ptr: *mut u8, size: usize, name: &'static std::ffi::CStr) {
+    tracy_client::Client::start();
+    let ptr = ptr as *const u8 as *const std::os::raw::c_void;
+    unsafe {
+        tracy_client::sys::___tracy_emit_memory_alloc_callstack_named(
+            ptr,
+            size,
+            62,
+            1,
+            name.as_ptr(),
+        )
+    }
+}
+
+#[inline]
+pub unsafe fn emit_free_n(ptr: *mut u8, name: &'static std::ffi::CStr) {
+    tracy_client::Client::start();
+    let ptr = ptr as *const u8 as *const std::os::raw::c_void;
+    unsafe {
+        tracy_client::sys::___tracy_emit_memory_free_callstack_named(ptr, 62, 1, name.as_ptr())
+    }
+}

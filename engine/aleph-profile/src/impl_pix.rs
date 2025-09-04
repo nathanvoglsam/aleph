@@ -88,6 +88,16 @@ macro_rules! finish_frame {
     () => {{}};
 }
 
+#[inline]
+pub unsafe fn emit_alloc_n(_ptr: *mut u8, _size: usize, _name: &'static std::ffi::CStr) {
+    // Intentional no-op
+}
+
+#[inline]
+pub unsafe fn emit_free_n(_ptr: *mut u8, _name: &'static std::ffi::CStr) {
+    // Intentional no-op
+}
+
 //
 // RAII wrappers to support pix. These are public as they need to be callable from macros
 // but are not intended for direct use.
