@@ -213,6 +213,7 @@ unsafe impl IBlockFactory for LinearBlockFactory {
             block.resource_handle_gpu = None;
             block.samplers = NonNull::slice_from_raw_parts(NonNull::dangling(), 0);
         }
+        self.next_resource_index = 0;
         self.arena.reset();
     }
 
