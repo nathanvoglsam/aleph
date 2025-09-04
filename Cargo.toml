@@ -33,6 +33,7 @@ resolver = "2"
 
 members = [
     "engine/aleph",
+    "engine/aleph-alloc",
     "engine/aleph-any",
     "engine/aleph-atomic-borrow",
     "engine/aleph-compile",
@@ -120,6 +121,7 @@ egui_plot = "0.33"
 embed-resource = "3"
 env_logger = "0.11.0"
 half = { version = "2", features = ["alloc", "bytemuck", "num-traits"] }
+hashbrown = { version = "0.16", features = ["allocator-api2"] }
 ignore = "0.4"
 image = {version = "0.25", default-features = false, features = ["default-formats"] }
 libc = "0.2"
@@ -182,6 +184,7 @@ windows.features = [
 ]
 
 # Aleph Crates
+aleph-alloc = { path = "engine/aleph-alloc", version = "0.1" }
 aleph-any = { path = "./engine/aleph-any", version = "0.1" }
 aleph-atomic-borrow = { path = "./engine/aleph-atomic-borrow", version = "0.1" }
 aleph-compile = { path = "./engine/aleph-compile", version = "1" }
