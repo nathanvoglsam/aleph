@@ -31,16 +31,19 @@ use std::any::TypeId;
 use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 
+use aleph_alloc::vec::Vec as BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_nstr::{NStr, nstr};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiGlobal;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use ash::vk::{self, Handle};
 use parking_lot::Mutex;
 
 use crate::context::Context;
 use crate::device::Device;
+use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::conv::{present_mode_to_vk, texture_format_to_vk};
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
 use crate::internal::semaphore_pool::SemaphorePool;
@@ -162,7 +165,7 @@ impl ISwapChain for SwapChain {
                     index: i,
                     texture,
                     ready_semaphore: AtomicU64::new(ready_semaphore.as_raw()),
-                    work_semaphores: Mutex::new(Vec::new()),
+                    work_semaphores: Mutex::new(BVec::new_in(Default::default())),
                     semaphore_pool,
                 });
                 let swap_image = AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v);
@@ -253,12 +256,12 @@ impl SwapChain {
 
         inner.swap_chain = unsafe {
             swapchain_loader
-                .create_swapchain(&swap_create_info, None)
+                .create_swapchain(&swap_create_info, GLOBAL)
                 .map_err(|e| log::error!("Platform Error: {:#?}", e))?
         };
 
         if old_swapchain != vk::SwapchainKHR::null() {
-            unsafe { swapchain_loader.destroy_swapchain(old_swapchain, None) };
+            unsafe { swapchain_loader.destroy_swapchain(old_swapchain, GLOBAL) };
         }
 
         let images = unsafe {
@@ -277,69 +280,67 @@ impl SwapChain {
             nstr!(obj_name!("SwapImage-6")),
             nstr!(obj_name!("SwapImage-7")),
         ];
-        let images: Vec<_> = images
-            .iter()
-            .enumerate()
-            .map(|(i, image)| {
-                use ResourceUsageFlags as F;
+        let mut new_images = BVec::with_capacity_in(images.len(), Default::default());
+        let iter = images.iter().enumerate().map(|(i, image)| {
+            use ResourceUsageFlags as F;
 
-                // Apply name to swap images when we query them
-                set_name_nstr(
-                    self.device.debug_loader.as_ref(),
-                    *image,
-                    Some(SWAP_NAMES[i]),
-                );
+            // Apply name to swap images when we query them
+            set_name_nstr(
+                self.device.debug_loader.as_ref(),
+                *image,
+                Some(SWAP_NAMES[i]),
+            );
 
-                // This shadows swap_create_info to a reference to itself so the new_cyclic move
-                // closure moves the reference and not the object itself
-                let swap_create_info = &swap_create_info;
-                let desc = TextureDesc {
-                    width: swap_create_info.image_extent.width,
-                    height: swap_create_info.image_extent.height,
-                    depth: 1,
-                    format: config.format,
-                    dimension: TextureDimension::Texture2D,
-                    clear_value: None,
-                    array_size: 1,
-                    mip_levels: 1,
-                    sample_count: 1,
-                    sample_quality: 0,
-                    usage: F::COPY_DEST | F::RENDER_TARGET,
-                    name: Some("Vulkan Internal SwapChain Image"),
-                };
-                let out = Texture {
-                    _device: self.device.clone(),
-                    id: self.device.object_counter.next_texture(),
-                    image: *image,
-                    // creation_flags: create_info.flags,
-                    // created_usage: create_info.usage,
-                    allocation: None,
-                    is_owned: false,
-                    views: Default::default(),
-                    rtvs: Default::default(),
-                    dsvs: Default::default(),
-                    desc: OwnedTextureDesc::new(desc),
-                };
-                Object::new_arc(out)
-            })
-            .collect();
+            // This shadows swap_create_info to a reference to itself so the new_cyclic move
+            // closure moves the reference and not the object itself
+            let swap_create_info = &swap_create_info;
+            let desc = TextureDesc {
+                width: swap_create_info.image_extent.width,
+                height: swap_create_info.image_extent.height,
+                depth: 1,
+                format: config.format,
+                dimension: TextureDimension::Texture2D,
+                clear_value: None,
+                array_size: 1,
+                mip_levels: 1,
+                sample_count: 1,
+                sample_quality: 0,
+                usage: F::COPY_DEST | F::RENDER_TARGET,
+                name: Some("Vulkan Internal SwapChain Image"),
+            };
+            let out = Texture {
+                _device: self.device.clone(),
+                id: self.device.object_counter.next_texture(),
+                image: *image,
+                // creation_flags: create_info.flags,
+                // created_usage: create_info.usage,
+                allocation: None,
+                is_owned: false,
+                views: Default::default(),
+                rtvs: Default::default(),
+                dsvs: Default::default(),
+                desc: OwnedTextureDesc::new(desc),
+            };
+            Object::new_arc(out)
+        });
+        new_images.extend(iter);
 
         for mut pool in inner.semaphore_pools.drain(..) {
             let pool = Arc::get_mut(&mut pool).unwrap();
             unsafe { pool.destroy(&self.device.device) };
         }
 
-        let semaphore_pools: Vec<_> = std::iter::repeat_n((), images.len())
-            .map(|_| Arc::new(SemaphorePool::new()))
-            .collect();
+        let mut new_semaphore_pools = BVec::with_capacity_in(images.len(), Default::default());
+        let iter = std::iter::repeat_n((), images.len()).map(|_| Arc::new(SemaphorePool::new()));
+        new_semaphore_pools.extend(iter);
 
         inner.extent = extents;
         inner.format = config.format;
         inner.vk_format = format;
         inner.color_space = color_space;
         inner.vk_present_mode = present_mode;
-        inner.images = images;
-        inner.semaphore_pools = semaphore_pools;
+        inner.images = new_images;
+        inner.semaphore_pools = new_semaphore_pools;
 
         Ok(())
     }
@@ -452,7 +453,7 @@ impl Drop for SwapChain {
         let loader = self.device.swapchain.as_ref().unwrap();
         unsafe {
             if inner.swap_chain != vk::SwapchainKHR::null() {
-                loader.destroy_swapchain(inner.swap_chain, None);
+                loader.destroy_swapchain(inner.swap_chain, GLOBAL);
             }
         }
         unsafe {
@@ -472,8 +473,8 @@ pub struct SwapChainState {
     pub present_mode: PresentationMode,
     pub vk_present_mode: vk::PresentModeKHR,
     pub extent: vk::Extent2D,
-    pub images: Vec<Arc<Object<Texture>>>,
-    pub semaphore_pools: Vec<Arc<SemaphorePool>>,
+    pub images: BVec<Arc<Object<Texture>>, RhiGlobal>,
+    pub semaphore_pools: BVec<Arc<SemaphorePool>, RhiGlobal>,
 }
 
 impl SwapChainState {

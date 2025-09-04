@@ -34,6 +34,7 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use aleph_alloc::vec::Vec as BVec;
 use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject, box_downcast};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
@@ -44,6 +45,7 @@ use parking_lot::Mutex;
 use crate::command_list::{CommandList, ListState};
 use crate::device::{Device, FreeCommandList};
 use crate::fence::Fence;
+use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::unwrap;
 use crate::semaphore::Semaphore;
@@ -128,7 +130,7 @@ impl Queue {
                 .initial_value(0)
                 .semaphore_type(vk::SemaphoreType::TIMELINE);
             let info = vk::SemaphoreCreateInfo::default().push_next(&mut info);
-            device.device.create_semaphore(&info, None).unwrap()
+            device.device.create_semaphore(&info, GLOBAL).unwrap()
         };
         AnyArc::new_cyclic(|v| Self {
             _this: v.clone(),
@@ -339,8 +341,11 @@ impl IQueue for Queue {
         let result = unsafe {
             let swap_chain = swap_chain.inner.lock();
 
-            let wait_semaphores = Mutex::get_mut(&mut swap_image.work_semaphores);
-            let wait_semaphores = std::mem::take(wait_semaphores);
+            let mut wait_semaphores = BVec::new_in(Default::default());
+            std::mem::swap(
+                Mutex::get_mut(&mut swap_image.work_semaphores),
+                &mut wait_semaphores,
+            );
             let swapchains = [swap_chain.swap_chain];
             let image_indices = [swap_image.index];
             let info = vk::PresentInfoKHR::default()

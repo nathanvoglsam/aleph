@@ -33,6 +33,7 @@ use aleph_rhi_api::*;
 use ash::vk;
 
 use crate::device::Device;
+use crate::internal::allocation_callbacks::GLOBAL;
 
 pub struct Fence {
     pub(crate) _device: AnyArc<Device>,
@@ -52,7 +53,7 @@ impl Fence {
 impl Drop for Fence {
     fn drop(&mut self) {
         unsafe {
-            self._device.device.destroy_fence(self.fence, None);
+            self._device.device.destroy_fence(self.fence, GLOBAL);
         }
     }
 }

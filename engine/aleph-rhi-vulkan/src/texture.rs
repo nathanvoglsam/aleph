@@ -27,18 +27,20 @@
 // SOFTWARE.
 //
 
-use std::collections::HashMap;
 use std::num::NonZeroU64;
 
+use aleph_alloc::{DefaultHashBuilder, HashMap};
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiGlobal;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use ash::vk;
 use parking_lot::Mutex;
 use vulkan_alloc::vma;
 
 use crate::device::Device;
+use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::conv::{image_view_type_to_vk, subresource_range_to_vk, texture_format_to_vk};
 
 pub struct Texture {
@@ -49,9 +51,9 @@ pub struct Texture {
     // pub(crate) created_usage: vk::ImageUsageFlags,
     pub(crate) allocation: Option<vma::Allocation>,
     pub(crate) is_owned: bool,
-    pub(crate) views: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
-    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
-    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
+    pub(crate) views: Mutex<HashMap<ImageViewDesc, vk::ImageView, DefaultHashBuilder, RhiGlobal>>,
+    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, vk::ImageView, DefaultHashBuilder, RhiGlobal>>,
+    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, vk::ImageView, DefaultHashBuilder, RhiGlobal>>,
     pub(crate) desc: OwnedTextureDesc,
 }
 
@@ -147,7 +149,7 @@ impl Texture {
         let view = unsafe {
             device
                 .device
-                .create_image_view(&create_info, None)
+                .create_image_view(&create_info, GLOBAL)
                 .map_err(|_| ())? // TODO: error handling
         };
 
@@ -159,15 +161,15 @@ impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
             for (_desc, view) in self.views.get_mut().drain() {
-                self._device.device.destroy_image_view(view, None);
+                self._device.device.destroy_image_view(view, GLOBAL);
             }
 
             for (_desc, view) in self.rtvs.get_mut().drain() {
-                self._device.device.destroy_image_view(view, None);
+                self._device.device.destroy_image_view(view, GLOBAL);
             }
 
             for (_desc, view) in self.dsvs.get_mut().drain() {
-                self._device.device.destroy_image_view(view, None);
+                self._device.device.destroy_image_view(view, GLOBAL);
             }
 
             // Some images we don't own, like swap chain images, so we shouldn't destroy them

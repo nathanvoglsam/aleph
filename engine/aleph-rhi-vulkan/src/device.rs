@@ -30,17 +30,18 @@
 use std::any::TypeId;
 use std::mem::{ManuallyDrop, MaybeUninit};
 
+use aleph_alloc::alloc::Allocator;
+use aleph_alloc::vec::Vec as BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiGlobal;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::owned_desc::{
     OwnedBufferDesc, OwnedParameterBlockDesc, OwnedSamplerDesc, OwnedTextureDesc,
 };
-use allocator_api2::vec::Vec as BVec;
 use ash::vk;
-use blink_alloc::{Blink, BlinkAlloc};
 use byteorder::{ByteOrder, NativeEndian};
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
@@ -54,7 +55,7 @@ use crate::context::Context;
 use crate::descriptor_arena::DescriptorArena;
 use crate::descriptor_pool::DescriptorPool;
 use crate::fence::Fence;
-use crate::internal::allocation_callbacks::callbacks_from_rust_allocator;
+use crate::internal::allocation_callbacks::{GLOBAL, callbacks_from_rust_allocator};
 use crate::internal::conv::*;
 use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::set_name::set_name;
@@ -173,7 +174,7 @@ impl IDevice for Device {
                 bindings.push(binding);
             }
 
-            let mut pool_sizes = Vec::with_capacity(sizes.len());
+            let mut pool_sizes = BVec::with_capacity_in(sizes.len(), Default::default());
             for (i, v) in sizes.iter().copied().enumerate() {
                 // Accumulate any non-zero pool size into the list
                 if v > 0 {
@@ -194,13 +195,13 @@ impl IDevice for Device {
 
             let descriptor_set_layout = unsafe {
                 self.device
-                    .create_descriptor_set_layout(&create_info, None)
+                    .create_descriptor_set_layout(&create_info, GLOBAL)
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
             set_name(
                 self.debug_loader.as_ref(),
-                &bump,
+                bump.allocator(),
                 descriptor_set_layout,
                 desc.name,
             );
@@ -227,7 +228,8 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let mut block_layouts = Vec::with_capacity(desc.parameter_block_layouts.len());
+            let mut block_layouts =
+                BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiGlobal::default());
             let mut set_layouts =
                 BVec::with_capacity_in(desc.parameter_block_layouts.len(), bump.allocator());
             for v in desc.parameter_block_layouts {
@@ -253,13 +255,13 @@ impl IDevice for Device {
 
             let pipeline_layout = unsafe {
                 self.device
-                    .create_pipeline_layout(&create_info, None)
+                    .create_pipeline_layout(&create_info, GLOBAL)
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
             set_name(
                 self.debug_loader.as_ref(),
-                &bump,
+                bump.allocator(),
                 pipeline_layout,
                 desc.name,
             );
@@ -298,9 +300,9 @@ impl IDevice for Device {
 
             // Translate the vertex input state
             let vertex_binding_descriptions: BVec<_, _> =
-                Self::translate_vertex_bindings(&bump, desc);
+                Self::translate_vertex_bindings(bump.allocator(), desc);
             let vertex_attribute_descriptions: BVec<_, _> =
-                Self::translate_vertex_attributes(&bump, desc);
+                Self::translate_vertex_attributes(bump.allocator(), desc);
             let vertex_input_state = Self::translate_vertex_input_state(
                 &vertex_binding_descriptions,
                 &vertex_attribute_descriptions,
@@ -323,7 +325,7 @@ impl IDevice for Device {
                 BVec::with_capacity_in(desc.render_target_formats.len(), bump.allocator());
             let mut dynamic_rendering = Self::translate_framebuffer_info(desc, &mut color_formats);
 
-            let attachments = Self::translate_color_attachment_state(&bump, desc);
+            let attachments = Self::translate_color_attachment_state(bump.allocator(), desc);
             let color_blend_state = Self::translate_color_blend_state(&attachments);
 
             let alloc_adapter = callbacks_from_rust_allocator(bump.allocator());
@@ -332,7 +334,7 @@ impl IDevice for Device {
             for (i, v) in desc.shader_stages.iter().copied().enumerate() {
                 let stage = v.shader_type();
                 let module = unsafe {
-                    let shader_data = Self::unwrap_shader_bytecode(&bump, i, v)?;
+                    let shader_data = Self::unwrap_shader_bytecode(bump.allocator(), i, v)?;
                     let create_info = vk::ShaderModuleCreateInfo::default().code(shader_data);
                     self.device
                         .create_shader_module(&create_info, Some(&alloc_adapter))
@@ -363,7 +365,7 @@ impl IDevice for Device {
 
             let pipeline = unsafe {
                 self.device
-                    .create_graphics_pipelines(vk::PipelineCache::null(), &[builder], None)
+                    .create_graphics_pipelines(vk::PipelineCache::null(), &[builder], GLOBAL)
                     .map_err(|(_, v)| log::error!("Platform Error: {:#?}", v))?
             };
             let pipeline = pipeline[0];
@@ -375,7 +377,12 @@ impl IDevice for Device {
                 }
             }
 
-            set_name(self.debug_loader.as_ref(), &bump, pipeline, desc.name);
+            set_name(
+                self.debug_loader.as_ref(),
+                bump.allocator(),
+                pipeline,
+                desc.name,
+            );
 
             let out = GraphicsPipeline {
                 _device: self.this.upgrade().unwrap(),
@@ -399,7 +406,8 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let shader_data = Self::unwrap_shader_bytecode(&bump, 0, desc.shader_module)?;
+            let shader_data =
+                Self::unwrap_shader_bytecode(bump.allocator(), 0, desc.shader_module)?;
             let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
             // Create a temporary shader module using
@@ -422,7 +430,7 @@ impl IDevice for Device {
 
             let pipeline = unsafe {
                 self.device
-                    .create_compute_pipelines(vk::PipelineCache::null(), &[builder], None)
+                    .create_compute_pipelines(vk::PipelineCache::null(), &[builder], GLOBAL)
                     .map_err(|(_, v)| log::error!("Platform Error: {:#?}", v))?
             };
             let pipeline = pipeline[0];
@@ -433,7 +441,12 @@ impl IDevice for Device {
                     .destroy_shader_module(module, Some(&alloc_adapter))
             }
 
-            set_name(self.debug_loader.as_ref(), &bump, pipeline, desc.name);
+            set_name(
+                self.debug_loader.as_ref(),
+                bump.allocator(),
+                pipeline,
+                desc.name,
+            );
 
             let out = ComputePipeline {
                 _device: self.this.upgrade().unwrap(),
@@ -472,13 +485,13 @@ impl IDevice for Device {
 
             let descriptor_pool = unsafe {
                 self.device
-                    .create_descriptor_pool(&create_info, None)
+                    .create_descriptor_pool(&create_info, GLOBAL)
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
             set_name(
                 self.debug_loader.as_ref(),
-                &bump,
+                bump.allocator(),
                 descriptor_pool,
                 desc.name,
             );
@@ -545,13 +558,13 @@ impl IDevice for Device {
 
             let descriptor_pool = unsafe {
                 self.device
-                    .create_descriptor_pool(&create_info, None)
+                    .create_descriptor_pool(&create_info, GLOBAL)
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
             set_name(
                 self.debug_loader.as_ref(),
-                &bump,
+                bump.allocator(),
                 descriptor_pool,
                 desc.name,
             );
@@ -789,11 +802,16 @@ impl IDevice for Device {
 
             let sampler = unsafe {
                 self.device
-                    .create_sampler(&create_info, None)
+                    .create_sampler(&create_info, GLOBAL)
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
-            set_name(self.debug_loader.as_ref(), &bump, sampler, desc.name);
+            set_name(
+                self.debug_loader.as_ref(),
+                bump.allocator(),
+                sampler,
+                desc.name,
+            );
 
             let out = Sampler {
                 _device: self.this.upgrade().unwrap(),
@@ -825,8 +843,18 @@ impl IDevice for Device {
             // this we front creating new command pools with a free list so we recycle old ones
             // first.
             if let Some(list) = self.command_list_pool.get_for_queue_type(desc.queue_type) {
-                set_name(self.debug_loader.as_ref(), &bump, list.pool, desc.name);
-                set_name(self.debug_loader.as_ref(), &bump, list.buffer, desc.name);
+                set_name(
+                    self.debug_loader.as_ref(),
+                    bump.allocator(),
+                    list.pool,
+                    desc.name,
+                );
+                set_name(
+                    self.debug_loader.as_ref(),
+                    bump.allocator(),
+                    list.buffer,
+                    desc.name,
+                );
 
                 // It is assumed that only command lists that are safe to reuse are placed into the
                 // free list.
@@ -857,7 +885,7 @@ impl IDevice for Device {
                 .queue_family_index(family_index);
             let command_pool = unsafe {
                 self.device
-                    .create_command_pool(&create_info, None)
+                    .create_command_pool(&create_info, GLOBAL)
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
@@ -877,8 +905,18 @@ impl IDevice for Device {
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
-            set_name(self.debug_loader.as_ref(), &bump, command_pool, desc.name);
-            set_name(self.debug_loader.as_ref(), &bump, command_buffer, desc.name);
+            set_name(
+                self.debug_loader.as_ref(),
+                bump.allocator(),
+                command_pool,
+                desc.name,
+            );
+            set_name(
+                self.debug_loader.as_ref(),
+                bump.allocator(),
+                command_buffer,
+                desc.name,
+            );
 
             let out: Box<dyn ICommandList> = Box::new(CommandList {
                 _device: self.this.upgrade().unwrap(),
@@ -950,7 +988,7 @@ impl IDevice for Device {
                 info = info.flags(vk::FenceCreateFlags::SIGNALED)
             }
             self.device
-                .create_fence(&info, None)
+                .create_fence(&info, GLOBAL)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
@@ -969,7 +1007,7 @@ impl IDevice for Device {
         let semaphore = unsafe {
             let info = vk::SemaphoreCreateInfo::default();
             self.device
-                .create_semaphore(&info, None)
+                .create_semaphore(&info, GLOBAL)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
@@ -1183,8 +1221,8 @@ impl Device {
         }
     }
 
-    fn unwrap_shader_bytecode<'a>(
-        bump: &'a Blink,
+    fn unwrap_shader_bytecode<'a, A: Allocator + 'a>(
+        bump: A,
         index: usize,
         shader: &dyn IShaderCodeSource,
     ) -> Result<&'a [u32], PipelineCreateError> {
@@ -1198,32 +1236,32 @@ impl Device {
 
         // We need to copy the data into a u32 buffer to satisfy alignment requirements
         let data_iter = data.chunks_exact(4).map(NativeEndian::read_u32);
-        let mut data = BVec::new_in(bump.allocator());
+        let mut data = BVec::new_in(bump);
         data.extend(data_iter);
         let data = BVec::leak(data);
 
         Ok(&*data)
     }
 
-    fn translate_vertex_bindings<'a>(
-        bump: &'a Blink,
+    fn translate_vertex_bindings<'a, A: Allocator + 'a>(
+        bump: A,
         desc: &GraphicsPipelineDesc,
-    ) -> BVec<vk::VertexInputBindingDescription, &'a BlinkAlloc> {
+    ) -> BVec<vk::VertexInputBindingDescription, A> {
         let iter = desc.vertex_layout.input_bindings.iter().map(|v| {
             vk::VertexInputBindingDescription::default()
                 .binding(v.binding)
                 .stride(v.stride)
                 .input_rate(vertex_input_rate_to_vk(v.input_rate))
         });
-        let mut out = BVec::new_in(bump.allocator());
+        let mut out = BVec::new_in(bump);
         out.extend(iter);
         out
     }
 
-    fn translate_vertex_attributes<'a>(
-        bump: &'a Blink,
+    fn translate_vertex_attributes<'a, A: Allocator + 'a>(
+        bump: A,
         desc: &GraphicsPipelineDesc,
-    ) -> BVec<vk::VertexInputAttributeDescription, &'a BlinkAlloc> {
+    ) -> BVec<vk::VertexInputAttributeDescription, A> {
         let iter = desc.vertex_layout.input_attributes.iter().map(|v| {
             vk::VertexInputAttributeDescription::default()
                 .location(v.location)
@@ -1231,7 +1269,7 @@ impl Device {
                 .offset(v.offset)
                 .format(texture_format_to_vk(v.format))
         });
-        let mut out = BVec::new_in(bump.allocator());
+        let mut out = BVec::new_in(bump);
         out.extend(iter);
         out
     }
@@ -1312,10 +1350,10 @@ impl Device {
             .max_depth_bounds(desc.depth_stencil_state.max_depth_bounds)
     }
 
-    fn translate_color_attachment_state<'a>(
-        bump: &'a Blink,
+    fn translate_color_attachment_state<'a, A: Allocator + 'a>(
+        bump: A,
         desc: &GraphicsPipelineDesc,
-    ) -> BVec<vk::PipelineColorBlendAttachmentState, &'a BlinkAlloc> {
+    ) -> BVec<vk::PipelineColorBlendAttachmentState, A> {
         let iter = desc.blend_state.attachments.iter().map(|v| {
             vk::PipelineColorBlendAttachmentState::default()
                 .blend_enable(v.blend_enabled)
@@ -1329,7 +1367,7 @@ impl Device {
                     v.color_write_mask.bits() as _
                 ))
         });
-        let mut out = BVec::new_in(bump.allocator());
+        let mut out = BVec::new_in(bump);
         out.extend(iter);
         out
     }
@@ -1344,9 +1382,9 @@ impl Device {
             .blend_constants([0.0, 0.0, 0.0, 0.0])
     }
 
-    fn translate_framebuffer_info<'a>(
+    fn translate_framebuffer_info<'a, A: Allocator + 'a>(
         desc: &GraphicsPipelineDesc,
-        color_formats: &'a mut BVec<vk::Format, &BlinkAlloc>,
+        color_formats: &'a mut BVec<vk::Format, A>,
     ) -> vk::PipelineRenderingCreateInfo<'a> {
         let builder = vk::PipelineRenderingCreateInfo::default();
 
@@ -1384,22 +1422,22 @@ impl Drop for Device {
 
             if let Some(queue) = self.general_queue.take() {
                 self.device.queue_wait_idle(queue.handle).unwrap();
-                self.device.destroy_semaphore(queue.semaphore, None);
+                self.device.destroy_semaphore(queue.semaphore, GLOBAL);
             }
             if let Some(queue) = self.compute_queue.take() {
                 self.device.queue_wait_idle(queue.handle).unwrap();
-                self.device.destroy_semaphore(queue.semaphore, None);
+                self.device.destroy_semaphore(queue.semaphore, GLOBAL);
             }
             if let Some(queue) = self.transfer_queue.take() {
                 self.device.queue_wait_idle(queue.handle).unwrap();
-                self.device.destroy_semaphore(queue.semaphore, None);
+                self.device.destroy_semaphore(queue.semaphore, GLOBAL);
             }
 
             self.command_list_pool.collect(self);
 
             ManuallyDrop::drop(&mut self.allocator);
 
-            self.device.destroy_device(None);
+            self.device.destroy_device(GLOBAL);
             ManuallyDrop::drop(&mut self.device);
         }
     }
@@ -1418,7 +1456,7 @@ pub struct FreeCommandList {
 impl FreeCommandList {
     pub unsafe fn collect(&self, device: &Device) {
         unsafe {
-            device.device.destroy_command_pool(self.pool, None);
+            device.device.destroy_command_pool(self.pool, GLOBAL);
         }
     }
 }

@@ -30,13 +30,13 @@
 use std::any::TypeId;
 use std::sync::Arc;
 
+use aleph_alloc::Blink;
+use aleph_alloc::vec::Vec as BVec;
 use aleph_any::AnyArc;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use allocator_api2::vec::Vec as BVec;
 use ash::vk;
-use blink_alloc::Blink;
 
 use crate::buffer::Buffer;
 use crate::command_list::{CommandList, ListState};

@@ -31,7 +31,11 @@ use std::cell::{Cell, RefCell};
 use std::mem::{MaybeUninit, needs_drop};
 use std::ptr::NonNull;
 
+use aleph_alloc::boxed::Box as BBox;
+use aleph_alloc::vec::Vec as BVec;
 use aleph_rhi_api::{DescriptorAllocateError, ParameterBlockHandle};
+
+use crate::RhiGlobal;
 
 /// A generic object pool intended to be used as part of [`aleph_rhi_api::IDescriptorPool`] and
 /// [`aleph_rhi_api::IDescriptorArena`].
@@ -59,7 +63,7 @@ pub struct ParameterBlockPool<I: IBlockFactory> {
     num_blocks: Cell<usize>,
 
     /// Free list of descriptors
-    free_list: Cell<Vec<ParameterBlockHandle>>,
+    free_list: RefCell<BVec<ParameterBlockHandle, RhiGlobal>>,
 
     /// Generic initializer object that handles creating the underlying parameter block objects
     /// once they have been allocated
@@ -68,14 +72,14 @@ pub struct ParameterBlockPool<I: IBlockFactory> {
 
 impl<I: IBlockFactory> ParameterBlockPool<I> {
     pub fn new(factory: I, capacity: usize) -> Self {
-        let pool = Box::new_uninit_slice(capacity);
+        let pool = BBox::new_uninit_slice_in(capacity, RhiGlobal::default());
         let num_allocated = Cell::new(0);
         let num_blocks = Cell::new(0);
-        let free_list = Cell::new(Vec::with_capacity(64));
+        let free_list = RefCell::new(BVec::with_capacity_in(64, RhiGlobal::default()));
         let factory = RefCell::new(factory);
         Self {
             pool: PoolStorage {
-                buf: NonNull::from(Box::leak(pool)),
+                buf: NonNull::from(BBox::leak(pool)),
             },
             num_allocated,
             num_blocks,
@@ -103,7 +107,7 @@ impl<I: IBlockFactory> ParameterBlockPool<I> {
         }
 
         // First try and take from the block object free list
-        let mut free_list = self.free_list.take();
+        let mut free_list = self.free_list.borrow_mut();
         let num_from_list = usize::min(blocks.len(), free_list.len());
         {
             // Find the location in the free_list where if you split the list in two the tail will
@@ -137,7 +141,6 @@ impl<I: IBlockFactory> ParameterBlockPool<I> {
             // respect the number of blocks we have allocated from only the free list.
             //
             // If we've satisfied the whole request this should = new_num_blocks.
-            self.free_list.set(free_list);
             self.num_blocks.set(old_num_blocks + num_from_list);
         }
 
@@ -204,9 +207,8 @@ impl<I: IBlockFactory> ParameterBlockPool<I> {
         );
 
         // Add the freed blocks to the free list
-        let mut free_list = self.free_list.take();
+        let mut free_list = self.free_list.borrow_mut();
         free_list.extend_from_slice(blocks);
-        self.free_list.set(free_list);
 
         // And update 'num_blocks' to respect the total number of allocated blocks now that we've
         // returned some to the pool.
@@ -224,9 +226,8 @@ impl<I: IBlockFactory> ParameterBlockPool<I> {
             self.factory.borrow_mut().reset_blocks(all_blocks.as_mut());
 
             // Clear the free list
-            let mut free_list = self.free_list.take();
+            let mut free_list = self.free_list.borrow_mut();
             free_list.clear();
-            self.free_list.set(free_list);
 
             // And reset our allocation counters to 0. We're now ready to use this pool anew.
             self.num_allocated.set(0);
@@ -256,7 +257,10 @@ impl<I: IBlockFactory> Drop for ParameterBlockPool<I> {
             }
 
             // Now we can free the backing pool allocation.
-            drop(Box::from_raw(self.pool.buf.as_ptr()));
+            drop(BBox::from_raw_in(
+                self.pool.buf.as_ptr(),
+                RhiGlobal::default(),
+            ));
         }
     }
 }

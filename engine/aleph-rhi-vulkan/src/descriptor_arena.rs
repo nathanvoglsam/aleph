@@ -38,6 +38,7 @@ use ash::vk;
 use ash::vk::Handle;
 
 use crate::device::Device;
+use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::unwrap;
 
 pub struct DescriptorArena {
@@ -156,7 +157,7 @@ impl Drop for DescriptorArena {
         unsafe {
             self._device
                 .device
-                .destroy_descriptor_pool(self.descriptor_pool, None);
+                .destroy_descriptor_pool(self.descriptor_pool, GLOBAL);
         }
     }
 }

@@ -9,6 +9,7 @@ use ash::vk;
 use libloading::Library;
 
 use crate::context::{Context, SurfaceLoaders};
+use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::messenger::vulkan_debug_messenger;
 use crate::internal::{loader, mvk};
 
@@ -186,7 +187,7 @@ impl VulkanLoader {
                     "VK_EXT_layer_settings is not available! Unable to config validation layers."
                 );
                 entry
-                    .create_instance(&create_info, None)
+                    .create_instance(&create_info, GLOBAL)
                     .map_err(|e| log::error!("Platform Error: {:#?}", e))?
             } else {
                 let mut settings = Vec::new();
@@ -203,7 +204,7 @@ impl VulkanLoader {
 
                 let create_info = create_info.push_next(&mut layer_settings);
                 entry
-                    .create_instance(&create_info, None)
+                    .create_instance(&create_info, GLOBAL)
                     .map_err(|e| log::error!("Platform Error: {:#?}", e))?
             }
         };
@@ -555,7 +556,7 @@ fn install_debug_messenger(
 
     let messenger = unsafe {
         loader
-            .create_debug_utils_messenger(&create_info, None)
+            .create_debug_utils_messenger(&create_info, GLOBAL)
             .map_err(|e| log::error!("Platform Error: {:#?}", e))?
     };
     Ok(messenger)

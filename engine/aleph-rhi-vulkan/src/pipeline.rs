@@ -36,6 +36,7 @@ use ash::vk;
 
 use crate::binding_signature::BindingSignature;
 use crate::device::Device;
+use crate::internal::allocation_callbacks::GLOBAL;
 
 pub struct GraphicsPipeline {
     pub(crate) _device: AnyArc<Device>,
@@ -64,7 +65,7 @@ impl GraphicsPipeline {
 impl Drop for GraphicsPipeline {
     fn drop(&mut self) {
         unsafe {
-            self._device.device.destroy_pipeline(self.pipeline, None);
+            self._device.device.destroy_pipeline(self.pipeline, GLOBAL);
         }
     }
 }
@@ -96,7 +97,7 @@ impl ComputePipeline {
 impl Drop for ComputePipeline {
     fn drop(&mut self) {
         unsafe {
-            self._device.device.destroy_pipeline(self.pipeline, None);
+            self._device.device.destroy_pipeline(self.pipeline, GLOBAL);
         }
     }
 }

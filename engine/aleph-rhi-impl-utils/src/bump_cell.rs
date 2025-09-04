@@ -30,14 +30,23 @@
 use std::cell::Cell;
 use std::ops::{Deref, DerefMut};
 
-use blink_alloc::Blink;
+use aleph_alloc::alloc::Global;
+use aleph_alloc::{Blink, BlinkAlloc};
 
-pub struct BlinkCell(Cell<Option<Box<Blink>>>);
+use crate::RhiGlobal;
+
+pub type BlinkCellAlloc = Blink<BlinkAlloc<RhiGlobal>>;
+
+pub struct BlinkCell(Cell<Option<Box<BlinkCellAlloc>>>);
 
 impl BlinkCell {
     #[inline]
     pub fn new() -> Self {
-        Self(Cell::new(Some(Box::new(Blink::new()))))
+        let v = RhiGlobal::new(Global);
+        let v = BlinkAlloc::new_in(v);
+        let v = Blink::new_in(v);
+        let v = Box::new(v);
+        Self(Cell::new(Some(v)))
     }
 
     #[inline]
@@ -61,8 +70,8 @@ impl Default for BlinkCell {
 }
 
 pub struct BlinkScope<'a> {
-    cell: &'a Cell<Option<Box<Blink>>>,
-    bump: Option<Box<Blink>>,
+    cell: &'a Cell<Option<Box<BlinkCellAlloc>>>,
+    bump: Option<Box<BlinkCellAlloc>>,
 }
 
 impl<'a> Drop for BlinkScope<'a> {
@@ -82,7 +91,7 @@ impl<'a> Drop for BlinkScope<'a> {
 }
 
 impl<'a> Deref for BlinkScope<'a> {
-    type Target = Blink;
+    type Target = BlinkCellAlloc;
 
     #[inline]
     fn deref(&self) -> &Self::Target {

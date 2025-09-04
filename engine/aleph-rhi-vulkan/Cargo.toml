@@ -44,6 +44,7 @@ edition.workspace = true
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
+aleph-alloc = { workspace = true }
 aleph-object-system = { workspace = true }
 aleph-vulkan-alloc = { workspace = true }
 aleph-rhi-impl-utils = { workspace = true }
@@ -61,8 +62,6 @@ raw-window-handle = { workspace = true }
 libloading = { workspace = true }
 console = { workspace = true }
 byteorder = { workspace = true }
-blink-alloc = { workspace = true }
-allocator-api2 = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }

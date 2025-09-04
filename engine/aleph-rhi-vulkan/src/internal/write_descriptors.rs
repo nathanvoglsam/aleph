@@ -29,10 +29,10 @@
 
 use std::hint::unreachable_unchecked;
 
+use aleph_alloc::alloc::Allocator;
+use aleph_alloc::vec::Vec as BVec;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
-use allocator_api2::alloc::Allocator;
-use allocator_api2::vec::Vec as BVec;
 use ash::vk;
 
 use crate::buffer::Buffer;

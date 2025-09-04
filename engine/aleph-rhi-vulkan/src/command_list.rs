@@ -29,14 +29,15 @@
 
 use std::any::TypeId;
 
+use aleph_alloc::Blink;
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
-use blink_alloc::Blink;
 
 use crate::device::Device;
 use crate::encoder::Encoder;
+use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::conv::SyncShaderFeatures;
 
 pub struct CommandList {
@@ -144,7 +145,7 @@ impl Drop for CommandList {
         unsafe {
             if self.pool == vk::CommandPool::null() {
                 // The list is destroyed with the pool
-                self._device.device.destroy_command_pool(self.pool, None);
+                self._device.device.destroy_command_pool(self.pool, GLOBAL);
             }
         }
     }

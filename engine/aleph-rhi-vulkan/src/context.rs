@@ -41,6 +41,7 @@ use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, Raw
 
 use crate::VulkanConfig;
 use crate::adapter::Adapter;
+use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::device_info::DeviceInfo;
 use crate::internal::loader::LibraryType;
 use crate::internal::unwrap;
@@ -428,7 +429,7 @@ impl IContext for Context {
                         .wayland
                         .as_ref()
                         .unwrap()
-                        .create_wayland_surface(&create_info, None)
+                        .create_wayland_surface(&create_info, GLOBAL)
                 }
 
                 #[cfg(any(
@@ -449,7 +450,7 @@ impl IContext for Context {
                         .xlib
                         .as_ref()
                         .unwrap()
-                        .create_xlib_surface(&create_info, None)
+                        .create_xlib_surface(&create_info, GLOBAL)
                 }
 
                 #[cfg(any(
@@ -470,7 +471,7 @@ impl IContext for Context {
                         .xcb
                         .as_ref()
                         .unwrap()
-                        .create_xcb_surface(&create_info, None)
+                        .create_xcb_surface(&create_info, GLOBAL)
                 }
 
                 #[cfg(target_os = "android")]
@@ -484,7 +485,7 @@ impl IContext for Context {
                         .android
                         .as_ref()
                         .unwrap()
-                        .create_android_surface(&create_info, None)
+                        .create_android_surface(&create_info, GLOBAL)
                 }
 
                 #[cfg(target_os = "macos")]
@@ -498,7 +499,7 @@ impl IContext for Context {
                         .macos
                         .as_ref()
                         .unwrap()
-                        .create_mac_os_surface(&create_info, None)
+                        .create_mac_os_surface(&create_info, GLOBAL)
                 }
 
                 #[cfg(target_os = "ios")]
@@ -512,7 +513,7 @@ impl IContext for Context {
                         .ios
                         .as_ref()
                         .unwrap()
-                        .create_ios_surface(&create_info, None)
+                        .create_ios_surface(&create_info, GLOBAL)
                 }
 
                 #[cfg(target_os = "windows")]
@@ -527,7 +528,7 @@ impl IContext for Context {
                         .win32
                         .as_ref()
                         .unwrap()
-                        .create_win32_surface(&create_info, None)
+                        .create_win32_surface(&create_info, GLOBAL)
                 }
 
                 _ => {
@@ -569,7 +570,7 @@ impl IContext for Context {
                 .metal
                 .as_ref()
                 .unwrap()
-                .create_metal_surface(&create_info, None)
+                .create_metal_surface(&create_info, GLOBAL)
         };
 
         let surface = result.map_err(|e| log::error!("Platform Error: {:#?}", e))?;
@@ -591,9 +592,9 @@ impl Drop for Context {
     fn drop(&mut self) {
         unsafe {
             if let (Some(debug_loader), Some(messenger)) = (&self.debug_loader, &self.messenger) {
-                debug_loader.destroy_debug_utils_messenger(*messenger, None);
+                debug_loader.destroy_debug_utils_messenger(*messenger, GLOBAL);
             }
-            self.instance.destroy_instance(None);
+            self.instance.destroy_instance(GLOBAL);
             ManuallyDrop::drop(&mut self.instance);
             ManuallyDrop::drop(&mut self.entry_loader);
             ManuallyDrop::drop(&mut self.library);

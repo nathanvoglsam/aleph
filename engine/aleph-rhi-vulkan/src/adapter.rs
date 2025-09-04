@@ -40,6 +40,7 @@ use vulkan_alloc::vma;
 
 use crate::context::Context;
 use crate::device::{CommandListPool, Device};
+use crate::internal::allocation_callbacks::{GLOBAL, GLOBAL_CALLBACKS};
 use crate::internal::device_info::DeviceInfo;
 use crate::internal::semaphore_pool::SemaphorePool;
 use crate::queue::{Queue, QueueInfo};
@@ -272,7 +273,7 @@ impl IAdapter for Adapter {
         let device = unsafe {
             self.context
                 .instance
-                .create_device(self.physical_device, &device_create_info, None)
+                .create_device(self.physical_device, &device_create_info, GLOBAL)
                 .map_err(|e| log::error!("Platform Error: {:#?}", e))?
         };
 
@@ -316,6 +317,7 @@ impl IAdapter for Adapter {
 
         let allocator = vma::Allocator::builder()
             .vulkan_api_version(vk::API_VERSION_1_1)
+            .allocator_callbacks(&GLOBAL_CALLBACKS)
             .build(
                 &self.context.entry_loader,
                 &self.context.instance,

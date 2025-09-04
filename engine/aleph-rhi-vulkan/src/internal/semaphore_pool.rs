@@ -30,6 +30,8 @@
 use ash::vk;
 use parking_lot::Mutex;
 
+use crate::internal::allocation_callbacks::GLOBAL;
+
 pub struct SemaphorePool {
     semaphores: Mutex<Vec<vk::Semaphore>>,
 }
@@ -48,7 +50,7 @@ impl SemaphorePool {
         } else {
             unsafe {
                 let info = vk::SemaphoreCreateInfo::default();
-                device.create_semaphore(&info, None).unwrap()
+                device.create_semaphore(&info, GLOBAL).unwrap()
             }
         }
     }
@@ -62,7 +64,7 @@ impl SemaphorePool {
         let semaphores = Mutex::get_mut(&mut self.semaphores);
         for semaphore in semaphores {
             unsafe {
-                device.destroy_semaphore(*semaphore, None);
+                device.destroy_semaphore(*semaphore, GLOBAL);
             }
         }
     }

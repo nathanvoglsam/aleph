@@ -29,6 +29,7 @@
 
 use std::any::TypeId;
 
+use aleph_alloc::vec::Vec as BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
@@ -37,6 +38,7 @@ use parking_lot::Mutex;
 
 use crate::context::Context;
 use crate::device::Device;
+use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
 use crate::internal::unwrap;
 use crate::swap_chain::{SwapChain, SwapChainState};
@@ -131,8 +133,8 @@ impl ISurface for Surface {
             present_mode: Default::default(),
             vk_present_mode: Default::default(),
             extent: Default::default(),
-            images: Vec::new(),
-            semaphore_pools: Vec::new(),
+            images: BVec::new_in(Default::default()),
+            semaphore_pools: BVec::new_in(Default::default()),
         };
         let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
             this: v.clone(),
@@ -156,7 +158,7 @@ impl Drop for Surface {
     fn drop(&mut self) {
         unsafe {
             let loader = self.context.surface_loaders.base.as_ref().unwrap();
-            loader.destroy_surface(self.surface, None);
+            loader.destroy_surface(self.surface, GLOBAL);
         }
     }
 }

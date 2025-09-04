@@ -30,14 +30,14 @@
 use std::ffi::CStr;
 use std::iter;
 
+use aleph_alloc::alloc::Allocator;
+use aleph_alloc::vec::Vec as BVec;
 use aleph_nstr::NStr;
-use allocator_api2::vec::Vec as BVec;
 use ash::vk;
-use blink_alloc::Blink;
 
-pub fn set_name<T: vk::Handle>(
+pub fn set_name<A: Allocator, T: vk::Handle>(
     loader: Option<&ash::ext::debug_utils::Device>,
-    bump: &Blink,
+    bump: A,
     handle: T,
     name: Option<&str>,
 ) {
@@ -46,7 +46,7 @@ pub fn set_name<T: vk::Handle>(
         // Can only set a name if one is provided
         if let Some(name) = name {
             let iter = name.bytes().chain(iter::once(0u8));
-            let mut name = BVec::new_in(bump.allocator());
+            let mut name = BVec::new_in(bump);
             name.extend(iter);
             let name = unsafe { CStr::from_bytes_with_nul_unchecked(&name) };
 

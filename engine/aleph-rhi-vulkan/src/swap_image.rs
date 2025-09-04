@@ -31,8 +31,10 @@ use std::any::TypeId;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use aleph_alloc::vec::Vec as BVec;
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiGlobal;
 use ash::vk::{self, Handle};
 use parking_lot::Mutex;
 
@@ -44,7 +46,7 @@ pub struct SwapImage {
     pub(crate) index: u32,
     pub(crate) texture: TextureHandle,
     pub(crate) ready_semaphore: AtomicU64,
-    pub(crate) work_semaphores: Mutex<Vec<vk::Semaphore>>,
+    pub(crate) work_semaphores: Mutex<BVec<vk::Semaphore, RhiGlobal>>,
     pub(crate) semaphore_pool: Arc<SemaphorePool>,
 }
 

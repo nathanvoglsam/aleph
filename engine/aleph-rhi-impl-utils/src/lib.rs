@@ -36,6 +36,7 @@ pub extern crate aleph_rhi_api;
 use std::any::TypeId;
 use std::ffi::{CStr, c_char};
 
+use aleph_alloc::instrumentation::InstrumentedGlobal;
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
@@ -114,3 +115,8 @@ pub fn map_acquired_image(
         AcquiredImage::SubOptimal(old) => AcquiredImage::SubOptimal(f(old)),
     }
 }
+
+pub struct Rhi;
+aleph_alloc::new_alloc_category!(Rhi, "019914c0-090a-7690-8276-8b2c4c43ff75");
+
+pub type RhiGlobal = InstrumentedGlobal<Rhi>;

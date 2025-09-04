@@ -33,42 +33,44 @@ use std::marker::PhantomData;
 use std::mem::{align_of, size_of};
 use std::ptr::NonNull;
 
-use allocator_api2::alloc::Allocator;
+use aleph_alloc::BlinkAlloc;
+use aleph_alloc::alloc::{Allocator, Global};
+use aleph_alloc::instrumentation::InstrumentedGlobal;
 use ash::vk;
-use blink_alloc::BlinkAlloc;
 
 /// Takes an [Allocator] and returns a [vk::AllocationCallbacks] wrapper that adapts the rust
 /// allocator into the
-pub const fn callbacks_from_rust_allocator(v: &BlinkAlloc) -> vk::AllocationCallbacks<'_> {
-    // let user_data = v.by_ref();
-    let user_data = v as *const BlinkAlloc as *mut BlinkAlloc;
+pub fn callbacks_from_rust_allocator<A: Allocator>(
+    v: &BlinkAlloc<A>,
+) -> vk::AllocationCallbacks<'_> {
     vk::AllocationCallbacks {
-        p_user_data: user_data.cast(),
-        pfn_allocation: Some(allocation),
-        pfn_reallocation: Some(reallocation),
-        pfn_free: Some(free),
+        p_user_data: NonNull::from(v).cast().as_ptr(),
+        pfn_allocation: Some(allocation::<BlinkAlloc<A>>),
+        pfn_reallocation: Some(reallocation::<BlinkAlloc<A>>),
+        pfn_free: Some(free::<BlinkAlloc<A>>),
         pfn_internal_allocation: None,
         pfn_internal_free: None,
         _marker: PhantomData,
     }
 }
 
-unsafe extern "system" fn allocation(
+unsafe extern "system" fn allocation<A: Allocator>(
     p_user_data: *mut c_void,
     size: usize,
     alignment: usize,
     _allocation_scope: vk::SystemAllocationScope,
 ) -> *mut c_void {
     unsafe {
-        let user_data = p_user_data.cast::<BlinkAlloc>();
-        let allocator = user_data.as_ref().unwrap_unchecked();
+        let allocator = NonNull::new_unchecked(p_user_data)
+            .cast::<VulkanGlobal>()
+            .as_ref();
 
         let alignment = alignment.min(align_of::<Layout>());
         let extra_capacity = size_of::<Layout>().max(alignment);
         let size = size + extra_capacity;
 
         let layout = Layout::from_size_align_unchecked(size, alignment);
-        let result = Allocator::allocate(allocator, layout);
+        let result = Allocator::allocate(&allocator, layout);
 
         match result {
             Ok(v) => {
@@ -85,7 +87,7 @@ unsafe extern "system" fn allocation(
     }
 }
 
-unsafe extern "system" fn reallocation(
+unsafe extern "system" fn reallocation<A: Allocator>(
     p_user_data: *mut c_void,
     p_original: *mut c_void,
     size: usize,
@@ -93,7 +95,7 @@ unsafe extern "system" fn reallocation(
     allocation_scope: vk::SystemAllocationScope,
 ) -> *mut c_void {
     unsafe {
-        let new_ptr = allocation(p_user_data, size, alignment, allocation_scope).cast::<u8>();
+        let new_ptr = allocation::<A>(p_user_data, size, alignment, allocation_scope).cast::<u8>();
         if !new_ptr.is_null() {
             // Pull the layout from the block directly behind the allocation pointer
             let ptr = p_original.cast::<Layout>().sub(1);
@@ -106,7 +108,7 @@ unsafe extern "system" fn reallocation(
             new_ptr.copy_from(src, count);
 
             // Free the original block
-            free(p_user_data, p_original);
+            free::<A>(p_user_data, p_original);
 
             new_ptr.cast()
         } else {
@@ -115,10 +117,15 @@ unsafe extern "system" fn reallocation(
     }
 }
 
-unsafe extern "system" fn free(p_user_data: *mut c_void, p_memory: *mut c_void) {
+unsafe extern "system" fn free<A: Allocator>(p_user_data: *mut c_void, p_memory: *mut c_void) {
+    if p_memory.is_null() {
+        return;
+    }
+
     unsafe {
-        let user_data = p_user_data.cast::<BlinkAlloc>();
-        let allocator = user_data.as_ref().unwrap_unchecked();
+        let allocator = NonNull::new_unchecked(p_user_data)
+            .cast::<VulkanGlobal>()
+            .as_ref();
 
         // Pull the layout from the block directly behind the allocation pointer
         let ptr = p_memory.cast::<Layout>().sub(1);
@@ -130,6 +137,25 @@ unsafe extern "system" fn free(p_user_data: *mut c_void, p_memory: *mut c_void) 
         let extra_capacity = size_of::<Layout>().max(alignment);
         let real_ptr = p_memory.byte_sub(extra_capacity);
 
-        Allocator::deallocate(allocator, NonNull::new_unchecked(real_ptr).cast(), layout);
+        Allocator::deallocate(&allocator, NonNull::new_unchecked(real_ptr).cast(), layout);
     }
 }
+
+pub static GLOBAL: Option<&'static vk::AllocationCallbacks<'static>> = Some(&GLOBAL_CALLBACKS);
+
+pub static GLOBAL_CALLBACKS: vk::AllocationCallbacks<'static> = vk::AllocationCallbacks {
+    p_user_data: &GLOBAL_OBJECT as *const VulkanGlobal as *mut VulkanGlobal as *mut c_void,
+    pfn_allocation: Some(allocation::<VulkanGlobal>),
+    pfn_reallocation: Some(reallocation::<VulkanGlobal>),
+    pfn_free: Some(free::<VulkanGlobal>),
+    pfn_internal_allocation: None,
+    pfn_internal_free: None,
+    _marker: PhantomData,
+};
+
+static GLOBAL_OBJECT: VulkanGlobal = VulkanGlobal::new(Global);
+
+pub struct Vulkan;
+aleph_alloc::new_alloc_category!(Vulkan, "01991523-55ad-7942-a26e-477ae9cf712d");
+
+pub type VulkanGlobal = InstrumentedGlobal<Vulkan>;

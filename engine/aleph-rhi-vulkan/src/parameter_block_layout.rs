@@ -29,12 +29,15 @@
 
 use std::num::NonZeroU64;
 
+use aleph_alloc::vec::Vec as BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiGlobal;
 use aleph_rhi_impl_utils::owned_desc::OwnedParameterBlockDesc;
 use ash::vk;
 
 use crate::device::Device;
+use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::unwrap;
 
 pub struct ParameterBlockLayout {
@@ -42,7 +45,7 @@ pub struct ParameterBlockLayout {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) descriptor_set_layout: vk::DescriptorSetLayout,
-    pub(crate) pool_sizes: Vec<vk::DescriptorPoolSize>,
+    pub(crate) pool_sizes: BVec<vk::DescriptorPoolSize, RhiGlobal>,
     pub(crate) desc: OwnedParameterBlockDesc,
 }
 
@@ -80,7 +83,7 @@ impl Drop for ParameterBlockLayout {
         unsafe {
             self._device
                 .device
-                .destroy_descriptor_set_layout(self.descriptor_set_layout, None);
+                .destroy_descriptor_set_layout(self.descriptor_set_layout, GLOBAL);
         }
     }
 }

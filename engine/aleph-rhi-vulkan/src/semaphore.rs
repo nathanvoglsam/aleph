@@ -33,6 +33,7 @@ use aleph_rhi_api::*;
 use ash::vk;
 
 use crate::device::Device;
+use crate::internal::allocation_callbacks::GLOBAL;
 
 pub struct Semaphore {
     pub(crate) _device: AnyArc<Device>,
@@ -52,7 +53,9 @@ impl Semaphore {
 impl Drop for Semaphore {
     fn drop(&mut self) {
         unsafe {
-            self._device.device.destroy_semaphore(self.semaphore, None);
+            self._device
+                .device
+                .destroy_semaphore(self.semaphore, GLOBAL);
         }
     }
 }

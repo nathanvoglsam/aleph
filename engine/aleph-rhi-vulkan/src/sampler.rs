@@ -36,6 +36,7 @@ use aleph_rhi_impl_utils::owned_desc::OwnedSamplerDesc;
 use ash::vk;
 
 use crate::device::Device;
+use crate::internal::allocation_callbacks::GLOBAL;
 
 pub struct Sampler {
     pub(crate) _device: AnyArc<Device>,
@@ -60,6 +61,6 @@ impl Sampler {
 
 impl Drop for Sampler {
     fn drop(&mut self) {
-        unsafe { self._device.device.destroy_sampler(self.sampler, None) }
+        unsafe { self._device.device.destroy_sampler(self.sampler, GLOBAL) }
     }
 }
