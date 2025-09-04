@@ -31,8 +31,10 @@ use std::any::TypeId;
 use std::ops::Deref;
 use std::sync::Arc;
 
+use aleph_alloc::BVec;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiSystem;
 
 use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::{get_as_unwrapped, unwrap};
@@ -80,11 +82,14 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             "Called a general command on a non-general capable command list"
         );
 
-        let bindings: Vec<_> = bindings
-            .iter()
-            .map(get_as_unwrapped::input_assembly_buffer_binding)
-            .collect();
-        unsafe { self.inner.bind_vertex_buffers(first_binding, &bindings) }
+        let mut new_bindings = BVec::with_capacity_in(bindings.len(), RhiSystem::default());
+        new_bindings.extend(
+            bindings
+                .iter()
+                .map(get_as_unwrapped::input_assembly_buffer_binding),
+        );
+
+        unsafe { self.inner.bind_vertex_buffers(first_binding, &new_bindings) }
     }
 
     unsafe fn bind_index_buffer(
@@ -155,11 +160,13 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
 
         Self::validate_rendering_attachments(info);
 
-        let color_attachments: Vec<_> = info
-            .color_attachments
-            .iter()
-            .map(get_as_unwrapped::rendering_color_attachment_info)
-            .collect();
+        let mut new_color_attachments =
+            BVec::with_capacity_in(info.color_attachments.len(), RhiSystem::default());
+        new_color_attachments.extend(
+            info.color_attachments
+                .iter()
+                .map(get_as_unwrapped::rendering_color_attachment_info),
+        );
 
         let depth_stencil_attachment = info
             .depth_stencil_attachment
@@ -168,7 +175,7 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
         let info = BeginRenderingInfo {
             layer_count: info.layer_count,
             extent: info.extent.clone(),
-            color_attachments: &color_attachments,
+            color_attachments: &new_color_attachments,
             depth_stencil_attachment: depth_stencil_attachment.as_ref(),
             allow_uav_writes: false,
         };
@@ -270,13 +277,19 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
         let binding_signature = unwrap::binding_signature(binding_signature).inner.as_ref();
 
         unsafe {
-            let blocks: Vec<_> = blocks
-                .iter()
-                .map(|&v| v.into_raw::<ParameterBlock>().as_ref().inner.unwrap())
-                .collect();
+            let mut new_blocks = BVec::with_capacity_in(blocks.len(), RhiSystem::default());
+            new_blocks.extend(
+                blocks
+                    .iter()
+                    .map(|&v| v.into_raw::<ParameterBlock>().as_ref().inner.unwrap()),
+            );
 
-            self.inner
-                .bind_parameter_blocks(binding_signature, bind_point, first_block, &blocks)
+            self.inner.bind_parameter_blocks(
+                binding_signature,
+                bind_point,
+                first_block,
+                &new_blocks,
+            )
         }
     }
 
@@ -345,14 +358,17 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
             Self::validate_sub_resource_range_against_texture(&texture.desc, &v.subresource_range);
         });
 
-        let buffer_barriers: Vec<_> = buffer_barriers
-            .iter()
-            .map(get_as_unwrapped::buffer_barrier)
-            .collect();
-        let texture_barriers: Vec<_> = texture_barriers
-            .iter()
-            .map(get_as_unwrapped::texture_barrier)
-            .collect();
+        let mut new_buffer_barriers =
+            BVec::with_capacity_in(buffer_barriers.len(), RhiSystem::default());
+        new_buffer_barriers.extend(buffer_barriers.iter().map(get_as_unwrapped::buffer_barrier));
+
+        let mut new_texture_barriers =
+            BVec::with_capacity_in(texture_barriers.len(), RhiSystem::default());
+        new_texture_barriers.extend(
+            texture_barriers
+                .iter()
+                .map(get_as_unwrapped::texture_barrier),
+        );
 
         let barrier_num = global_barriers.len() + buffer_barriers.len() + texture_barriers.len();
         if barrier_num == 0 {
@@ -360,8 +376,11 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         }
 
         unsafe {
-            self.inner
-                .resource_barrier(global_barriers, &buffer_barriers, &texture_barriers)
+            self.inner.resource_barrier(
+                global_barriers,
+                &new_buffer_barriers,
+                &new_texture_barriers,
+            )
         }
     }
 

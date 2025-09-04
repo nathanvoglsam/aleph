@@ -30,8 +30,8 @@
 use std::ffi::CStr;
 use std::iter;
 
+use aleph_alloc::BVec;
 use aleph_alloc::alloc::Allocator;
-use aleph_alloc::vec::Vec as BVec;
 use aleph_nstr::NStr;
 use ash::vk;
 

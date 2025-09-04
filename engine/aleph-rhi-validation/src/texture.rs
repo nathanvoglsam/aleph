@@ -27,12 +27,13 @@
 // SOFTWARE.
 //
 
-use std::collections::HashMap;
 use std::sync::Weak;
 
+use aleph_alloc::BHashMap;
 use aleph_any::AnyArc;
 use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiSystem;
 use parking_lot::Mutex;
 
 use crate::ValidationDevice;
@@ -42,9 +43,9 @@ pub struct ValidationTexture {
     pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: TextureHandle,
     pub(crate) desc: TextureDesc<'static>,
-    pub(crate) views: Mutex<HashMap<ImageViewDesc, Box<ValidationImageView>>>,
-    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, Box<ValidationImageView>>>,
-    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, Box<ValidationImageView>>>,
+    pub(crate) views: Mutex<BHashMap<ImageViewDesc, Box<ValidationImageView>, RhiSystem>>,
+    pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, Box<ValidationImageView>, RhiSystem>>,
+    pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, Box<ValidationImageView>, RhiSystem>>,
 }
 
 unsafe_impl_iobject!(ValidationTexture, "01944ed5-8290-7e00-a3f3-5eb32c267928");

@@ -30,8 +30,7 @@
 use std::any::TypeId;
 use std::sync::Arc;
 
-use aleph_alloc::Blink;
-use aleph_alloc::vec::Vec as BVec;
+use aleph_alloc::{BVec, Blink};
 use aleph_any::AnyArc;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;

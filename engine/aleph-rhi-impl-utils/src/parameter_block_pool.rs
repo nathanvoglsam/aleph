@@ -31,8 +31,7 @@ use std::cell::{Cell, RefCell};
 use std::mem::{MaybeUninit, needs_drop};
 use std::ptr::NonNull;
 
-use aleph_alloc::boxed::Box as BBox;
-use aleph_alloc::vec::Vec as BVec;
+use aleph_alloc::{BBox, BVec};
 use aleph_rhi_api::{DescriptorAllocateError, ParameterBlockHandle};
 
 use crate::RhiSystem;

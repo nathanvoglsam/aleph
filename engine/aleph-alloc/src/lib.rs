@@ -38,6 +38,11 @@ pub extern crate ctor;
 
 pub mod instrumentation;
 
+pub use allocator_api2::boxed::Box as BBox;
+pub use allocator_api2::vec::Vec as BVec;
 pub use allocator_api2::*;
 pub use blink_alloc::*;
 pub use hashbrown::*;
+
+pub type BHashMap<K, V, A = alloc::Global> = HashMap<K, V, DefaultHashBuilder, A>;
+pub type BHashSet<T, A = alloc::Global> = HashSet<T, DefaultHashBuilder, A>;

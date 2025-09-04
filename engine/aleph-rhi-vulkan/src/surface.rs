@@ -29,7 +29,7 @@
 
 use std::any::TypeId;
 
-use aleph_alloc::vec::Vec as BVec;
+use aleph_alloc::BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;

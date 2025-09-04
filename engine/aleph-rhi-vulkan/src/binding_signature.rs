@@ -29,7 +29,7 @@
 
 use std::num::NonZeroU64;
 
-use aleph_alloc::vec::Vec as BVec;
+use aleph_alloc::BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::IBindingSignature;
 use aleph_rhi_impl_utils::RhiSystem;

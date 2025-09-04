@@ -34,8 +34,10 @@
 
 use std::cell::Cell;
 
+use aleph_alloc::BVec;
 use aleph_any::{QueryInterface, box_downcast};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiSystem;
 
 use crate::internal::unwrap;
 use crate::texture::ValidationImageView;
@@ -105,32 +107,33 @@ pub fn queue_submit_desc<Return>(
     desc: &QueueSubmitDesc,
     f: impl FnOnce(&QueueSubmitDesc) -> Return,
 ) -> Return {
-    let command_lists: Vec<_> = desc
-        .command_lists
-        .iter()
-        .map(|v| {
-            let v = v.take().unwrap();
-            let v = box_downcast::<_, ValidationCommandList>(v).ok().unwrap();
-            let v = v.inner;
-            Cell::new(Some(v))
-        })
-        .collect();
+    let mut command_lists = BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
+    command_lists.extend(desc.command_lists.iter().map(|v| {
+        let v = v.take().unwrap();
+        let v = box_downcast::<_, ValidationCommandList>(v).ok().unwrap();
+        let v = v.inner;
+        Cell::new(Some(v))
+    }));
 
-    let wait_semaphores: Vec<_> = desc
-        .wait_semaphores
-        .iter()
-        .copied()
-        .map(ValidationSemaphore::get)
-        .map(|v| &v.inner)
-        .collect();
+    let mut wait_semaphores =
+        BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
+    wait_semaphores.extend(
+        desc.wait_semaphores
+            .iter()
+            .copied()
+            .map(ValidationSemaphore::get)
+            .map(|v| &v.inner),
+    );
 
-    let signal_semaphores: Vec<_> = desc
-        .signal_semaphores
-        .iter()
-        .copied()
-        .map(ValidationSemaphore::get)
-        .map(|v| &v.inner)
-        .collect();
+    let mut signal_semaphores =
+        BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
+    signal_semaphores.extend(
+        desc.signal_semaphores
+            .iter()
+            .copied()
+            .map(ValidationSemaphore::get)
+            .map(|v| &v.inner),
+    );
 
     let fence = desc.fence.map(|v| &ValidationFence::get(v).inner);
     let swap_image = desc

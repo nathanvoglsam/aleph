@@ -30,8 +30,8 @@
 use std::any::TypeId;
 use std::mem::{ManuallyDrop, MaybeUninit};
 
+use aleph_alloc::BVec;
 use aleph_alloc::alloc::Allocator;
-use aleph_alloc::vec::Vec as BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;

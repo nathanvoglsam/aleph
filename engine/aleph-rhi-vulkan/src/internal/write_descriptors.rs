@@ -29,8 +29,8 @@
 
 use std::hint::unreachable_unchecked;
 
+use aleph_alloc::BVec;
 use aleph_alloc::alloc::Allocator;
-use aleph_alloc::vec::Vec as BVec;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 use ash::vk;

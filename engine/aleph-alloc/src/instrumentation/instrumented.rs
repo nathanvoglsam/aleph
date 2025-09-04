@@ -32,8 +32,9 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 use std::sync::atomic::Ordering;
 
-use crate::instrumentation::{IAllocationCategory, Uncategorized, is_same_category};
 use allocator_api2::alloc::{AllocError, Allocator, Global};
+
+use crate::instrumentation::{IAllocationCategory, Uncategorized, is_same_category};
 
 /// An allocator wrapper type that will instrument all allocations made into it with the associated
 /// category.

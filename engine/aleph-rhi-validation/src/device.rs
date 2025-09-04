@@ -31,9 +31,11 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use aleph_alloc::{BBox, BVec};
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
 use crossbeam::atomic::AtomicCell;
 
@@ -169,13 +171,20 @@ impl IDevice for ValidationDevice {
             }
         }
 
-        let parameter_block_layouts = Vec::from_iter(
+        let mut parameter_block_layouts =
+            BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiSystem::default());
+        parameter_block_layouts.extend(
             desc.parameter_block_layouts
                 .iter()
                 .map(|v| unwrap::parameter_block_layout_d(v).this.upgrade().unwrap()),
         );
-        let parameter_block_layouts_inner =
-            Vec::from_iter(parameter_block_layouts.iter().map(|v| v.inner.as_ref()));
+        let mut parameter_block_layouts_inner =
+            BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiSystem::default());
+        parameter_block_layouts_inner.extend(
+            desc.parameter_block_layouts
+                .iter()
+                .map(|v| unwrap::parameter_block_layout_d(v).inner.as_ref()),
+        );
         let push_constant_block = desc.push_constant_block.clone();
         let new_desc = BindingSignatureDesc {
             parameter_block_layouts: &parameter_block_layouts_inner,
@@ -333,7 +342,7 @@ impl IDevice for ValidationDevice {
             _device: self._this.upgrade().unwrap(),
             size: desc.size,
             usage: desc.usage,
-            name: desc.name.map(String::from),
+            name: desc.name.map(|v| BBox::from(v)),
             inner,
         };
         let out = Object::new_arc_opaque(out);

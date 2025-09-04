@@ -31,7 +31,7 @@ use std::any::TypeId;
 use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 
-use aleph_alloc::vec::Vec as BVec;
+use aleph_alloc::BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_nstr::{NStr, nstr};
 use aleph_object_system::{ArcObject, Object};

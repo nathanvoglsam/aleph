@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_alloc::boxed::Box as BBox;
-use aleph_alloc::vec::Vec as BVec;
+use aleph_alloc::{BBox, BVec};
 use aleph_rhi_api::*;
 
 use crate::RhiSystem;

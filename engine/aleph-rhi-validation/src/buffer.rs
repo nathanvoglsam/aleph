@@ -27,9 +27,11 @@
 // SOFTWARE.
 //
 
+use aleph_alloc::BBox;
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiSystem;
 
 use crate::ValidationDevice;
 
@@ -37,7 +39,7 @@ pub struct ValidationBuffer {
     pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) size: u64,
     pub(crate) usage: ResourceUsageFlags,
-    pub(crate) name: Option<String>,
+    pub(crate) name: Option<BBox<str, RhiSystem>>,
     pub(crate) inner: BufferHandle,
 }
 
