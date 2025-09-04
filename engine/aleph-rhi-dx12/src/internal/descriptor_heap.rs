@@ -86,16 +86,6 @@ impl DescriptorHeap {
             r => num_descriptors + (32 - r),
         };
 
-        if num_descriptors > 1_073_741_824 {
-            // This prevents numerical error in the allocate code which converts a u32 to an i32.
-            // This value 'num_descriptors' sets the upper bound of what will undergo the u32->i32
-            // conversion. By keeping the upper bound below i32::MAX then the conversion will
-            // always be safe.
-            //
-            // No D3D12 implementation supports this many descriptors in a heap anyway
-            panic!("Creating a DescriptorHeap with num_descriptors > 2^30 is an error");
-        }
-
         // Create the actual descriptor heap based on the requested settings
         let heap = unsafe {
             let mut flags = D3D12_DESCRIPTOR_HEAP_FLAGS::default();
