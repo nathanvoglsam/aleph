@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_any::{AnyWeak};
+use aleph_any::AnyWeak;
 use aleph_rhi_api::*;
 
 use crate::ValidationParameterBlockLayout;
