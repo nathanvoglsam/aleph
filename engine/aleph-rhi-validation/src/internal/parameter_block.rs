@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use aleph_any::{AnyWeak};
 use aleph_rhi_api::*;
 
 use crate::ValidationParameterBlockLayout;
@@ -45,7 +45,7 @@ pub struct ParameterBlock {
     pub _pool_id: u64,
 
     /// The parameter block layout of this set
-    pub _layout: AnyArc<ValidationParameterBlockLayout>,
+    pub _layout: AnyWeak<ValidationParameterBlockLayout>,
 
     /// The inner handle
     pub inner: Option<ParameterBlockHandle>,

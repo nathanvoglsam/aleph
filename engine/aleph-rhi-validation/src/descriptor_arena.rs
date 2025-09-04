@@ -131,7 +131,7 @@ unsafe impl IBlockFactory for ArenaBlockFactory {
             let new = ParameterBlock {
                 _magic_header: ParameterBlock::MAGIC_HEADER_VAL,
                 _pool_id: self.pool_id,
-                _layout: p.this.upgrade().unwrap(),
+                _layout: p.this.clone(),
                 inner: Some(self.inner_pool.allocate_block(p.inner.as_ref())?),
             };
             block.write(new);
@@ -148,7 +148,7 @@ unsafe impl IBlockFactory for ArenaBlockFactory {
             let mut inner_block = Some(self.inner_pool.allocate_block(p.inner.as_ref())?);
             unsafe {
                 let block = block.as_mut();
-                block._layout = p.this.upgrade().unwrap();
+                block._layout = p.this.clone();
                 swap(&mut inner_block, &mut block.inner);
             }
             assert!(inner_block.is_none());
