@@ -77,6 +77,25 @@ impl IDescriptorArena for ValidationDescriptorArena {
         }
     }
 
+    fn allocate_blocks(
+        &self,
+        layout: &dyn IParameterBlockLayout,
+        num_blocks: usize,
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
+        let mut blocks = Box::new_uninit_slice(num_blocks);
+
+        for i in 0..num_blocks {
+            let block = self.allocate_block(layout)?;
+            blocks[i].write(block);
+        }
+
+        let blocks = Box::leak(blocks);
+        let blocks = NonNull::from(blocks);
+        let blocks =
+            NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
+        unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
+    }
+
     unsafe fn free(&self, blocks: &[ParameterBlockHandle]) {
         assert_ne!(
             self.arena_type,

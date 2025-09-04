@@ -29,6 +29,7 @@
 
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
+use std::ptr::NonNull;
 
 use crate::NullDevice;
 use crate::parameter_block_layout::NullParameterBlockLayout;
@@ -48,6 +49,24 @@ impl IDescriptorPool for NullDescriptorPool {
         let handle = self.counter;
         self.counter += 1;
         Ok(unsafe { ParameterBlockHandle::from_raw_int(handle).unwrap() })
+    }
+
+    fn allocate_blocks(
+        &mut self,
+        num_blocks: usize,
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
+        let mut blocks = Box::new_uninit_slice(num_blocks);
+
+        for i in 0..num_blocks {
+            let block = self.allocate_block()?;
+            blocks[i].write(block);
+        }
+
+        let blocks = Box::leak(blocks);
+        let blocks = NonNull::from(blocks);
+        let blocks =
+            NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
+        unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
     }
 
     unsafe fn free(&mut self, _blocks: &[ParameterBlockHandle]) {

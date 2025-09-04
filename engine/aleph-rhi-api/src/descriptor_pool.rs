@@ -58,15 +58,7 @@ pub trait IDescriptorPool: IAny + IGetPlatformInterface + Send {
     fn allocate_blocks(
         &mut self,
         num_blocks: usize,
-    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
-        let mut sets = Vec::with_capacity(num_blocks);
-        for _ in 0..num_blocks {
-            sets.push(self.allocate_block()?);
-        }
-        debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_blocks);
-        Ok(sets.into_boxed_slice())
-    }
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError>;
 
     /// Will free the given parameter blocks, allowing them and their memory to be reused.
     ///

@@ -64,6 +64,20 @@ impl IDescriptorPool for ValidationDescriptorPool {
         }
     }
 
+    fn allocate_blocks(
+        &mut self,
+        num_blocks: usize,
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
+        let mut blocks = Box::new_uninit_slice(num_blocks);
+        self.pool.allocate_blocks(&self._layout, &mut blocks)?;
+
+        let blocks = Box::leak(blocks);
+        let blocks = NonNull::from(blocks);
+        let blocks =
+            NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
+        unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
+    }
+
     unsafe fn free(&mut self, blocks: &[ParameterBlockHandle]) {
         self.pool.free_blocks(blocks)
     }
