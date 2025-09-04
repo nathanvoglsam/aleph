@@ -96,6 +96,14 @@ impl<'a> AllocatorBuilder<'a> {
         self
     }
 
+    pub fn allocator_callbacks(
+        mut self,
+        callbacks: &'static vk::AllocationCallbacks<'static>,
+    ) -> Self {
+        self.create_info.p_allocation_callbacks = callbacks as *const _;
+        self
+    }
+
     /// Build the VmaAllocator
     ///
     /// ## Errors
