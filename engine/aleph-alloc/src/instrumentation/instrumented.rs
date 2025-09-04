@@ -101,6 +101,12 @@ impl<T: IAllocationCategory, A: Allocator> From<A> for Instrumented<T, A> {
     }
 }
 
+impl<T: IAllocationCategory, A: Allocator + Default> Default for Instrumented<T, A> {
+    fn default() -> Self {
+        Self::new(A::default())
+    }
+}
+
 unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, A> {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         Self::add(layout.size());
