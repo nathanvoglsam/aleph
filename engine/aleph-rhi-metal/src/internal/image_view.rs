@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_rhi_api::*;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_metal::*;
