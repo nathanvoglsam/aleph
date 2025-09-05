@@ -36,6 +36,9 @@ pub extern crate uuid;
 #[doc(hidden)]
 pub extern crate ctor;
 
+#[doc(hidden)]
+pub extern crate crossbeam;
+
 pub mod instrumentation;
 
 pub use allocator_api2::boxed::Box as BBox;

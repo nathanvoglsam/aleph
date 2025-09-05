@@ -28,11 +28,11 @@
 //
 
 use std::collections::HashMap;
-use std::ptr::NonNull;
 use std::sync::LazyLock;
-use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use aleph_nstr::NStr;
+use crossbeam::atomic::AtomicCell;
 
 /// Trait associated with any type that uniquely identifies an allocation category.
 pub unsafe trait IAllocationCategory: Sized {
@@ -76,7 +76,7 @@ pub struct CategoryInfo {
     /// This is an internal field and should never be accessed directly, but needs to be made
     /// public for macros to work.
     #[doc(hidden)]
-    pub next: AtomicPtr<CategoryInfo>,
+    pub next: AtomicCell<Option<&'static CategoryInfo>>,
 }
 
 impl CategoryInfo {
@@ -107,11 +107,9 @@ macro_rules! new_alloc_category {
             fn info() -> &'static $crate::instrumentation::CategoryInfo {
                 #[$crate::ctor::ctor(crate_path = $crate::ctor)]
                 fn internal_register_t() {
-                    unsafe {
-                        $crate::instrumentation::register_category(
-                            <$t as $crate::instrumentation::IAllocationCategory>::info(),
-                        );
-                    }
+                    $crate::instrumentation::register_category(
+                        <$t as $crate::instrumentation::IAllocationCategory>::info(),
+                    );
                 }
 
                 static INFO: $crate::instrumentation::CategoryInfo =
@@ -119,7 +117,7 @@ macro_rules! new_alloc_category {
                         id: <$t as $crate::instrumentation::IAllocationCategory>::ID,
                         name: <$t as $crate::instrumentation::IAllocationCategory>::NAME,
                         bytes_allocated: ::std::sync::atomic::AtomicUsize::new(0),
-                        next: ::std::sync::atomic::AtomicPtr::new(::std::ptr::null_mut()),
+                        next: $crate::crossbeam::atomic::AtomicCell::new(None),
                     };
                 &INFO
             }
@@ -151,16 +149,13 @@ pub static CATEGORIES: LazyLock<hashbrown::HashMap<uuid::Uuid, &'static Category
 /// main. While this is safe, it's not particularly fast. [`CATEGORIES`] is much more efficient to
 /// iterate.
 pub struct AllocationCategoryIter {
-    next: *mut CategoryInfo,
+    next: Option<&'static CategoryInfo>,
 }
 
 impl AllocationCategoryIter {
     /// Constructs a new [`AllocationCategoryIter`] instance.
     pub fn new() -> Self {
-        // All accesses to the list pointer must leave it as null or a valid static pointer to a
-        // 'AllocationCategoryIter' instance. All access to the head pointer is unsafe gated and so
-        // it's impossible to break this expectation without other unsafe code.
-        let next = CATEGORY_LIST_HEAD.load(Ordering::Relaxed);
+        let next = CATEGORY_LIST_HEAD.load();
         Self { next }
     }
 }
@@ -170,14 +165,11 @@ impl Iterator for AllocationCategoryIter {
 
     fn next(&mut self) -> Option<Self::Item> {
         let ptr = self.next;
-        if ptr.is_null() {
-            None
+        if let Some(ptr) = ptr {
+            self.next = ptr.next.load();
+            Some(ptr)
         } else {
-            unsafe {
-                let out: &'static CategoryInfo = ptr.as_ref().unwrap_unchecked();
-                self.next = out.next.load(Ordering::Relaxed);
-                Some(out)
-            }
+            None
         }
     }
 }
@@ -198,22 +190,20 @@ pub fn assert_no_duplicate_ids_registered() {
     }
 }
 
-/// Super-duper ultra unsafe do not access but needs to be public so macros can touch it.
+/// Do not access but needs to be public so macros can touch it.
 ///
 /// Forms the head of the linked list of all declared category types. Will be setup before main.
 ///
-/// Call to get a reference to the head of the list. Unsafe because if you call this outside of this
-/// library (it's implementation detail) I will beat you.
+/// Call to get a reference to the head of the list.
 #[doc(hidden)]
-pub static CATEGORY_LIST_HEAD: AtomicPtr<CategoryInfo> = AtomicPtr::new(core::ptr::null_mut());
+pub static CATEGORY_LIST_HEAD: AtomicCell<Option<&'static CategoryInfo>> = AtomicCell::new(None);
 
-/// Super-duper ultra unsafe do not access but needs to be public so macros can touch it.
+/// Do not access but needs to be public so macros can touch it.
 ///
-/// Utility function used by the unsafe_new_alloc_category macro for registering the type into the
+/// Utility function used by the new_alloc_category macro for registering the type into the
 /// global linked list of all categories.
 #[doc(hidden)]
-pub unsafe fn register_category(v: &'static CategoryInfo) {
-    let ptr = NonNull::from(v).as_ptr();
-    let next = CATEGORY_LIST_HEAD.swap(ptr, Ordering::SeqCst);
-    v.next.store(next, Ordering::SeqCst);
+pub fn register_category(v: &'static CategoryInfo) {
+    let next = CATEGORY_LIST_HEAD.swap(Some(v));
+    v.next.store(next);
 }

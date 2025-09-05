@@ -46,6 +46,7 @@ aleph-profile = { workspace = true }
 aleph-nstr = { workspace = true }
 allocator-api2 = { workspace = true }
 blink-alloc = { workspace = true }
+crossbeam = { workspace = true }
 ctor = { workspace = true }
 hashbrown = { workspace = true }
 uuid = { workspace = true }
