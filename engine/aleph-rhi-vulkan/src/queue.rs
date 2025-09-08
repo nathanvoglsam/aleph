@@ -37,7 +37,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use aleph_alloc::BVec;
 use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject, box_downcast};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
 use ash::vk::{self, Handle};
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
@@ -414,16 +414,16 @@ pub struct QueueSubmission {
 
     /// We separate the command lists in the submission into their own list so they can be easily
     /// filtered out and recycled later
-    pub lists: Vec<Box<CommandList>>,
+    pub lists: BVec<Box<CommandList>, RhiSystem>,
 }
 
 pub struct SubmissionManager<'a> {
-    pub wait_semaphores: Vec<vk::Semaphore>,
-    pub wait_values: Vec<u64>,
-    pub wait_dst_stage_masks: Vec<vk::PipelineStageFlags>,
-    pub signal_semaphores: Vec<vk::Semaphore>,
-    pub signal_values: Vec<u64>,
-    pub command_buffers: Vec<vk::CommandBuffer>,
+    pub wait_semaphores: BVec<vk::Semaphore, RhiSystem>,
+    pub wait_values: BVec<u64, RhiSystem>,
+    pub wait_dst_stage_masks: BVec<vk::PipelineStageFlags, RhiSystem>,
+    pub signal_semaphores: BVec<vk::Semaphore, RhiSystem>,
+    pub signal_values: BVec<u64, RhiSystem>,
+    pub command_buffers: BVec<vk::CommandBuffer, RhiSystem>,
     pub swap_image: Option<&'a SwapImage>,
 }
 
@@ -447,12 +447,13 @@ impl<'a> SubmissionManager<'a> {
         let swap_signal_num = if desc.swap_image.is_some() { 1 } else { 0 };
         let signal_num = caller_signal_num + internal_signal_num + swap_signal_num;
 
-        let wait_semaphores = Vec::with_capacity(wait_num);
-        let wait_values = Vec::with_capacity(wait_num);
-        let wait_dst_stage_masks = Vec::with_capacity(wait_num);
-        let signal_semaphores = Vec::with_capacity(signal_num);
-        let signal_values = Vec::with_capacity(signal_num);
-        let command_buffers = Vec::with_capacity(desc.command_lists.len());
+        let wait_semaphores = BVec::with_capacity_in(wait_num, RhiSystem::default());
+        let wait_values = BVec::with_capacity_in(wait_num, RhiSystem::default());
+        let wait_dst_stage_masks = BVec::with_capacity_in(wait_num, RhiSystem::default());
+        let signal_semaphores = BVec::with_capacity_in(signal_num, RhiSystem::default());
+        let signal_values = BVec::with_capacity_in(signal_num, RhiSystem::default());
+        let command_buffers =
+            BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
         let swap_image = desc.swap_image.map(unwrap::swap_image);
 
         Self {
@@ -476,7 +477,7 @@ impl<'a> SubmissionManager<'a> {
             swap_work_semaphore: vk::Semaphore::null(),
             swap_work_semaphore_pool: None,
             index: 0,
-            lists: Vec::with_capacity(desc.command_lists.len()),
+            lists: BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default()),
         };
 
         self.handle_command_lists(desc, &mut submission)?;

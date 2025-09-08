@@ -29,10 +29,10 @@
 
 use std::any::TypeId;
 
-use aleph_alloc::Blink;
+use aleph_alloc::{Blink, BlinkAlloc};
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
 use ash::vk;
 
 use crate::device::Device;
@@ -108,7 +108,7 @@ impl ICommandList for CommandList {
                         _device,
                         bound_graphics_pipeline: None,
                         bound_compute_pipeline: None,
-                        arena: Blink::new(),
+                        arena: Blink::new_in(BlinkAlloc::new_in(RhiSystem::default())),
                         enabled_shader_features,
                     };
                     Ok(Box::new(encoder))

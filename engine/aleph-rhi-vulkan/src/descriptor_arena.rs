@@ -30,9 +30,10 @@
 use std::any::TypeId;
 use std::mem::MaybeUninit;
 
+use aleph_alloc::BVec;
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
 use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::Handle;
@@ -110,7 +111,7 @@ impl IDescriptorArena for DescriptorArena {
         num_blocks: usize,
     ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         let layout = unwrap::parameter_block_layout(layout);
-        let mut set_layouts = Vec::with_capacity(num_blocks);
+        let mut set_layouts = BVec::with_capacity_in(num_blocks, RhiSystem::default());
         for _ in 0..num_blocks {
             set_layouts.push(layout.descriptor_set_layout);
         }

@@ -31,10 +31,11 @@ use std::any::TypeId;
 use std::ffi::CStr;
 use std::mem::ManuallyDrop;
 
+use aleph_alloc::BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
 use ash::vk;
 use vulkan_alloc::vma;
 
@@ -327,6 +328,7 @@ impl IAdapter for Adapter {
             .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
         let device = AnyArc::new_cyclic(move |v| {
+            let found_families = found_families;
             let mut device = Device {
                 this: v.clone(),
                 adapter: self.this.upgrade().unwrap(),
@@ -368,9 +370,9 @@ struct FoundQueueFamilies<'a> {
 }
 
 impl<'a> FoundQueueFamilies<'a> {
-    fn build_create_info_list(&self) -> Vec<vk::DeviceQueueCreateInfo<'_>> {
+    fn build_create_info_list(&self) -> BVec<vk::DeviceQueueCreateInfo<'a>, RhiSystem> {
         // List to flatten the set of queue create infos into so we can pass it into vkCreateDevice
-        let mut queue_create_infos: Vec<vk::DeviceQueueCreateInfo> = Vec::with_capacity(4);
+        let mut queue_create_infos = BVec::with_capacity_in(4, RhiSystem::default());
 
         if let Some(info) = self.general.as_ref() {
             queue_create_infos.push(info.create_info.clone());

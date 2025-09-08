@@ -27,19 +27,23 @@
 // SOFTWARE.
 //
 
+use std::alloc::System;
+
+use aleph_alloc::BVec;
+use aleph_rhi_impl_utils::RhiSystem;
 use ash::vk;
 use parking_lot::Mutex;
 
 use crate::internal::allocation_callbacks::GLOBAL;
 
 pub struct SemaphorePool {
-    semaphores: Mutex<Vec<vk::Semaphore>>,
+    semaphores: Mutex<BVec<vk::Semaphore, RhiSystem>>,
 }
 
 impl SemaphorePool {
     pub const fn new() -> Self {
         Self {
-            semaphores: Mutex::new(Vec::new()),
+            semaphores: Mutex::new(BVec::new_in(RhiSystem::new(System))),
         }
     }
 

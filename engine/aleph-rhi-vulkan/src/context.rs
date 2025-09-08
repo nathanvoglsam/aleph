@@ -359,13 +359,11 @@ impl Context {
             surface_khr
                 .get_physical_device_surface_formats(physical_device, surface)
                 .unwrap_or_default()
-                .to_vec()
         };
         let present_modes = unsafe {
             surface_khr
                 .get_physical_device_surface_present_modes(physical_device, surface)
                 .unwrap_or_default()
-                .to_vec()
         };
 
         Ok((capabilities, formats, present_modes))

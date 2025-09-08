@@ -229,8 +229,9 @@ impl SwapChain {
         let old_swapchain = inner.swap_chain;
 
         // Select our set of view-compatible formats
-        let format_list = config.format.compatible_view_formats();
-        let format_list = Vec::from_iter(format_list.iter().copied().map(texture_format_to_vk));
+        let view_formats = config.format.compatible_view_formats();
+        let mut format_list = BVec::with_capacity_in(view_formats.len(), RhiSystem::default());
+        format_list.extend(view_formats.iter().copied().map(texture_format_to_vk));
         let mut format_flags = vk::SwapchainCreateFlagsKHR::empty();
         if format_list.len() > 1 {
             format_flags |= vk::SwapchainCreateFlagsKHR::MUTABLE_FORMAT
@@ -306,7 +307,7 @@ impl SwapChain {
                 sample_count: 1,
                 sample_quality: 0,
                 usage: F::COPY_DEST | F::RENDER_TARGET,
-                name: Some("Vulkan Internal SwapChain Image"),
+                name: Some(SWAP_NAMES[i].to_str()),
             };
             let out = Texture {
                 _device: self.device.clone(),
