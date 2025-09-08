@@ -36,13 +36,16 @@ use std::time::Duration;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::owned_desc::{
     OwnedBufferDesc, OwnedParameterBlockDesc, OwnedSamplerDesc, OwnedTextureDesc,
 };
+use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
+use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
 use allocator_api2::vec::Vec as BVec;
-use blink_alloc::Blink;
+use blink_alloc::{Blink, BlinkAlloc};
 use block2::RcBlock;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
@@ -56,10 +59,13 @@ use crate::buffer::{Buffer, BufferObjects};
 use crate::command_list::{CommandList, CommandListObjects, ListState};
 use crate::context::Context;
 use crate::descriptor_arena::DescriptorArena;
-use crate::descriptor_pool::DescriptorPool;
+use crate::descriptor_pool::{DescriptorPool, LinearBlockFactory};
 use crate::fence::{Fence, FenceObjects};
+use crate::internal::image_view::ImageViewObject;
+use crate::internal::memory_block::MemoryBlock;
+use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::{conv, unwrap};
-use crate::parameter_block_layout::ParameterBlockLayout;
+use crate::parameter_block_layout::{CompiledParameterBlockLayout, ParameterBlockLayout};
 use crate::pipeline::{
     CachedGraphicsInfo, ComputePipeline, ComputePipelineObjects, GraphicsPipeline,
     GraphicsPipelineObjects,
@@ -158,10 +164,12 @@ impl IDevice for Device {
         &self,
         desc: &ParameterBlockDesc,
     ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
+        let compiled = CompiledParameterBlockLayout::new(desc);
         let out = AnyArc::new_cyclic(move |v| ParameterBlockLayout {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_parameter_block_layout(),
+            compiled,
             desc: OwnedParameterBlockDesc::new(desc),
         });
         Ok(AnyArc::map::<dyn IParameterBlockLayout, _>(out, |v| v))
@@ -174,10 +182,20 @@ impl IDevice for Device {
         &self,
         desc: &BindingSignatureDesc,
     ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError> {
+        let mut block_layouts =
+            BVec::with_capacity_in(desc.parameter_block_layouts.len(), Default::default());
+        block_layouts.extend(
+            desc.parameter_block_layouts
+                .iter()
+                .map(unwrap::parameter_block_layout_d)
+                .map(|v| v.this.upgrade().unwrap()),
+        );
+
         let out = AnyArc::new_cyclic(move |v| BindingSignature {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_binding_signature(),
+            _parameter_block_layouts: block_layouts,
         });
         Ok(AnyArc::map::<dyn IBindingSignature, _>(out, |v| v))
     }
@@ -442,9 +460,20 @@ impl IDevice for Device {
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
         let layout = unwrap::parameter_block_layout(desc.layout);
 
+        let len = 0; // TODO: derive this from the layout
+        let block = MemoryBlock::new(self, len).ok_or(DescriptorPoolCreateError::Platform)?;
+
+        let factory = LinearBlockFactory {
+            next_resource_index: 0,
+            arena: BlinkAlloc::new_in(RhiSystem::default()),
+        };
+        let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
+
         let pool: Box<dyn IDescriptorPool> = Box::new(DescriptorPool {
             _device: self.this.upgrade().unwrap(),
             _layout: layout.this.upgrade().unwrap(),
+            block,
+            pool,
         });
 
         Ok(pool)
@@ -542,7 +571,7 @@ impl IDevice for Device {
             objects: TextureObjects { texture },
             rtvs: Default::default(),
             dsvs: Default::default(),
-            image_views: Mutex::new(Blink::new()),
+            image_views: Mutex::new(Blink::new_in(BlinkAlloc::new_in(RhiSystem::default()))),
             desc: OwnedTextureDesc::new(desc.clone()),
         };
         let out = Object::new_arc_opaque(out);
@@ -666,7 +695,35 @@ impl IDevice for Device {
         writes: &[ParameterWrite],
     ) {
         let layout = unwrap::parameter_block_layout(layout);
-        todo!()
+        let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
+        let cpu_handle = block.resource_handle_cpu.unwrap();
+
+        let visitor =
+            ParameterBlockLayoutVisitor::new(layout.desc.get(), base as u64, writes).unwrap();
+        for v in visitor {
+            for (i, write) in v.writes.iter().enumerate() {
+                let i = i + v.index as usize;
+                match write {
+                    ParameterWrite::Sampler(v) => unsafe {
+                        let sampler = Sampler::get(v.sampler);
+                        let id = sampler.objects.sampler.gpuResourceID().to_raw();
+                        cpu_handle.add(i).write(id);
+                    },
+                    ParameterWrite::Texture(v) => unsafe {
+                        let src = v.image_view.into_raw::<ImageViewObject>().as_ref();
+                        let id = src.texture.gpuResourceID().to_raw();
+                        cpu_handle.add(i).write(id);
+                    },
+                    ParameterWrite::Buffer(v) => unsafe {
+                        let buffer = Buffer::get(v.buffer);
+                        let addr = buffer.objects.buffer.gpuAddress() + v.offset;
+                        cpu_handle.add(i).write(addr);
+                    },
+                    ParameterWrite::TextureBuffer(_) => unimplemented!(),
+                }
+            }
+        }
+        // TODO: add to read/write set for useResources
     }
 
     // ========================================================================================== //

@@ -34,6 +34,7 @@ use std::sync::Arc;
 use aleph_any::AnyArc;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::Blink;
 use objc2::rc::Retained;
@@ -46,8 +47,10 @@ use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::image_view::ImageViewObject;
+use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::{conv, unwrap};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
+use crate::sampler::Sampler;
 use crate::texture::Texture;
 
 pub struct Encoder<'a> {
@@ -392,12 +395,79 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         let binding_signature = unwrap::binding_signature(binding_signature);
         match bind_point {
             PipelineBindPoint::Compute => {
-                let _encoder = self.active.get_compute();
-                todo!()
+                let encoder = self.active.get_compute();
+
+                for (i, block) in blocks.iter().enumerate() {
+                    let i = first_block as usize + i;
+                    let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
+
+                    unsafe {
+                        encoder.setBuffer_offset_atIndex(
+                            Some(block.backing_buffer.as_ref()),
+                            block.resource_handle_gpu.unwrap().get(),
+                            i,
+                        );
+                    }
+                }
             }
             PipelineBindPoint::Graphics => {
-                let _encoder = self.active.get_render();
-                todo!()
+                let encoder = self.active.get_render();
+
+                for (i, block) in blocks.iter().enumerate() {
+                    let i = first_block as usize + i;
+
+                    let block_layout = &binding_signature._parameter_block_layouts[i];
+                    let block_layout_desc = block_layout.desc.get();
+                    let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
+
+                    let buffer = unsafe { Some(block.backing_buffer.as_ref()) };
+                    let offset = block.resource_handle_gpu.unwrap().get();
+                    match block_layout_desc.visibility {
+                        DescriptorShaderVisibility::All => unsafe {
+                            encoder.setFragmentBuffer_offset_atIndex(buffer, offset, i);
+                            encoder.setVertexBuffer_offset_atIndex(buffer, offset, i);
+                            encoder.setMeshBuffer_offset_atIndex(buffer, offset, i);
+                            encoder.setObjectBuffer_offset_atIndex(buffer, offset, i);
+                        },
+                        DescriptorShaderVisibility::Vertex => unsafe {
+                            encoder.setVertexBuffer_offset_atIndex(buffer, offset, i);
+                        },
+
+                        DescriptorShaderVisibility::Fragment => unsafe {
+                            encoder.setFragmentBuffer_offset_atIndex(buffer, offset, i);
+                        },
+                        DescriptorShaderVisibility::Amplification => unsafe {
+                            encoder.setObjectBuffer_offset_atIndex(buffer, offset, i);
+                        },
+                        DescriptorShaderVisibility::Mesh => unsafe {
+                            encoder.setMeshBuffer_offset_atIndex(buffer, offset, i);
+                        },
+                        DescriptorShaderVisibility::Compute => unreachable!(),
+                        DescriptorShaderVisibility::Hull => unimplemented!(),
+                        DescriptorShaderVisibility::Domain => unimplemented!(),
+                        DescriptorShaderVisibility::Geometry => unimplemented!(),
+                    }
+
+                    if let Some(resources) = block.reads {
+                        let count = block_layout.compiled.num_reads;
+                        let usage = MTLResourceUsage::Read;
+                        let stages = block_layout.compiled.visibility;
+                        unsafe {
+                            encoder
+                                .useResources_count_usage_stages(resources, count, usage, stages);
+                        }
+                    }
+
+                    if let Some(resources) = block.writes {
+                        let count = block_layout.compiled.num_writes;
+                        let usage = MTLResourceUsage::Write;
+                        let stages = block_layout.compiled.visibility;
+                        unsafe {
+                            encoder
+                                .useResources_count_usage_stages(resources, count, usage, stages);
+                        }
+                    }
+                }
             }
         }
     }
@@ -411,7 +481,38 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         writes: &[ParameterWrite],
     ) {
         let binding_signature = unwrap::binding_signature(binding_signature);
-        todo!()
+        let block_layout = &binding_signature._parameter_block_layouts[block as usize];
+
+        let push_params = match bind_point {
+            PipelineBindPoint::Compute => &mut [],  // TODO:
+            PipelineBindPoint::Graphics => &mut [], // TODO:
+        };
+
+        let visitor =
+            ParameterBlockLayoutVisitor::new(block_layout.desc.get(), base as u64, writes).unwrap();
+        for v in visitor {
+            for (i, write) in v.writes.iter().enumerate() {
+                let i = i + v.index as usize;
+                match write {
+                    ParameterWrite::Sampler(v) => {
+                        let sampler = Sampler::get(v.sampler);
+                        let id = unsafe { sampler.objects.sampler.gpuResourceID() };
+                        let id = id.to_raw();
+                        push_params[i] = id;
+                    }
+                    ParameterWrite::Buffer(v) => {
+                        let buffer = Buffer::get(v.buffer);
+                        let addr = buffer.objects.buffer.gpuAddress() + v.offset;
+                        push_params[i] = addr;
+                    }
+                    ParameterWrite::Texture(_) => unreachable!(),
+                    ParameterWrite::TextureBuffer(_) => unreachable!(),
+                }
+            }
+        }
+
+        // TODO: mark dirty? or just push immediately?
+        // TODO: add to read/write list to issue useResources
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {

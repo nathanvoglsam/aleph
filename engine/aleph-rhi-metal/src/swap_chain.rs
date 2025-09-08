@@ -32,8 +32,9 @@ use std::any::TypeId;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use blink_alloc::Blink;
+use blink_alloc::{Blink, BlinkAlloc};
 use objc2::rc::Retained;
 use objc2_core_foundation::CGSize;
 use objc2_metal::MTLCommandQueue;
@@ -132,7 +133,7 @@ impl ISwapChain for SwapChain {
             objects: TextureObjects { texture },
             rtvs: Default::default(),
             dsvs: Default::default(),
-            image_views: Mutex::new(Blink::new()),
+            image_views: Mutex::new(Blink::new_in(BlinkAlloc::new_in(RhiSystem::default()))),
             desc: OwnedTextureDesc::new(TextureDesc {
                 width: inner.config.width,
                 height: inner.config.height,
@@ -145,7 +146,7 @@ impl ISwapChain for SwapChain {
                 sample_count: 1,
                 sample_quality: 0,
                 usage: ResourceUsageFlags::RENDER_TARGET,
-                name: None,
+                name: Some("Metal Internal SwapChain Image"),
             }),
         };
         let texture = Object::new_arc_opaque(texture);

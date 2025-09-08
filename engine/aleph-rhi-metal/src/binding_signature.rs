@@ -29,15 +29,19 @@
 
 use std::num::NonZeroU64;
 
+use aleph_alloc::BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::IBindingSignature;
+use aleph_rhi_impl_utils::RhiSystem;
 
 use crate::device::Device;
+use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct BindingSignature {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
+    pub(crate) _parameter_block_layouts: BVec<AnyArc<ParameterBlockLayout>, RhiSystem>,
 }
 
 declare_interfaces!(BindingSignature, [IBindingSignature]);

@@ -27,15 +27,16 @@
 // SOFTWARE.
 //
 
-use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::ptr::NonNull;
 
+use aleph_alloc::BHashMap;
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use blink_alloc::Blink;
+use blink_alloc::{Blink, BlinkAlloc};
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::NSRange;
@@ -50,10 +51,10 @@ pub struct Texture {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) objects: TextureObjects,
-    pub(crate) views: Mutex<HashMap<ImageViewDesc, ImageView>>,
-    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, ImageView>>,
-    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, ImageView>>,
-    pub(crate) image_views: Mutex<Blink>,
+    pub(crate) views: Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
+    pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
+    pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
+    pub(crate) image_views: Mutex<Blink<BlinkAlloc<RhiSystem>>>,
     pub(crate) desc: OwnedTextureDesc,
 }
 
@@ -90,7 +91,7 @@ impl Texture {
     /// map.
     pub(crate) fn get_mtl_texture_view(
         &self,
-        map: &Mutex<HashMap<ImageViewDesc, ImageView>>,
+        map: &Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
         let mut views = map.lock();

@@ -29,9 +29,12 @@
 
 use std::num::NonZeroU64;
 
+use aleph_alloc::BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedParameterBlockDesc;
+use objc2_metal::MTLRenderStages;
 
 use crate::device::Device;
 use crate::internal::unwrap;
@@ -40,6 +43,7 @@ pub struct ParameterBlockLayout {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
+    pub(crate) compiled: CompiledParameterBlockLayout,
     pub(crate) desc: OwnedParameterBlockDesc,
 }
 
@@ -69,5 +73,88 @@ impl IParameterBlockLayout for ParameterBlockLayout {
     fn is_compatible(&self, other: &dyn IParameterBlockLayout) -> bool {
         let other = unwrap::parameter_block_layout(other);
         self.desc.get().is_compatible(other.desc.get())
+    }
+}
+
+/// Backend specific information derived from the [`ParameterBlockDesc`] used to create a parameter
+/// block layout.
+pub struct CompiledParameterBlockLayout {
+    /// The shader stages the parameter block is accessible from.
+    pub visibility: MTLRenderStages,
+
+    /// The total number of arguments the block layout will consume to serve all parameters in the
+    /// block.
+    pub num_arguments: usize,
+
+    /// The total number of sampler arguments the block layout will consume to serve all parameters
+    /// in the block.
+    pub num_samplers: usize,
+
+    /// Table that associates with 'params' in [`ParameterBlockDesc`]. Stores the base offset of
+    /// the parameter into the read-only used resources set.
+    pub use_read_bases: BVec<usize, RhiSystem>,
+
+    /// The number of read-only parameters used by this block layout.
+    pub num_reads: usize,
+
+    /// Table that associates with 'params' in [`ParameterBlockDesc`]. Stores the base offset of
+    /// the parameter into the writeable used resources set.
+    pub use_write_bases: BVec<usize, RhiSystem>,
+
+    /// The number of writeable parameters used by this block layout.
+    pub num_writes: usize,
+}
+
+impl CompiledParameterBlockLayout {
+    /// Create a new [`CompiledParameterBlockLayout`] derived from the given [`ParameterBlockDesc`].
+    pub fn new(desc: &ParameterBlockDesc) -> Self {
+        let visibility = match desc.visibility {
+            DescriptorShaderVisibility::All => {
+                MTLRenderStages::Vertex
+                    | MTLRenderStages::Fragment
+                    | MTLRenderStages::Object
+                    | MTLRenderStages::Mesh
+            }
+            DescriptorShaderVisibility::Vertex => MTLRenderStages::Vertex,
+            DescriptorShaderVisibility::Fragment => MTLRenderStages::Fragment,
+            DescriptorShaderVisibility::Amplification => MTLRenderStages::Object,
+            DescriptorShaderVisibility::Mesh => MTLRenderStages::Mesh,
+            DescriptorShaderVisibility::Compute => unreachable!(),
+            DescriptorShaderVisibility::Hull => unimplemented!(),
+            DescriptorShaderVisibility::Domain => unimplemented!(),
+            DescriptorShaderVisibility::Geometry => unimplemented!(),
+        };
+
+        let mut num_arguments = 0;
+        let mut num_samplers = 0;
+        let mut num_reads = 0;
+        let mut num_writes = 0;
+        let mut use_read_bases = BVec::new_in(RhiSystem::default());
+        let mut use_write_bases = BVec::new_in(RhiSystem::default());
+
+        for param in desc.params {
+            num_arguments += param.array_size.count() as usize;
+            if param.ty == ParameterType::SamplerState {
+                num_samplers += param.array_size.count() as usize;
+            } else if param.ty.is_srv() || param.ty.is_constant_buffer() {
+                use_read_bases.push(num_reads);
+                num_reads += param.array_size.count() as usize;
+            } else if param.ty.is_uav() {
+                use_write_bases.push(num_writes);
+                num_writes += param.array_size.count() as usize;
+            } else {
+                unreachable!();
+            }
+        }
+
+        Self {
+            visibility,
+            num_arguments,
+            num_samplers,
+            use_read_bases,
+            num_reads,
+            use_write_bases,
+            num_writes,
+        }
     }
 }
