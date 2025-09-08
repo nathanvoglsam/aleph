@@ -31,8 +31,8 @@ use std::any::TypeId;
 
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use blink_alloc::Blink;
+use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
+use blink_alloc::{Blink, BlinkAlloc};
 use windows::Win32::Graphics::Direct3D12::*;
 
 use crate::device::Device;
@@ -97,7 +97,7 @@ impl ICommandList for CommandList {
                         bound_graphics_pipeline: None,
                         bound_compute_pipeline: None,
                         input_binding_strides: [0; 16],
-                        arena: Blink::with_chunk_size(1024 * 16),
+                        arena: Blink::new_in(BlinkAlloc::new_in(RhiSystem::default())),
                         bound_graphics_sets: vec![None; 16].into(),
                         bound_compute_sets: vec![None; 16].into(),
                     };

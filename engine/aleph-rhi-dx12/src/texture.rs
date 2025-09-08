@@ -28,17 +28,17 @@
 //
 
 use std::any::TypeId;
-use std::collections::HashMap;
 use std::mem::ManuallyDrop;
 use std::num::NonZeroU64;
 use std::ops::Deref;
 use std::ptr::NonNull;
 
+use aleph_alloc::BHashMap;
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
 use blink_alloc::Blink;
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -58,9 +58,9 @@ pub struct Texture {
     pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) desc: OwnedTextureDesc,
     pub(crate) dxgi_format: DXGI_FORMAT,
-    pub(crate) views: Mutex<HashMap<ImageViewDesc, NonNull<ImageViewObject>>>,
-    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, NonNull<ImageViewObject>>>,
-    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, NonNull<ImageViewObject>>>,
+    pub(crate) views: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiSystem>>,
+    pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiSystem>>,
+    pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiSystem>>,
     pub(crate) image_views: Mutex<Blink>,
 }
 
