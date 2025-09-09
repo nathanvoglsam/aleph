@@ -35,9 +35,10 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use aleph_alloc::BVec;
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject, box_downcast};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, RhiSystem, try_clone_value_into_slot};
 use ash::vk::{self, Handle};
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
@@ -132,17 +133,19 @@ impl Queue {
             let info = vk::SemaphoreCreateInfo::default().push_next(&mut info);
             device.device.create_semaphore(&info, GLOBAL).unwrap()
         };
-        AnyArc::new_cyclic(|v| Self {
-            _this: v.clone(),
-            _device: device.this.clone(),
-            queue_type,
-            handle,
-            info,
-            submit_lock: Mutex::new(()),
-            semaphore,
-            last_submitted_index: Default::default(),
-            last_completed_index: Default::default(),
-            in_flight: ArrayQueue::new(256),
+        Rhi::with(|| {
+            AnyArc::new_cyclic(|v| Self {
+                _this: v.clone(),
+                _device: device.this.clone(),
+                queue_type,
+                handle,
+                info,
+                submit_lock: Mutex::new(()),
+                semaphore,
+                last_submitted_index: Default::default(),
+                last_completed_index: Default::default(),
+                in_flight: ArrayQueue::new(256),
+            })
         })
     }
 

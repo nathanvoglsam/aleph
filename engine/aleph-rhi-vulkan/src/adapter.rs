@@ -35,6 +35,7 @@ use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::arc::new_rhi_object;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::{Rhi, RhiSystem, try_clone_value_into_slot};
 use ash::vk;
@@ -307,7 +308,7 @@ impl Adapter {
             )
             .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
-        let device = AnyArc::new_cyclic(move |v| {
+        Ok(new_rhi_object(move |v| {
             let found_families = found_families;
             let mut device = Device {
                 this: v.clone(),
@@ -333,9 +334,7 @@ impl Adapter {
             unsafe { found_families.build_queue_objects(&mut device) };
 
             device
-        });
-
-        Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
+        }))
     }
 }
 

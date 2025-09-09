@@ -40,6 +40,7 @@ use aleph_alloc::instrumentation::Instrumented;
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
+pub mod arc;
 pub mod bump_cell;
 pub mod conv;
 pub mod manually_drop;

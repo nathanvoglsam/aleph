@@ -32,12 +32,13 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 
 use aleph_alloc::BVec;
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_nstr::{NStr, nstr};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
+use aleph_rhi_impl_utils::{Rhi, RhiSystem};
 use ash::vk::{self, Handle};
 use parking_lot::Mutex;
 
@@ -322,7 +323,7 @@ impl SwapChain {
                 dsvs: Default::default(),
                 desc: OwnedTextureDesc::new(desc),
             };
-            Object::new_arc(out)
+            Rhi::with(|| Object::new_arc(out))
         });
         new_images.extend(iter);
 

@@ -7,6 +7,7 @@ use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_any::AnyArc;
 use aleph_rhi_api::{ContextCreateError, IContext};
 use aleph_rhi_impl_utils::Rhi;
+use aleph_rhi_impl_utils::arc::new_rhi_object;
 use ash::vk;
 use libloading::Library;
 
@@ -97,7 +98,7 @@ impl VulkanLoader {
                     (_, false) => None,
                 };
 
-                let context = AnyArc::new_cyclic(move |v| Context {
+                Ok(new_rhi_object(move |v| Context {
                     _this: v.clone(),
                     config: config.clone(),
                     library: ManuallyDrop::new(library),
@@ -106,8 +107,7 @@ impl VulkanLoader {
                     surface_loaders: extensions.surface_loaders(),
                     debug_loader: extensions.debug_loader,
                     messenger,
-                });
-                Ok(AnyArc::map::<dyn IContext, _>(context, |v| v))
+                }))
             }
             Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
         }

@@ -34,6 +34,7 @@ use std::ptr::NonNull;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::arc::new_rhi_object;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use aleph_rhi_impl_utils::str_from_ptr;
 use ash::vk;
@@ -387,15 +388,14 @@ impl IContext for Context {
         let surface = options.surface.map(unwrap::surface).map(|v| v.surface);
         Context::select_device(&self.entry_loader, &self.instance, surface, options).map(
             |(name, vendor, physical_device)| {
-                let adapter = AnyArc::new_cyclic(move |v| Adapter {
+                new_rhi_object(move |v| Adapter {
                     this: v.clone(),
                     context: self._this.upgrade().unwrap(),
                     name,
                     vendor,
                     physical_device,
                     device_info: DeviceInfo::load(&self.instance, physical_device),
-                });
-                AnyArc::map::<dyn IAdapter, _>(adapter, |v| v)
+                })
             },
         )
     }
@@ -542,12 +542,11 @@ impl IContext for Context {
 
         let surface = result.map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
-        let surface = AnyArc::new_cyclic(move |v| Surface {
+        Ok(new_rhi_object(move |v| Surface {
             this: v.clone(),
             surface,
             context: self._this.upgrade().unwrap(),
-        });
-        Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
+        }))
     }
 
     fn create_surface_for_metal_layer(

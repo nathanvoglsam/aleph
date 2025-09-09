@@ -32,15 +32,17 @@ use std::mem::{ManuallyDrop, MaybeUninit};
 
 use aleph_alloc::BVec;
 use aleph_alloc::alloc::Allocator;
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
+use aleph_rhi_impl_utils::arc::new_rhi_object;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::owned_desc::{
     OwnedBufferDesc, OwnedParameterBlockDesc, OwnedSamplerDesc, OwnedTextureDesc,
 };
+use aleph_rhi_impl_utils::{Rhi, RhiSystem};
 use ash::vk;
 use byteorder::{ByteOrder, NativeEndian};
 use crossbeam::queue::ArrayQueue;
@@ -206,15 +208,14 @@ impl IDevice for Device {
                 desc.name,
             );
 
-            let out = AnyArc::new_cyclic(move |v| ParameterBlockLayout {
+            Ok(new_rhi_object(move |v| ParameterBlockLayout {
                 this: v.clone(),
                 _device: self.this.upgrade().unwrap(),
                 id: self.object_counter.next_parameter_block_layout(),
                 descriptor_set_layout,
                 pool_sizes,
                 desc: OwnedParameterBlockDesc::new(desc),
-            });
-            Ok(AnyArc::map::<dyn IParameterBlockLayout, _>(out, |v| v))
+            }))
         })
     }
 
@@ -390,7 +391,7 @@ impl IDevice for Device {
                 id: self.object_counter.next_graphics_pipeline(),
                 pipeline,
             };
-            let out = Object::new_arc_opaque(out);
+            let out = Rhi::with(|| Object::new_arc_opaque(out));
             unsafe { Ok(GraphicsPipelineHandle::new(out)) }
         })
     }
@@ -454,7 +455,7 @@ impl IDevice for Device {
                 id: self.object_counter.next_compute_pipeline(),
                 pipeline,
             };
-            let out = Object::new_arc_opaque(out);
+            let out = Rhi::with(|| Object::new_arc_opaque(out));
             unsafe { Ok(ComputePipelineHandle::new(out)) }
         })
     }
@@ -653,7 +654,7 @@ impl IDevice for Device {
             map_state: Mutex::new(Default::default()),
             desc: OwnedBufferDesc::new(desc.clone()),
         };
-        let out = Object::new_arc_opaque(out);
+        let out = Rhi::with(|| Object::new_arc_opaque(out));
         unsafe { Ok(BufferHandle::new(out)) }
     }
 
@@ -767,7 +768,7 @@ impl IDevice for Device {
                 dsvs: Default::default(),
                 desc: OwnedTextureDesc::new(desc.clone()),
             };
-            let out = Object::new_arc_opaque(out);
+            let out = Rhi::with(|| Object::new_arc_opaque(out));
             unsafe { Ok(TextureHandle::new(out)) }
         })
     }
@@ -819,7 +820,7 @@ impl IDevice for Device {
                 sampler,
                 desc: OwnedSamplerDesc::new(desc.clone()),
             };
-            let out = Object::new_arc_opaque(out);
+            let out = Rhi::with(|| Object::new_arc_opaque(out));
             unsafe { Ok(SamplerHandle::new(out)) }
         })
     }
@@ -996,7 +997,7 @@ impl IDevice for Device {
             _device: self.this.upgrade().unwrap(),
             fence,
         };
-        let fence = Object::new_arc_opaque(fence);
+        let fence = Rhi::with(|| Object::new_arc_opaque(fence));
         unsafe { Ok(FenceHandle::new(fence)) }
     }
 
@@ -1015,7 +1016,7 @@ impl IDevice for Device {
             _device: self.this.upgrade().unwrap(),
             semaphore,
         };
-        let semaphore = Object::new_arc_opaque(semaphore);
+        let semaphore = Rhi::with(|| Object::new_arc_opaque(semaphore));
         unsafe { Ok(SemaphoreHandle::new(semaphore)) }
     }
 

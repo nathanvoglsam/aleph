@@ -30,9 +30,10 @@
 use std::any::TypeId;
 
 use aleph_alloc::BVec;
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::{Rhi, try_clone_value_into_slot};
 use ash::vk;
 use parking_lot::Mutex;
 
@@ -136,12 +137,14 @@ impl ISurface for Surface {
             images: BVec::new_in(Default::default()),
             semaphore_pools: BVec::new_in(Default::default()),
         };
-        let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
-            this: v.clone(),
-            device: device.this.upgrade().unwrap(),
-            surface: self.this.upgrade().unwrap(),
-            inner: Mutex::new(inner),
-            queue_support,
+        let swap_chain = Rhi::with(|| {
+            AnyArc::new_cyclic(move |v| SwapChain {
+                this: v.clone(),
+                device: device.this.upgrade().unwrap(),
+                surface: self.this.upgrade().unwrap(),
+                inner: Mutex::new(inner),
+                queue_support,
+            })
         });
 
         // TODO: This is unsound and wrong, no checks have been made yet
