@@ -74,7 +74,7 @@ mod any_arc;
 mod tests;
 
 pub use any::{IAny, QueryInterface, TraitObject, box_downcast, box_downcast_unchecked};
-pub use any_arc::{AnyArc, AnyWeak};
+pub use any_arc::{AnyArc, AnyWeak, CanUnsize};
 
 /// This macro is used for implementing IAny for a concrete type. This will correctly generate the
 /// required glue for casting to any of the provided interfaces that the concrete type implements.
@@ -131,5 +131,12 @@ macro_rules! declare_interfaces (
                 None
             }
         }
+        $(
+        impl $crate::CanUnsize<dyn $iface> for $typ {
+            fn unsize_any_arc(this: $crate::AnyArc<$typ>) -> $crate::AnyArc<dyn $iface> {
+                $crate::AnyArc::map::<dyn $iface, _>(this, |v| v)
+            }
+        }
+        )*
     }
 );

@@ -35,7 +35,7 @@ use std::sync::{Arc, Weak};
 use crate::{IAny, TraitObject};
 
 ///
-/// AnyArc is a wrapper around [`std::sync::Arc`] that enables the ability to cast
+/// AnyArc is a wrapper around [`Arc`] that enables the ability to cast
 /// `AnyArc<Trait> -> AnyArc<AnotherTrait>` so long as the underlying object supports both traits.
 ///
 #[repr(transparent)]
@@ -362,4 +362,12 @@ impl<T: IAny + ?Sized> Clone for AnyWeak<T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
+}
+
+/// Trait implemented on IAny implementors that allows doing unsized coercion in generic code
+/// without being on a nightly toolchain.
+///
+/// The declare_interfaces macro will generate the glue code for this.
+pub trait CanUnsize<Target: IAny + ?Sized>: IAny {
+    fn unsize_any_arc(this: AnyArc<Self>) -> AnyArc<Target>;
 }
