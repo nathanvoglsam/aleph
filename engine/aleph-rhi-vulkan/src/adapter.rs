@@ -32,10 +32,11 @@ use std::ffi::CStr;
 use std::mem::ManuallyDrop;
 
 use aleph_alloc::BVec;
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
-use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, RhiSystem, try_clone_value_into_slot};
 use ash::vk;
 use vulkan_alloc::vma;
 
@@ -143,29 +144,8 @@ impl Adapter {
             && !family.queue_flags.contains(vk::QueueFlags::GRAPHICS)
             && !family.queue_flags.contains(vk::QueueFlags::COMPUTE)
     }
-}
 
-impl IAdapter for Adapter {
-    fn upgrade(&self) -> AnyArc<dyn IAdapter> {
-        AnyArc::map::<dyn IAdapter, _>(self.this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
-    fn description(&self) -> AdapterDescription<'_> {
-        AdapterDescription {
-            name: &self.name,
-            vendor: self.vendor,
-        }
-    }
-
-    fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
+    fn inner_request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
         let DeviceInfo {
             extensions: minimum_extensions,
             ..
@@ -356,6 +336,31 @@ impl IAdapter for Adapter {
         });
 
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
+    }
+}
+
+impl IAdapter for Adapter {
+    fn upgrade(&self) -> AnyArc<dyn IAdapter> {
+        AnyArc::map::<dyn IAdapter, _>(self.this.upgrade().unwrap(), |v| v)
+    }
+
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
+    fn description(&self) -> AdapterDescription<'_> {
+        AdapterDescription {
+            name: &self.name,
+            vendor: self.vendor,
+        }
+    }
+
+    fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
+        Rhi::with(|| self.inner_request_device())
     }
 }
 

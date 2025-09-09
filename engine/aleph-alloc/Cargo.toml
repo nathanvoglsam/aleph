@@ -50,3 +50,7 @@ crossbeam = { workspace = true }
 ctor = { workspace = true }
 hashbrown = { workspace = true }
 uuid = { workspace = true }
+
+[features]
+default = []
+instrumentation-enabled = []

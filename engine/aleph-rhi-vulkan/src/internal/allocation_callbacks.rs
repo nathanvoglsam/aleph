@@ -34,7 +34,7 @@ use std::ptr::NonNull;
 
 use aleph_alloc::BlinkAlloc;
 use aleph_alloc::alloc::Allocator;
-use aleph_alloc::instrumentation::{InstrumentedSystem, system};
+use aleph_alloc::instrumentation::{Instrumented, system};
 use ash::vk;
 
 /// Takes an [Allocator] and returns a [vk::AllocationCallbacks] wrapper that adapts the rust
@@ -167,4 +167,4 @@ static GLOBAL_OBJECT: VulkanSystem = system();
 pub struct Vulkan;
 aleph_alloc::new_alloc_category!(Vulkan, "01991523-55ad-7942-a26e-477ae9cf712d");
 
-pub type VulkanSystem = InstrumentedSystem<Vulkan>;
+pub type VulkanSystem = Instrumented<Vulkan>;

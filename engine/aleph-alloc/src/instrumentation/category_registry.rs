@@ -34,6 +34,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use aleph_nstr::NStr;
 use crossbeam::atomic::AtomicCell;
 
+use crate::instrumentation::with_category;
+
 /// Trait associated with any type that uniquely identifies an allocation category.
 pub unsafe trait IAllocationCategory: Sized {
     /// A stable, globally unique UUID. This must forever be stable and must always uniquely
@@ -49,6 +51,11 @@ pub unsafe trait IAllocationCategory: Sized {
     /// A static reference to an [`CategoryInfo`] instance that describes the
     /// [`IAllocationCategory`].
     fn info() -> &'static CategoryInfo;
+
+    /// Shortcut to [`with_category`].
+    fn with<O>(f: impl FnOnce() -> O) -> O {
+        with_category::<Self, O>(f)
+    }
 }
 
 /// Utility function that allows checking if two different category types are the same, in a const

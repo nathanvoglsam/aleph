@@ -46,6 +46,7 @@ name = "aleph_test_lib"
 path = "./src/lib.rs"
 
 [dependencies]
+aleph-alloc = { workspace = true, features = ["instrumentation-enabled"] }
 aleph-engine = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-egui = { workspace = true }

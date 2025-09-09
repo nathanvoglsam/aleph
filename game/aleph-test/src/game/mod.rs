@@ -35,3 +35,5 @@ pub mod free_camera;
 pub mod game_logic;
 pub mod gltf_loader;
 pub mod throbber_logic;
+
+aleph_alloc::register_global_allocator!();

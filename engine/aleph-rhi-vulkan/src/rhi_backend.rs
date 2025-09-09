@@ -3,8 +3,10 @@ use std::iter;
 use std::mem::ManuallyDrop;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_any::AnyArc;
 use aleph_rhi_api::{ContextCreateError, IContext};
+use aleph_rhi_impl_utils::Rhi;
 use ash::vk;
 use libloading::Library;
 
@@ -69,7 +71,8 @@ impl VulkanLoader {
                     }
                 };
 
-                let (instance, extensions) = Self::create_instance(&entry, debug, validation)?;
+                let (instance, extensions) =
+                    Rhi::with(|| Self::create_instance(&entry, debug, validation))?;
 
                 let messenger = match (extensions.debug_loader.as_ref(), validation) {
                     (Some(loader), true) => match install_debug_messenger(loader) {
