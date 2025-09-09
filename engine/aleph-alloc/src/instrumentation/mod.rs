@@ -31,6 +31,7 @@ mod category_registry;
 mod instrumented;
 mod tagged;
 
+pub use aleph_malloc_info::get_allocated_bytes;
 pub use category_registry::*;
 pub use instrumented::*;
 pub use tagged::*;
