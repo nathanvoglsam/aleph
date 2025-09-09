@@ -411,7 +411,7 @@ impl CategoryStack {
     pub fn new() -> Self {
         Self {
             inner: RefCell::new(CategoryStackInner {
-                stack: [CategoryInfo::get::<Uncategorized>(); 512],
+                stack: [CategoryInfo::get::<Uncategorized>(); _],
                 head: 0,
             }),
         }
@@ -426,6 +426,11 @@ impl CategoryStack {
     #[inline]
     pub fn push(&self, info: &'static CategoryInfo) {
         let mut inner = self.inner.borrow_mut();
+
+        if inner.head == inner.stack.len() {
+            panic!("Attempted to push past the max size of the category stack");
+        }
+
         let new_head = usize::min(inner.head + 1, inner.stack.len());
         inner.stack[new_head] = info;
         inner.head = new_head;
@@ -441,6 +446,6 @@ impl CategoryStack {
 }
 
 struct CategoryStackInner {
-    stack: [&'static CategoryInfo; 512],
+    stack: [&'static CategoryInfo; 1024],
     head: usize,
 }
