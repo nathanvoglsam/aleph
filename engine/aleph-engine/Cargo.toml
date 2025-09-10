@@ -47,6 +47,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 configs = ["core", "rhi"]
 
 [dependencies]
+aleph-alloc = { workspace = true }
 aleph-object-system = { workspace = true }
 aleph-interfaces = { workspace = true }
 aleph-target = { workspace = true }

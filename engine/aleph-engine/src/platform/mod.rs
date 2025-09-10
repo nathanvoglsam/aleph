@@ -33,6 +33,7 @@ mod frame_timer;
 mod gamepad;
 mod keyboard;
 mod mouse;
+mod sdl_alloc_wrapper;
 mod sdl_main_wrapper;
 mod window;
 
@@ -42,6 +43,7 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
 
+use aleph_alloc::instrumentation::Instrumented;
 pub use clipboard::Clipboard;
 pub use events::Events;
 pub use frame_timer::FrameTimer;
@@ -57,6 +59,7 @@ use interfaces::schedule::CoreStage;
 pub use keyboard::Keyboard;
 pub use mouse::Mouse;
 use parking_lot::RwLockWriteGuard;
+pub use sdl_alloc_wrapper::set_memory_functions;
 pub use sdl_main_wrapper::intercept_main;
 use sdl2::mouse::SystemCursor;
 pub use window::Window;
@@ -544,3 +547,8 @@ impl SdlObjects {
         self.gamecontroller = None;
     }
 }
+
+pub struct Sdl2;
+aleph_alloc::new_alloc_category!(Sdl2, "01993166-455d-7e71-9a81-022a9b388514");
+
+pub type Sdl2System = Instrumented<Sdl2>;

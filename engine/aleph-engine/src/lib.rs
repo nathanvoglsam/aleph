@@ -68,9 +68,15 @@ impl EngineBuilder {
         // which would be absolutely catastrophic. If we didn't crash here we'd very likely crash
         // later.
         aleph_object_system::assert_no_duplicate_ids_registered();
+        aleph_alloc::instrumentation::assert_no_duplicate_ids_registered();
 
         // Pay the object type system setup cost right at the start and save future callers.
         LazyLock::force(&aleph_object_system::TYPES);
+        LazyLock::force(&aleph_alloc::instrumentation::CATEGORIES);
+
+        if aleph_alloc::instrumentation::is_instrumentation_enabled() {
+            unsafe { platform::set_memory_functions() };
+        }
 
         // Initialize COM with MTA
         #[cfg(target_os = "windows")]
