@@ -48,6 +48,7 @@ shaders = { modules = ["aleph-render"] }
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
+aleph-alloc = { workspace = true }
 aleph-device-allocators = { workspace = true }
 aleph-egui = { workspace = true }
 aleph-interfaces = { workspace = true }

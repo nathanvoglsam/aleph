@@ -39,6 +39,7 @@ documentation = "https://docs.rs/aleph-egui/"
 edition.workspace = true
 
 [dependencies]
+aleph-alloc = { workspace = true }
 aleph-interfaces = { workspace = true }
 egui = { workspace = true }
 egui_plot = { workspace = true }

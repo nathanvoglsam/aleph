@@ -30,8 +30,11 @@
 use std::ops::DerefMut;
 use std::sync::Mutex;
 
+use aleph_alloc::instrumentation::IAllocationCategory;
 use egui::{ClippedPrimitive, FullOutput, RawInput};
 use interfaces::any::IAny;
+
+use crate::Egui;
 
 ///
 /// This interface is used for getting an `egui::CtxRef`.
@@ -48,11 +51,11 @@ pub struct EguiContextProvider {
 
 impl EguiContextProvider {
     pub fn begin_frame(&self, new_input: RawInput) {
-        self.ctx.begin_pass(new_input);
+        Egui::with(|| self.ctx.begin_pass(new_input));
     }
 
     pub fn end_frame(&self) -> FullOutput {
-        self.ctx.end_pass()
+        Egui::with(|| self.ctx.end_pass())
     }
 }
 

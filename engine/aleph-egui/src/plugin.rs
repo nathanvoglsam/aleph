@@ -29,6 +29,7 @@
 
 use std::ops::Deref;
 
+use aleph_alloc::instrumentation::IAllocationCategory;
 use egui::ClippedPrimitive;
 use interfaces::any::AnyArc;
 use interfaces::label::make_label;
@@ -40,7 +41,7 @@ use interfaces::plugin::{
 use interfaces::schedule::CoreStage;
 
 use crate::traits::{EguiContextProvider, EguiRenderData};
-use crate::{IEguiContextProvider, IEguiRenderData, RenderData};
+use crate::{Egui, IEguiContextProvider, IEguiRenderData, RenderData};
 
 pub struct PluginEgui();
 
@@ -98,7 +99,9 @@ impl IPlugin for PluginEgui {
                     let frame_timer = pre_update_frame_timer.deref();
                     let events = pre_update_events.deref();
 
-                    let input = crate::utils::get_egui_input(window, keyboard, frame_timer, events);
+                    let input = Egui::with(|| {
+                        crate::utils::get_egui_input(window, keyboard, frame_timer, events)
+                    });
                     context_provider.begin_frame(input);
                 },
             );
@@ -124,7 +127,7 @@ impl IPlugin for PluginEgui {
 
                     let egui_ctx = context_provider.get_context();
                     let jobs: Vec<ClippedPrimitive> =
-                        egui_ctx.tessellate(output.shapes, output.pixels_per_point);
+                        Egui::with(|| egui_ctx.tessellate(output.shapes, output.pixels_per_point));
 
                     render_data.put(RenderData {
                         primitives: jobs,
