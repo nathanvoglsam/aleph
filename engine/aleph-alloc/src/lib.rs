@@ -40,6 +40,7 @@ pub extern crate ctor;
 pub extern crate crossbeam;
 
 pub mod instrumentation;
+pub mod mallocator;
 
 pub use allocator_api2::boxed::Box as BBox;
 pub use allocator_api2::vec::Vec as BVec;

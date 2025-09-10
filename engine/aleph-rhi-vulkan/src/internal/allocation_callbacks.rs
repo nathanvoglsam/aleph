@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::alloc::Layout;
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
@@ -35,6 +34,7 @@ use std::ptr::NonNull;
 use aleph_alloc::BlinkAlloc;
 use aleph_alloc::alloc::Allocator;
 use aleph_alloc::instrumentation::{Instrumented, system};
+use aleph_alloc::mallocator::Mallocator;
 use ash::vk;
 
 /// Takes an [Allocator] and returns a [vk::AllocationCallbacks] wrapper that adapts the rust
@@ -60,36 +60,9 @@ unsafe extern "system" fn allocation<A: Allocator>(
     _allocation_scope: vk::SystemAllocationScope,
 ) -> *mut c_void {
     unsafe {
-        let allocator = NonNull::new_unchecked(p_user_data)
-            .cast::<VulkanSystem>()
-            .as_ref();
-
-        // Combine the layout of the requested allocation with the tag we have to attach so we can
-        // recover the size/align for the deallocation.
-        let requested_layout = Layout::from_size_align_unchecked(size, alignment);
-        let header_layout = Layout::for_value(&requested_layout);
-        let (tagged_layout, offset) = header_layout.extend(requested_layout).unwrap();
-        match Allocator::allocate(&allocator, tagged_layout) {
-            Ok(v) => {
-                // First we get the pointer to where the object the caller asked for. This is what
-                // we return to the caller.
-                let object_ptr = v.cast::<u8>().add(offset);
-
-                // But just before we return, we write the size/align pair into a tag just before
-                // the object. This allows us to reconstruct the Layout from just the pointer that
-                // we get back in the 'deallocation' call.
-                //
-                // This will always be aligned because the alignment of 'object_ptr' will always be
-                // at least as aligned as Layout. The ptr is either more aligned and the space for
-                // 'layout' is padded, or exactly aligned as it is tightly packed to the boundary
-                // of the 'layout' tag.
-                let layout_ptr = object_ptr.cast::<Layout>().sub(1);
-                layout_ptr.write(requested_layout);
-
-                object_ptr.cast().as_ptr()
-            }
-            Err(_err) => std::ptr::null_mut(),
-        }
+        let allocator = NonNull::new_unchecked(p_user_data).cast::<A>().as_ref();
+        let mallocator = Mallocator::new(allocator);
+        mallocator.aligned_malloc(size, alignment)
     }
 }
 
@@ -98,55 +71,20 @@ unsafe extern "system" fn reallocation<A: Allocator>(
     p_original: *mut c_void,
     size: usize,
     alignment: usize,
-    allocation_scope: vk::SystemAllocationScope,
+    _allocation_scope: vk::SystemAllocationScope,
 ) -> *mut c_void {
     unsafe {
-        let new_ptr = allocation::<A>(p_user_data, size, alignment, allocation_scope).cast::<u8>();
-        if !new_ptr.is_null() {
-            // Pull the layout from the block directly behind the allocation pointer
-            let ptr = p_original.cast::<Layout>().sub(1);
-            let old_layout = ptr.read();
-
-            // Copy old data to the new block, copying the smaller of either old size or new size so we
-            // don't overrun the buffer bounds
-            let src = p_original.cast::<u8>();
-            let count = old_layout.size().min(size);
-            new_ptr.copy_from(src, count);
-
-            // Free the original block
-            free::<A>(p_user_data, p_original);
-
-            new_ptr.cast()
-        } else {
-            std::ptr::null_mut()
-        }
+        let allocator = NonNull::new_unchecked(p_user_data).cast::<A>().as_ref();
+        let mallocator = Mallocator::new(allocator);
+        mallocator.aligned_realloc(p_original, size, alignment)
     }
 }
 
 unsafe extern "system" fn free<A: Allocator>(p_user_data: *mut c_void, p_memory: *mut c_void) {
-    let p_memory = if let Some(v) = NonNull::new(p_memory) {
-        v
-    } else {
-        return;
-    };
-
     unsafe {
-        let allocator = NonNull::new_unchecked(p_user_data)
-            .cast::<VulkanSystem>()
-            .as_ref();
-
-        // Pull the layout from the block directly behind the allocation pointer. Use that to
-        // reconstruct the layout we created the whole allocation with. This allows us to derive
-        // the offset from p_memory where the real allocation pointer begins
-        let ptr = p_memory.cast::<Layout>().sub(1);
-        let requested_layout = ptr.read();
-        let header_layout = Layout::for_value(&requested_layout);
-        let (tagged_layout, offset) = header_layout.extend(requested_layout).unwrap();
-
-        // The real allocation begins at p_memory - offset.
-        let real_ptr = p_memory.sub(offset);
-
-        Allocator::deallocate(&allocator, real_ptr.cast(), tagged_layout);
+        let allocator = NonNull::new_unchecked(p_user_data).cast::<A>().as_ref();
+        let mallocator = Mallocator::new(allocator);
+        mallocator.free(p_memory)
     }
 }
 

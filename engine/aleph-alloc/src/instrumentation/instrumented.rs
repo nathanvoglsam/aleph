@@ -33,7 +33,7 @@ use std::ptr::NonNull;
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
-use crate::instrumentation::{CategoryInfo, IAllocationCategory, add, emit_alloc, emit_free, sub};
+use crate::instrumentation::{CategoryInfo, IAllocationCategory, emit_alloc, emit_free};
 
 /// An allocator wrapper type that will instrument all allocations made into it with the associated
 /// category.
@@ -83,7 +83,6 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
                     v.cast::<u8>().as_ptr(),
                     layout.size(),
                 );
-                add(CategoryInfo::get::<T>(), layout.size());
                 Ok(v)
             },
             v @ Err(_) => v,
@@ -102,7 +101,6 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
                     v.cast::<u8>().as_ptr(),
                     layout.size(),
                 );
-                add(CategoryInfo::get::<T>(), layout.size());
                 Ok(v)
             },
             v @ Err(_) => v,
@@ -115,8 +113,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
                 return self.inner.deallocate(ptr, layout);
             }
 
-            sub(CategoryInfo::get::<T>(), layout.size());
-            emit_free(CategoryInfo::get::<T>(), ptr.as_ptr());
+            emit_free(CategoryInfo::get::<T>(), ptr.as_ptr(), layout.size());
 
             self.inner.deallocate(ptr, layout);
         }
@@ -133,8 +130,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
                 return self.inner.grow(ptr, old_layout, new_layout);
             }
 
-            sub(CategoryInfo::get::<T>(), old_layout.size());
-            emit_free(CategoryInfo::get::<T>(), ptr.as_ptr());
+            emit_free(CategoryInfo::get::<T>(), ptr.as_ptr(), old_layout.size());
 
             let out = self.inner.grow(ptr, old_layout, new_layout);
             handle_resized(CategoryInfo::get::<T>(), out, ptr, old_layout, new_layout)
@@ -152,8 +148,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
                 return self.inner.grow_zeroed(ptr, old_layout, new_layout);
             }
 
-            sub(CategoryInfo::get::<T>(), old_layout.size());
-            emit_free(CategoryInfo::get::<T>(), ptr.as_ptr());
+            emit_free(CategoryInfo::get::<T>(), ptr.as_ptr(), old_layout.size());
 
             let out = self.inner.grow_zeroed(ptr, old_layout, new_layout);
             handle_resized(CategoryInfo::get::<T>(), out, ptr, old_layout, new_layout)
@@ -171,8 +166,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
                 return self.inner.shrink(ptr, old_layout, new_layout);
             }
 
-            sub(CategoryInfo::get::<T>(), old_layout.size());
-            emit_free(CategoryInfo::get::<T>(), ptr.as_ptr());
+            emit_free(CategoryInfo::get::<T>(), ptr.as_ptr(), old_layout.size());
 
             let out = self.inner.shrink(ptr, old_layout, new_layout);
             handle_resized(CategoryInfo::get::<T>(), out, ptr, old_layout, new_layout)
@@ -189,7 +183,6 @@ unsafe impl<T: IAllocationCategory, A: Allocator + GlobalAlloc> GlobalAlloc for 
 
             let out = GlobalAlloc::alloc(&self.inner, layout);
             emit_alloc(CategoryInfo::get::<T>(), out, layout.size());
-            add(CategoryInfo::get::<T>(), layout.size());
             out
         }
     }
@@ -200,8 +193,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator + GlobalAlloc> GlobalAlloc for 
                 return GlobalAlloc::dealloc(&self.inner, ptr, layout);
             }
 
-            sub(CategoryInfo::get::<T>(), layout.size());
-            emit_free(CategoryInfo::get::<T>(), ptr);
+            emit_free(CategoryInfo::get::<T>(), ptr, layout.size());
             GlobalAlloc::dealloc(&self.inner, ptr, layout);
         }
     }
@@ -214,7 +206,6 @@ unsafe impl<T: IAllocationCategory, A: Allocator + GlobalAlloc> GlobalAlloc for 
 
             let out = GlobalAlloc::alloc_zeroed(&self.inner, layout);
             emit_alloc(CategoryInfo::get::<T>(), out, layout.size());
-            add(CategoryInfo::get::<T>(), layout.size());
             out
         }
     }
@@ -225,13 +216,11 @@ unsafe impl<T: IAllocationCategory, A: Allocator + GlobalAlloc> GlobalAlloc for 
                 return GlobalAlloc::realloc(&self.inner, ptr, layout, new_size);
             }
 
-            sub(CategoryInfo::get::<T>(), layout.size());
-            emit_free(CategoryInfo::get::<T>(), ptr);
+            emit_free(CategoryInfo::get::<T>(), ptr, layout.size());
 
             let out = GlobalAlloc::realloc(&self.inner, ptr, layout, new_size);
 
             emit_alloc(CategoryInfo::get::<T>(), out, layout.size());
-            add(CategoryInfo::get::<T>(), layout.size());
 
             out
         }
@@ -250,12 +239,10 @@ unsafe fn handle_resized(
         Ok(v) => unsafe {
             let ptr = v.cast::<u8>();
             emit_alloc(c, ptr.as_ptr(), new_layout.size());
-            add(c, new_layout.size());
             Ok(v)
         },
         v @ Err(_) => unsafe {
             emit_alloc(c, ptr.as_ptr(), old_layout.size());
-            add(c, old_layout.size());
             v
         },
     }

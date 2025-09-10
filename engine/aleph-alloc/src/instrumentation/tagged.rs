@@ -34,7 +34,7 @@ use std::ptr::NonNull;
 use allocator_api2::alloc::{AllocError, Allocator};
 
 use crate::instrumentation::{
-    CategoryInfo, IAllocationCategory, Uncategorized, add, emit_alloc, emit_free, sub,
+    CategoryInfo, IAllocationCategory, Uncategorized, emit_alloc, emit_free,
 };
 
 /// An allocator wrapper that uses a dynamic, thread-local category stack for attributing
@@ -90,7 +90,6 @@ unsafe impl<A: Allocator> Allocator for Tagged<A> {
             Ok(v) => unsafe {
                 let inner_ptr = v.cast::<u8>().add(offset);
                 emit_alloc(c, inner_ptr.as_ptr(), layout.size());
-                add(c, layout.size());
 
                 v.cast().write(c);
 
@@ -114,7 +113,6 @@ unsafe impl<A: Allocator> Allocator for Tagged<A> {
             Ok(v) => unsafe {
                 let inner_ptr = v.cast::<u8>().add(offset);
                 emit_alloc(c, inner_ptr.as_ptr(), layout.size());
-                add(c, layout.size());
 
                 v.cast().write(c);
 
@@ -137,8 +135,7 @@ unsafe impl<A: Allocator> Allocator for Tagged<A> {
             let outer_ptr = ptr.sub(offset);
             let c: &'static CategoryInfo = outer_ptr.cast().read();
 
-            sub(c, layout.size());
-            emit_free(c, ptr.as_ptr());
+            emit_free(c, ptr.as_ptr(), layout.size());
             self.0.deallocate(outer_ptr, actual_layout);
         }
     }
@@ -164,8 +161,7 @@ unsafe impl<A: Allocator> Allocator for Tagged<A> {
             let outer_ptr = old_ptr.sub(old_offset);
             let c: &'static CategoryInfo = outer_ptr.cast().read();
 
-            sub(c, old_layout.size());
-            emit_free(c, old_ptr.as_ptr());
+            emit_free(c, old_ptr.as_ptr(), old_layout.size());
 
             let result = self.0.grow(outer_ptr, actual_old_layout, actual_new_layout);
             handle_resized(c, result, old_ptr, old_layout, new_layout, new_offset)
@@ -193,8 +189,7 @@ unsafe impl<A: Allocator> Allocator for Tagged<A> {
             let outer_ptr = old_ptr.sub(old_offset);
             let c: &'static CategoryInfo = outer_ptr.cast().read();
 
-            sub(c, old_layout.size());
-            emit_free(c, old_ptr.as_ptr());
+            emit_free(c, old_ptr.as_ptr(), old_layout.size());
 
             let result = self
                 .0
@@ -224,8 +219,7 @@ unsafe impl<A: Allocator> Allocator for Tagged<A> {
             let outer_ptr = old_ptr.sub(old_offset);
             let c: &'static CategoryInfo = outer_ptr.cast().read();
 
-            sub(c, old_layout.size());
-            emit_free(c, old_ptr.as_ptr());
+            emit_free(c, old_ptr.as_ptr(), old_layout.size());
 
             let result = self
                 .0
@@ -322,13 +316,11 @@ unsafe fn handle_resized(
 
                 let inner_ptr = outer_ptr.add(new_offset);
                 emit_alloc(c, inner_ptr.as_ptr(), new_layout.size());
-                add(c, new_layout.size());
 
                 Ok(NonNull::slice_from_raw_parts(inner_ptr, new_layout.size()))
             }
             v @ Err(_) => {
                 emit_alloc(c, old_ptr.as_ptr(), old_layout.size());
-                add(c, old_layout.size());
                 v
             }
         }

@@ -68,42 +68,59 @@ macro_rules! register_global_allocator {
     () => {};
 }
 
-#[inline]
-#[allow(unused)]
-fn add(c: &'static CategoryInfo, bytes: usize) {
-    use std::sync::atomic::Ordering;
-
-    #[cfg(feature = "instrumentation-enabled")]
-    c.bytes_allocated.fetch_add(bytes, Ordering::Relaxed);
+/// Returns whether the 'instrumentation-enabled' feature is enabled.
+pub const fn is_instrumentation_enabled() -> bool {
+    cfg!(feature = "instrumentation-enabled")
 }
 
-#[inline]
+/// Allocation instrumentation function. This will tag the given allocation into our internal
+/// allocation tracking (category) as well as any enabled profiling tools.
+///
+/// Only use this if you have no alternative.
+///
+/// # Safety
+///
+/// - 'ptr' must be allocated and valid for 'size' bytes.
+/// - 'c.name' must be a _static_ string.
+/// - 'emit_alloc' can only be called once per individual allocation
+#[inline(always)]
 #[allow(unused)]
-fn sub(c: &'static CategoryInfo, bytes: usize) {
-    use std::sync::atomic::Ordering;
-
-    #[cfg(feature = "instrumentation-enabled")]
-    c.bytes_allocated.fetch_sub(bytes, Ordering::Relaxed);
-}
-
-#[inline]
-#[allow(unused)]
-unsafe fn emit_alloc(c: &'static CategoryInfo, ptr: *mut u8, size: usize) {
+pub unsafe fn emit_alloc(c: &'static CategoryInfo, ptr: *mut u8, size: usize) {
     #[cfg(feature = "instrumentation-enabled")]
     unsafe {
+        use std::sync::atomic::Ordering;
+
         if c.id == Uncategorized::ID {
             aleph_profile::emit_alloc(ptr, size);
         } else {
             aleph_profile::emit_alloc_n(ptr, size, c.name.to_cstr());
         }
+
+        #[cfg(feature = "instrumentation-enabled")]
+        c.bytes_allocated.fetch_add(size, Ordering::Relaxed);
     }
 }
 
-#[inline]
+/// Allocation instrumentation function. This will tag the given allocation into our internal
+/// allocation tracking (category) as well as any enabled profiling tools.
+///
+/// Only use this if you have no alternative.
+///
+/// # Safety
+///
+/// - 'ptr' must still be live.
+/// - 'ptr' must have been allocated with a matching 'emit_alloc' call using the exact same 'c'
+/// - 'emit_free' can only be called once per individual allocation
+#[inline(always)]
 #[allow(unused)]
-unsafe fn emit_free(c: &'static CategoryInfo, ptr: *mut u8) {
+pub unsafe fn emit_free(c: &'static CategoryInfo, ptr: *mut u8, size: usize) {
     #[cfg(feature = "instrumentation-enabled")]
     unsafe {
+        use std::sync::atomic::Ordering;
+
+        #[cfg(feature = "instrumentation-enabled")]
+        c.bytes_allocated.fetch_sub(size, Ordering::Relaxed);
+
         if c.id == Uncategorized::ID {
             aleph_profile::emit_free(ptr);
         } else {
