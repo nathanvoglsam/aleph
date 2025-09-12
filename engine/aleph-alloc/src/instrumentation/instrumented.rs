@@ -59,18 +59,21 @@ impl<T: IAllocationCategory, A: Allocator> Instrumented<T, A> {
 }
 
 impl<T: IAllocationCategory, A: Allocator> From<A> for Instrumented<T, A> {
+    #[inline]
     fn from(inner: A) -> Self {
         Self::new(inner)
     }
 }
 
 impl<T: IAllocationCategory, A: Allocator + Default> Default for Instrumented<T, A> {
+    #[inline]
     fn default() -> Self {
         Self::new(A::default())
     }
 }
 
 unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, A> {
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         if !cfg!(feature = "instrumentation-enabled") {
             return self.inner.allocate(layout);
@@ -89,6 +92,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         if !cfg!(feature = "instrumentation-enabled") {
             return self.inner.allocate_zeroed(layout);
@@ -107,6 +111,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         unsafe {
             if !cfg!(feature = "instrumentation-enabled") {
@@ -119,6 +124,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn grow(
         &self,
         ptr: NonNull<u8>,
@@ -137,6 +143,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn grow_zeroed(
         &self,
         ptr: NonNull<u8>,
@@ -155,6 +162,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn shrink(
         &self,
         ptr: NonNull<u8>,
@@ -175,6 +183,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
 }
 
 unsafe impl<T: IAllocationCategory, A: Allocator + GlobalAlloc> GlobalAlloc for Instrumented<T, A> {
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         unsafe {
             if !cfg!(feature = "instrumentation-enabled") {
@@ -187,6 +196,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator + GlobalAlloc> GlobalAlloc for 
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         unsafe {
             if !cfg!(feature = "instrumentation-enabled") {
@@ -198,6 +208,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator + GlobalAlloc> GlobalAlloc for 
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
         unsafe {
             if !cfg!(feature = "instrumentation-enabled") {
@@ -210,6 +221,7 @@ unsafe impl<T: IAllocationCategory, A: Allocator + GlobalAlloc> GlobalAlloc for 
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         unsafe {
             if !cfg!(feature = "instrumentation-enabled") {

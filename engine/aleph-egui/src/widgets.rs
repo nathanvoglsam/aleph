@@ -180,7 +180,7 @@ pub fn memory_stats(ctx: &Context, history: &MemoryHistory) {
                         for cat in AllocationCategoryIter::new() {
                             let b = cat.allocated();
                             let kb = b / 1_000;
-                            ui.label(format!("Category: {}", cat.name));
+                            ui.label(format!("Category: {}", cat.name()));
                             ui.label(format!("{kb}KB"));
                             ui.end_row();
                         }

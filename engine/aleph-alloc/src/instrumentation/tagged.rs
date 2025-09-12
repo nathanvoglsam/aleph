@@ -28,14 +28,11 @@
 //
 
 use std::alloc::{GlobalAlloc, Layout, System, handle_alloc_error};
-use std::cell::RefCell;
 use std::ptr::NonNull;
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
-use crate::instrumentation::{
-    CategoryInfo, IAllocationCategory, Uncategorized, emit_alloc, emit_free,
-};
+use crate::instrumentation::{CategoryInfo, IAllocationCategory, emit_alloc, emit_free};
 
 /// An allocator wrapper that uses a dynamic, thread-local category stack for attributing
 /// allocations to a category.
@@ -76,52 +73,55 @@ impl<A: Allocator + Default> Default for Tagged<A> {
 }
 
 unsafe impl<A: Allocator> Allocator for Tagged<A> {
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         if !cfg!(feature = "instrumentation-enabled") {
-            return self.0.allocate(layout);
-        }
+            self.0.allocate(layout)
+        } else {
+            let c = category_stack::peek();
 
-        let c = CATEGORY_STACK.with(|stack| stack.peek());
+            let (actual_layout, offset) = Layout::new::<&'static CategoryInfo>()
+                .extend(layout)
+                .map_err(|_| AllocError)?;
+            match self.0.allocate(actual_layout) {
+                Ok(v) => unsafe {
+                    let inner_ptr = v.cast::<u8>().add(offset);
+                    emit_alloc(c, inner_ptr.as_ptr(), layout.size());
 
-        let (actual_layout, offset) = Layout::new::<&'static CategoryInfo>()
-            .extend(layout)
-            .map_err(|_| AllocError)?;
-        match self.0.allocate(actual_layout) {
-            Ok(v) => unsafe {
-                let inner_ptr = v.cast::<u8>().add(offset);
-                emit_alloc(c, inner_ptr.as_ptr(), layout.size());
+                    v.cast().write(c);
 
-                v.cast().write(c);
-
-                Ok(NonNull::slice_from_raw_parts(inner_ptr, layout.size()))
-            },
-            v @ Err(_) => v,
+                    Ok(NonNull::slice_from_raw_parts(inner_ptr, layout.size()))
+                },
+                v @ Err(_) => v,
+            }
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         if !cfg!(feature = "instrumentation-enabled") {
-            return self.0.allocate_zeroed(layout);
-        }
+            self.0.allocate_zeroed(layout)
+        } else {
+            let c = category_stack::peek();
 
-        let c = CATEGORY_STACK.with(|stack| stack.peek());
+            let (actual_layout, offset) = Layout::new::<&'static CategoryInfo>()
+                .extend(layout)
+                .map_err(|_| AllocError)?;
+            match self.0.allocate_zeroed(actual_layout) {
+                Ok(v) => unsafe {
+                    let inner_ptr = v.cast::<u8>().add(offset);
+                    emit_alloc(c, inner_ptr.as_ptr(), layout.size());
 
-        let (actual_layout, offset) = Layout::new::<&'static CategoryInfo>()
-            .extend(layout)
-            .map_err(|_| AllocError)?;
-        match self.0.allocate_zeroed(actual_layout) {
-            Ok(v) => unsafe {
-                let inner_ptr = v.cast::<u8>().add(offset);
-                emit_alloc(c, inner_ptr.as_ptr(), layout.size());
+                    v.cast().write(c);
 
-                v.cast().write(c);
-
-                Ok(NonNull::slice_from_raw_parts(inner_ptr, layout.size()))
-            },
-            v @ Err(_) => v,
+                    Ok(NonNull::slice_from_raw_parts(inner_ptr, layout.size()))
+                },
+                v @ Err(_) => v,
+            }
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         unsafe {
             if !cfg!(feature = "instrumentation-enabled") {
@@ -140,6 +140,7 @@ unsafe impl<A: Allocator> Allocator for Tagged<A> {
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn grow(
         &self,
         old_ptr: NonNull<u8>,
@@ -168,6 +169,7 @@ unsafe impl<A: Allocator> Allocator for Tagged<A> {
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn grow_zeroed(
         &self,
         old_ptr: NonNull<u8>,
@@ -198,6 +200,7 @@ unsafe impl<A: Allocator> Allocator for Tagged<A> {
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn shrink(
         &self,
         old_ptr: NonNull<u8>,
@@ -230,6 +233,7 @@ unsafe impl<A: Allocator> Allocator for Tagged<A> {
 }
 
 unsafe impl<A: Allocator + GlobalAlloc> GlobalAlloc for Tagged<A> {
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         unsafe {
             if !cfg!(feature = "instrumentation-enabled") {
@@ -243,6 +247,7 @@ unsafe impl<A: Allocator + GlobalAlloc> GlobalAlloc for Tagged<A> {
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         unsafe {
             if !cfg!(feature = "instrumentation-enabled") {
@@ -257,6 +262,7 @@ unsafe impl<A: Allocator + GlobalAlloc> GlobalAlloc for Tagged<A> {
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
         unsafe {
             if !cfg!(feature = "instrumentation-enabled") {
@@ -270,6 +276,7 @@ unsafe impl<A: Allocator + GlobalAlloc> GlobalAlloc for Tagged<A> {
         }
     }
 
+    #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         unsafe {
             if !cfg!(feature = "instrumentation-enabled") {
@@ -334,9 +341,7 @@ unsafe fn handle_resized(
 /// is made available to you. The interface is perfectly safe.
 #[inline(always)]
 pub fn push_category(c: &'static CategoryInfo) {
-    CATEGORY_STACK.with(|stack| {
-        stack.push(c);
-    })
+    category_stack::push(c);
 }
 
 /// Functional interface for popping an allocation category from the thread-local category stack.
@@ -346,9 +351,7 @@ pub fn push_category(c: &'static CategoryInfo) {
 /// is made available to you. The interface is perfectly safe.
 #[inline(always)]
 pub fn pop_category() {
-    CATEGORY_STACK.with(|stack| {
-        stack.pop();
-    });
+    category_stack::pop()
 }
 
 /// Runs the given closure, adopting the given allocation category for the span of the closure.
@@ -357,87 +360,133 @@ pub fn pop_category() {
 /// adopted category. Very useful for tagging allocations from within non-instrumented crates.
 #[inline(always)]
 pub fn with_category<T: IAllocationCategory, O>(f: impl FnOnce() -> O) -> O {
-    with_category_v::<O>(CategoryInfo::get::<T>(), f)
+    #[cfg(not(feature = "instrumentation-enabled"))]
+    {
+        f()
+    }
+
+    #[cfg(feature = "instrumentation-enabled")]
+    {
+        with_category_v::<O>(CategoryInfo::get::<T>(), f)
+    }
 }
 
 /// Alternate form of [`with_category`] that takes a dynamic category reference.
 #[inline(always)]
-pub fn with_category_v<O>(info: &'static CategoryInfo, f: impl FnOnce() -> O) -> O {
-    struct Unwinder;
-    impl Drop for Unwinder {
-        fn drop(&mut self) {
-            pop_category();
-        }
-    }
-
-    if !cfg!(feature = "instrumentation-enabled") {
-        return f();
-    }
-
-    // Awful mess of scopes to make sure that the stack unwinds correctly in all cases, in the event
-    // that 'f' panics we still need to pop the category!
-    let out;
+pub fn with_category_v<O>(_info: &'static CategoryInfo, f: impl FnOnce() -> O) -> O {
+    #[cfg(not(feature = "instrumentation-enabled"))]
     {
-        push_category(info);
-        {
-            let unwinder = Unwinder;
-            {
-                out = f();
+        f()
+    }
+
+    #[cfg(feature = "instrumentation-enabled")]
+    {
+        struct Unwinder;
+        impl Drop for Unwinder {
+            fn drop(&mut self) {
+                pop_category();
             }
-            drop(unwinder);
-        }
-    }
-    out
-}
-
-thread_local! {
-    static CATEGORY_STACK: CategoryStack = CategoryStack::new();
-}
-
-struct CategoryStack {
-    inner: RefCell<CategoryStackInner>,
-}
-
-impl CategoryStack {
-    #[inline]
-    pub fn new() -> Self {
-        Self {
-            inner: RefCell::new(CategoryStackInner {
-                stack: [CategoryInfo::get::<Uncategorized>(); _],
-                head: 0,
-            }),
-        }
-    }
-
-    #[inline]
-    pub fn peek(&self) -> &'static CategoryInfo {
-        let inner = self.inner.borrow();
-        inner.stack[inner.head]
-    }
-
-    #[inline]
-    pub fn push(&self, info: &'static CategoryInfo) {
-        let mut inner = self.inner.borrow_mut();
-
-        if inner.head == inner.stack.len() {
-            panic!("Attempted to push past the max size of the category stack");
         }
 
-        let new_head = usize::min(inner.head + 1, inner.stack.len());
-        inner.stack[new_head] = info;
-        inner.head = new_head;
-    }
-
-    #[inline]
-    pub fn pop(&self) {
-        let mut inner = self.inner.borrow_mut();
-        let old_head = inner.head;
-        inner.stack[old_head] = CategoryInfo::get::<Uncategorized>();
-        inner.head = old_head.saturating_sub(1);
+        // Awful mess of scopes to make sure that the stack unwinds correctly in all cases, in the event
+        // that 'f' panics we still need to pop the category!
+        let out;
+        {
+            push_category(_info);
+            {
+                let unwinder = Unwinder;
+                {
+                    out = f();
+                }
+                drop(unwinder);
+            }
+        }
+        out
     }
 }
 
-struct CategoryStackInner {
-    stack: [&'static CategoryInfo; 1024],
-    head: usize,
+mod category_stack {
+    use crate::instrumentation::{CategoryInfo, Uncategorized};
+
+    #[inline]
+    pub fn peek() -> &'static CategoryInfo {
+        #[cfg(not(feature = "instrumentation-enabled"))]
+        {
+            use crate::instrumentation::IAllocationCategory;
+            Uncategorized::info()
+        }
+
+        #[cfg(feature = "instrumentation-enabled")]
+        {
+            STACK.with(|stack| stack.peek())
+        }
+    }
+
+    #[inline]
+    pub fn push(_info: &'static CategoryInfo) {
+        #[cfg(feature = "instrumentation-enabled")]
+        STACK.with(|stack| stack.push(_info))
+    }
+
+    #[inline]
+    pub fn pop() {
+        #[cfg(feature = "instrumentation-enabled")]
+        STACK.with(|stack| stack.pop())
+    }
+
+    #[cfg(feature = "instrumentation-enabled")]
+    thread_local! {
+        static STACK: CategoryStack = CategoryStack::new();
+    }
+
+    #[cfg(feature = "instrumentation-enabled")]
+    struct CategoryStack {
+        inner: std::cell::RefCell<CategoryStackInner>,
+    }
+
+    #[cfg(feature = "instrumentation-enabled")]
+    impl CategoryStack {
+        #[inline]
+        pub fn new() -> Self {
+            Self {
+                inner: std::cell::RefCell::new(CategoryStackInner {
+                    stack: [CategoryInfo::get::<Uncategorized>(); _],
+                    head: 0,
+                }),
+            }
+        }
+
+        #[inline]
+        fn peek(&self) -> &'static CategoryInfo {
+            let inner = self.inner.borrow();
+            inner.stack[inner.head]
+        }
+
+        #[inline]
+        fn push(&self, info: &'static CategoryInfo) {
+            let mut inner = self.inner.borrow_mut();
+
+            if inner.head == inner.stack.len() {
+                panic!("Attempted to push past the max size of the category stack");
+            }
+
+            let new_head = usize::min(inner.head + 1, inner.stack.len());
+            inner.stack[new_head] = info;
+            inner.head = new_head;
+        }
+
+        #[inline]
+        fn pop(&self) {
+            let mut inner = self.inner.borrow_mut();
+            let old_head = inner.head;
+            inner.stack[old_head] = CategoryInfo::get::<Uncategorized>();
+            inner.head = old_head.saturating_sub(1);
+        }
+    }
+
+    #[cfg(feature = "instrumentation-enabled")]
+    struct CategoryStackInner {
+        stack: [&'static CategoryInfo; 1024],
+        head: usize,
+    }
 }

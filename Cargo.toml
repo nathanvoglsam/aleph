@@ -112,6 +112,7 @@ camino = "1"
 cc = "1"
 clap = "4"
 console = "0.16"
+const_format = { version = "0.2", features = ["fmt"] }
 crossbeam = "0.8"
 ctor = "0.5"
 ctrlc = "3"

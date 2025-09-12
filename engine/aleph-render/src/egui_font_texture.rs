@@ -29,6 +29,7 @@
 
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::Instrumented;
+use aleph_egui::Egui;
 use aleph_renderer::pass::resource_processor::GenerateMips;
 use aleph_renderer::{
     Renderer, ResourceCommand, TextureHandle, TextureObject, TextureObjectDesc, TextureUploadDesc,
@@ -138,7 +139,7 @@ pub struct FontTexture {
     pub height: usize,
 
     /// Raw data for the texture
-    pub bytes: BVec<u8, Instrumented<EguiFont>>,
+    pub bytes: BVec<u8, Instrumented<Font>>,
 }
 
 impl FontTexture {
@@ -190,5 +191,5 @@ impl FontTexture {
     }
 }
 
-pub struct EguiFont;
-aleph_alloc::new_alloc_category!(EguiFont, "01992ebc-f283-7f30-ac65-f3cd2e10ade6");
+pub struct Font;
+aleph_alloc::new_child_alloc_category!(Egui, Font, "01992ebc-f283-7f30-ac65-f3cd2e10ade6");

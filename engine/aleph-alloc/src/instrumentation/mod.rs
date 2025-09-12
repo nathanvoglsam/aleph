@@ -90,13 +90,12 @@ pub unsafe fn emit_alloc(c: &'static CategoryInfo, ptr: *mut u8, size: usize) {
     unsafe {
         use std::sync::atomic::Ordering;
 
-        if c.id == Uncategorized::ID {
+        if c.id() == &Uncategorized::ID {
             aleph_profile::emit_alloc(ptr, size);
         } else {
-            aleph_profile::emit_alloc_n(ptr, size, c.name.to_cstr());
+            aleph_profile::emit_alloc_n(ptr, size, c.name().to_cstr());
         }
 
-        #[cfg(feature = "instrumentation-enabled")]
         c.bytes_allocated.fetch_add(size, Ordering::Relaxed);
     }
 }
@@ -118,13 +117,12 @@ pub unsafe fn emit_free(c: &'static CategoryInfo, ptr: *mut u8, size: usize) {
     unsafe {
         use std::sync::atomic::Ordering;
 
-        #[cfg(feature = "instrumentation-enabled")]
         c.bytes_allocated.fetch_sub(size, Ordering::Relaxed);
 
-        if c.id == Uncategorized::ID {
+        if c.id() == &Uncategorized::ID {
             aleph_profile::emit_free(ptr);
         } else {
-            aleph_profile::emit_free_n(ptr, c.name.to_cstr());
+            aleph_profile::emit_free_n(ptr, c.name().to_cstr());
         }
     }
 }

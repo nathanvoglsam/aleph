@@ -72,7 +72,6 @@ impl EngineBuilder {
 
         // Pay the object type system setup cost right at the start and save future callers.
         LazyLock::force(&aleph_object_system::TYPES);
-        LazyLock::force(&aleph_alloc::instrumentation::CATEGORIES);
 
         if aleph_alloc::instrumentation::is_instrumentation_enabled() {
             unsafe { platform::set_memory_functions() };

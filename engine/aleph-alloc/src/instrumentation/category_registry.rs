@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-use std::collections::HashMap;
-use std::sync::LazyLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use aleph_nstr::NStr;
@@ -70,33 +68,61 @@ pub const fn is_same_category<A: IAllocationCategory, B: IAllocationCategory>() 
 #[repr(C)]
 pub struct CategoryInfo {
     /// Type UUID that uniquely, globally identifies the category
-    pub id: uuid::Uuid,
+    pub(crate) id: uuid::Uuid,
 
     /// Human-readable name of the category. Not guaranteed to be unique.
-    pub name: &'static NStr,
+    pub(crate) name: &'static NStr,
 
     /// The number of bytes allocated into this category, as tracked by all tagged allocations.
-    pub bytes_allocated: AtomicUsize,
+    pub(crate) bytes_allocated: AtomicUsize,
+
+    /// The parent category, if one exists.
+    pub(crate) parent: AtomicCell<Option<&'static CategoryInfo>>,
 
     /// Pointer used to form a linked list of all registered [`CategoryInfo`] objects.
     ///
     /// This is an internal field and should never be accessed directly, but needs to be made
     /// public for macros to work.
-    #[doc(hidden)]
-    pub next: AtomicCell<Option<&'static CategoryInfo>>,
+    pub(crate) next: AtomicCell<Option<&'static CategoryInfo>>,
 }
 
 impl CategoryInfo {
+    pub const fn new(id: uuid::Uuid, name: &'static NStr) -> Self {
+        Self {
+            id,
+            name,
+            bytes_allocated: AtomicUsize::new(0),
+            parent: AtomicCell::new(None),
+            next: AtomicCell::new(None),
+        }
+    }
+
     /// Constructs a [`CategoryData`] for a given type `T`
     #[inline(always)]
     pub fn get<T: IAllocationCategory>() -> &'static Self {
         T::info()
     }
 
+    /// Get the ID of the category
+    pub const fn id(&self) -> &uuid::Uuid {
+        &self.id
+    }
+
+    /// Get the name of the category
+    pub const fn name(&self) -> &'static NStr {
+        self.name
+    }
+
     /// Utility for grabbing the number of bytes allocated
     #[inline(always)]
     pub fn allocated(&self) -> usize {
         self.bytes_allocated.load(Ordering::Relaxed)
+    }
+
+    /// Get the parent [`CategoryInfo`], if this category has one.
+    #[inline(always)]
+    pub fn parent(&self) -> Option<&'static CategoryInfo> {
+        self.parent.load()
     }
 }
 
@@ -106,55 +132,103 @@ impl CategoryInfo {
 #[macro_export]
 macro_rules! new_alloc_category {
     ($t: path, $id: literal) => {
+        $crate::new_alloc_category_inner!($t, $id, ::std::option::Option::None, stringify!($t));
+    };
+}
+
+/// This macro can be used to implement [`IAllocationCategory`] on an object as a shorthand compared
+/// to manually implementing it directly. This will correctly generate a safe implementation of
+/// [`IAllocationCategory`] for the given type.
+#[macro_export]
+macro_rules! new_child_alloc_category {
+    ($parent: path, $t: path, $id: literal) => {
+        $crate::new_alloc_category_inner!(
+            $t,
+            $id,
+            ::std::option::Option::Some(
+                <$parent as $crate::instrumentation::IAllocationCategory>::info()
+            ),
+            $crate::const_format::concatc!(<$parent>::__NAME_SEGMENT, '.', stringify!($t))
+        );
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! new_alloc_category_inner {
+    ($t: path, $id: literal) => {
+        $crate::new_alloc_category!($t, $id, ::std::option::Option::None, stringify!($t));
+    };
+    (child_of $parent: path, $t: path, $id: literal) => {
+        $crate::new_alloc_category!(
+            $t,
+            $id,
+            ::std::option::Option::Some(
+                <$parent as $crate::instrumentation::IAllocationCategory>::info()
+            ),
+            $crate::const_format::concatc!(<$parent>::__NAME_SEGMENT, '.', stringify!($t))
+        );
+    };
+    ($t: path, $id: literal, $parent_expr: expr, $name_seg: expr) => {
+        impl $t {
+            #[doc(hidden)]
+            pub const __NAME_SEGMENT: &'static str = $name_seg;
+
+            #[doc(hidden)]
+            pub const fn __name_segment_nstr() -> &'static $crate::nstr::NStr {
+                const PARENT_NAME: &'static str = <$t>::__NAME_SEGMENT;
+                static NAME: &'static $crate::nstr::NStr =
+                    $crate::nstr::NStr::new_str($crate::const_format::concatc!(PARENT_NAME, '\0'));
+                NAME
+            }
+        }
         unsafe impl $crate::instrumentation::IAllocationCategory for $t {
             const ID: $crate::uuid::Uuid = $crate::uuid::uuid!($id);
-            const NAME: &'static $crate::nstr::NStr = $crate::nstr::nstr!(stringify!($t));
+            const NAME: &'static $crate::nstr::NStr = <$t>::__name_segment_nstr();
 
             #[inline(always)]
             fn info() -> &'static $crate::instrumentation::CategoryInfo {
-                #[$crate::ctor::ctor(crate_path = $crate::ctor)]
-                fn internal_register_t() {
-                    $crate::instrumentation::register_category(
-                        <$t as $crate::instrumentation::IAllocationCategory>::info(),
-                    );
-                }
+                $crate::category_ctor!($t, $parent_expr);
 
-                static INFO: $crate::instrumentation::CategoryInfo =
-                    $crate::instrumentation::CategoryInfo {
-                        id: <$t as $crate::instrumentation::IAllocationCategory>::ID,
-                        name: <$t as $crate::instrumentation::IAllocationCategory>::NAME,
-                        bytes_allocated: ::std::sync::atomic::AtomicUsize::new(0),
-                        next: $crate::crossbeam::atomic::AtomicCell::new(None),
-                    };
-                &INFO
+                static __INFO: $crate::instrumentation::CategoryInfo =
+                    $crate::instrumentation::CategoryInfo::new(
+                        <$t as $crate::instrumentation::IAllocationCategory>::ID,
+                        <$t as $crate::instrumentation::IAllocationCategory>::NAME,
+                    );
+
+                &__INFO
             }
         }
     };
 }
 
-/// A lazily initialized table of all types registered into the object system.
-///
-/// This is dervied from [`AllocationCategoryIter`] by using it to walk the internal type list. This
-/// is the preferred API of [`AllocationCategoryIter`] as after the initial setup the hash map is
-/// much more efficient to query.
-pub static CATEGORIES: LazyLock<hashbrown::HashMap<uuid::Uuid, &'static CategoryInfo>> =
-    LazyLock::new(|| {
-        assert_no_duplicate_ids_registered();
-        let map = hashbrown::HashMap::from_iter(AllocationCategoryIter::new().map(|v| (v.id, v)));
-        map
-    });
+#[cfg(feature = "instrumentation-enabled")]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! category_ctor {
+    ($t: path, $parent_expr: expr) => {
+        #[$crate::ctor::ctor(crate_path = $crate::ctor)]
+        fn __internal_register_t() {
+            $crate::instrumentation::register_category(
+                <$t as $crate::instrumentation::IAllocationCategory>::info(),
+                $parent_expr,
+            );
+        }
+    };
+}
+
+#[cfg(not(feature = "instrumentation-enabled"))]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! category_ctor {
+    ($t: path, $parent_expr: expr) => {};
+}
 
 /// An object that integrates with the category system to iterate over all declared category types.
 ///
 /// The list is filled out using '__attribute__((constructor))' functions generated by the macros.
 /// All the list setup is done before main and so once main is entered the list will always be
 /// available.
-///
-/// # Performance
-///
-/// In general please use [`CATEGORIES`]. This directly walks the linked list that gets built before
-/// main. While this is safe, it's not particularly fast. [`CATEGORIES`] is much more efficient to
-/// iterate.
 pub struct AllocationCategoryIter {
     next: Option<&'static CategoryInfo>,
 }
@@ -184,33 +258,37 @@ impl Iterator for AllocationCategoryIter {
 /// Utility function that will walk the list of registered types and assert if there are any
 /// duplicate type IDs registered.
 pub fn assert_no_duplicate_ids_registered() {
-    let mut types = HashMap::new();
-    for category in AllocationCategoryIter::new() {
-        let existing = types.insert(category.id, category);
-        if let Some(existing) = existing {
-            assert_eq!(category.id, existing.id); // Just being careful
-            panic!(
-                "Colliding IAllocationCategory type IDs detected. '{}' and '{}' have the same ID of '{}'!",
-                existing.name, category.name, existing.id
-            );
+    #[cfg(feature = "instrumentation-enabled")]
+    {
+        use std::collections::HashMap;
+        let mut types = HashMap::new();
+        for category in AllocationCategoryIter::new() {
+            let existing = types.insert(category.id, category);
+            if let Some(existing) = existing {
+                assert_eq!(category.id, existing.id); // Just being careful
+                panic!(
+                    "Colliding IAllocationCategory type IDs detected. '{}' and '{}' have the same ID of '{}'!",
+                    existing.name(),
+                    category.name(),
+                    existing.id()
+                );
+            }
         }
     }
 }
 
 /// Do not access but needs to be public so macros can touch it.
 ///
-/// Forms the head of the linked list of all declared category types. Will be setup before main.
-///
-/// Call to get a reference to the head of the list.
-#[doc(hidden)]
-pub static CATEGORY_LIST_HEAD: AtomicCell<Option<&'static CategoryInfo>> = AtomicCell::new(None);
-
-/// Do not access but needs to be public so macros can touch it.
-///
 /// Utility function used by the new_alloc_category macro for registering the type into the
 /// global linked list of all categories.
 #[doc(hidden)]
-pub fn register_category(v: &'static CategoryInfo) {
+pub fn register_category(v: &'static CategoryInfo, parent: Option<&'static CategoryInfo>) {
     let next = CATEGORY_LIST_HEAD.swap(Some(v));
     v.next.store(next);
+    v.parent.store(parent);
 }
+
+/// Forms the head of the linked list of all declared category types. Will be setup before main.
+///
+/// Call to get a reference to the head of the list.
+static CATEGORY_LIST_HEAD: AtomicCell<Option<&'static CategoryInfo>> = AtomicCell::new(None);
