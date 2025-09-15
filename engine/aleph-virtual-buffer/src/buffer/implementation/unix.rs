@@ -47,7 +47,7 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuf
         );
 
         if result == libc::MAP_FAILED {
-            Err(std::io::Error::last_os_error())
+            Err(Error::last_os_error())
         } else {
             // It's invalid for zero to be returned by mmap. It will return either a valid address or
             // MAP_FAILED (-1) so we can assume the address if it isn't MAP_FAILED
@@ -64,7 +64,7 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuf
 pub unsafe fn free_virtual_buffer(base: *mut u8, pages: usize) -> std::io::Result<()> {
     unsafe {
         if libc::munmap(base as _, pages * page_size()) != 0 {
-            Err(std::io::Error::last_os_error())
+            Err(Error::last_os_error())
         } else {
             Ok(())
         }
@@ -81,7 +81,7 @@ pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> std::
         );
 
         if result != 0 {
-            Err(std::io::Error::last_os_error())
+            Err(Error::last_os_error())
         } else {
             Ok(())
         }
@@ -94,7 +94,7 @@ pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std:
         let result = libc::mprotect(base as _, pages * page_size(), libc::PROT_NONE);
 
         if result != 0 {
-            Err(std::io::Error::last_os_error())
+            Err(Error::last_os_error())
         } else {
             Ok(())
         }

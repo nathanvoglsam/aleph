@@ -82,7 +82,7 @@ impl NumberVariant {
 /// a JS value.
 ///
 /// That means that this will never contain an 'object', 'string' or any other kind of pointer based
-/// [`raw::JSValue`]. This means the object is safe to pass as a pure value type with no kind of
+/// [`JSValue`]. This means the object is safe to pass as a pure value type with no kind of
 /// ref-count semantics.
 #[repr(transparent)]
 #[derive(Copy, Clone)]
@@ -108,7 +108,7 @@ impl Value {
     /// we don't have a valid result.
     ///
     /// This does not contain the actual exception value. The exception object must be fetched
-    /// from the context with [`crate::Context::get_exception`]. Because this contains nothing but
+    /// from the context with [`Context::get_exception`]. Because this contains nothing but
     /// a tag signalling an exception being thrown, this is a pure value type too.
     pub const EXCEPTION: Self = Self(JSValue::EXCEPTION);
 
@@ -414,10 +414,7 @@ impl RefValue {
     #[inline]
     pub fn get_property_str(&self, prop: &str) -> RefValue {
         match self.c.new_atom(prop) {
-            Some(a) => {
-                let v = self.get_property(&a);
-                v
-            }
+            Some(a) => self.get_property(&a),
             _ => {
                 panic!()
             }
@@ -488,7 +485,7 @@ impl RefValue {
 
             let argc: c_int = args.len().try_into().unwrap();
             let argv = if !args.is_empty() {
-                args.as_ptr() as *mut RefValue as *mut raw::JSValue
+                args.as_ptr() as *mut RefValue as *mut JSValue
             } else {
                 std::ptr::null_mut()
             };
@@ -525,29 +522,29 @@ impl RefValue {
 
     pub fn to_json(&self) -> Option<serde_json::Value> {
         let v = match self.get_tag() {
-            raw::JSTag::BIG_INT => unimplemented!(),
-            raw::JSTag::SYMBOL => unimplemented!(),
-            raw::JSTag::STRING => {
+            JSTag::BIG_INT => unimplemented!(),
+            JSTag::SYMBOL => unimplemented!(),
+            JSTag::STRING => {
                 let string = self.to_c_str()?;
                 let string = string.to_owned();
                 serde_json::Value::String(string)
             }
-            raw::JSTag::MODULE => unimplemented!(),
-            raw::JSTag::FUNCTION_BYTECODE => unimplemented!(),
-            raw::JSTag::OBJECT => unsafe {
+            JSTag::MODULE => unimplemented!(),
+            JSTag::FUNCTION_BYTECODE => unimplemented!(),
+            JSTag::OBJECT => unsafe {
                 let v = self.clone().to_object().ok().unwrap_unchecked();
                 v.to_json()?
             },
-            raw::JSTag::BOOL => unsafe {
+            JSTag::BOOL => unsafe {
                 let boolean = self.get_bool().unwrap_unchecked();
                 serde_json::Value::Bool(boolean)
             },
-            raw::JSTag::NULL => serde_json::Value::Null,
-            raw::JSTag::UNDEFINED => return None,
-            raw::JSTag::UNINITIALIZED => unimplemented!(),
-            raw::JSTag::CATCH_OFFSET => unimplemented!(),
-            raw::JSTag::EXCEPTION => return None,
-            raw::JSTag::INT => unsafe {
+            JSTag::NULL => serde_json::Value::Null,
+            JSTag::UNDEFINED => return None,
+            JSTag::UNINITIALIZED => unimplemented!(),
+            JSTag::CATCH_OFFSET => unimplemented!(),
+            JSTag::EXCEPTION => return None,
+            JSTag::INT => unsafe {
                 let number = self
                     .get_number()
                     .unwrap_unchecked()
@@ -557,14 +554,13 @@ impl RefValue {
                 assert!(number.is_i64() || number.is_u64());
                 number
             },
-            raw::JSTag::FLOAT64 => unsafe {
+            JSTag::FLOAT64 => unsafe {
                 let number = self
                     .get_number()
                     .unwrap_unchecked()
                     .get_double()
                     .unwrap_unchecked();
-                let number = serde_json::to_value(number).unwrap();
-                number
+                serde_json::to_value(number).unwrap()
             },
             _ => unimplemented!(),
         };
@@ -654,7 +650,7 @@ impl RefValue {
     }
 }
 
-impl<'a> Clone for RefValue {
+impl Clone for RefValue {
     #[inline]
     fn clone(&self) -> Self {
         unsafe {
@@ -667,7 +663,7 @@ impl<'a> Clone for RefValue {
     }
 }
 
-impl<'a> Drop for RefValue {
+impl Drop for RefValue {
     #[inline]
     fn drop(&mut self) {
         unsafe {
@@ -817,10 +813,10 @@ impl Object {
     }
 }
 
-impl Into<RefValue> for Object {
+impl From<Object> for RefValue {
     #[inline]
-    fn into(self) -> RefValue {
-        self.to_value()
+    fn from(val: Object) -> Self {
+        val.to_value()
     }
 }
 

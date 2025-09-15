@@ -245,6 +245,7 @@ pub enum ColorClearValue {
 
 impl ColorClearValue {
     pub fn to_float(&self) -> [f32; 4] {
+        #[allow(clippy::erasing_op)]
         match self {
             ColorClearValue::Float { r, g, b, a } => [*r, *g, *b, *a],
             ColorClearValue::Int(v) => {

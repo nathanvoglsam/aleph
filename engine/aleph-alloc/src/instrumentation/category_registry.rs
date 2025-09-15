@@ -233,6 +233,12 @@ pub struct AllocationCategoryIter {
     next: Option<&'static CategoryInfo>,
 }
 
+impl Default for AllocationCategoryIter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AllocationCategoryIter {
     /// Constructs a new [`AllocationCategoryIter`] instance.
     pub fn new() -> Self {

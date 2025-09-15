@@ -698,7 +698,7 @@ mod tests {
 
         // End: Validate that allocator has no fragmentation left. Should be 100% clean.
         let validate_all = allocator.allocate(1024 * 1024 * 256);
-        assert!(validate_all.offset == 0);
+        assert_eq!(validate_all.offset, 0);
         allocator.free(validate_all);
     }
 
@@ -756,25 +756,28 @@ mod tests {
         // Allocator should not reuse node freed by A since the allocation C doesn't fits in the same bin
         // However node D and E fit there and should reuse node from A
         let a = allocator.allocate(1024);
-        assert!(a.offset == 0);
+        assert_eq!(a.offset, 0);
 
         let b = allocator.allocate(3456);
-        assert!(b.offset == 1024);
+        assert_eq!(b.offset, 1024);
 
         allocator.free(a);
 
         let c = allocator.allocate(2345);
-        assert!(c.offset == 1024 + 3456);
+        assert_eq!(c.offset, 1024 + 3456);
 
         let d = allocator.allocate(456);
-        assert!(d.offset == 0);
+        assert_eq!(d.offset, 0);
 
         let e = allocator.allocate(512);
-        assert!(e.offset == 456);
+        assert_eq!(e.offset, 456);
 
         let report = allocator.storage_report();
-        assert!(report.total_free_space == 1024 * 1024 * 256 - 3456 - 2345 - 456 - 512);
-        assert!(report.largest_free_region != report.total_free_space);
+        assert_eq!(
+            report.total_free_space,
+            1024 * 1024 * 256 - 3456 - 2345 - 456 - 512
+        );
+        assert_ne!(report.largest_free_region, report.total_free_space);
 
         allocator.free(c);
         allocator.free(d);
@@ -783,7 +786,7 @@ mod tests {
 
         // End: Validate that allocator has no fragmentation left. Should be 100% clean.
         let validate_all = allocator.allocate(1024 * 1024 * 256);
-        assert!(validate_all.offset == 0);
+        assert_eq!(validate_all.offset, 0);
         allocator.free(validate_all);
     }
 

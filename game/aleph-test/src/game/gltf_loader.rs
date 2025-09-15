@@ -73,7 +73,7 @@ impl BumpThingy {
                 std::mem::swap(&mut new_block, &mut self.alloc);
                 BufferUploadDesc::new_in_bump_arena(&self.alloc, &desc)
             }
-            e @ Err(_) => return e,
+            e @ Err(_) => e,
         }
     }
 

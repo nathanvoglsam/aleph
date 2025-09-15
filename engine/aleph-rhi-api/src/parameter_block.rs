@@ -89,10 +89,10 @@ impl<'a> SamplerWrite<'a> {
     }
 }
 
-impl<'a> Into<ParameterWrite<'a>> for SamplerWrite<'a> {
+impl<'a> From<SamplerWrite<'a>> for ParameterWrite<'a> {
     #[inline(always)]
-    fn into(self) -> ParameterWrite<'a> {
-        ParameterWrite::Sampler(self)
+    fn from(val: SamplerWrite<'a>) -> Self {
+        ParameterWrite::Sampler(val)
     }
 }
 
@@ -129,10 +129,10 @@ impl TextureWrite {
     }
 }
 
-impl Into<ParameterWrite<'static>> for TextureWrite {
+impl From<TextureWrite> for ParameterWrite<'static> {
     #[inline(always)]
-    fn into(self) -> ParameterWrite<'static> {
-        ParameterWrite::Texture(self)
+    fn from(val: TextureWrite) -> Self {
+        ParameterWrite::Texture(val)
     }
 }
 
@@ -186,10 +186,10 @@ impl<'a> BufferWrite<'a> {
     }
 }
 
-impl<'a> Into<ParameterWrite<'a>> for BufferWrite<'a> {
+impl<'a> From<BufferWrite<'a>> for ParameterWrite<'a> {
     #[inline(always)]
-    fn into(self) -> ParameterWrite<'a> {
-        ParameterWrite::Buffer(self)
+    fn from(val: BufferWrite<'a>) -> Self {
+        ParameterWrite::Buffer(val)
     }
 }
 
@@ -211,9 +211,9 @@ pub struct TextureBufferWrite<'a> {
     pub len: u32,
 }
 
-impl<'a> Into<ParameterWrite<'a>> for TextureBufferWrite<'a> {
+impl<'a> From<TextureBufferWrite<'a>> for ParameterWrite<'a> {
     #[inline(always)]
-    fn into(self) -> ParameterWrite<'a> {
-        ParameterWrite::TextureBuffer(self)
+    fn from(val: TextureBufferWrite<'a>) -> Self {
+        ParameterWrite::TextureBuffer(val)
     }
 }

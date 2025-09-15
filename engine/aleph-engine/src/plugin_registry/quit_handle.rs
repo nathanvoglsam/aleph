@@ -39,7 +39,7 @@ pub struct QuitHandleImpl {
     pub wants_quit: AtomicBool,
 }
 
-crate::interfaces::any::declare_interfaces!(QuitHandleImpl, [IQuitHandle]);
+interfaces::any::declare_interfaces!(QuitHandleImpl, [IQuitHandle]);
 
 impl IQuitHandle for QuitHandleImpl {
     fn quit(&self) {

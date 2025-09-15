@@ -53,7 +53,7 @@ impl LinearDescriptorPool {
     pub fn new(device: &dyn IDevice, num_blocks: u32) -> Result<Self, DescriptorPoolCreateError> {
         let active = device.create_descriptor_arena(&DescriptorArenaDesc {
             arena_type: DescriptorArenaType::Linear,
-            num_blocks: num_blocks,
+            num_blocks,
             name: Some("LinearDescriptorPoolArena"),
         })?;
         Ok(Self {

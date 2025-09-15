@@ -70,16 +70,14 @@ impl RingBuffer {
     pub const fn new(capacity: usize) -> Option<Self> {
         if !capacity.is_power_of_two() || capacity > Self::MAX_CAPACITY {
             None
+        } else if let Some(capacity) = NonZeroUsize::new(capacity) {
+            Some(Self {
+                capacity,
+                head: Cell::new(0),
+                size: Cell::new(0),
+            })
         } else {
-            if let Some(capacity) = NonZeroUsize::new(capacity) {
-                Some(Self {
-                    capacity,
-                    head: Cell::new(0),
-                    size: Cell::new(0),
-                })
-            } else {
-                None
-            }
+            None
         }
     }
 

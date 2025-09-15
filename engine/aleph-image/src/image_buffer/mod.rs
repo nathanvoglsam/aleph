@@ -146,8 +146,7 @@ impl<T: PixelFormat> ImageBuffer<T> {
     /// dimensions for the pixel format `T`.
     pub const fn calculate_element_count(width: u32, height: u32) -> usize {
         let pixels = width as usize * height as usize;
-        let elements = pixels * T::COMPONENTS;
-        elements
+        pixels * T::COMPONENTS
     }
 
     /// Converts the image buffer into little endian byte order in-place.
@@ -160,7 +159,7 @@ impl<T: PixelFormat> ImageBuffer<T> {
         }
 
         for p in self.data.iter_mut() {
-            p.to_le();
+            p.convert_to_le_inplace();
         }
     }
 }
@@ -173,8 +172,7 @@ impl<P: PixelChannelType> ImageBuffer<PixR<P>> {
 
             let v = v.into_float();
             let v = v.clamp(MIN, MAX);
-            let v = f16::from_f32(v);
-            v
+            f16::from_f32(v)
         }));
         ImageBuffer::from_data(self.width, self.height, data)
     }
@@ -188,8 +186,7 @@ impl<P: PixelChannelType> ImageBuffer<PixRG<P>> {
 
             let v = v.into_float();
             let v = v.clamp(MIN, MAX);
-            let v = f16::from_f32(v);
-            v
+            f16::from_f32(v)
         }));
         ImageBuffer::from_data(self.width, self.height, data)
     }
@@ -203,8 +200,7 @@ impl<P: PixelChannelType> ImageBuffer<PixRGB<P>> {
 
             let v = v.into_float();
             let v = v.clamp(MIN, MAX);
-            let v = f16::from_f32(v);
-            v
+            f16::from_f32(v)
         }));
         ImageBuffer::from_data(self.width, self.height, data)
     }
@@ -218,8 +214,7 @@ impl<P: PixelChannelType> ImageBuffer<PixRGBA<P>> {
 
             let v = v.into_float();
             let v = v.clamp(MIN, MAX);
-            let v = f16::from_f32(v);
-            v
+            f16::from_f32(v)
         }));
         ImageBuffer::from_data(self.width, self.height, data)
     }
@@ -237,10 +232,10 @@ impl<T: FromImagePixel> ImageBuffer<T> {
 impl<T: PixelFormat> Clone for ImageBuffer<T> {
     fn clone(&self) -> Self {
         Self {
-            width: self.width.clone(),
-            height: self.height.clone(),
-            width_f32: self.width_f32.clone(),
-            height_f32: self.height_f32.clone(),
+            width: self.width,
+            height: self.height,
+            width_f32: self.width_f32,
+            height_f32: self.height_f32,
             data: self.data.clone(),
         }
     }

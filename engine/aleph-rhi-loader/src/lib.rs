@@ -191,12 +191,12 @@ impl RhiLoader {
 
         let backend = options.backend;
         if !self.backends.contains(&backend) {
-            return Err(ContextCreateError::RequiredBackendUnavailable(backend));
+            Err(ContextCreateError::RequiredBackendUnavailable(backend))
         } else {
             log::debug!("Backend '{backend}' chosen");
             let backend = self.select_backend(backend);
             let context = backend.make_context(options)?;
-            return Ok(Self::wrap_with_validation(options, context));
+            Ok(Self::wrap_with_validation(options, context))
         }
     }
 }
@@ -214,12 +214,12 @@ impl RhiLoader {
 
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     fn make_loader() -> Self {
-        return Self {
+        Self {
             backends: vec![BackendAPI::Vulkan, BackendAPI::Metal],
             d3d12: None,
             vulkan: None,
             metal: None,
-        };
+        }
     }
 
     #[cfg(any(target_os = "linux", target_os = "android"))]

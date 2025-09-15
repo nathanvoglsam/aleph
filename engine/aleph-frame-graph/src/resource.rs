@@ -52,10 +52,7 @@ impl ResourceId {
         // We assert this here as it's the most likely code to execute to catch this case. The
         // condition is constant so it will compile to nothing as long as we get the expected
         // output.
-        assert_eq!(
-            std::mem::size_of::<ResourceId>(),
-            std::mem::size_of::<Option<ResourceId>>()
-        );
+        assert_eq!(size_of::<ResourceId>(), size_of::<Option<ResourceId>>());
 
         Self {
             niche_value: NonZeroU16::new(0xFF).unwrap(),
@@ -86,14 +83,8 @@ pub struct ResourceMut(pub(crate) ResourceId);
 // Allow using a mutable resource as an immutable one
 impl AsRef<ResourceRef> for ResourceMut {
     fn as_ref(&self) -> &ResourceRef {
-        assert_eq!(
-            std::mem::size_of::<ResourceMut>(),
-            std::mem::size_of::<ResourceRef>()
-        );
-        assert_eq!(
-            std::mem::align_of::<ResourceMut>(),
-            std::mem::align_of::<ResourceRef>()
-        );
+        assert_eq!(size_of::<ResourceMut>(), size_of::<ResourceRef>());
+        assert_eq!(align_of::<ResourceMut>(), align_of::<ResourceRef>());
 
         let ptr = NonNull::from(self).cast::<ResourceRef>();
 
@@ -163,14 +154,8 @@ mod tests {
 
     #[test]
     pub fn test_size() {
-        assert_eq!(
-            std::mem::size_of::<ResourceMut>(),
-            std::mem::size_of::<ResourceRef>()
-        );
-        assert_eq!(
-            std::mem::align_of::<ResourceMut>(),
-            std::mem::align_of::<ResourceRef>()
-        );
+        assert_eq!(size_of::<ResourceMut>(), size_of::<ResourceRef>());
+        assert_eq!(align_of::<ResourceMut>(), align_of::<ResourceRef>());
     }
 
     #[test]

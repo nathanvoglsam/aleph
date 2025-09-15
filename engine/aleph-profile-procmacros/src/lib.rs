@@ -74,9 +74,9 @@ pub fn function(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     function.block = Box::new(new_body);
 
-    (quote! {
+    quote! {
         #function
-    })
+    }
     .into()
 }
 
@@ -141,9 +141,9 @@ pub fn all_functions(_attr: TokenStream, item: TokenStream) -> TokenStream {
         func.block = impl_block(prev_block, &calling_info);
     }
 
-    (quote!(
+    quote!(
         #content
-    ))
+    )
     .into()
 }
 

@@ -44,8 +44,7 @@ impl KtxOrientation {
     pub fn as_str(&self) -> &str {
         unsafe {
             let cstr = CStr::from_bytes_until_nul(&self.bytes).unwrap_unchecked();
-            let rstr = cstr.to_str().unwrap_unchecked();
-            rstr
+            cstr.to_str().unwrap_unchecked()
         }
     }
 }
@@ -65,8 +64,7 @@ impl KtxSwizzle {
     pub fn as_str(&self) -> &str {
         unsafe {
             let cstr = CStr::from_bytes_until_nul(&self.bytes).unwrap_unchecked();
-            let rstr = cstr.to_str().unwrap_unchecked();
-            rstr
+            cstr.to_str().unwrap_unchecked()
         }
     }
 }

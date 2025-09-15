@@ -45,7 +45,7 @@ impl CtxString {
     /// It is the caller's responsibility to ensure that the given string 'v' is live and was
     /// allocated from the given [`Context`]. [`CtxString`] will take ownership of the string and
     /// the [`Drop`] implementation will free the
-    pub const unsafe fn from_ctx_and_str<'b>(ctx: Context, v: &'b str) -> Self {
+    pub const unsafe fn from_ctx_and_str(ctx: Context, v: &str) -> Self {
         Self {
             ctx,
             v: v as *const str,
@@ -63,7 +63,7 @@ impl Drop for CtxString {
 
 impl AsRef<str> for CtxString {
     #[inline]
-    fn as_ref<'b>(&'b self) -> &'b str {
+    fn as_ref(&self) -> &str {
         // Safety: It is unsafe for a caller to construct a CtxString where this operation is unsafe
         unsafe { &*self.v }
     }
@@ -73,7 +73,7 @@ impl Deref for CtxString {
     type Target = str;
 
     #[inline]
-    fn deref<'b>(&'b self) -> &'b Self::Target {
+    fn deref(&self) -> &Self::Target {
         self.as_ref()
     }
 }

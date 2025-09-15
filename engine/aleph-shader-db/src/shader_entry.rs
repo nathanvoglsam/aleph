@@ -82,13 +82,10 @@ unsafe impl IShaderCodeSource for ShaderEntry {
     }
 
     fn get_push_constant_block(&self) -> Option<PushConstantBlock> {
-        self.push_constants
-            .as_ref()
-            .map(|v| {
-                let v: u8 = (*v).try_into().ok()?;
-                PushConstantBlock::new(v)
-            })
-            .flatten()
+        self.push_constants.as_ref().and_then(|v| {
+            let v: u8 = (*v).try_into().ok()?;
+            PushConstantBlock::new(v)
+        })
     }
 }
 
@@ -133,12 +130,9 @@ unsafe impl IShaderCodeSource for ArchivedShaderEntry {
     }
 
     fn get_push_constant_block(&self) -> Option<PushConstantBlock> {
-        self.push_constants
-            .as_ref()
-            .map(|v| {
-                let v: u8 = v.to_native().try_into().ok()?;
-                PushConstantBlock::new(v)
-            })
-            .flatten()
+        self.push_constants.as_ref().and_then(|v| {
+            let v: u8 = v.to_native().try_into().ok()?;
+            PushConstantBlock::new(v)
+        })
     }
 }

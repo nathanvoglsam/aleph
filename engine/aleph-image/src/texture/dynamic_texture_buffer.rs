@@ -270,7 +270,6 @@ impl DynamicTextureBuffer {
         Ok(())
     }
 
-    #[must_use]
     pub fn integrate_irradiance(
         &mut self,
         src_mapping_2d: SphericalMapping,
@@ -286,7 +285,6 @@ impl DynamicTextureBuffer {
         Ok(out)
     }
 
-    #[must_use]
     pub fn reproject_environment_map(
         &mut self,
         src_mapping_2d: SphericalMapping,

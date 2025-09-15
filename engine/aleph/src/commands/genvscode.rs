@@ -46,7 +46,7 @@ impl ISubcommand for GenVsCode {
             .long_about("Tool for generating a vscode workspace for the project. This includes pre-filled settings and other options set for autocomplete for various langauges.")
     }
 
-    fn exec(&mut self, project: &AlephProject, mut _matches: ArgMatches) -> anyhow::Result<()> {
+    fn exec(&mut self, project: &AlephProject, _matches: ArgMatches) -> anyhow::Result<()> {
         let file_path = project.vscode_workspace_file();
         let file = CodeWorkspace::from_project(project)?;
 

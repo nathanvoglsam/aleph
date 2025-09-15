@@ -205,7 +205,7 @@ pub struct InnerContext {
     pub(crate) rt: Runtime,
 }
 
-impl<'a> Drop for InnerContext {
+impl Drop for InnerContext {
     #[inline]
     fn drop(&mut self) {
         unsafe {

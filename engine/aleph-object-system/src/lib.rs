@@ -79,7 +79,7 @@ pub unsafe extern "C" fn object_destructor<T: Sized>(this: NonNull<()>, count: u
         while count != 0 {
             base.drop_in_place();
             base = base.add(1);
-            count = count - 1;
+            count -= 1;
         }
     }
 }
@@ -215,7 +215,7 @@ impl Drop for ArcObject {
             let ptr = NonNull::from(&self.inner);
             let ptr = ptr.cast::<()>();
             let f = self.inner.desc.destructor_arc;
-            (f)(ptr, 1)
+            f(ptr, 1)
         }
     }
 }
@@ -353,8 +353,7 @@ macro_rules! unsafe_impl_iobject {
 /// efficient to query.
 pub static TYPES: LazyLock<HashMap<uuid::Uuid, &'static ObjectDescription>> = LazyLock::new(|| {
     assert_no_duplicate_ids_registered();
-    let map = HashMap::from_iter(ObjectTypeIter::new().map(|v| (v.id, v)));
-    map
+    HashMap::from_iter(ObjectTypeIter::new().map(|v| (v.id, v)))
 });
 
 /// An object that integrates with the object system to iterate over all declared IObject types.
@@ -370,6 +369,12 @@ pub static TYPES: LazyLock<HashMap<uuid::Uuid, &'static ObjectDescription>> = La
 /// iterate.
 pub struct ObjectTypeIter {
     next: *mut ObjectTypeListNode,
+}
+
+impl Default for ObjectTypeIter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ObjectTypeIter {

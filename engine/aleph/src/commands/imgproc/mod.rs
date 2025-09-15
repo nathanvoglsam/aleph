@@ -320,7 +320,7 @@ where
     let elems = ImageBuffer::<P>::calculate_element_count(doc.width(), doc.height());
 
     // Calculated here. The size in bytes we expect the texture to be.
-    let bytes = elems * std::mem::size_of::<C>();
+    let bytes = elems * size_of::<C>();
 
     // This is the buffer we copy the texture into. This function assumes that the document is
     // mmap-ed, which is not suitable for efficiently processing.

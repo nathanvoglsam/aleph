@@ -81,7 +81,7 @@ impl Buffer {
 }
 
 impl Buffer {
-    pub(crate) fn get_buffer_id(&self) -> std::num::NonZeroU64 {
+    pub(crate) fn get_buffer_id(&self) -> NonZeroU64 {
         self.id
     }
 
@@ -89,10 +89,7 @@ impl Buffer {
         self.desc.get()
     }
 
-    pub(crate) fn map_buffer(
-        &self,
-        device: &Device,
-    ) -> Result<std::ptr::NonNull<u8>, ResourceMapError> {
+    pub(crate) fn map_buffer(&self, device: &Device) -> Result<NonNull<u8>, ResourceMapError> {
         let mut lock = self.map_state.lock();
 
         if let Some(ptr) = lock.ptr {

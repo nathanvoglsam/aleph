@@ -324,7 +324,7 @@ impl<A: ScheduleArgs> Schedule<A> {
     pub fn iter_stages(&self) -> impl Iterator<Item = (Label, &dyn Stage<A>)> {
         self.stage_order
             .iter()
-            .map(move |label| (*label, self.stages[&label].as_ref()))
+            .map(move |label| (*label, self.stages[label].as_ref()))
     }
 
     fn index_from_label(&self, target: Label) -> usize {
@@ -368,16 +368,8 @@ pub enum ShouldRun {
     No,
 }
 
+#[derive(Default)]
 struct RunCriteriaBox {
     system: Option<Box<dyn System<In = (), Out = ShouldRun>>>,
     initialized: bool,
-}
-
-impl Default for RunCriteriaBox {
-    fn default() -> Self {
-        Self {
-            system: Default::default(),
-            initialized: Default::default(),
-        }
-    }
 }

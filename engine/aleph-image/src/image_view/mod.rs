@@ -91,10 +91,10 @@ impl<'a, T: PixelFormat> ImageView<'a, T> {
 impl<'a, T: PixelFormat> Clone for ImageView<'a, T> {
     fn clone(&self) -> Self {
         Self {
-            width: self.width.clone(),
-            height: self.height.clone(),
-            width_f32: self.width_f32.clone(),
-            height_f32: self.height_f32.clone(),
+            width: self.width,
+            height: self.height,
+            width_f32: self.width_f32,
+            height_f32: self.height_f32,
             data: self.data,
         }
     }
@@ -193,7 +193,7 @@ impl<'a, T: PixelFormat> ImageViewMut<'a, T> {
         }
 
         for p in self.data.iter_mut() {
-            p.to_le();
+            p.convert_to_le_inplace();
         }
     }
 }

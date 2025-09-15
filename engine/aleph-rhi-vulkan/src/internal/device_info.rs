@@ -92,7 +92,7 @@ impl DeviceInfo {
 
             // Memcpy the source string into the destination buffer
             unsafe {
-                assert_eq!(std::mem::size_of::<u8>(), std::mem::size_of::<c_char>());
+                assert_eq!(size_of::<u8>(), size_of::<c_char>());
                 let src = v.as_ptr() as *const c_char;
                 let dst = props.extension_name.as_mut_ptr() as *mut c_char;
                 std::ptr::copy(src, dst, v.len());

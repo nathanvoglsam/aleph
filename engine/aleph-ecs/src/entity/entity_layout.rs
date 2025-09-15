@@ -238,6 +238,12 @@ pub struct EntityLayoutBuf<A: Allocator = Global> {
     components: AVec<Uuid, A>,
 }
 
+impl Default for EntityLayoutBuf<Global> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EntityLayoutBuf<Global> {
     /// Constructs a new, empty `EntityLayoutBuf`.
     #[inline]
@@ -309,8 +315,7 @@ impl<A: Allocator + Clone> EntityLayoutBuf<A> {
         let v = self.components.clone().into_boxed_slice();
         let (v, a) = ABox::<[Uuid], A>::into_raw_with_allocator(v);
         let v = v as *mut EntityLayout;
-        let v = unsafe { ABox::<_, A>::from_raw_in(v, a) };
-        v
+        unsafe { ABox::<_, A>::from_raw_in(v, a) }
     }
 }
 

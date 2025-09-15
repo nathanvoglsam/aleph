@@ -546,7 +546,7 @@ impl<A: PassArgs> FrameGraph<A> {
         name: &str,
     ) {
         match given {
-            crate::ResourceVariant::Buffer(i) => match &root.resource_type {
+            ResourceVariant::Buffer(i) => match &root.resource_type {
                 crate::internal::ResourceType::Buffer(r) => {
                     let i_desc = self.device.get_buffer_desc(i);
                     self.assert_matching_buffer_desc(&r.desc, &i_desc, name);
@@ -561,7 +561,7 @@ impl<A: PassArgs> FrameGraph<A> {
                     )
                 }
             },
-            crate::ResourceVariant::Texture(i) => match &root.resource_type {
+            ResourceVariant::Texture(i) => match &root.resource_type {
                 crate::internal::ResourceType::Buffer(_r) => {
                     panic!("{} texture '{}' was provided a buffer", resource_type, name)
                 }

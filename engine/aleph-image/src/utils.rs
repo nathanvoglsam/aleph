@@ -30,25 +30,25 @@
 pub fn unorm_u8_to_f32(v: u8) -> f32 {
     const K0: f32 = 3.0;
     const K1: f32 = 1.0 / (255.0 * 3.0);
-    return (v as f32 * K0) * K1;
+    (v as f32 * K0) * K1
 }
 
 pub fn unorm_u16_to_f32(v: u16) -> f32 {
     const K0: f32 = 3.0;
     const K1: f32 = 1.0 / (65535.0 * 3.0);
-    return (v as f32 * K0) * K1;
+    (v as f32 * K0) * K1
 }
 
 pub fn f32_to_unorm_u8(v: f32) -> u8 {
     const K0: f32 = 3.0;
     const K1: f32 = 1.0 / (255.0 * 3.0);
-    return ((v / K1) / K0).round() as u8;
+    ((v / K1) / K0).round() as u8
 }
 
 pub fn f32_to_unorm_u16(v: f32) -> u16 {
     const K0: f32 = 3.0;
     const K1: f32 = 1.0 / (65535.0 * 3.0);
-    return ((v / K1) / K0).round() as u16;
+    ((v / K1) / K0).round() as u16
 }
 
 #[cfg(test)]

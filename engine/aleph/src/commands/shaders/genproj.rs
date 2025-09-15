@@ -326,17 +326,17 @@ fn output_build_statement_for_shader(
     let in_file = ninja::prepare_path_for_build_statement(in_file);
 
     match target_ir {
-        crate::shader_system::ShaderTargetLanguage::Dxil => {
+        ShaderTargetLanguage::Dxil => {
             writeln!(ninja_file, "build {out_file}.dxil: {rule}_dxil {in_file}")?;
             compilation_params.write_ninja_overrides(ninja_file)?;
             writeln!(ninja_file)?;
         }
-        crate::shader_system::ShaderTargetLanguage::Spirv => {
+        ShaderTargetLanguage::Spirv => {
             writeln!(ninja_file, "build {out_file}.spirv: {rule}_spirv {in_file}")?;
             compilation_params.write_ninja_overrides(ninja_file)?;
             writeln!(ninja_file)?;
         }
-        crate::shader_system::ShaderTargetLanguage::Msl => {
+        ShaderTargetLanguage::Msl => {
             writeln!(ninja_file, "build {out_file}.msl: {rule}_msl {in_file}")?;
             compilation_params.write_ninja_overrides(ninja_file)?;
             writeln!(ninja_file)?;

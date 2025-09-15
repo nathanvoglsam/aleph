@@ -154,8 +154,8 @@ pub trait IUploadAllocator {
         &self,
         count: usize,
     ) -> Option<DeviceAllocationResult<&mut [std::mem::MaybeUninit<T>]>> {
-        let size = count * std::mem::size_of::<T>();
-        let allocation = self.allocate_aligned(size, std::mem::align_of::<T>())?;
+        let size = count * size_of::<T>();
+        let allocation = self.allocate_aligned(size, align_of::<T>())?;
 
         // Safety: This is safe as the allocator already satisfies all the preconditions.
         let result = unsafe {

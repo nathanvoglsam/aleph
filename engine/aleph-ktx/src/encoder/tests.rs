@@ -161,7 +161,7 @@ fn round_trip_document<R: Read + Seek>(
                     let i = calculate_set_index(
                         layer_num_real,
                         doc.level_num() as usize,
-                        layer as usize,
+                        layer,
                         level_i as usize,
                     );
                     images[i] = &file[layer_range];
@@ -298,7 +298,7 @@ fn round_trip_document<R: Read + Seek>(
                     let i = calculate_set_index(
                         layer_num_real,
                         doc.level_num() as usize,
-                        layer as usize,
+                        layer,
                         level_i as usize,
                     );
                     images[i] = &file[layer_range];

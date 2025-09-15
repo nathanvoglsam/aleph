@@ -106,7 +106,7 @@ impl<R: Read + Seek> SampleInfoIterator<R> {
 
 impl<'a> SampleInfoIterator<Cursor<&'a [u8]>> {
     pub fn from_words(words: &'a [u32]) -> Self {
-        assert!(words.len() % 4 == 0);
+        assert_eq!(words.len() % 4, 0);
         let count = words.len() / 4;
         let bytes = bytemuck::cast_slice::<_, u8>(words);
         let cursor = Cursor::new(bytes);

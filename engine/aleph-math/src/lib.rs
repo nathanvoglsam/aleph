@@ -58,7 +58,7 @@ pub mod unprojection {
         let u_z = -near / point.z;
         let u_x = (-u_z * point.x) / a;
         let u_y = (-u_z * point.y) / b;
-        ultraviolet::Vec3::new(u_x, u_y, u_z)
+        Vec3::new(u_x, u_y, u_z)
     }
 
     ///

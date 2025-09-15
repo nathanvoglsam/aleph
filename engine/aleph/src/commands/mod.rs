@@ -137,7 +137,7 @@ impl ISubcommand for SubcommandSet {
     }
 
     fn description(&mut self) -> Command {
-        let mut command = clap::Command::new(self.name)
+        let mut command = Command::new(self.name)
             .about(self.about)
             .arg_required_else_help(true);
 

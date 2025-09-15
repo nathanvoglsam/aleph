@@ -173,10 +173,10 @@ impl Drop for Texture {
             }
 
             // Some images we don't own, like swap chain images, so we shouldn't destroy them
-            if self.is_owned {
-                if let Some(allocation) = self.allocation {
-                    self._device.allocator.destroy_image(self.image, allocation);
-                }
+            if self.is_owned
+                && let Some(allocation) = self.allocation
+            {
+                self._device.allocator.destroy_image(self.image, allocation);
             }
         }
     }

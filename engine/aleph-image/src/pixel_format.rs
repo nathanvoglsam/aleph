@@ -39,22 +39,22 @@ use crate::utils::{f32_to_unorm_u8, f32_to_unorm_u16, unorm_u8_to_f32, unorm_u16
 /// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(transparent)]
-pub struct PixR<T: PixelChannelType>(pub [T; 1]);
+pub struct PixR<T>(pub [T; 1]);
 
 /// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(transparent)]
-pub struct PixRG<T: PixelChannelType>(pub [T; 2]);
+pub struct PixRG<T>(pub [T; 2]);
 
 /// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(transparent)]
-pub struct PixRGB<T: PixelChannelType>(pub [T; 3]);
+pub struct PixRGB<T>(pub [T; 3]);
 
 /// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(transparent)]
-pub struct PixRGBA<T: PixelChannelType>(pub [T; 4]);
+pub struct PixRGBA<T>(pub [T; 4]);
 
 /// The interface exposed by our pixel types. This provides basic, generic read/write access to
 /// individual pixels as well as generic conversion operations to and from a floating point vec4
@@ -223,7 +223,7 @@ impl<T: PixelChannelType> PixelFormat for PixRGBA<T> {
 
 /// This is a (largely internal) trait used to enable our generic conversions from the 'image'
 /// crate's [`image::ImageBuffer`] type into our own [`crate::ImageBuffer`] type. This allows us
-/// to get the appropriate [`image::Pixel`] type for one of our own [`crate::PixelFormat`] types
+/// to get the appropriate [`Pixel`] type for one of our own [`PixelFormat`] types
 /// in generic code.
 pub trait FromImagePixel: PixelFormat {
     type Source: Pixel<Subpixel = Self::Storage>;
@@ -301,7 +301,7 @@ pub trait PixelChannelType:
 
     /// Performs an in-place conversion from native-endian to little-endian. This is a no-op on
     /// little endian platforms, and an endian swap operation on big endian platforms.
-    fn to_le(&mut self);
+    fn convert_to_le_inplace(&mut self);
 }
 
 impl PixelChannelType for u8 {
@@ -318,7 +318,7 @@ impl PixelChannelType for u8 {
     }
 
     #[inline(always)]
-    fn to_le(&mut self) {}
+    fn convert_to_le_inplace(&mut self) {}
 }
 
 impl PixelChannelType for u16 {
@@ -335,7 +335,7 @@ impl PixelChannelType for u16 {
     }
 
     #[inline(always)]
-    fn to_le(&mut self) {
+    fn convert_to_le_inplace(&mut self) {
         if !cfg!(target_endian = "big") {
             return;
         }
@@ -353,8 +353,7 @@ impl PixelChannelType for u32 {
         // let v = v / (u32::MAX as f32);
         // v
         let v = self / 256; // Compress into 24 bits
-        let v = v as f32 / 16777216.0; // Convert to float and normalize
-        v
+        v as f32 / 16777216.0 // Convert to float and normalize
     }
 
     #[inline(always)]
@@ -364,12 +363,11 @@ impl PixelChannelType for u32 {
         // let v = v as u32;
         // v
         let v = v * 16777216.0;
-        let v = v as u32 * 256;
-        v
+        v as u32 * 256
     }
 
     #[inline(always)]
-    fn to_le(&mut self) {
+    fn convert_to_le_inplace(&mut self) {
         if !cfg!(target_endian = "big") {
             return;
         }
@@ -391,7 +389,7 @@ impl PixelChannelType for f16 {
     }
 
     #[inline(always)]
-    fn to_le(&mut self) {
+    fn convert_to_le_inplace(&mut self) {
         *self = bytemuck::cast::<_, Self>(self.to_le_bytes());
     }
 }
@@ -410,7 +408,7 @@ impl PixelChannelType for f32 {
     }
 
     #[inline(always)]
-    fn to_le(&mut self) {
+    fn convert_to_le_inplace(&mut self) {
         if !cfg!(target_endian = "big") {
             return;
         }

@@ -247,12 +247,12 @@ impl IDevice for Device {
             });
             let push_constant_ranges = push_constant_block
                 .as_ref()
-                .map(|v| std::slice::from_ref(v))
+                .map(std::slice::from_ref)
                 .unwrap_or(&[]);
 
             let create_info = vk::PipelineLayoutCreateInfo::default()
                 .set_layouts(&set_layouts)
-                .push_constant_ranges(&push_constant_ranges);
+                .push_constant_ranges(push_constant_ranges);
 
             let pipeline_layout = unsafe {
                 self.device

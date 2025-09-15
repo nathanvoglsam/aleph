@@ -505,6 +505,21 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
+    unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
+        match self._parent.state {
+            ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
+            ListState::Open => unsafe {
+                self._device
+                    .device
+                    .end_command_buffer(self._buffer)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                self._parent.state = ListState::Closed;
+                Ok(())
+            },
+            ListState::Closed => Err(CommandListCloseError::AlreadyClosed),
+        }
+    }
+
     unsafe fn set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
         if let Some(loader) = self._device.debug_loader.as_ref() {
             let color: [f32; 4] = color.into();
@@ -534,21 +549,6 @@ impl<'a> ITransferEncoder for Encoder<'a> {
     unsafe fn end_event(&mut self) {
         if let Some(loader) = self._device.debug_loader.as_ref() {
             unsafe { loader.cmd_end_debug_utils_label(self._buffer) }
-        }
-    }
-
-    unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
-        match self._parent.state {
-            ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
-            ListState::Open => unsafe {
-                self._device
-                    .device
-                    .end_command_buffer(self._buffer)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-                self._parent.state = ListState::Closed;
-                Ok(())
-            },
-            ListState::Closed => Err(CommandListCloseError::AlreadyClosed),
         }
     }
 }

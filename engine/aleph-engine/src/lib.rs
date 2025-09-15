@@ -106,7 +106,7 @@ impl EngineBuilder {
         #[cfg(not(target_os = "android"))]
         fn create_logger() -> env_logger::Logger {
             env_logger::Builder::from_default_env()
-                .filter_level(log::LevelFilter::Trace)
+                .filter_level(LevelFilter::Trace)
                 .build()
         }
 

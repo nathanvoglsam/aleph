@@ -62,7 +62,7 @@ pub fn pack_rgbe(rgb: Vec3) -> u32 {
         bytemuck::cast::<_, u32>(rgb.z + bias),
     );
     let e = (bytemuck::cast::<_, u32>(bias) << 4).wrapping_add(0x10000000);
-    return e | rgb.z << 18 | rgb.y << 9 | (rgb.x & 0x1FF);
+    e | rgb.z << 18 | rgb.y << 9 | (rgb.x & 0x1FF)
 }
 
 #[inline]
@@ -73,8 +73,7 @@ pub fn unpack_rgbe(p: u32) -> Vec3 {
     let rgb = Vec3::new(r as f32, g as f32, b as f32);
     let exp = (p >> 27) as i32 - 24;
     let exp = (exp as f32).exp2();
-    let rgb = rgb * exp;
-    rgb
+    rgb * exp
 }
 
 #[cfg(test)]

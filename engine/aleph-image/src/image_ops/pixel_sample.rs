@@ -221,7 +221,5 @@ fn point_texel_coord_to_sample_pos<M: IAddressMode>(dim: f32, x: f32) -> f32 {
     let scaled = x * dim;
 
     let floor = scaled.floor();
-    let floor = M::apply(dim, floor);
-
-    floor
+    M::apply(dim, floor)
 }

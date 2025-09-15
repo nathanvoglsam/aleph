@@ -94,7 +94,7 @@ pub fn integrate_irradiance_for_n(src: &impl IDirectionalSampler, n: Vec3, sampl
         }
     }
 
-    acc * (1.0 / (samples) as f32)
+    acc * (1.0 / samples as f32)
 }
 
 /// Alternate implementation of [`integrate_irradiance_for_n`] that uses a discrete sampling method

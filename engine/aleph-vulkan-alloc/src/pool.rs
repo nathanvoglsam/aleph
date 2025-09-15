@@ -44,6 +44,12 @@ pub struct PoolBuilder {
     create_info: PoolCreateInfo,
 }
 
+impl Default for PoolBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PoolBuilder {
     pub const fn new() -> Self {
         PoolBuilder {

@@ -342,17 +342,15 @@ impl Debug for JSBool {
     }
 }
 
-impl Into<bool> for JSBool {
-    #[inline(always)]
-    fn into(self) -> bool {
-        self.to_bool()
+impl From<bool> for JSBool {
+    fn from(value: bool) -> Self {
+        JSBool::new(value)
     }
 }
 
-impl From<bool> for JSBool {
-    #[inline(always)]
-    fn from(value: bool) -> Self {
-        Self::new(value)
+impl From<JSBool> for bool {
+    fn from(value: JSBool) -> Self {
+        value.to_bool()
     }
 }
 

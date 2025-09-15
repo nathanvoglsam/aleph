@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::collections::hash_map::Entry;
+
 use aleph_object_system::ObjectDescription;
 use aleph_object_system::uuid::Uuid;
 
@@ -82,12 +84,12 @@ impl ComponentRegistry {
     pub unsafe fn register_dynamic(&mut self, desc: &ObjectDescription) -> bool {
         // If there is already a component registered with the provided ID we return false without
         // modifying the registry.
-        if self.descriptions.get(&desc.id).is_some() {
-            false
-        } else {
+        if let Entry::Vacant(e) = self.descriptions.entry(desc.id) {
             // If we key isn't present we can insert the description
-            self.descriptions.insert(desc.id, desc.clone());
+            e.insert(desc.clone());
             true
+        } else {
+            false
         }
     }
 }

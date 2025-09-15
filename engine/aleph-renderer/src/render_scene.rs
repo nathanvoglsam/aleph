@@ -344,7 +344,7 @@ impl Storage {
             unsafe {
                 if let Some(f) = self.t_destructor {
                     let ptr = self.bytes.as_ptr();
-                    (f)(ptr.cast(), self.len() as u64);
+                    f(ptr.cast(), self.len() as u64);
                 }
 
                 self.transforms.clear();
@@ -511,7 +511,7 @@ impl RawBytes {
 
 impl<A: Allocator> RawBytes<A> {
     fn new_in(align: usize, a: A) -> Self {
-        assert!(align != 0);
+        assert_ne!(align, 0);
         assert!(align.is_power_of_two());
         let v = NonNull::slice_from_raw_parts(NonNull::<u8>::dangling(), 0);
         Self { slice: v, align, a }

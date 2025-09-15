@@ -317,7 +317,7 @@ mod used_serde {
         D: serde::Deserializer<'de>,
     {
         let v: Option<u64> = Deserialize::deserialize(d)?;
-        let v = v.map(|v| if v != 0 { true } else { false });
+        let v = v.map(|v| v != 0);
         Ok(v)
     }
 }

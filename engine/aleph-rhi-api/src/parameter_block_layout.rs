@@ -378,40 +378,40 @@ impl ParameterType {
     /// Returns 'true' if self is one of the 'texture' parameter types. This does _not_ include
     /// [`ParameterType::Buffer`] or [`ParameterType::RWBuffer`].
     pub const fn is_texture(&self) -> bool {
-        match self {
+        matches!(
+            self,
             ParameterType::Texture1D
-            | ParameterType::RWTexture1D
-            | ParameterType::Texture2D
-            | ParameterType::RWTexture2D
-            | ParameterType::Texture3D
-            | ParameterType::RWTexture3D
-            | ParameterType::Texture1DArray
-            | ParameterType::RWTexture1DArray
-            | ParameterType::Texture2DArray
-            | ParameterType::RWTexture2DArray
-            | ParameterType::Texture3DArray
-            | ParameterType::RWTexture3DArray
-            | ParameterType::Texture2DMS
-            | ParameterType::RWTexture2DMS
-            | ParameterType::Texture2DMSArray
-            | ParameterType::RWTexture2DMSArray
-            | ParameterType::TextureCube
-            | ParameterType::TextureCubeArray => true,
-            _ => false,
-        }
+                | ParameterType::RWTexture1D
+                | ParameterType::Texture2D
+                | ParameterType::RWTexture2D
+                | ParameterType::Texture3D
+                | ParameterType::RWTexture3D
+                | ParameterType::Texture1DArray
+                | ParameterType::RWTexture1DArray
+                | ParameterType::Texture2DArray
+                | ParameterType::RWTexture2DArray
+                | ParameterType::Texture3DArray
+                | ParameterType::RWTexture3DArray
+                | ParameterType::Texture2DMS
+                | ParameterType::RWTexture2DMS
+                | ParameterType::Texture2DMSArray
+                | ParameterType::RWTexture2DMSArray
+                | ParameterType::TextureCube
+                | ParameterType::TextureCubeArray
+        )
     }
 
     /// Returns 'true' if self is one of the 'buffer' parameter types. This does _not_ include
     /// [`ParameterType::Buffer`] or [`ParameterType::RWBuffer`].
     pub const fn is_buffer(&self) -> bool {
-        match self {
+        matches!(
+            self,
             ParameterType::ConstantBuffer
-            | ParameterType::StructuredBuffer
-            | ParameterType::RWStructuredBuffer
-            | ParameterType::ByteAddressBuffer
-            | ParameterType::RWByteAddressBuffer => true,
-            _ => false,
-        }
+                | ParameterType::StructuredBuffer
+                | ParameterType::RWStructuredBuffer
+                | ParameterType::ByteAddressBuffer
+                | ParameterType::RWByteAddressBuffer
+        )
     }
 
     /// Returns 'true' if self is one of the texture buffer/texel buffer parameter types. This
@@ -431,67 +431,67 @@ impl ParameterType {
 
     /// Returns 'true' if self is a shader-resource-view parameter.
     pub const fn is_srv(&self) -> bool {
-        match self {
+        matches!(
+            self,
             ParameterType::StructuredBuffer
-            | ParameterType::ByteAddressBuffer
-            | ParameterType::Buffer
-            | ParameterType::Texture1D
-            | ParameterType::Texture2D
-            | ParameterType::Texture3D
-            | ParameterType::Texture1DArray
-            | ParameterType::Texture2DArray
-            | ParameterType::Texture3DArray
-            | ParameterType::Texture2DMS
-            | ParameterType::Texture2DMSArray
-            | ParameterType::TextureCube
-            | ParameterType::TextureCubeArray => true,
-            _ => false,
-        }
+                | ParameterType::ByteAddressBuffer
+                | ParameterType::Buffer
+                | ParameterType::Texture1D
+                | ParameterType::Texture2D
+                | ParameterType::Texture3D
+                | ParameterType::Texture1DArray
+                | ParameterType::Texture2DArray
+                | ParameterType::Texture3DArray
+                | ParameterType::Texture2DMS
+                | ParameterType::Texture2DMSArray
+                | ParameterType::TextureCube
+                | ParameterType::TextureCubeArray
+        )
     }
 
     /// Returns 'true' if self is a unordered-access-view parameter.
     pub const fn is_uav(&self) -> bool {
-        match self {
+        matches!(
+            self,
             ParameterType::RWStructuredBuffer
-            | ParameterType::RWByteAddressBuffer
-            | ParameterType::RWBuffer
-            | ParameterType::RWTexture1D
-            | ParameterType::RWTexture2D
-            | ParameterType::RWTexture3D
-            | ParameterType::RWTexture1DArray
-            | ParameterType::RWTexture2DArray
-            | ParameterType::RWTexture3DArray
-            | ParameterType::RWTexture2DMS
-            | ParameterType::RWTexture2DMSArray => true,
-            _ => false,
-        }
+                | ParameterType::RWByteAddressBuffer
+                | ParameterType::RWBuffer
+                | ParameterType::RWTexture1D
+                | ParameterType::RWTexture2D
+                | ParameterType::RWTexture3D
+                | ParameterType::RWTexture1DArray
+                | ParameterType::RWTexture2DArray
+                | ParameterType::RWTexture3DArray
+                | ParameterType::RWTexture2DMS
+                | ParameterType::RWTexture2DMSArray
+        )
     }
 
     /// Returns 'true' if self is a texture array parameter.
     pub const fn is_texture_array(&self) -> bool {
-        match self {
+        matches!(
+            self,
             ParameterType::Texture1DArray
-            | ParameterType::RWTexture1DArray
-            | ParameterType::Texture2DArray
-            | ParameterType::RWTexture2DArray
-            | ParameterType::Texture3DArray
-            | ParameterType::RWTexture3DArray
-            | ParameterType::Texture2DMSArray
-            | ParameterType::RWTexture2DMSArray
-            | ParameterType::TextureCubeArray => true,
-            _ => false,
-        }
+                | ParameterType::RWTexture1DArray
+                | ParameterType::Texture2DArray
+                | ParameterType::RWTexture2DArray
+                | ParameterType::Texture3DArray
+                | ParameterType::RWTexture3DArray
+                | ParameterType::Texture2DMSArray
+                | ParameterType::RWTexture2DMSArray
+                | ParameterType::TextureCubeArray
+        )
     }
 
     /// Returns 'true' if self is a multi-sample texture parameter.
     pub const fn is_ms_texture(&self) -> bool {
-        match self {
+        matches!(
+            self,
             ParameterType::Texture2DMS
-            | ParameterType::RWTexture2DMS
-            | ParameterType::Texture2DMSArray
-            | ParameterType::RWTexture2DMSArray => true,
-            _ => false,
-        }
+                | ParameterType::RWTexture2DMS
+                | ParameterType::Texture2DMSArray
+                | ParameterType::RWTexture2DMSArray
+        )
     }
 
     /// Returns a [`TextureDimension`] that matches the dimension of 'self'. Will return [`None`] if
@@ -709,7 +709,7 @@ impl ParameterArraySize {
 
     /// Returns 'true' if 'self' encode an array
     pub const fn is_array(&self) -> bool {
-        matches!(self.array_size, Some(_))
+        self.array_size.is_some()
     }
 
     /// Returns 'true' if 'self' encodes an unbounded array

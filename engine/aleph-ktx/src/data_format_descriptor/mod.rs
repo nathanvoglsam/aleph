@@ -155,7 +155,7 @@ impl DataFormatDescriptor {
 
         // Undefined format we just pull the color space info and validate the size is correct
         // as there's not much else I want to bother implementing
-        let dfd = RawDataFormatDescriptor::from_words(&dfd_words)?;
+        let dfd = RawDataFormatDescriptor::from_words(dfd_words)?;
         let dfd = dfd.validate()?;
 
         // Assert the dfd_total_size field matches the constraints of the KTX format
@@ -166,7 +166,7 @@ impl DataFormatDescriptor {
         if format.is_known() && format != VkFormat::UNDEFINED {
             // We should've already checked the format is valid so we panic here instead.
             let expected_words = vk2dfd(format.0).unwrap();
-            let expected = RawDataFormatDescriptor::from_words(&expected_words).unwrap();
+            let expected = RawDataFormatDescriptor::from_words(expected_words).unwrap();
             assert!(expected_words.len() >= 7);
 
             if dfd_words.len() != expected_words.len() {
@@ -174,7 +174,7 @@ impl DataFormatDescriptor {
                 return Err(DFDError::DescriptorFormatMismatch.into());
             }
 
-            if &dfd_words[0..3] != &expected_words[0..3] {
+            if dfd_words[0..3] != expected_words[0..3] {
                 // We only validate the first few words of the DFD as they're basic structural parts
                 // of the DFD. The actual DFD rules are very complex. I've simply resigned to not
                 // bothering as the DFD is useless for our purposes anyway

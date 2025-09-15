@@ -158,6 +158,12 @@ impl NStr {
     pub const fn len(&self) -> usize {
         self.0.len() - 1
     }
+
+    /// Returns true if the string has a length of 0
+    #[inline]
+    pub const fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
 }
 
 impl<'a> aleph_profile::ProfileDataParam<'a> for &'a NStr {
@@ -220,9 +226,7 @@ impl Eq for NStr {}
 impl PartialOrd for NStr {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        let lhs = self.to_str();
-        let rhs = other.to_str();
-        str::partial_cmp(lhs, rhs)
+        Some(self.cmp(other))
     }
 }
 

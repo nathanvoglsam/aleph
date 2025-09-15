@@ -1196,7 +1196,8 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         let type_name = root_type.type_name();
         assert!(
             matches!(root_type, ResourceType::Texture(_)),
-            "r is '{type_name}' but should be 'Texture'"
+            "r is '{}' but should be 'Texture'",
+            type_name
         );
         root_type.unwrap_texture()
     }
@@ -1210,7 +1211,8 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         let type_name = root_type.type_name();
         assert!(
             matches!(root_type, ResourceType::Buffer(_)),
-            "r is '{type_name}' but should be 'Buffer'"
+            "r is '{}' but should be 'Buffer'",
+            type_name
         );
         root_type.unwrap_buffer()
     }
@@ -1224,7 +1226,8 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         let type_name = root_type.type_name();
         assert!(
             matches!(root_type, ResourceType::Execution(_)),
-            "r is '{type_name}' but should be 'Execution'"
+            "r is '{}' but should be 'Execution'",
+            type_name
         );
         root_type.unwrap_execution()
     }

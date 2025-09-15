@@ -42,6 +42,12 @@ pub struct ObjectCounter {
     compute_pipeline: AtomicU64,
 }
 
+impl Default for ObjectCounter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ObjectCounter {
     pub fn new() -> Self {
         Self {

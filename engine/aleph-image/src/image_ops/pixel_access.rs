@@ -137,7 +137,8 @@ impl<T: PixelFormat> IPixelAccess for ImageBuffer<T> {
         let i = calculate_index(x, y, self.width, self.height, T::COMPONENTS);
         let i_end = i + T::COMPONENTS;
         if let Some(dst) = self.data.get_mut(i..i_end) {
-            Some(v.write_at(dst))
+            v.write_at(dst);
+            Some(())
         } else {
             None
         }
@@ -183,7 +184,8 @@ impl<'a, T: PixelFormat> IPixelAccess for ImageViewMut<'a, T> {
         let i = calculate_index(x, y, self.width, self.height, T::COMPONENTS);
         let i_end = i + T::COMPONENTS;
         if let Some(dst) = self.data.get_mut(i..i_end) {
-            Some(v.write_at(dst))
+            v.write_at(dst);
+            Some(())
         } else {
             None
         }

@@ -65,16 +65,12 @@ impl TypedTable {
 
     pub fn get_ref<T: IObject + Send + Sync + 'static>(&self) -> Option<&T> {
         let cell = self.resources.get(&T::ID)?;
-        unsafe {
-            let out = (&*cell.get()).get_ref::<T>();
-            out
-        }
+        unsafe { (&*cell.get()).get_ref::<T>() }
     }
 
     pub fn get_mut<T: IObject + Send + Sync + 'static>(&mut self) -> Option<&mut T> {
         let cell = self.resources.get_mut(&T::ID)?;
-        let out = cell.get_mut().get_mut::<T>();
-        out
+        cell.get_mut().get_mut::<T>()
     }
 
     pub fn get_or_insert_with<T: IObject + Send + Sync + 'static>(

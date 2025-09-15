@@ -38,5 +38,5 @@ pub extern "C" fn SDL_main(
     _argv: *const *const std::ffi::c_char,
 ) -> std::ffi::c_int {
     game::game_logic::engine_runner();
-    return 0;
+    0
 }

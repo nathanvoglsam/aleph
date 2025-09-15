@@ -82,7 +82,7 @@ pub unsafe trait Fetch<'a>: Sized {
     unsafe fn get(&self) -> Self::Item;
 }
 
-impl<'a, T: Component> ComponentQuery for &'a T {
+impl<T: Component> ComponentQuery for &T {
     type Fetch = ComponentRead<T>;
 
     const MUTABLE: bool = false;
@@ -95,7 +95,7 @@ impl<'a, T: Component> ComponentQuery for &'a T {
     }
 }
 
-impl<'a, T: Component> ReadOnlyComponentQuery for &'a T {
+impl<T: Component> ReadOnlyComponentQuery for &T {
     type QueryType = Self;
 }
 
@@ -129,7 +129,7 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentRead<T> {
     }
 }
 
-impl<'a, T: Component> ComponentQuery for &'a mut T {
+impl<T: Component> ComponentQuery for &mut T {
     type Fetch = ComponentWrite<T>;
 
     const MUTABLE: bool = true;

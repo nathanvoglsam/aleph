@@ -98,12 +98,12 @@ pub const IEEE_INT_RCP_SQRT_CONST_NR0_SNORM: i32 = 0x5F33E79F;
 pub fn fast_inv_sqrt(in_x: f32, in_rcp_sqrt_const: i32) -> f32 {
     let x: i32 = bytemuck::cast(in_x);
     let x = in_rcp_sqrt_const - (x >> 1);
-    return bytemuck::cast(x);
+    bytemuck::cast(x)
 }
 
 #[inline]
 pub fn rcp_sqrt_newton_raphson(in_xhalf: f32, in_rcp_x: f32) -> f32 {
-    return in_rcp_x * (-in_xhalf * (in_rcp_x * in_rcp_x) + 1.5);
+    in_rcp_x * (-in_xhalf * (in_rcp_x * in_rcp_x) + 1.5)
 }
 
 /// Using 0 Newton Raphson iterations
@@ -112,8 +112,7 @@ pub fn rcp_sqrt_newton_raphson(in_xhalf: f32, in_rcp_x: f32) -> f32 {
 /// 2 ALU
 #[inline]
 pub fn fast_rcp_sqrt_nr0(in_x: f32) -> f32 {
-    let x_rcp_sqrt = fast_inv_sqrt(in_x, IEEE_INT_RCP_SQRT_CONST_NR0);
-    return x_rcp_sqrt;
+    fast_inv_sqrt(in_x, IEEE_INT_RCP_SQRT_CONST_NR0)
 }
 
 /// Using 1 Newton Raphson iterations
@@ -124,8 +123,7 @@ pub fn fast_rcp_sqrt_nr0(in_x: f32) -> f32 {
 pub fn fast_rcp_sqrt_nr1(in_x: f32) -> f32 {
     let xhalf = 0.5 * in_x;
     let x_rcp_sqrt = fast_inv_sqrt(in_x, IEEE_INT_RCP_SQRT_CONST_NR1);
-    let x_rcp_sqrt = rcp_sqrt_newton_raphson(xhalf, x_rcp_sqrt);
-    return x_rcp_sqrt;
+    rcp_sqrt_newton_raphson(xhalf, x_rcp_sqrt)
 }
 
 /// Using 2 Newton Raphson iterations
@@ -137,8 +135,7 @@ pub fn fast_rcp_sqrt_nr2(in_x: f32) -> f32 {
     let xhalf = 0.5 * in_x;
     let x_rcp_sqrt = fast_inv_sqrt(in_x, IEEE_INT_RCP_SQRT_CONST_NR2);
     let x_rcp_sqrt = rcp_sqrt_newton_raphson(xhalf, x_rcp_sqrt);
-    let x_rcp_sqrt = rcp_sqrt_newton_raphson(xhalf, x_rcp_sqrt);
-    return x_rcp_sqrt;
+    rcp_sqrt_newton_raphson(xhalf, x_rcp_sqrt)
 }
 
 /// Approximate guess using integer float arithmetics based on IEEE floating point standard.
@@ -146,7 +143,7 @@ pub fn fast_rcp_sqrt_nr2(in_x: f32) -> f32 {
 pub fn fast_sqrt(in_x: f32, in_sqrt_const: i32) -> f32 {
     let x: i32 = bytemuck::cast(in_x);
     let x = in_sqrt_const + (x >> 1);
-    return bytemuck::cast(x);
+    bytemuck::cast(x)
 }
 
 /// Using 0 Newton Raphson iterations
@@ -155,8 +152,7 @@ pub fn fast_sqrt(in_x: f32, in_sqrt_const: i32) -> f32 {
 /// 1 ALU
 #[inline]
 pub fn fast_sqrt_nr0(in_x: f32) -> f32 {
-    let x_rcp = fast_sqrt(in_x, IEEE_INT_SQRT_CONST_NR0);
-    return x_rcp;
+    fast_sqrt(in_x, IEEE_INT_SQRT_CONST_NR0)
 }
 
 /// Use inverse Rcp Sqrt
@@ -167,7 +163,7 @@ pub fn fast_sqrt_nr0(in_x: f32) -> f32 {
 #[inline]
 pub fn fast_sqrt_nr1(in_x: f32) -> f32 {
     // Inverse Rcp Sqrt
-    return in_x * fast_rcp_sqrt_nr1(in_x);
+    in_x * fast_rcp_sqrt_nr1(in_x)
 }
 
 /// Use inverse Rcp Sqrt
@@ -178,19 +174,19 @@ pub fn fast_sqrt_nr1(in_x: f32) -> f32 {
 #[inline]
 pub fn fast_sqrt_nr2(in_x: f32) -> f32 {
     // Inverse Rcp Sqrt
-    return in_x * fast_rcp_sqrt_nr2(in_x);
+    in_x * fast_rcp_sqrt_nr2(in_x)
 }
 
 #[inline]
 pub fn rcp_ieee_int_approximation(in_x: f32, in_rcp_const: i32) -> f32 {
     let x: i32 = bytemuck::cast(in_x);
     let x = in_rcp_const - x;
-    return bytemuck::cast(x);
+    bytemuck::cast(x)
 }
 
 #[inline]
 pub fn rcp_newton_raphson(in_x: f32, in_rcp_x: f32) -> f32 {
-    return in_rcp_x * (-in_rcp_x * in_x + 2.0);
+    in_rcp_x * (-in_rcp_x * in_x + 2.0)
 }
 
 /// Using 0 Newton Raphson iterations
@@ -199,8 +195,7 @@ pub fn rcp_newton_raphson(in_x: f32, in_rcp_x: f32) -> f32 {
 /// 1 ALU
 #[inline]
 pub fn fast_rcp_nr0(in_x: f32) -> f32 {
-    let x_rcp = rcp_ieee_int_approximation(in_x, IEEE_INT_RCP_CONST_NR0);
-    return x_rcp;
+    rcp_ieee_int_approximation(in_x, IEEE_INT_RCP_CONST_NR0)
 }
 
 /// Using 1 Newton Raphson iterations
@@ -210,8 +205,7 @@ pub fn fast_rcp_nr0(in_x: f32) -> f32 {
 #[inline]
 pub fn fast_rcp_nr1(in_x: f32) -> f32 {
     let x_rcp = rcp_ieee_int_approximation(in_x, IEEE_INT_RCP_CONST_NR1);
-    let x_rcp = rcp_newton_raphson(in_x, x_rcp);
-    return x_rcp;
+    rcp_newton_raphson(in_x, x_rcp)
 }
 
 /// Using 2 Newton Raphson iterations
@@ -222,8 +216,7 @@ pub fn fast_rcp_nr1(in_x: f32) -> f32 {
 pub fn fast_rcp_nr2(in_x: f32) -> f32 {
     let x_rcp = rcp_ieee_int_approximation(in_x, IEEE_INT_RCP_CONST_NR2);
     let x_rcp = rcp_newton_raphson(in_x, x_rcp);
-    let x_rcp = rcp_newton_raphson(in_x, x_rcp);
-    return x_rcp;
+    rcp_newton_raphson(in_x, x_rcp)
 }
 
 /// 4th order polynomial approximation
@@ -254,7 +247,7 @@ pub fn fast_asin4(in_x: f32) -> f32 {
     let x = in_x;
 
     // asin is offset of acos
-    return FRAC_PI_2 - fast_acos4(x);
+    FRAC_PI_2 - fast_acos4(x)
 }
 
 /// 4th order hyperbolical approximation
@@ -264,5 +257,5 @@ pub fn fast_asin4(in_x: f32) -> f32 {
 #[inline]
 pub fn fast_atan4(in_x: f32) -> f32 {
     let x = in_x;
-    return x * (-0.1784 * f32::abs(x) - 0.0663 * x * x + 1.0301);
+    x * (-0.1784 * f32::abs(x) - 0.0663 * x * x + 1.0301)
 }

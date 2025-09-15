@@ -41,10 +41,10 @@ pub enum SphericalMapping {
     Octahedral,
 }
 
-impl Into<EnvironmentMapProjection> for SphericalMapping {
+impl From<SphericalMapping> for EnvironmentMapProjection {
     #[inline(always)]
-    fn into(self) -> EnvironmentMapProjection {
-        match self {
+    fn from(val: SphericalMapping) -> Self {
+        match val {
             SphericalMapping::Equirectangular => EnvironmentMapProjection::Equirectangular,
             SphericalMapping::Octahedral => EnvironmentMapProjection::Octahedral,
         }

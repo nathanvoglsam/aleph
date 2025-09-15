@@ -175,12 +175,11 @@ impl<T: PixelFormat> TextureBuffer<T> {
     pub fn get_buffer_references(&self) -> Vec<&[u8]> {
         self.validate_image_count();
 
-        let buffers = Vec::from_iter(
+        Vec::from_iter(
             self.images_ref()
                 .iter()
                 .map(|v| bytemuck::cast_slice::<_, u8>(v.data())),
-        );
-        buffers
+        )
     }
 
     const fn image_count_with_levels(&self, level_num: u32) -> u32 {
@@ -1065,8 +1064,7 @@ pub const fn set_index_for_layer_and_level(
     assert!(level < level_num);
 
     let i = layer * level_num;
-    let i = i + level;
-    i
+    i + level
 }
 
 /// Calculates the layer and level index of an image, assuming some image set with 'layer_num' and

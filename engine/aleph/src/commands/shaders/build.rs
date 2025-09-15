@@ -114,7 +114,7 @@ fn archive_shaders(project_ctx: &ShaderProjectContext) -> anyhow::Result<()> {
         dunce_utf8::simplified(&shader_db_file)
     );
 
-    let mut shader_db = aleph_shader_db::ShaderDatabase::default();
+    let mut shader_db = ShaderDatabase::default();
 
     for crate_ctx in project_ctx.crates.iter() {
         archive_shaders_for_package(&mut shader_db, crate_ctx)?;
@@ -128,7 +128,7 @@ fn archive_shaders(project_ctx: &ShaderProjectContext) -> anyhow::Result<()> {
 }
 
 fn archive_shaders_for_package(
-    shader_db: &mut aleph_shader_db::ShaderDatabase,
+    shader_db: &mut ShaderDatabase,
     crate_ctx: &ShaderCrateContext,
 ) -> anyhow::Result<()> {
     log::info!(

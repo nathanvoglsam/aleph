@@ -261,7 +261,7 @@ impl ConfigRunner {
         }
     }
 
-    fn setup_global_environment<'a>(context: &'a qjs::Context) -> Result<(), RunConfigError> {
+    fn setup_global_environment(context: &qjs::Context) -> Result<(), RunConfigError> {
         let global = context.get_global_object();
 
         let p_string = context.new_string(target_platform().name());
@@ -269,13 +269,13 @@ impl ConfigRunner {
         let b_string = context.new_string(target_build_type().name());
 
         if 0 > global.set_property_str("THIS_PLATFORM", &p_string) {
-            return Err(js_exception_to_err(&context));
+            return Err(js_exception_to_err(context));
         }
         if 0 > global.set_property_str("THIS_ARCHITECTURE", &a_string) {
-            return Err(js_exception_to_err(&context));
+            return Err(js_exception_to_err(context));
         }
         if 0 > global.set_property_str("THIS_BUILD_TYPE", &b_string) {
-            return Err(js_exception_to_err(&context));
+            return Err(js_exception_to_err(context));
         }
 
         let p = context.new_object().to_ref_value();
@@ -284,16 +284,16 @@ impl ConfigRunner {
         let e = context.new_object().to_ref_value();
 
         if 0 > global.set_property_str("Platform", &p) {
-            return Err(js_exception_to_err(&context));
+            return Err(js_exception_to_err(context));
         }
         if 0 > global.set_property_str("Architecture", &a) {
-            return Err(js_exception_to_err(&context));
+            return Err(js_exception_to_err(context));
         }
         if 0 > global.set_property_str("BuildType", &b) {
-            return Err(js_exception_to_err(&context));
+            return Err(js_exception_to_err(context));
         }
         if 0 > global.set_property_str("Environment", &e) {
-            return Err(js_exception_to_err(&context));
+            return Err(js_exception_to_err(context));
         }
 
         Ok(())
@@ -366,10 +366,10 @@ fn find_folder_in_search_path(folder: &str) -> io::Result<Utf8PathBuf> {
         return Ok(dot_aleph_dir_config);
     }
 
-    return Err(io::Error::new(
+    Err(io::Error::new(
         io::ErrorKind::NotFound,
         format!("Failed to find a '{folder}' directory in our search paths."),
-    ));
+    ))
 }
 
 fn check_exception(

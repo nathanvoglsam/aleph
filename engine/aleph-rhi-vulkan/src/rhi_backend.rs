@@ -193,14 +193,12 @@ impl VulkanLoader {
                     .create_instance(&create_info, GLOBAL)
                     .map_err(|e| log::error!("Platform Error: {:#?}", e))?
             } else {
-                let mut settings = Vec::new();
-
-                settings.push(
+                let settings = vec![
                     vk::LayerSettingEXT::default()
                         .layer_name(VALIDATION_LAYER_NAME)
                         .setting_name(c"validate_sync")
                         .values_bool(&VTRUE),
-                );
+                ];
 
                 let mut layer_settings =
                     vk::LayerSettingsCreateInfoEXT::default().settings(&settings);
@@ -517,7 +515,7 @@ fn diff_lists<'a>(
     list_b: &'a [&'a CStr],
 ) -> impl Iterator<Item = &'a CStr> {
     list_a.iter().copied().filter(|&a| {
-        let in_both = list_b.iter().any(|&b| a == b);
+        let in_both = list_b.contains(&a);
         !in_both
     })
 }
@@ -594,7 +592,7 @@ impl Extensions {
     }
 }
 
-const VALIDATION_LAYER_NAME: &'static CStr = c"VK_LAYER_KHRONOS_validation";
+const VALIDATION_LAYER_NAME: &CStr = c"VK_LAYER_KHRONOS_validation";
 
 #[allow(unused)]
 static VTRUE: [vk::Bool32; 1] = [vk::TRUE];

@@ -35,11 +35,11 @@ pub const fn radical_inverse_vdc(bits: u32) -> f32 {
     let bits = ((bits & 0x33333333) << 2) | ((bits & 0xCCCCCCCC) >> 2);
     let bits = ((bits & 0x0F0F0F0F) << 4) | ((bits & 0xF0F0F0F0) >> 4);
     let bits = ((bits & 0x00FF00FF) << 8) | ((bits & 0xFF00FF00) >> 8);
-    return bits as f32 * 2.3283064365386963e-10; // / 0x100000000
+    bits as f32 * 2.3283064365386963e-10 // / 0x100000000
 }
 
 pub const fn hammersley(i: u32, n: u32) -> Vec2 {
     let x = i as f32 / n as f32;
     let y = radical_inverse_vdc(i);
-    return Vec2::new(x, y);
+    Vec2::new(x, y)
 }

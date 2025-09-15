@@ -58,6 +58,12 @@ pub struct HiBitSet {
     pub(crate) len: usize,
 }
 
+impl Default for HiBitSet {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HiBitSet {
     pub const MAX_BITS: usize = 16_777_216;
 
@@ -73,6 +79,10 @@ impl HiBitSet {
 
     pub const fn len(&self) -> usize {
         self.len
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.len == 0
     }
 
     #[inline]
@@ -155,7 +165,6 @@ impl HiBitSet {
                 }
                 std::cmp::Ordering::Equal => {
                     // Do nothing, already the same size!
-                    return;
                 }
                 std::cmp::Ordering::Greater => {
                     // I honestly don't have a use case for this yet so I'm just going to leave it

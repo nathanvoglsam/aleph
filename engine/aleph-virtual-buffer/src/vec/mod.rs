@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::io::{Error, ErrorKind};
+use std::io::Error;
 use std::marker::PhantomData;
 use std::mem::{needs_drop, size_of};
 use std::ops::{Deref, DerefMut, Index, IndexMut};
@@ -62,8 +62,7 @@ impl<T> VirtualVec<T> {
         // which are aligned to 4096. Types that need higher alignment than that are very rare.
         let buffer_base = buffer.data().cast::<T>();
         if !buffer_base.is_aligned() {
-            Err(Error::new(
-                ErrorKind::Other,
+            Err(Error::other(
                 "The allocated buffer was not sufficiently aligned",
             ))
         } else {
@@ -494,7 +493,7 @@ impl<T> DerefMut for VirtualVec<T> {
     }
 }
 
-impl<'a, T: 'a, I> Index<I> for VirtualVec<T>
+impl<T, I> Index<I> for VirtualVec<T>
 where
     I: SliceIndex<[T]>,
 {

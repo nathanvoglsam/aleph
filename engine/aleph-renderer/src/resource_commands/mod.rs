@@ -66,7 +66,7 @@ impl ResourceCommandBuffer {
                     Self::walk_inner(b, i, f);
                 }
                 InternalCmd::Direct(c) => {
-                    (f)(*i, c);
+                    f(*i, c);
                     *i += 1;
                 }
             }

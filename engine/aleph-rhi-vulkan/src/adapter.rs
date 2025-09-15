@@ -379,13 +379,13 @@ impl<'a> FoundQueueFamilies<'a> {
         let mut queue_create_infos = BVec::with_capacity_in(4, RhiSystem::default());
 
         if let Some(info) = self.general.as_ref() {
-            queue_create_infos.push(info.create_info.clone());
+            queue_create_infos.push(info.create_info);
         }
         if let Some(info) = self.compute.as_ref() {
-            queue_create_infos.push(info.create_info.clone());
+            queue_create_infos.push(info.create_info);
         }
         if let Some(info) = self.transfer.as_ref() {
-            queue_create_infos.push(info.create_info.clone());
+            queue_create_infos.push(info.create_info);
         }
 
         queue_create_infos

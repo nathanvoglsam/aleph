@@ -44,7 +44,7 @@ impl OwnedBufferDesc {
     ///
     /// Useful for storing in place inside object implementations for handing out to API callers in
     /// desc getter functions.
-    pub fn new<'a>(desc: BufferDesc<'a>) -> Self {
+    pub fn new(desc: BufferDesc) -> Self {
         // Allocate the name on the heap and update the desc with the new allocated name ptr
         let name: Option<&str> = match desc.name {
             Some(name) => {
@@ -77,17 +77,14 @@ impl Clone for OwnedBufferDesc {
 impl Drop for OwnedBufferDesc {
     #[inline]
     fn drop(&mut self) {
-        match self.desc.name {
-            Some(v) => {
-                // Safety: we control the construction of this type, and we guarantee that the name
-                //         is really a Box<str> so we reconstitute the box and drop it here.
-                unsafe {
-                    let v = v as *const str as *mut str;
-                    let v: BBox<str, RhiSystem> = BBox::from_raw_in(v, RhiSystem::default());
-                    drop(v);
-                }
+        if let Some(v) = self.desc.name {
+            // Safety: we control the construction of this type, and we guarantee that the name
+            //         is really a Box<str> so we reconstitute the box and drop it here.
+            unsafe {
+                let v = v as *const str as *mut str;
+                let v: BBox<str, RhiSystem> = BBox::from_raw_in(v, RhiSystem::default());
+                drop(v);
             }
-            None => {}
         }
     }
 }
@@ -104,7 +101,7 @@ impl OwnedTextureDesc {
     ///
     /// Useful for storing in place inside object implementations for handing out to API callers in
     /// desc getter functions.
-    pub fn new<'a>(desc: TextureDesc<'a>) -> Self {
+    pub fn new(desc: TextureDesc) -> Self {
         // Allocate the name on the heap and update the desc with the new allocated name ptr
         let name: Option<&str> = match desc.name {
             Some(name) => {
@@ -136,17 +133,14 @@ impl Clone for OwnedTextureDesc {
 
 impl Drop for OwnedTextureDesc {
     fn drop(&mut self) {
-        match self.desc.name {
-            Some(v) => {
-                // Safety: we control the construction of this type, and we guarantee that the name
-                //         is really a Box<str> so we reconstitute the box and drop it here.
-                unsafe {
-                    let v = v as *const str as *mut str;
-                    let v = BBox::from_raw_in(v, RhiSystem::default());
-                    drop(v);
-                }
+        if let Some(v) = self.desc.name {
+            // Safety: we control the construction of this type, and we guarantee that the name
+            //         is really a Box<str> so we reconstitute the box and drop it here.
+            unsafe {
+                let v = v as *const str as *mut str;
+                let v = BBox::from_raw_in(v, RhiSystem::default());
+                drop(v);
             }
-            None => {}
         }
     }
 }
@@ -163,7 +157,7 @@ impl OwnedSamplerDesc {
     ///
     /// Useful for storing in place inside object implementations for handing out to API callers in
     /// desc getter functions.
-    pub fn new<'a>(desc: SamplerDesc<'a>) -> Self {
+    pub fn new(desc: SamplerDesc) -> Self {
         // Allocate the name on the heap and update the desc with the new allocated name ptr
         let name: Option<&str> = match desc.name {
             Some(name) => {
@@ -195,17 +189,14 @@ impl Clone for OwnedSamplerDesc {
 
 impl Drop for OwnedSamplerDesc {
     fn drop(&mut self) {
-        match self.desc.name {
-            Some(v) => {
-                // Safety: we control the construction of this type, and we guarantee that the name
-                //         is really a Box<str> so we reconstitute the box and drop it here.
-                unsafe {
-                    let v = v as *const str as *mut str;
-                    let v = BBox::from_raw_in(v, RhiSystem::default());
-                    drop(v);
-                }
+        if let Some(v) = self.desc.name {
+            // Safety: we control the construction of this type, and we guarantee that the name
+            //         is really a Box<str> so we reconstitute the box and drop it here.
+            unsafe {
+                let v = v as *const str as *mut str;
+                let v = BBox::from_raw_in(v, RhiSystem::default());
+                drop(v);
             }
-            None => {}
         }
     }
 }
@@ -222,7 +213,7 @@ impl OwnedParameterBlockDesc {
     ///
     /// Useful for storing in place inside object implementations for handing out to API callers in
     /// desc getter functions.
-    pub fn new<'a>(desc: &ParameterBlockDesc<'a>) -> Self {
+    pub fn new(desc: &ParameterBlockDesc) -> Self {
         let params = {
             let mut params = BVec::with_capacity_in(desc.params.len(), RhiSystem::default());
             params.extend_from_slice(desc.params);
@@ -273,17 +264,14 @@ impl Drop for OwnedParameterBlockDesc {
             let v = BBox::from_raw_in(v, RhiSystem::default());
             drop(v);
         }
-        match self.desc.name {
-            Some(v) => {
-                // Safety: we control the construction of this type, and we guarantee that the name
-                //         is really a Box<str> so we reconstitute the box and drop it here.
-                unsafe {
-                    let v = v as *const str as *mut str;
-                    let v = BBox::from_raw_in(v, RhiSystem::default());
-                    drop(v);
-                }
+        if let Some(v) = self.desc.name {
+            // Safety: we control the construction of this type, and we guarantee that the name
+            //         is really a Box<str> so we reconstitute the box and drop it here.
+            unsafe {
+                let v = v as *const str as *mut str;
+                let v = BBox::from_raw_in(v, RhiSystem::default());
+                drop(v);
             }
-            None => {}
         }
     }
 }

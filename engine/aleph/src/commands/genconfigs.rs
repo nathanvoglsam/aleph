@@ -52,7 +52,7 @@ impl ISubcommand for GenConfigs {
             .long_about("Generates the configs into the output format the engine can consume. Prepares each crate's config.js into a specific folder and file structure inside .aleph")
     }
 
-    fn exec(&mut self, project: &AlephProject, mut _matches: ArgMatches) -> anyhow::Result<()> {
+    fn exec(&mut self, project: &AlephProject, _matches: ArgMatches) -> anyhow::Result<()> {
         let arena = Blink::new();
 
         let project_ctx = ConfigSubproject::load(&arena, project)?;

@@ -60,12 +60,12 @@ impl ConfigLogLevel {
 
 impl Display for ConfigLogLevel {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            &Self::NONE => "NONE".fmt(f),
-            &Self::ERROR => "ERROR".fmt(f),
-            &Self::WARNING => "WARNING".fmt(f),
-            &Self::INFO => "INFO".fmt(f),
-            &Self::DEBUG => "DEBUG".fmt(f),
+        match *self {
+            Self::NONE => "NONE".fmt(f),
+            Self::ERROR => "ERROR".fmt(f),
+            Self::WARNING => "WARNING".fmt(f),
+            Self::INFO => "INFO".fmt(f),
+            Self::DEBUG => "DEBUG".fmt(f),
             _ => "Unknown".fmt(f),
         }
     }
@@ -106,14 +106,14 @@ impl ConfigTraceVulkanCalls {
 
 impl Display for ConfigTraceVulkanCalls {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            &Self::NONE => "NONE".fmt(f),
-            &Self::ENTER => "ENTER".fmt(f),
-            &Self::ENTER_THREAD_ID => "ENTER_THREAD_ID".fmt(f),
-            &Self::ENTER_EXIT => "ENTER_EXIT".fmt(f),
-            &Self::ENTER_EXIT_THREAD_ID => "ENTER_EXIT_THREAD_ID".fmt(f),
-            &Self::DURATION => "DURATION".fmt(f),
-            &Self::DURATION_THREAD_ID => "DURATION_THREAD_ID".fmt(f),
+        match *self {
+            Self::NONE => "NONE".fmt(f),
+            Self::ENTER => "ENTER".fmt(f),
+            Self::ENTER_THREAD_ID => "ENTER_THREAD_ID".fmt(f),
+            Self::ENTER_EXIT => "ENTER_EXIT".fmt(f),
+            Self::ENTER_EXIT_THREAD_ID => "ENTER_EXIT_THREAD_ID".fmt(f),
+            Self::DURATION => "DURATION".fmt(f),
+            Self::DURATION_THREAD_ID => "DURATION_THREAD_ID".fmt(f),
             _ => "Unknown".fmt(f),
         }
     }
@@ -139,10 +139,10 @@ impl ConfigAutoGPUCaptureScope {
 
 impl Display for ConfigAutoGPUCaptureScope {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            &Self::NONE => "NONE".fmt(f),
-            &Self::DEVICE => "DEVICE".fmt(f),
-            &Self::FRAME => "FRAME".fmt(f),
+        match *self {
+            Self::NONE => "NONE".fmt(f),
+            Self::DEVICE => "DEVICE".fmt(f),
+            Self::FRAME => "FRAME".fmt(f),
             _ => "Unknown".fmt(f),
         }
     }
@@ -182,10 +182,10 @@ impl UseMetalArgumentBuffers {
 
 impl Display for UseMetalArgumentBuffers {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            &Self::NEVER => "NEVER".fmt(f),
-            &Self::ALWAYS => "ALWAYS".fmt(f),
-            &Self::DESCRIPTOR_INDEXING => "DESCRIPTOR_INDEXING".fmt(f),
+        match *self {
+            Self::NEVER => "NEVER".fmt(f),
+            Self::ALWAYS => "ALWAYS".fmt(f),
+            Self::DESCRIPTOR_INDEXING => "DESCRIPTOR_INDEXING".fmt(f),
             _ => "Unknown".fmt(f),
         }
     }
@@ -220,11 +220,11 @@ impl VkSemaphoreSupportStyle {
 
 impl Display for VkSemaphoreSupportStyle {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            &Self::SINGLE_QUEUE => "SINGLE_QUEUE".fmt(f),
-            &Self::METAL_EVENTS_WHERE_SAFE => "METAL_EVENTS_WHERE_SAFE".fmt(f),
-            &Self::METAL_EVENTS => "METAL_EVENTS".fmt(f),
-            &Self::CALLBACK => "CALLBACK".fmt(f),
+        match *self {
+            Self::SINGLE_QUEUE => "SINGLE_QUEUE".fmt(f),
+            Self::METAL_EVENTS_WHERE_SAFE => "METAL_EVENTS_WHERE_SAFE".fmt(f),
+            Self::METAL_EVENTS => "METAL_EVENTS".fmt(f),
+            Self::CALLBACK => "CALLBACK".fmt(f),
             _ => "Unknown".fmt(f),
         }
     }
@@ -270,11 +270,11 @@ impl PrefillMetalCommandBuffersStyle {
 
 impl Display for PrefillMetalCommandBuffersStyle {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            &Self::NO_PREFILL => "NO_PREFILL".fmt(f),
-            &Self::DEFERRED_ENCODING => "DEFERRED_ENCODING".fmt(f),
-            &Self::IMMEDIATE_ENCODING => "IMMEDIATE_ENCODING".fmt(f),
-            &Self::IMMEDIATE_ENCODING_NO_AUTORELEASE => "IMMEDIATE_ENCODING_NO_AUTORELEASE".fmt(f),
+        match *self {
+            Self::NO_PREFILL => "NO_PREFILL".fmt(f),
+            Self::DEFERRED_ENCODING => "DEFERRED_ENCODING".fmt(f),
+            Self::IMMEDIATE_ENCODING => "IMMEDIATE_ENCODING".fmt(f),
+            Self::IMMEDIATE_ENCODING_NO_AUTORELEASE => "IMMEDIATE_ENCODING_NO_AUTORELEASE".fmt(f),
             _ => "Unknown".fmt(f),
         }
     }
@@ -299,10 +299,10 @@ impl ConfigFastMath {
 
 impl Display for ConfigFastMath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            &Self::NEVER => "NEVER".fmt(f),
-            &Self::ALWAYS => "ALWAYS".fmt(f),
-            &Self::ON_DEMAND => "ON_DEMAND".fmt(f),
+        match *self {
+            Self::NEVER => "NEVER".fmt(f),
+            Self::ALWAYS => "ALWAYS".fmt(f),
+            Self::ON_DEMAND => "ON_DEMAND".fmt(f),
             _ => "Unknown".fmt(f),
         }
     }
@@ -334,12 +334,12 @@ impl ConfigCompressionAlgorithm {
 
 impl Display for ConfigCompressionAlgorithm {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            &Self::NONE => "NONE".fmt(f),
-            &Self::LZFSE => "LZFSE".fmt(f),
-            &Self::ZLIB => "ZLIB".fmt(f),
-            &Self::LZ4 => "LZ4".fmt(f),
-            &Self::LZMA => "LZMA".fmt(f),
+        match *self {
+            Self::NONE => "NONE".fmt(f),
+            Self::LZFSE => "LZFSE".fmt(f),
+            Self::ZLIB => "ZLIB".fmt(f),
+            Self::LZ4 => "LZ4".fmt(f),
+            Self::LZMA => "LZMA".fmt(f),
             _ => "Unknown".fmt(f),
         }
     }
@@ -364,10 +364,10 @@ impl ConfigActivityPerformanceLoggingStyle {
 
 impl Display for ConfigActivityPerformanceLoggingStyle {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            &Self::FRAME_COUNT => "FRAME_COUNT".fmt(f),
-            &Self::IMMEDIATE => "IMMEDIATE".fmt(f),
-            &Self::DEVICE_LIFETIME => "DEVICE_LIFETIME".fmt(f),
+        match *self {
+            Self::FRAME_COUNT => "FRAME_COUNT".fmt(f),
+            Self::IMMEDIATE => "IMMEDIATE".fmt(f),
+            Self::DEVICE_LIFETIME => "DEVICE_LIFETIME".fmt(f),
             _ => "Unknown".fmt(f),
         }
     }

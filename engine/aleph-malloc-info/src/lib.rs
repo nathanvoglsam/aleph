@@ -103,9 +103,7 @@ pub fn get_allocated_bytes() -> usize {
     return windows::get_allocated_bytes();
 
     #[allow(unreachable_code)]
-    {
-        unreachable!()
-    }
+    0
 }
 
 #[cfg(test)]

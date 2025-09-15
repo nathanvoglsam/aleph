@@ -51,7 +51,7 @@ pub enum ResizeFilter {
 }
 
 impl ResizeFilter {
-    const fn to_image_crate(&self) -> image::imageops::FilterType {
+    const fn to_image_crate(self) -> image::imageops::FilterType {
         match self {
             ResizeFilter::Nearest => image::imageops::FilterType::Nearest,
             ResizeFilter::Linear => image::imageops::FilterType::Triangle,

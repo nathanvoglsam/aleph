@@ -414,7 +414,7 @@ impl Archetype {
             let data = storage.data.as_ptr().add(slot * type_size);
 
             // Get a pointer to the position in the buffer the component can be found
-            Some(NonNull::new_unchecked(data as *mut u8))
+            Some(NonNull::new_unchecked(data))
         }
     }
 
@@ -490,22 +490,20 @@ impl Archetype {
                 let remove = storage.data.add(remove_offset);
                 let last = storage.data.add(last_offset);
 
-                if DROP {
-                    if let Some(fn_drop) = desc.destructor {
-                        // SAFETY: This handles calling the drop function for a component through a raw
-                        //         pointer. The signature is type erased so the interface is unsafe.
-                        //
-                        //         This is just a type-erased call to `drop::<T>()` where T is the type of
-                        //         the component. The `Archetype` data structure's safe interface ensures
-                        //         the drop function is only called with valid data.
-                        //
-                        //         UB can be triggered if `fn_drop` is not implemented correctly, but this
-                        //         is impossible from safe code as the implementation for each component is
-                        //         auto generated from a generic implementation. The function can only be
-                        //         incorrect by providing an incorrect ComponentTypeDescription using an
-                        //         unsafe function.
-                        fn_drop(remove.cast(), 1);
-                    }
+                if DROP && let Some(fn_drop) = desc.destructor {
+                    // SAFETY: This handles calling the drop function for a component through a raw
+                    //         pointer. The signature is type erased so the interface is unsafe.
+                    //
+                    //         This is just a type-erased call to `drop::<T>()` where T is the type of
+                    //         the component. The `Archetype` data structure's safe interface ensures
+                    //         the drop function is only called with valid data.
+                    //
+                    //         UB can be triggered if `fn_drop` is not implemented correctly, but this
+                    //         is impossible from safe code as the implementation for each component is
+                    //         auto generated from a generic implementation. The function can only be
+                    //         incorrect by providing an incorrect ComponentTypeDescription using an
+                    //         unsafe function.
+                    fn_drop(remove.cast(), 1);
                 }
 
                 remove.copy_from_nonoverlapping(last, desc.size);
@@ -526,26 +524,24 @@ impl Archetype {
         let storage = &mut self.storages[storage_index];
         let desc = &storage.desc;
 
-        if DROP {
-            if let Some(fn_drop) = desc.destructor {
-                let last_index = (self.len - 1) as usize;
+        if DROP && let Some(fn_drop) = desc.destructor {
+            let last_index = (self.len - 1) as usize;
 
-                // SAFETY: This handles calling the drop function for a component through a raw
-                //         pointer. The signature is type erased so the interface is unsafe.
-                //
-                //         This is just a type-erased call to `drop::<T>()` where T is the type of
-                //         the component. The `Archetype` data structure's safe interface ensures
-                //         the drop function is only called with valid data.
-                //
-                //         UB can be triggered if `fn_drop` is not implemented correctly, but this
-                //         is impossible from safe code as the implementation for each component is
-                //         auto generated from a generic implementation. The function can only be
-                //         incorrect by providing an incorrect ComponentTypeDescription using an
-                //         unsafe function.
-                unsafe {
-                    let last_ptr = storage.data.add(last_index * desc.size);
-                    fn_drop(last_ptr.cast(), 1);
-                }
+            // SAFETY: This handles calling the drop function for a component through a raw
+            //         pointer. The signature is type erased so the interface is unsafe.
+            //
+            //         This is just a type-erased call to `drop::<T>()` where T is the type of
+            //         the component. The `Archetype` data structure's safe interface ensures
+            //         the drop function is only called with valid data.
+            //
+            //         UB can be triggered if `fn_drop` is not implemented correctly, but this
+            //         is impossible from safe code as the implementation for each component is
+            //         auto generated from a generic implementation. The function can only be
+            //         incorrect by providing an incorrect ComponentTypeDescription using an
+            //         unsafe function.
+            unsafe {
+                let last_ptr = storage.data.add(last_index * desc.size);
+                fn_drop(last_ptr.cast(), 1);
             }
         }
     }
@@ -571,7 +567,7 @@ impl Archetype {
 
             // Create a slice of the data to copy, exiting the loop if the component is not present
             // in the source archetype
-            let source_buffer = if let Some(source_index) = source.storage_indices.get(&source_id) {
+            let source_buffer = if let Some(source_index) = source.storage_indices.get(source_id) {
                 unsafe { source.storages[source_index].data.add(source_base) }
             } else {
                 continue;

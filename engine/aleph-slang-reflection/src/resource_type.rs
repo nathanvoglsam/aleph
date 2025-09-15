@@ -153,9 +153,8 @@ pub enum ResourceTypeBase<'a> {
 
 impl<'a> ResourceTypeBase<'a> {
     pub fn normalize(&mut self) {
-        match self {
-            ResourceTypeBase::StructuredBuffer { result_type, .. } => result_type.normalize(),
-            _ => {}
+        if let ResourceTypeBase::StructuredBuffer { result_type, .. } = self {
+            result_type.normalize()
         }
     }
 }

@@ -422,7 +422,7 @@ impl World {
     pub fn query<Q: ReadOnlyComponentQuery>(&self) -> QueryRef<'_, Q::QueryType> {
         QueryRef {
             inner: Self::query_unchecked::<Q::QueryType>(NonNull::from(self)),
-            phantom: PhantomData::default(),
+            phantom: PhantomData,
         }
     }
 
@@ -431,7 +431,7 @@ impl World {
     pub fn query_mut<Q: ComponentQuery>(&mut self) -> QueryMut<'_, Q> {
         QueryMut {
             inner: Self::query_unchecked::<Q>(NonNull::from(self)),
-            phantom: PhantomData::default(),
+            phantom: PhantomData,
         }
     }
 
@@ -577,10 +577,10 @@ impl World {
         let source = source.get_index();
 
         // First check for an existing link in the graph
-        if let Some(edge) = self.archetype_edges[source].get_mut(component) {
-            if let Some(index) = edge.remove {
-                return Some(index);
-            }
+        if let Some(edge) = self.archetype_edges[source].get_mut(component)
+            && let Some(index) = edge.remove
+        {
+            return Some(index);
         }
 
         // If we get here then we failed to find an existing link so we'll need to lookup the target
@@ -612,10 +612,10 @@ impl World {
         let source = source.get_index();
 
         // First check for an existing link in the graph
-        if let Some(edge) = self.archetype_edges[source].get_mut(component) {
-            if let Some(index) = edge.add {
-                return Some(index);
-            }
+        if let Some(edge) = self.archetype_edges[source].get_mut(component)
+            && let Some(index) = edge.add
+        {
+            return Some(index);
         }
 
         // If we get here then we failed to find an existing link so we'll need to lookup the target

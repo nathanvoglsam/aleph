@@ -285,7 +285,7 @@ pub mod ninja {
 pub mod dunce_utf8 {
     use camino::Utf8Path;
 
-    /// A wrapper over [dunce::simplified] that takes a [camino::Utf8Path]
+    /// A wrapper over [dunce::simplified] that takes a [Utf8Path]
     pub fn simplified(path: &Utf8Path) -> &Utf8Path {
         let simplified = dunce::simplified(path.as_std_path());
         let path = unsafe {

@@ -63,10 +63,10 @@ pub unsafe fn slice_from_raw_with_null_ptr<'a, T>(ptr: *const T, len: usize) -> 
     unsafe {
         if !ptr.is_null() && len > 0 {
             debug_assert_eq!(
-                ptr.align_offset(std::mem::align_of::<T>()),
+                ptr.align_offset(align_of::<T>()),
                 0,
                 "The given pointer is not sufficiently aligned to store a T. Expected alignemnt {}",
-                std::mem::align_of::<T>()
+                align_of::<T>()
             );
             std::slice::from_raw_parts(ptr, len)
         } else {

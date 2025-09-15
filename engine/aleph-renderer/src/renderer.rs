@@ -623,7 +623,7 @@ impl SwapManager {
 
 struct AcquiredImage {
     /// Handle to the acquire swap image
-    swap_image: AnyArc<dyn aleph_rhi_api::ISwapImage>,
+    swap_image: AnyArc<dyn ISwapImage>,
 
     /// Flags whether the swap chain was rebuilt in order to acquire this image
     rebuilt: bool,

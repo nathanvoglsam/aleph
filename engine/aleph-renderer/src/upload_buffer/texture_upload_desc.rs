@@ -240,9 +240,9 @@ impl TextureObjectDesc {
 
     /// Returns the dimensions of the texture at the given mip level.
     pub const fn dimensions_for_level(&self, level: u32) -> (u32, u32, u32) {
-        let width = const_max(self.storage_width() >> level as u32, 1);
-        let height = const_max(self.storage_height() >> level as u32, 1);
-        let depth = const_max(self.storage_depth() >> level as u32, 1);
+        let width = const_max(self.storage_width() >> level, 1);
+        let height = const_max(self.storage_height() >> level, 1);
+        let depth = const_max(self.storage_depth() >> level, 1);
         (width, height, depth)
     }
 

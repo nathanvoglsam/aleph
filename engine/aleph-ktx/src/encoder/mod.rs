@@ -55,6 +55,12 @@ pub struct KtxDocumentDescription<'a> {
     doc_type: DocumentTypeDescription<'a>,
 }
 
+impl<'a> Default for KtxDocumentDescription<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> KtxDocumentDescription<'a> {
     /// Constructs a new, invalid [`DocumentDescription`] that needs to be filled out.
     pub fn new() -> Self {
@@ -306,7 +312,7 @@ impl<'a> KtxDocumentDescription<'a> {
         dst.write_u32::<LittleEndian>(self.depth)?;
         dst.write_u32::<LittleEndian>(self.doc_type.encoded_layer_count())?;
         dst.write_u32::<LittleEndian>(self.doc_type.encoded_face_count())?;
-        dst.write_u32::<LittleEndian>(self.level_num as u32)?;
+        dst.write_u32::<LittleEndian>(self.level_num)?;
         dst.write_u32::<LittleEndian>(SuperCompressionScheme::NONE.0)?;
         dst.write_u32::<LittleEndian>(dfd_offset)?;
         dst.write_u32::<LittleEndian>(dfd_bytes)?;
@@ -324,8 +330,7 @@ impl<'a> KtxDocumentDescription<'a> {
                 .resolve_level_index(level_num, data_base_offset as usize, mip_padding);
 
         // Write the calculated level index out
-        for level_i in 0..level_num {
-            let level = level_index[level_i];
+        for level in level_index.iter().take(level_num) {
             dst.write_u64::<LittleEndian>(level.0)?;
             dst.write_u64::<LittleEndian>(level.1)?;
             dst.write_u64::<LittleEndian>(level.1)?;
@@ -349,7 +354,7 @@ impl<'a> KtxDocumentDescription<'a> {
             DocumentTypeDescription::Image1D { images }
             | DocumentTypeDescription::Image2D { images }
             | DocumentTypeDescription::Image3D { images } => {
-                for level_i in (0..level_num).into_iter().rev() {
+                for level_i in (0..level_num).rev() {
                     let level = &images[level_i];
 
                     // Forward align the level to the next mip_padding boundary and write mip
@@ -358,24 +363,24 @@ impl<'a> KtxDocumentDescription<'a> {
                     for _ in 0..padding {
                         dst.write_u8(0)?;
                     }
-                    accum = accum + padding;
+                    accum += padding;
 
                     // Write all the level data
                     dst.write_all(level)?;
 
                     // And push the offset along over the written data
-                    accum = accum + level.len() as u64;
+                    accum += level.len() as u64;
                 }
             }
             DocumentTypeDescription::Cube { images } => {
-                for level_i in (0..level_num).into_iter().rev() {
+                for level_i in (0..level_num).rev() {
                     // Forward align the level to the next mip_padding boundary and write mip
                     // padding bytes
                     let padding = accum.next_multiple_of(mip_padding) - accum;
                     for _ in 0..padding {
                         dst.write_u8(0)?;
                     }
-                    accum = accum + padding;
+                    accum += padding;
 
                     for face_i in 0..6 {
                         let i = calculate_set_index(6, level_num, face_i, level_i);
@@ -385,21 +390,21 @@ impl<'a> KtxDocumentDescription<'a> {
                         dst.write_all(level)?;
 
                         // And push the offset along over the written data
-                        accum = accum + level.len() as u64;
+                        accum += level.len() as u64;
                     }
                 }
             }
             DocumentTypeDescription::Array1D { layer_num, images }
             | DocumentTypeDescription::Array2D { layer_num, images }
             | DocumentTypeDescription::Array3D { layer_num, images } => {
-                for level_i in (0..level_num).into_iter().rev() {
+                for level_i in (0..level_num).rev() {
                     // Forward align the level to the next mip_padding boundary and write mip
                     // padding bytes
                     let padding = accum.next_multiple_of(mip_padding) - accum;
                     for _ in 0..padding {
                         dst.write_u8(0)?;
                     }
-                    accum = accum + padding;
+                    accum += padding;
 
                     for layer_i in 0..layer_num as usize {
                         let i =
@@ -410,20 +415,20 @@ impl<'a> KtxDocumentDescription<'a> {
                         dst.write_all(level)?;
 
                         // And push the offset along over the written data
-                        accum = accum + level.len() as u64;
+                        accum += level.len() as u64;
                     }
                 }
             }
             DocumentTypeDescription::CubeArray { layer_num, images } => {
                 let layer_num_real = layer_num as usize * 6;
-                for level_i in (0..level_num).into_iter().rev() {
+                for level_i in (0..level_num).rev() {
                     // Forward align the level to the next mip_padding boundary and write mip
                     // padding bytes
                     let padding = accum.next_multiple_of(mip_padding) - accum;
                     for _ in 0..padding {
                         dst.write_u8(0)?;
                     }
-                    accum = accum + padding;
+                    accum += padding;
 
                     for layer_i in 0..layer_num_real {
                         let i = calculate_set_index(layer_num_real, level_num, layer_i, level_i);
@@ -433,7 +438,7 @@ impl<'a> KtxDocumentDescription<'a> {
                         dst.write_all(level)?;
 
                         // And push the offset along over the written data
-                        accum = accum + level.len() as u64;
+                        accum += level.len() as u64;
                     }
                 }
             }
@@ -668,8 +673,7 @@ pub fn calculate_set_index(
     assert!(level < level_num);
 
     let i = layer * level_num;
-    let i = i + level;
-    i
+    i + level
 }
 
 enum DocumentTypeDescription<'a> {
@@ -807,7 +811,7 @@ impl<'a> DocumentTypeDescription<'a> {
 
         // Pass 2, prefix sum lengths in reverse order to get our final offsets
         let mut accum = data_base_offset as u64;
-        for level_i in (0..level_num).into_iter().rev() {
+        for level_i in (0..level_num).rev() {
             let level = &mut level_index[level_i];
 
             // Forward align the level to the next mip_padding boundary

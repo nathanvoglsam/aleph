@@ -272,7 +272,7 @@ impl SwapChain {
                 .map_err(|e| log::error!("Platform Error: {:#?}", e))?
         };
 
-        const SWAP_NAMES: [&'static NStr; 8] = [
+        const SWAP_NAMES: [&NStr; 8] = [
             nstr!(obj_name!("SwapImage-0")),
             nstr!(obj_name!("SwapImage-1")),
             nstr!(obj_name!("SwapImage-2")),
