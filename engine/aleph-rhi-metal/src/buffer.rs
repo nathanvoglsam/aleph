@@ -30,11 +30,12 @@
 use std::num::NonZeroU64;
 
 use aleph_any::AnyArc;
-use aleph_object_system::unsafe_impl_iobject;
+use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
+use objc2_foundation::NSString;
 use objc2_metal::*;
 
 use crate::device::Device;
@@ -57,7 +58,45 @@ impl Buffer {
 }
 
 impl Buffer {
-    pub(crate) fn get_buffer_id(&self) -> std::num::NonZeroU64 {
+    pub(crate) fn create(
+        device: &Device,
+        desc: &BufferDesc,
+    ) -> Result<BufferHandle, BufferCreateError> {
+        let length = desc.size as usize;
+
+        let mut options = MTLResourceOptions::HazardTrackingModeTracked;
+        match desc.cpu_access {
+            CpuAccessMode::None => options |= MTLResourceOptions::StorageModePrivate,
+            CpuAccessMode::Read => options |= MTLResourceOptions::StorageModeShared,
+            CpuAccessMode::Write => {
+                options |= MTLResourceOptions::StorageModeShared
+                    | MTLResourceOptions::CPUCacheModeWriteCombined
+            }
+        }
+
+        let buffer = match device.device.newBufferWithLength_options(length, options) {
+            Some(v) => v,
+            None => return Err(BufferCreateError::Platform),
+        };
+
+        if let Some(name) = desc.name
+            && device.context.debug
+        {
+            let mtl_name = NSString::from_str(name);
+            buffer.setLabel(Some(&mtl_name));
+        }
+
+        let out = Buffer {
+            _device: device.this.upgrade().unwrap(),
+            id: device.object_counter.next_buffer(),
+            desc: OwnedBufferDesc::new(desc.clone()),
+            objects: BufferObjects { buffer },
+        };
+        let out = Object::new_arc_opaque(out);
+        unsafe { Ok(BufferHandle::new(out)) }
+    }
+
+    pub(crate) fn get_buffer_id(&self) -> NonZeroU64 {
         self.id
     }
 

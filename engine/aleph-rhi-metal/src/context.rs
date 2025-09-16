@@ -73,7 +73,7 @@ impl IContext for Context {
     }
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
-        // Metal doesn't have software adapaters so the solution here is obvious. We bail.
+        // Metal doesn't have software adapters so the solution here is obvious. We bail.
         if options.deny_hardware_adapters {
             return None;
         }

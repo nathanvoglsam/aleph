@@ -32,7 +32,7 @@ use std::ptr::NonNull;
 
 use aleph_alloc::BHashMap;
 use aleph_any::AnyArc;
-use aleph_object_system::unsafe_impl_iobject;
+use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
@@ -61,6 +61,53 @@ pub struct Texture {
 unsafe_impl_iobject!(Texture, "01980753-5c4f-7ae3-be3b-974d0f86022a");
 
 impl Texture {
+    pub(crate) fn create(
+        device: &Device,
+        desc: &TextureDesc,
+    ) -> Result<TextureHandle, TextureCreateError> {
+        let mtl_desc = unsafe { MTLTextureDescriptor::new() };
+        unsafe {
+            let (array_len, texture_type) = match (desc.array_size, desc.dimension) {
+                (0, TextureDimension::Texture1D) => (1, MTLTextureType::Type1D),
+                (0, TextureDimension::Texture2D) => (1, MTLTextureType::Type2D),
+                (0, TextureDimension::Texture3D) => (1, MTLTextureType::Type3D),
+                (v, TextureDimension::Texture1D) => (v, MTLTextureType::Type1DArray),
+                (v, TextureDimension::Texture2D) => (v, MTLTextureType::Type2DArray),
+                (_, TextureDimension::Texture3D) => unimplemented!(),
+            };
+            mtl_desc.setTextureType(texture_type);
+            mtl_desc.setPixelFormat(conv::format_to_pixel_mtl(desc.format));
+            mtl_desc.setWidth(desc.width as usize);
+            mtl_desc.setHeight(desc.height as usize);
+            mtl_desc.setDepth(desc.depth as usize);
+            mtl_desc.setMipmapLevelCount(desc.mip_levels as usize);
+            mtl_desc.setArrayLength(array_len as usize);
+            mtl_desc.setUsage(conv::resource_usage_to_texture_usage_mtl(desc.usage));
+            mtl_desc.setStorageMode(MTLStorageMode::Private);
+            mtl_desc.setHazardTrackingMode(MTLHazardTrackingMode::Tracked);
+            mtl_desc.setAllowGPUOptimizedContents(true);
+            mtl_desc.setSampleCount(desc.sample_count as usize);
+        }
+
+        let texture = match device.device.newTextureWithDescriptor(&mtl_desc) {
+            Some(v) => v,
+            None => return Err(TextureCreateError::Platform),
+        };
+
+        let out = Texture {
+            _device: device.this.upgrade().unwrap(),
+            id: device.object_counter.next_texture(),
+            views: Default::default(),
+            objects: TextureObjects { texture },
+            rtvs: Default::default(),
+            dsvs: Default::default(),
+            image_views: Mutex::new(Blink::new_in(BlinkAlloc::new_in(RhiSystem::default()))),
+            desc: OwnedTextureDesc::new(desc.clone()),
+        };
+        let out = Object::new_arc_opaque(out);
+        unsafe { Ok(TextureHandle::new(out)) }
+    }
+
     pub(crate) fn get(v: &TextureHandle) -> &Self {
         v.get()
             .downcast_ref::<Self>()

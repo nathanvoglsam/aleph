@@ -36,6 +36,7 @@ pub struct ShaderEntry {
     pub shader_type: ShaderType,
     pub parameter_blocks: Vec<ParameterBlockDesc>,
     pub push_constants: Option<u64>,
+    pub compute_workgroup_size: (u32, u32, u32),
     pub spirv: Option<Vec<u8>>,
     pub dxil: Option<Vec<u8>>,
     pub msl: Option<Vec<u8>>,
@@ -60,6 +61,10 @@ unsafe impl IShaderCodeSource for ShaderEntry {
 
     fn get_msl(&self) -> &[u8] {
         self.msl.as_ref().unwrap().as_slice()
+    }
+
+    fn get_compute_workgroup_size(&self) -> (u32, u32, u32) {
+        self.compute_workgroup_size
     }
 
     fn get_parameter_block_count(&self) -> usize {
@@ -108,6 +113,13 @@ unsafe impl IShaderCodeSource for ArchivedShaderEntry {
 
     fn get_msl(&self) -> &[u8] {
         self.msl.as_ref().unwrap().as_slice()
+    }
+
+    fn get_compute_workgroup_size(&self) -> (u32, u32, u32) {
+        let x = self.compute_workgroup_size.0.to_native();
+        let y = self.compute_workgroup_size.1.to_native();
+        let z = self.compute_workgroup_size.2.to_native();
+        (x, y, z)
     }
 
     fn get_parameter_block_count(&self) -> usize {

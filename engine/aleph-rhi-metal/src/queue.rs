@@ -28,11 +28,8 @@
 //
 
 use std::any::TypeId;
-use std::mem::transmute;
-use std::ptr;
-use std::ptr::NonNull;
 
-use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject, box_downcast};
+use aleph_any::{AnyArc, AnyWeak, box_downcast, declare_interfaces};
 use aleph_rhi_api::*;
 use crossbeam::queue::ArrayQueue;
 use objc2::rc::Retained;
@@ -62,31 +59,7 @@ pub struct Queue {
     pub(crate) in_flight: ArrayQueue<QueueSubmission>,
 }
 
-// Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
-impl IAny for Queue {
-    #[allow(bare_trait_objects)]
-    fn __query_interface(&self, target: TypeId) -> Option<TraitObject<'_>> {
-        unsafe {
-            if target == TypeId::of::<dyn IQueue>() {
-                return Some(transmute(self as &dyn IQueue));
-            }
-            if target == TypeId::of::<dyn IAny>() {
-                return Some(transmute(self as &dyn IAny));
-            }
-        }
-        unsafe {
-            if target == TypeId::of::<Queue>() {
-                Some(TraitObject {
-                    data: NonNull::new_unchecked(self as *const _ as *mut ()),
-                    vtable: ptr::null_mut(),
-                    phantom: Default::default(),
-                })
-            } else {
-                None
-            }
-        }
-    }
-}
+declare_interfaces!(Queue, [IQueue]);
 
 impl IGetPlatformInterface for Queue {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
@@ -205,6 +178,8 @@ impl IQueue for Queue {
 
             assert_eq!(list.list_type, self.queue_type);
             assert_eq!(list.state, ListState::Closed);
+
+            // TODO: flush barriers between submits?
 
             list.objects.list.commit();
         }

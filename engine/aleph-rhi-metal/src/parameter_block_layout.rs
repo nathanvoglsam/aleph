@@ -76,6 +76,23 @@ impl IParameterBlockLayout for ParameterBlockLayout {
     }
 }
 
+impl ParameterBlockLayout {
+    pub(crate) fn create(
+        device: &Device,
+        desc: &ParameterBlockDesc,
+    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
+        let compiled = CompiledParameterBlockLayout::new(desc);
+        let out = AnyArc::new_cyclic(move |v| ParameterBlockLayout {
+            this: v.clone(),
+            _device: device.this.upgrade().unwrap(),
+            id: device.object_counter.next_parameter_block_layout(),
+            compiled,
+            desc: OwnedParameterBlockDesc::new(desc),
+        });
+        Ok(AnyArc::map::<dyn IParameterBlockLayout, _>(out, |v| v))
+    }
+}
+
 /// Backend specific information derived from the [`ParameterBlockDesc`] used to create a parameter
 /// block layout.
 pub struct CompiledParameterBlockLayout {

@@ -119,6 +119,10 @@ pub unsafe trait IShaderCodeSource {
     /// Returns a reference to shader code appropriate for consumption by `Metal`.
     fn get_msl(&self) -> &[u8];
 
+    /// Returns the x/y/z dimension of the compute workgroup, if this is a compute shader. This is
+    /// expected to be available from shader reflection.
+    fn get_compute_workgroup_size(&self) -> (u32, u32, u32);
+
     /// Returns the number of parameter blocks the associated shader uses.
     fn get_parameter_block_count(&self) -> usize;
 

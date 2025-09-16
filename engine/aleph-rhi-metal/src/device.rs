@@ -30,50 +30,40 @@
 use std::any::TypeId;
 use std::ptr::NonNull;
 use std::sync::Arc;
-use std::sync::atomic::AtomicU64;
 use std::time::Duration;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
-use aleph_object_system::Object;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
-use aleph_rhi_impl_utils::owned_desc::{
-    OwnedBufferDesc, OwnedParameterBlockDesc, OwnedSamplerDesc, OwnedTextureDesc,
+use aleph_rhi_impl_utils::parameter_block_layout_visitor::{
+    ParameterBlockLayoutVisitor, ParameterBlockLayoutVisitorElement,
 };
-use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
-use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
 use allocator_api2::vec::Vec as BVec;
-use blink_alloc::{Blink, BlinkAlloc};
+use blink_alloc::Blink;
 use block2::RcBlock;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2_foundation::NSString;
 use objc2_metal::*;
 use parking_lot::{Condvar, Mutex};
 
 use crate::adapter::Adapter;
 use crate::binding_signature::BindingSignature;
-use crate::buffer::{Buffer, BufferObjects};
-use crate::command_list::{CommandList, CommandListObjects, ListState};
+use crate::buffer::Buffer;
+use crate::command_list::CommandList;
 use crate::context::Context;
 use crate::descriptor_arena::DescriptorArena;
-use crate::descriptor_pool::{DescriptorPool, LinearBlockFactory};
-use crate::fence::{Fence, FenceObjects};
+use crate::descriptor_pool::DescriptorPool;
+use crate::fence::Fence;
 use crate::internal::image_view::ImageViewObject;
-use crate::internal::memory_block::MemoryBlock;
 use crate::internal::parameter_block::ParameterBlock;
-use crate::internal::{conv, unwrap};
-use crate::parameter_block_layout::{CompiledParameterBlockLayout, ParameterBlockLayout};
-use crate::pipeline::{
-    CachedGraphicsInfo, ComputePipeline, ComputePipelineObjects, GraphicsPipeline,
-    GraphicsPipelineObjects,
-};
+use crate::internal::unwrap;
+use crate::parameter_block_layout::ParameterBlockLayout;
+use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::queue::Queue;
-use crate::sampler::{Sampler, SamplerObjects};
-use crate::semaphore::{Semaphore, SemaphoreObjects};
-use crate::texture::{Texture, TextureObjects};
+use crate::sampler::Sampler;
+use crate::semaphore::Semaphore;
+use crate::texture::Texture;
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,
@@ -164,15 +154,7 @@ impl IDevice for Device {
         &self,
         desc: &ParameterBlockDesc,
     ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
-        let compiled = CompiledParameterBlockLayout::new(desc);
-        let out = AnyArc::new_cyclic(move |v| ParameterBlockLayout {
-            this: v.clone(),
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_parameter_block_layout(),
-            compiled,
-            desc: OwnedParameterBlockDesc::new(desc),
-        });
-        Ok(AnyArc::map::<dyn IParameterBlockLayout, _>(out, |v| v))
+        ParameterBlockLayout::create(self, desc)
     }
 
     // ========================================================================================== //
@@ -182,22 +164,7 @@ impl IDevice for Device {
         &self,
         desc: &BindingSignatureDesc,
     ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError> {
-        let mut block_layouts =
-            BVec::with_capacity_in(desc.parameter_block_layouts.len(), Default::default());
-        block_layouts.extend(
-            desc.parameter_block_layouts
-                .iter()
-                .map(unwrap::parameter_block_layout_d)
-                .map(|v| v.this.upgrade().unwrap()),
-        );
-
-        let out = AnyArc::new_cyclic(move |v| BindingSignature {
-            this: v.clone(),
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_binding_signature(),
-            _parameter_block_layouts: block_layouts,
-        });
-        Ok(AnyArc::map::<dyn IBindingSignature, _>(out, |v| v))
+        BindingSignature::create(self, desc)
     }
 
     // ========================================================================================== //
@@ -208,189 +175,7 @@ impl IDevice for Device {
         &self,
         desc: &GraphicsPipelineDesc,
     ) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
-        let mtl_desc = MTLRenderPipelineDescriptor::new();
-
-        for stage in desc.shader_stages {
-            match stage.shader_type() {
-                ShaderType::Compute => panic!("Graphics pipelines can't use compute shaders!"),
-                ShaderType::Vertex => {
-                    // todo: get this from the shader bytes
-                    mtl_desc.setVertexFunction(None);
-                }
-                ShaderType::Hull => unimplemented!(),
-                ShaderType::Domain => unimplemented!(),
-                ShaderType::Geometry => unimplemented!(),
-                ShaderType::Fragment => {
-                    // todo: get this from the shader bytes
-                    mtl_desc.setFragmentFunction(None);
-                }
-                ShaderType::Amplification => unimplemented!(),
-                ShaderType::Mesh => unimplemented!(),
-            }
-        }
-
-        let binding_signature = unwrap::binding_signature(desc.binding_signature);
-
-        // vertex_layout: &'a VertexInputStateDesc<'a>,
-        // TODO
-
-        let primitive_topology = desc.input_assembly_state.primitive_topology;
-        let primitive_type = conv::primitive_topology_to_mtl(primitive_topology);
-        unsafe {
-            let mtl_topology = conv::primitive_topology_to_mtl_class(primitive_topology);
-            mtl_desc.setInputPrimitiveTopology(mtl_topology);
-        }
-
-        let cull_mode = conv::cull_mode_to_mtl(desc.rasterizer_state.cull_mode);
-        let front_face = conv::front_face_order_to_mtl(desc.rasterizer_state.front_face);
-        let polygon_mode = conv::polygon_mode_to_mtl(desc.rasterizer_state.polygon_mode);
-        let depth_bias = desc.rasterizer_state.depth_bias;
-        let depth_bias_clamp = desc.rasterizer_state.depth_bias_clamp;
-        let depth_bias_slope_factor = desc.rasterizer_state.depth_bias_slope_factor;
-
-        // TODO depth bounds
-        let mtl_depth_desc = unsafe { MTLDepthStencilDescriptor::new() };
-
-        // 'depth_test = false' just decays to 'always'
-        let compare_fn = match (
-            desc.depth_stencil_state.depth_test,
-            desc.depth_stencil_state.depth_compare_op,
-        ) {
-            (true, v) => conv::compare_op_to_mtl(v),
-            (false, _) => MTLCompareFunction::Always,
-        };
-        mtl_depth_desc.setDepthCompareFunction(compare_fn);
-        mtl_depth_desc.setDepthWriteEnabled(desc.depth_stencil_state.depth_write);
-
-        fn apply_stencil_op_state(to: &MTLStencilDescriptor, v: &StencilOpState) {
-            to.setStencilFailureOperation(conv::stencil_op_to_mtl(v.fail_op));
-            to.setDepthStencilPassOperation(conv::stencil_op_to_mtl(v.pass_op));
-            to.setDepthFailureOperation(conv::stencil_op_to_mtl(v.depth_fail_op));
-            to.setStencilCompareFunction(conv::compare_op_to_mtl(v.compare_op));
-        }
-        if desc.depth_stencil_state.stencil_test {
-            let front = unsafe { MTLStencilDescriptor::new() };
-            front.setReadMask(desc.depth_stencil_state.stencil_read_mask as u32);
-            front.setWriteMask(desc.depth_stencil_state.stencil_write_mask as u32);
-            apply_stencil_op_state(&front, &desc.depth_stencil_state.stencil_front);
-            mtl_depth_desc.setFrontFaceStencil(Some(&front));
-
-            let back = unsafe { MTLStencilDescriptor::new() };
-            back.setReadMask(desc.depth_stencil_state.stencil_read_mask as u32);
-            back.setWriteMask(desc.depth_stencil_state.stencil_write_mask as u32);
-            apply_stencil_op_state(&back, &desc.depth_stencil_state.stencil_back);
-            mtl_depth_desc.setBackFaceStencil(Some(&back));
-        }
-
-        let depth_stencil_state = self
-            .device
-            .newDepthStencilStateWithDescriptor(&mtl_depth_desc);
-        let depth_stencil_state = match depth_stencil_state {
-            Some(v) => v,
-            None => {
-                log::error!(
-                    "Failed to create depth stencil state for pipeline! Reason: {}",
-                    "unknown"
-                );
-                return Err(PipelineCreateError::Platform);
-            }
-        };
-
-        let attachments = mtl_desc.colorAttachments();
-        for (i, (format, blend)) in desc
-            .render_target_formats
-            .iter()
-            .zip(desc.blend_state.attachments)
-            .enumerate()
-        {
-            let mtl_attachment = unsafe { MTLRenderPipelineColorAttachmentDescriptor::new() };
-
-            mtl_attachment.setPixelFormat(conv::format_to_pixel_mtl(*format));
-            mtl_attachment.setWriteMask(conv::write_mask_to_mtl(blend.color_write_mask));
-
-            if blend.blend_enabled {
-                mtl_attachment.setBlendingEnabled(blend.blend_enabled);
-
-                let v = conv::blend_factor_to_mtl(blend.src_factor);
-                mtl_attachment.setSourceRGBBlendFactor(v);
-
-                let v = conv::blend_factor_to_mtl(blend.dst_factor);
-                mtl_attachment.setDestinationRGBBlendFactor(v);
-
-                let v = conv::alpha_blend_factor_to_mtl(blend.alpha_src_factor);
-                mtl_attachment.setSourceAlphaBlendFactor(v);
-
-                let v = conv::alpha_blend_factor_to_mtl(blend.alpha_dst_factor);
-                mtl_attachment.setDestinationAlphaBlendFactor(v);
-
-                let v = conv::blend_op_to_mtl(blend.blend_op);
-                mtl_attachment.setRgbBlendOperation(v);
-
-                let v = conv::blend_op_to_mtl(blend.alpha_blend_op);
-                mtl_attachment.setAlphaBlendOperation(v);
-            }
-
-            unsafe {
-                attachments.setObject_atIndexedSubscript(Some(&mtl_attachment), i);
-            }
-        }
-
-        if let Some(fmt) = desc.depth_stencil_format {
-            let mtl_format = conv::format_to_pixel_mtl(fmt);
-            mtl_desc.setDepthAttachmentPixelFormat(mtl_format);
-
-            if fmt.is_stencil() {
-                mtl_desc.setStencilAttachmentPixelFormat(mtl_format);
-            }
-        }
-
-        if let Some(name) = desc.name
-            && self.context.debug
-        {
-            let mtl_name = NSString::from_str(name);
-            mtl_desc.setLabel(Some(&mtl_name));
-        }
-
-        if self.context.validation {
-            unsafe {
-                mtl_desc.setShaderValidation(MTLShaderValidation::Enabled);
-            }
-        }
-
-        let pipeline = self
-            .device
-            .newRenderPipelineStateWithDescriptor_error(&mtl_desc);
-        let pipeline = match pipeline {
-            Ok(v) => v,
-            Err(_err) => {
-                log::error!(
-                    "Failed to create render pipeline state! Reason: {}",
-                    "unknown"
-                );
-                return Err(PipelineCreateError::Platform);
-            }
-        };
-
-        let out = GraphicsPipeline {
-            _device: self.this.upgrade().unwrap(),
-            _binding_signature: binding_signature.this.upgrade().unwrap(),
-            id: self.object_counter.next_graphics_pipeline(),
-            objects: GraphicsPipelineObjects {
-                pipeline,
-                depth_stencil_state,
-            },
-            info: CachedGraphicsInfo {
-                primitive_type,
-                cull_mode,
-                front_face,
-                polygon_mode,
-                depth_bias,
-                depth_bias_clamp,
-                depth_bias_slope_factor,
-            },
-        };
-        let out = Object::new_arc_opaque(out);
-        unsafe { Ok(GraphicsPipelineHandle::new(out)) }
+        GraphicsPipeline::create(self, desc)
     }
 
     // ========================================================================================== //
@@ -401,54 +186,7 @@ impl IDevice for Device {
         &self,
         desc: &ComputePipelineDesc,
     ) -> Result<ComputePipelineHandle, PipelineCreateError> {
-        let mtl_desc = MTLComputePipelineDescriptor::new();
-
-        // shader_module: ShaderBinary<'a>,
-        // TODO
-
-        let binding_signature = unwrap::binding_signature(desc.binding_signature);
-
-        if let Some(name) = desc.name
-            && self.context.debug
-        {
-            let mtl_name = NSString::from_str(name);
-            mtl_desc.setLabel(Some(&mtl_name));
-        }
-
-        if self.context.validation {
-            unsafe {
-                mtl_desc.setShaderValidation(MTLShaderValidation::Enabled);
-            }
-        }
-
-        let pipeline = unsafe {
-            self.device
-                .newComputePipelineStateWithDescriptor_options_reflection_error(
-                    &mtl_desc,
-                    MTLPipelineOption::empty(),
-                    None,
-                )
-        };
-
-        let pipeline = match pipeline {
-            Ok(v) => v,
-            Err(_err) => {
-                log::error!(
-                    "Failed to create render pipeline state! Reason: {}",
-                    "unknown"
-                );
-                return Err(PipelineCreateError::Platform);
-            }
-        };
-
-        let out = ComputePipeline {
-            _device: self.this.upgrade().unwrap(),
-            _binding_signature: binding_signature.this.upgrade().unwrap(),
-            id: self.object_counter.next_compute_pipeline(),
-            objects: ComputePipelineObjects { pipeline },
-        };
-        let out = Object::new_arc_opaque(out);
-        unsafe { Ok(ComputePipelineHandle::new(out)) }
+        ComputePipeline::create(self, desc)
     }
 
     // ========================================================================================== //
@@ -458,25 +196,7 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        let layout = unwrap::parameter_block_layout(desc.layout);
-
-        let len = 0; // TODO: derive this from the layout
-        let block = MemoryBlock::new(self, len).ok_or(DescriptorPoolCreateError::Platform)?;
-
-        let factory = LinearBlockFactory {
-            next_resource_index: 0,
-            arena: BlinkAlloc::new_in(RhiSystem::default()),
-        };
-        let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
-
-        let pool: Box<dyn IDescriptorPool> = Box::new(DescriptorPool {
-            _device: self.this.upgrade().unwrap(),
-            _layout: layout.this.upgrade().unwrap(),
-            block,
-            pool,
-        });
-
-        Ok(pool)
+        DescriptorPool::create(self, desc)
     }
 
     // ========================================================================================== //
@@ -498,138 +218,21 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError> {
-        let length = desc.size as usize;
-
-        let mut options = MTLResourceOptions::HazardTrackingModeTracked;
-        match desc.cpu_access {
-            CpuAccessMode::None => options |= MTLResourceOptions::StorageModePrivate,
-            CpuAccessMode::Read => options |= MTLResourceOptions::StorageModeShared,
-            CpuAccessMode::Write => {
-                options |= MTLResourceOptions::StorageModeShared
-                    | MTLResourceOptions::CPUCacheModeWriteCombined
-            }
-        }
-
-        let buffer = match self.device.newBufferWithLength_options(length, options) {
-            Some(v) => v,
-            None => return Err(BufferCreateError::Platform),
-        };
-
-        if let Some(name) = desc.name
-            && self.context.debug
-        {
-            let mtl_name = NSString::from_str(name);
-            buffer.setLabel(Some(&mtl_name));
-        }
-
-        let out = Buffer {
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_buffer(),
-            desc: OwnedBufferDesc::new(desc.clone()),
-            objects: BufferObjects { buffer },
-        };
-        let out = Object::new_arc_opaque(out);
-        unsafe { Ok(BufferHandle::new(out)) }
+        Buffer::create(self, desc)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError> {
-        let mtl_desc = unsafe { MTLTextureDescriptor::new() };
-        unsafe {
-            let (array_len, texture_type) = match (desc.array_size, desc.dimension) {
-                (0, TextureDimension::Texture1D) => (1, MTLTextureType::Type1D),
-                (0, TextureDimension::Texture2D) => (1, MTLTextureType::Type2D),
-                (0, TextureDimension::Texture3D) => (1, MTLTextureType::Type3D),
-                (v, TextureDimension::Texture1D) => (v, MTLTextureType::Type1DArray),
-                (v, TextureDimension::Texture2D) => (v, MTLTextureType::Type2DArray),
-                (_, TextureDimension::Texture3D) => unimplemented!(),
-            };
-            mtl_desc.setTextureType(texture_type);
-            mtl_desc.setPixelFormat(conv::format_to_pixel_mtl(desc.format));
-            mtl_desc.setWidth(desc.width as usize);
-            mtl_desc.setHeight(desc.height as usize);
-            mtl_desc.setDepth(desc.depth as usize);
-            mtl_desc.setMipmapLevelCount(desc.mip_levels as usize);
-            mtl_desc.setArrayLength(array_len as usize);
-            mtl_desc.setUsage(conv::resource_usage_to_texture_usage_mtl(desc.usage));
-            mtl_desc.setStorageMode(MTLStorageMode::Private);
-            mtl_desc.setAllowGPUOptimizedContents(true);
-            mtl_desc.setSampleCount(desc.sample_count as usize);
-        }
-
-        let texture = match self.device.newTextureWithDescriptor(&mtl_desc) {
-            Some(v) => v,
-            None => return Err(TextureCreateError::Platform),
-        };
-
-        let out = Texture {
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_texture(),
-            views: Default::default(),
-            objects: TextureObjects { texture },
-            rtvs: Default::default(),
-            dsvs: Default::default(),
-            image_views: Mutex::new(Blink::new_in(BlinkAlloc::new_in(RhiSystem::default()))),
-            desc: OwnedTextureDesc::new(desc.clone()),
-        };
-        let out = Object::new_arc_opaque(out);
-        unsafe { Ok(TextureHandle::new(out)) }
+        Texture::create(self, desc)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_sampler(&self, desc: &SamplerDesc) -> Result<SamplerHandle, SamplerCreateError> {
-        let mtl_desc = MTLSamplerDescriptor::new();
-
-        mtl_desc.setMinFilter(conv::sampler_filter_to_mtl(desc.min_filter));
-        mtl_desc.setMagFilter(conv::sampler_filter_to_mtl(desc.mag_filter));
-        mtl_desc.setMipFilter(conv::sampler_mip_filter_to_mtl(desc.mip_filter));
-
-        mtl_desc.setRAddressMode(conv::address_mode_to_mtl(desc.address_mode_u));
-        mtl_desc.setSAddressMode(conv::address_mode_to_mtl(desc.address_mode_v));
-        mtl_desc.setTAddressMode(conv::address_mode_to_mtl(desc.address_mode_w));
-
-        mtl_desc.setLodMinClamp(desc.min_lod);
-        mtl_desc.setLodMaxClamp(desc.max_lod);
-        // TODO: LOD BIAS?
-
-        if desc.enable_anisotropy {
-            mtl_desc.setMaxAnisotropy(desc.max_anisotropy as usize);
-        }
-
-        if let Some(op) = desc.compare_op {
-            mtl_desc.setCompareFunction(conv::compare_op_to_mtl(op));
-        }
-
-        mtl_desc.setBorderColor(conv::border_color_to_mtl(desc.border_color));
-        mtl_desc.setSupportArgumentBuffers(true);
-
-        if let Some(name) = desc.name
-            && self.context.debug
-        {
-            let mtl_name = NSString::from_str(name);
-            mtl_desc.setLabel(Some(&mtl_name));
-        }
-
-        let sampler = match self.device.newSamplerStateWithDescriptor(&mtl_desc) {
-            Some(v) => v,
-            None => {
-                log::error!("Failed to construct 'MTLSamplerState'.");
-                panic!("Failed to construct 'MTLSamplerState'.");
-            }
-        };
-
-        let out = Sampler {
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_sampler(),
-            desc: OwnedSamplerDesc::new(desc.clone()),
-            objects: SamplerObjects { sampler },
-        };
-        let out = Object::new_arc_opaque(out);
-        unsafe { Ok(SamplerHandle::new(out)) }
+        Sampler::create(self, desc)
     }
 
     // ========================================================================================== //
@@ -639,29 +242,7 @@ impl IDevice for Device {
         &self,
         desc: &CommandListDesc,
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
-        let queue = match self.get_queue_internal(desc.queue_type) {
-            Some(v) => v,
-            None => return Err(CommandListCreateError::NoSuchQueue(desc.queue_type)),
-        };
-
-        let list = match queue.objects.queue.commandBuffer() {
-            Some(v) => v,
-            None => return Err(CommandListCreateError::Platform),
-        };
-
-        if let Some(name) = desc.name {
-            let mtl_name = NSString::from_str(name);
-            list.setLabel(Some(&mtl_name));
-        }
-
-        let out: Box<dyn ICommandList> = Box::new(CommandList {
-            _device: self.this.upgrade().unwrap(),
-            list_type: desc.queue_type,
-            state: ListState::Empty,
-            objects: CommandListObjects { list },
-        });
-
-        Ok(out)
+        CommandList::create(self, desc)
     }
 
     // ========================================================================================== //
@@ -698,11 +279,27 @@ impl IDevice for Device {
         let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
         let cpu_handle = block.resource_handle_cpu.unwrap();
 
+        let update_use_sets =
+            |write_group: &ParameterBlockLayoutVisitorElement,
+             src: &ProtocolObject<dyn MTLResource>| unsafe {
+                if write_group.ty.is_uav() {
+                    let base = layout.compiled.use_write_bases[write_group.binding as usize]
+                        + write_group.element as usize;
+                    let target = block.writes.unwrap_unchecked().add(base);
+                    target.write(NonNull::from(src));
+                } else {
+                    let base = layout.compiled.use_read_bases[write_group.binding as usize]
+                        + write_group.element as usize;
+                    let target = block.reads.unwrap_unchecked().add(base);
+                    target.write(NonNull::from(src));
+                }
+            };
+
         let visitor =
             ParameterBlockLayoutVisitor::new(layout.desc.get(), base as u64, writes).unwrap();
-        for v in visitor {
-            for (i, write) in v.writes.iter().enumerate() {
-                let i = i + v.index as usize;
+        for write_group in visitor {
+            for (i, write) in write_group.writes.iter().enumerate() {
+                let i = i + write_group.index as usize;
                 match write {
                     ParameterWrite::Sampler(v) => unsafe {
                         let sampler = Sampler::get(v.sampler);
@@ -713,59 +310,32 @@ impl IDevice for Device {
                         let src = v.image_view.into_raw::<ImageViewObject>().as_ref();
                         let id = src.texture.gpuResourceID().to_raw();
                         cpu_handle.add(i).write(id);
+                        update_use_sets(&write_group, src.texture.as_ref());
                     },
                     ParameterWrite::Buffer(v) => unsafe {
-                        let buffer = Buffer::get(v.buffer);
-                        let addr = buffer.objects.buffer.gpuAddress() + v.offset;
+                        let src = Buffer::get(v.buffer);
+                        let addr = src.objects.buffer.gpuAddress() + v.offset;
                         cpu_handle.add(i).write(addr);
+                        update_use_sets(&write_group, src.objects.buffer.as_ref());
                     },
                     ParameterWrite::TextureBuffer(_) => unimplemented!(),
                 }
             }
         }
-        // TODO: add to read/write set for useResources
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError> {
-        let event = match self.device.newSharedEvent() {
-            Some(v) => v,
-            None => return Err(FenceCreateError::Platform),
-        };
-
-        unsafe {
-            if signalled {
-                event.setSignaledValue(1);
-            }
-        }
-
-        let fence = Fence {
-            _device: self.this.upgrade().unwrap(),
-            objects: FenceObjects { event },
-            value: AtomicU64::new(2),
-        };
-        let fence = Object::new_arc_opaque(fence);
-        unsafe { Ok(FenceHandle::new(fence)) }
+        Fence::create(self, signalled)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError> {
-        let event = match self.device.newSharedEvent() {
-            Some(v) => v,
-            None => return Err(SemaphoreCreateError::Platform),
-        };
-
-        let semaphore = Semaphore {
-            _device: self.this.upgrade().unwrap(),
-            objects: SemaphoreObjects { event },
-            value: AtomicU64::new(1),
-        };
-        let semaphore = Object::new_arc_opaque(semaphore);
-        unsafe { Ok(SemaphoreHandle::new(semaphore)) }
+        Semaphore::create(self)
     }
 
     // ========================================================================================== //

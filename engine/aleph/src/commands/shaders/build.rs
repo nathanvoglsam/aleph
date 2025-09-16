@@ -182,6 +182,8 @@ fn archive_shaders_for_package(
             let (parameter_blocks, push_constants) =
                 crate::shader_system::reflection::build_shader_db_reflection(&refl).unwrap();
 
+            let [cx, cy, cz] = refl.entry_points[0].thread_group_size.unwrap_or([0; 3]);
+
             log::trace!(
                 "Collecting Data for '{}' shader:  '{}'",
                 shader_file.file_ext,
@@ -194,6 +196,7 @@ fn archive_shaders_for_package(
                 shader_name,
                 parameter_blocks,
                 push_constants,
+                (cx, cy, cz),
             );
 
             match shader_file.file_ext {
@@ -215,6 +218,7 @@ fn insert_or_init_entry<'a>(
     shader_name: String,
     parameter_blocks: Vec<ParameterBlockDesc>,
     push_constants: Option<u64>,
+    compute_workgroup_size: (u32, u32, u32),
 ) -> &'a mut ShaderEntry {
     let entry = match shader_db.shaders.entry(shader_name) {
         Entry::Occupied(entry) => {
@@ -233,6 +237,7 @@ fn insert_or_init_entry<'a>(
             shader_type: shader_file.shader_type.into(),
             parameter_blocks,
             push_constants,
+            compute_workgroup_size,
             ..Default::default()
         }),
     };

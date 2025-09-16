@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::alloc::Layout;
 use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::num::NonZero;
@@ -36,11 +37,15 @@ use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::parameter_block_pool::{IBlockFactory, ParameterBlockPool};
+use allocator_api2::alloc::Allocator;
 use blink_alloc::BlinkAlloc;
+use objc2::__framework_prelude::ProtocolObject;
+use objc2_metal::MTLResource;
 
 use crate::device::Device;
 use crate::internal::memory_block::MemoryBlock;
 use crate::internal::parameter_block::ParameterBlock;
+use crate::internal::unwrap;
 use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct DescriptorPool {
@@ -96,12 +101,38 @@ impl IDescriptorPool for DescriptorPool {
     }
 }
 
+impl DescriptorPool {
+    pub(crate) fn create(
+        device: &Device,
+        desc: &DescriptorPoolDesc,
+    ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
+        let layout = unwrap::parameter_block_layout(desc.layout);
+
+        let len = layout.compiled.num_arguments * desc.num_blocks as usize;
+        let block = MemoryBlock::new(device, len).ok_or(DescriptorPoolCreateError::Platform)?;
+
+        let factory = LinearBlockFactory {
+            next_resource_index: 0,
+            arena: BlinkAlloc::new_in(RhiSystem::default()),
+        };
+        let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
+
+        let pool: Box<dyn IDescriptorPool> = Box::new(DescriptorPool {
+            _device: device.this.upgrade().unwrap(),
+            _layout: layout.this.upgrade().unwrap(),
+            block,
+            pool,
+        });
+
+        Ok(pool)
+    }
+}
+
 pub struct LinearBlockFactory {
     /// Bump allocator offset into 'resource_arena'.
     pub next_resource_index: usize,
 
-    /// A bump arena used to allocate the backing buffers for the sampler and dynamic cb arrays
-    /// inside the set objects.
+    /// A bump arena used to allocate the backing buffers for the useResources arrays.
     pub arena: BlinkAlloc<RhiSystem>,
 }
 
@@ -133,7 +164,33 @@ unsafe impl IBlockFactory for LinearBlockFactory {
             let gpu = memory_block.gpu_base.saturating_add(offset as u64);
             self.next_resource_index += num_arguments;
 
-            // TODO: allocate arrays for read/write resource handles for useResources
+            let reads = if block_layout.compiled.num_reads != 0 {
+                let layout = Layout::array::<NonNull<ProtocolObject<dyn MTLResource>>>(
+                    block_layout.compiled.num_reads,
+                )
+                .unwrap();
+                let arr = self
+                    .arena
+                    .allocate_zeroed(layout)
+                    .map_err(|_| DescriptorAllocateError::OutOfMemory)?;
+                Some(arr.cast())
+            } else {
+                None
+            };
+
+            let writes = if block_layout.compiled.num_writes != 0 {
+                let layout = Layout::array::<NonNull<ProtocolObject<dyn MTLResource>>>(
+                    block_layout.compiled.num_writes,
+                )
+                .unwrap();
+                let arr = self
+                    .arena
+                    .allocate_zeroed(layout)
+                    .map_err(|_| DescriptorAllocateError::OutOfMemory)?;
+                Some(arr.cast())
+            } else {
+                None
+            };
 
             let new = ParameterBlock {
                 _layout: NonNull::from(block_layout),
@@ -141,8 +198,8 @@ unsafe impl IBlockFactory for LinearBlockFactory {
                 resource_allocation: Default::default(), // Never used here
                 resource_handle_cpu: Some(cpu.cast()),
                 resource_handle_gpu: NonZero::new(gpu.get() as usize),
-                reads: None,
-                writes: None,
+                reads,
+                writes,
             };
             block.write(new);
         }
@@ -167,6 +224,8 @@ unsafe impl IBlockFactory for LinearBlockFactory {
             // block.resource_allocation is unused in this use case
             block.resource_handle_cpu = None;
             block.resource_handle_gpu = None;
+            block.reads = None;
+            block.writes = None;
         }
         self.next_resource_index = 0;
         self.arena.reset();

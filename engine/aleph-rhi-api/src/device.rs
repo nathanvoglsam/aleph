@@ -435,6 +435,10 @@ error_enum_from_unit_type!(BindingSignatureCreateError);
 
 #[derive(Error, Debug)]
 pub enum PipelineCreateError {
+    /// The shader code for the given stage was found to be invalid.
+    #[error("The shader code for stage '{0}' is invalid")]
+    InvalidShaderCode(ShaderType),
+
     /// This error occurs when the byte size of the shader blob is of an invalid size.
     ///
     /// Invalid sizes include:

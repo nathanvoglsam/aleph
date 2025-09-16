@@ -30,11 +30,11 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use aleph_any::AnyArc;
-use aleph_object_system::unsafe_impl_iobject;
+use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2_metal::MTLSharedEvent;
+use objc2_metal::*;
 
 use crate::device::Device;
 
@@ -54,6 +54,30 @@ pub struct Fence {
 unsafe_impl_iobject!(Fence, "01980753-5c4f-7ae3-be3b-96ea6487c813");
 
 impl Fence {
+    pub(crate) fn create(
+        device: &Device,
+        signalled: bool,
+    ) -> Result<FenceHandle, FenceCreateError> {
+        let event = match device.device.newSharedEvent() {
+            Some(v) => v,
+            None => return Err(FenceCreateError::Platform),
+        };
+
+        unsafe {
+            if signalled {
+                event.setSignaledValue(1);
+            }
+        }
+
+        let fence = Fence {
+            _device: device.this.upgrade().unwrap(),
+            objects: FenceObjects { event },
+            value: AtomicU64::new(2),
+        };
+        let fence = Object::new_arc_opaque(fence);
+        unsafe { Ok(FenceHandle::new(fence)) }
+    }
+
     pub(crate) fn get(v: &FenceHandle) -> &Self {
         v.get()
             .downcast_ref::<Self>()

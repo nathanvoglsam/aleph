@@ -179,13 +179,11 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 
     unsafe fn set_push_constant_block(&mut self, data: &[u8]) {
-        let binding_signature = self
+        let pipeline = self
             .bound_graphics_pipeline
-            .as_ref()
-            .expect("Can't set push constants without a pipeline bound")
-            ._binding_signature
-            .as_ref();
-
+            .as_deref()
+            .expect("Can't set push constants without a pipeline bound");
+        let binding_signature = pipeline._binding_signature.as_ref();
         let info = binding_signature.push_constant_block.as_ref().unwrap();
 
         unsafe {

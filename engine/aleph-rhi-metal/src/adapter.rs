@@ -102,7 +102,6 @@ impl IAdapter for Adapter {
                 general_queue: None,
                 compute_queue: None,
                 transfer_queue: None,
-                // command_list_pool: CommandListPool::new(),
                 object_counter: ObjectCounter::new(),
             };
 

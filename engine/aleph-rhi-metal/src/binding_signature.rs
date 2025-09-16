@@ -31,10 +31,13 @@ use std::num::NonZeroU64;
 
 use aleph_alloc::BVec;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
-use aleph_rhi_api::IBindingSignature;
+use aleph_rhi_api::{
+    BindingSignatureCreateError, BindingSignatureDesc, IBindingSignature, PushConstantBlock,
+};
 use aleph_rhi_impl_utils::RhiSystem;
 
 use crate::device::Device;
+use crate::internal::unwrap;
 use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct BindingSignature {
@@ -42,6 +45,7 @@ pub struct BindingSignature {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) _parameter_block_layouts: BVec<AnyArc<ParameterBlockLayout>, RhiSystem>,
+    pub(crate) push_constant_block: Option<PushConstantBlock>,
 }
 
 declare_interfaces!(BindingSignature, [IBindingSignature]);
@@ -61,5 +65,30 @@ impl IBindingSignature for BindingSignature {
 
     fn get_id(&self) -> NonZeroU64 {
         self.id
+    }
+}
+
+impl BindingSignature {
+    pub(crate) fn create(
+        device: &Device,
+        desc: &BindingSignatureDesc,
+    ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError> {
+        let mut block_layouts =
+            BVec::with_capacity_in(desc.parameter_block_layouts.len(), Default::default());
+        block_layouts.extend(
+            desc.parameter_block_layouts
+                .iter()
+                .map(unwrap::parameter_block_layout_d)
+                .map(|v| v.this.upgrade().unwrap()),
+        );
+
+        let out = AnyArc::new_cyclic(move |v| BindingSignature {
+            this: v.clone(),
+            _device: device.this.upgrade().unwrap(),
+            id: device.object_counter.next_binding_signature(),
+            _parameter_block_layouts: block_layouts,
+            push_constant_block: desc.push_constant_block.clone(),
+        });
+        Ok(AnyArc::map::<dyn IBindingSignature, _>(out, |v| v))
     }
 }

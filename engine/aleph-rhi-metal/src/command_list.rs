@@ -34,6 +34,7 @@ use aleph_rhi_api::*;
 use blink_alloc::Blink;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
+use objc2_foundation::NSString;
 use objc2_metal::*;
 
 use crate::device::Device;
@@ -75,7 +76,8 @@ impl ICommandList for CommandList {
                         bound_graphics_pipeline: None,
                         bound_compute_pipeline: None,
                         bound_index_buffer: None,
-                        bound_pipeline_state: Default::default(),
+                        bound_graphics_pipeline_state: Default::default(),
+                        bound_compute_pipeline_state: Default::default(),
                         arena: Blink::new(),
                     };
                     Ok(Box::new(encoder))
@@ -104,6 +106,37 @@ impl ICommandList for CommandList {
         Err(CommandListBeginError::InvalidEncoderType(
             QueueType::Transfer,
         ))
+    }
+}
+
+impl CommandList {
+    pub(crate) fn create(
+        device: &Device,
+        desc: &CommandListDesc,
+    ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
+        let queue = match device.get_queue_internal(desc.queue_type) {
+            Some(v) => v,
+            None => return Err(CommandListCreateError::NoSuchQueue(desc.queue_type)),
+        };
+
+        let list = match queue.objects.queue.commandBuffer() {
+            Some(v) => v,
+            None => return Err(CommandListCreateError::Platform),
+        };
+
+        if let Some(name) = desc.name {
+            let mtl_name = NSString::from_str(name);
+            list.setLabel(Some(&mtl_name));
+        }
+
+        let out: Box<dyn ICommandList> = Box::new(CommandList {
+            _device: device.this.upgrade().unwrap(),
+            list_type: desc.queue_type,
+            state: ListState::Empty,
+            objects: CommandListObjects { list },
+        });
+
+        Ok(out)
     }
 }
 

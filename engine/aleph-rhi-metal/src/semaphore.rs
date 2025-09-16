@@ -30,7 +30,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use aleph_any::AnyArc;
-use aleph_object_system::unsafe_impl_iobject;
+use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
@@ -54,6 +54,21 @@ pub struct Semaphore {
 unsafe_impl_iobject!(Semaphore, "01980753-5c4f-7ae3-be3b-9730007ecfaf");
 
 impl Semaphore {
+    pub(crate) fn create(device: &Device) -> Result<SemaphoreHandle, SemaphoreCreateError> {
+        let event = match device.device.newSharedEvent() {
+            Some(v) => v,
+            None => return Err(SemaphoreCreateError::Platform),
+        };
+
+        let semaphore = Semaphore {
+            _device: device.this.upgrade().unwrap(),
+            objects: SemaphoreObjects { event },
+            value: AtomicU64::new(1),
+        };
+        let semaphore = Object::new_arc_opaque(semaphore);
+        unsafe { Ok(SemaphoreHandle::new(semaphore)) }
+    }
+
     pub(crate) fn get(v: &SemaphoreHandle) -> &Self {
         v.get()
             .downcast_ref::<Self>()
