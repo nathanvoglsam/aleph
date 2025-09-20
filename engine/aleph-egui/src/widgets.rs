@@ -30,7 +30,7 @@
 use std::collections::{VecDeque, vec_deque};
 
 use aleph_alloc::instrumentation::{
-    AllocationCategoryIter, IAllocationCategory, get_allocated_bytes,
+    AllocationCategoryIter, CategoryInfo, IAllocationCategory, get_allocated_bytes,
 };
 use egui::{CollapsingHeader, Context, Grid, Window};
 use egui_plot::{Bar, BarChart, Legend, Plot};
@@ -128,41 +128,11 @@ pub fn frame_stats(ctx: &Context, frame_time_history: &FrameTimeHistory) {
     Egui::with(f);
 }
 
-pub struct MemoryHistory {
-    data: VecDeque<usize>,
-}
-
-impl MemoryHistory {
-    pub fn new() -> Self {
-        Self {
-            data: VecDeque::from([0; 128]),
-        }
-    }
-
-    pub fn next_frame(&mut self, v: usize) {
-        self.data.pop_front();
-        self.data.push_back(v);
-    }
-
-    pub fn latest(&self) -> usize {
-        self.data.back().copied().unwrap()
-    }
-
-    pub fn iter(&self) -> vec_deque::Iter<'_, usize> {
-        self.data.iter()
-    }
-
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-}
-
-pub fn memory_stats(ctx: &Context, history: &MemoryHistory) {
+pub fn memory_stats(ctx: &Context, history: &mut MemoryStats) {
     let f = || {
         Window::new("Memory Stats")
             .id("memory-stats-window".into())
             .collapsible(true)
-            .resizable([false, false])
             .show(&ctx, |ui| {
                 ui.heading("Memory Stats");
                 ui.separator();
@@ -177,39 +147,70 @@ pub fn memory_stats(ctx: &Context, history: &MemoryHistory) {
                         ui.label(format!("{kb}KB"));
                         ui.end_row();
 
-                        for cat in AllocationCategoryIter::new() {
-                            let b = cat.allocated();
+                        for cat in history.categories.iter() {
+                            let b = cat.history.latest();
                             let kb = b / 1_000;
-                            ui.label(format!("Category: {}", cat.name()));
+                            ui.label(format!("Category: {}", cat.category.name()));
                             ui.label(format!("{kb}KB"));
                             ui.end_row();
                         }
                     });
-                CollapsingHeader::new("Memory History")
-                    .default_open(true)
-                    .show(ui, |ui| {
-                        let _ = Plot::new("Memory Usage Plot")
-                            .legend(Legend::default())
-                            .y_axis_label("Memory Usage")
-                            .show_axes([false, true])
-                            .show_grid(true)
-                            .allow_zoom(false)
-                            .allow_drag(false)
-                            .allow_boxed_zoom(false)
-                            .allow_scroll(false)
-                            .allow_double_click_reset(false)
-                            .height(200.0)
-                            .show(ui, |ui| {
-                                let bars: Vec<Bar> = history
-                                    .iter()
-                                    .enumerate()
-                                    .map(|(i, &v)| Bar::new(i as _, v as f64))
-                                    .collect();
-                                let chart = BarChart::new("Frame Time", bars).name("Frame Time");
-                                ui.bar_chart(chart);
-                            });
-                    });
             });
     };
     Egui::with(f);
+}
+
+pub struct MemoryStats {
+    categories: Vec<MemoryInfo>,
+}
+
+impl MemoryStats {
+    pub fn new() -> Self {
+        let mut categories = Vec::new();
+        for cat in AllocationCategoryIter::new() {
+            categories.push(MemoryInfo {
+                category: cat,
+                history: MemoryHistory::new(),
+            });
+        }
+
+        categories.sort_by(|a, b| a.category.name().cmp(b.category.name()));
+
+        Self { categories }
+    }
+
+    pub fn next_frame(&mut self) {
+        for cat in &mut self.categories {
+            cat.history.next_frame(cat.category.allocated());
+        }
+    }
+}
+
+struct MemoryInfo {
+    category: &'static CategoryInfo,
+    history: MemoryHistory,
+}
+
+struct MemoryHistory {
+    data: VecDeque<usize>,
+    max: usize,
+}
+
+impl MemoryHistory {
+    fn new() -> Self {
+        Self {
+            data: VecDeque::from([0; 128]),
+            max: usize::MIN,
+        }
+    }
+
+    fn next_frame(&mut self, v: usize) {
+        self.data.pop_front();
+        self.data.push_back(v);
+        self.max = usize::max(self.max, v);
+    }
+
+    fn latest(&self) -> usize {
+        self.data.back().copied().unwrap()
+    }
 }

@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::atomic::{AtomicU32, Ordering};
 

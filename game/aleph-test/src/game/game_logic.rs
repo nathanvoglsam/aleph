@@ -37,7 +37,7 @@ use aleph::interfaces::plugin::{IPlugin, IPluginRegistrar, IRegistryAccessor, Pl
 use aleph::interfaces::renderer::Renderer;
 use aleph::interfaces::schedule::CoreStage;
 use aleph_egui::IEguiContextProvider;
-use aleph_egui::widgets::{FrameTimeHistory, frame_stats};
+use aleph_egui::widgets::{FrameTimeHistory, MemoryStats, frame_stats, memory_stats};
 use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform, TransformHistory};
 use aleph_engine::interfaces::label::make_label;
 use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
@@ -104,6 +104,7 @@ impl IPlugin for PluginGameLogic {
 
         let e_frame_timer = frame_timer.clone();
         let mut frame_time_history = FrameTimeHistory::new();
+        let mut memory_stats_state = MemoryStats::new();
         schedule.add_exclusive_at_end_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::ui"),
@@ -114,6 +115,9 @@ impl IPlugin for PluginGameLogic {
                     let dt = e_frame_timer.delta_time();
                     frame_time_history.next_frame(dt);
                     frame_stats(&egui_ctx, &frame_time_history);
+
+                    memory_stats_state.next_frame();
+                    memory_stats(&egui_ctx, &mut memory_stats_state);
                 }
             },
         );
