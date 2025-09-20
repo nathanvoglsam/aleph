@@ -94,7 +94,7 @@ pub fn get_allocated_bytes() -> usize {
     return apple::get_allocated_bytes();
 
     #[cfg(target_os = "linux")]
-    return unix::get_allocated_bytes();
+    return linux::get_allocated_bytes();
 
     #[cfg(target_os = "android")]
     return android::get_allocated_bytes();
