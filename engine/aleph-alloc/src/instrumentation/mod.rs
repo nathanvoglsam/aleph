@@ -90,6 +90,10 @@ pub unsafe fn emit_alloc(c: &'static CategoryInfo, ptr: *mut u8, size: usize) {
     unsafe {
         use std::sync::atomic::Ordering;
 
+        if size == 0 {
+            return;
+        }
+
         if c.id() == &Uncategorized::ID {
             aleph_profile::emit_alloc(ptr, size);
         } else {
@@ -116,6 +120,10 @@ pub unsafe fn emit_free(c: &'static CategoryInfo, ptr: *mut u8, size: usize) {
     #[cfg(feature = "instrumentation-enabled")]
     unsafe {
         use std::sync::atomic::Ordering;
+
+        if size == 0 {
+            return;
+        }
 
         c.bytes_allocated.fetch_sub(size, Ordering::Relaxed);
 
