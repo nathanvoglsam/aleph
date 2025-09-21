@@ -20,6 +20,9 @@ Cargo.lock
 # Igore Visual Studio dir
 .vs
 
+# Ignore JetBrains
+.idea
+
 ##
 ## GRAPHICS JUNK
 ##
