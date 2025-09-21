@@ -27,10 +27,14 @@
 // SOFTWARE.
 //
 
+use std::alloc::Layout;
 use std::any::Any;
 use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::rc::Rc;
+
+use aleph_alloc::alloc::Allocator;
+use aleph_alloc::mallocator::Mallocator;
 
 use crate::Context;
 use crate::context::InnerContext;
@@ -44,6 +48,76 @@ impl Runtime {
     pub fn new() -> Option<Self> {
         unsafe {
             let rt = raw::JS_NewRuntime()?;
+            let rt = InnerRuntime(rt);
+            let rt = Rc::new(rt);
+            Some(Self(rt))
+        }
+    }
+
+    #[inline]
+    pub fn new_in<Alloc: Allocator + Sized>(a: &'static Alloc) -> Option<Self> {
+        unsafe {
+            extern "C" fn js_malloc<A: Allocator + Sized>(
+                s: *mut raw::JSMallocState,
+                size: usize,
+            ) -> *mut c_void {
+                unsafe {
+                    let s = s.as_ref().unwrap_unchecked();
+                    let a = NonNull::new(s.opaque)
+                        .unwrap_unchecked()
+                        .cast::<A>()
+                        .as_ref();
+                    let a = Mallocator::new(a);
+                    a.malloc(size)
+                }
+            }
+
+            extern "C" fn js_free<A: Allocator + Sized>(
+                s: *mut raw::JSMallocState,
+                ptr: *mut c_void,
+            ) {
+                unsafe {
+                    let s = s.as_ref().unwrap_unchecked();
+                    let a = NonNull::new(s.opaque)
+                        .unwrap_unchecked()
+                        .cast::<A>()
+                        .as_ref();
+                    let a = Mallocator::new(a);
+                    a.free(ptr)
+                }
+            }
+
+            extern "C" fn js_realloc<A: Allocator + Sized>(
+                s: *mut raw::JSMallocState,
+                ptr: *mut c_void,
+                size: usize,
+            ) -> *mut c_void {
+                unsafe {
+                    let s = s.as_ref().unwrap_unchecked();
+                    let a = NonNull::new(s.opaque)
+                        .unwrap_unchecked()
+                        .cast::<A>()
+                        .as_ref();
+                    let a = Mallocator::new(a);
+                    a.realloc(ptr, size)
+                }
+            }
+
+            extern "C" fn js_malloc_usable_size(ptr: *const c_void) -> usize {
+                unsafe {
+                    let caller_layout = ptr.cast::<Layout>().sub(1).read();
+                    caller_layout.size()
+                }
+            }
+
+            let functions = raw::JSMallocFunctions {
+                js_malloc: Some(js_malloc::<Alloc>),
+                js_free: Some(js_free::<Alloc>),
+                js_realloc: Some(js_realloc::<Alloc>),
+                js_malloc_usable_size: Some(js_malloc_usable_size),
+            };
+            let alloc = NonNull::from(a).cast().as_ptr();
+            let rt = raw::JS_NewRuntime2(&functions, alloc)?;
             let rt = InnerRuntime(rt);
             let rt = Rc::new(rt);
             Some(Self(rt))

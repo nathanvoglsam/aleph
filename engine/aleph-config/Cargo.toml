@@ -53,6 +53,7 @@ config-defs = true
 aleph-target = { workspace = true }
 aleph-nstr = { workspace = true }
 aleph-quickjs = { workspace = true }
+aleph-alloc = { workspace = true }
 serde_json = { workspace = true }
 camino = { workspace = true }
 thiserror = { workspace = true }

@@ -33,6 +33,9 @@ use std::env::{current_dir, current_exe};
 use std::io;
 use std::str::FromStr;
 
+use aleph_alloc::instrumentation::{
+    IAllocationCategory, Instrumented, is_instrumentation_enabled, system,
+};
 use aleph_nstr::{NStr, nstr};
 use aleph_target::build::{target_architecture, target_build_type, target_platform};
 use camino::{Utf8Path, Utf8PathBuf};
@@ -52,128 +55,144 @@ pub struct ConfigRunner {
 
 impl ConfigRunner {
     pub fn new() -> io::Result<Self> {
-        let runtime = qjs::Runtime::new().unwrap();
-        let context = runtime.new_context().unwrap();
-        let config_object = context.new_object();
-        let config_dir = find_folder_in_search_path("configs")?;
+        Config::with(|| {
+            let runtime = if is_instrumentation_enabled() {
+                static ALLOC: Instrumented<JavaScript> = system();
+                qjs::Runtime::new_in(&ALLOC).unwrap()
+            } else {
+                qjs::Runtime::new().unwrap()
+            };
+            let context = runtime.new_context().unwrap();
+            let config_object = context.new_object();
+            let config_dir = find_folder_in_search_path("configs")?;
 
-        let out = Self {
-            runtime,
-            config_dir,
-            config_object,
-        };
-        Ok(out)
+            let out = Self {
+                runtime,
+                config_dir,
+                config_object,
+            };
+            Ok(out)
+        })
     }
 
     pub fn run_all_configs(&mut self) -> Result<(), RunConfigError> {
-        for item in self.config_dir.read_dir_utf8()? {
-            let item = item?;
+        Config::with(|| {
+            for item in self.config_dir.read_dir_utf8()? {
+                let item = item?;
 
-            // Skip '@' configs as those are overrides not config scripts
-            if item.file_name().starts_with('@') {
-                continue;
+                // Skip '@' configs as those are overrides not config scripts
+                if item.file_name().starts_with('@') {
+                    continue;
+                }
+
+                // Skip non js files
+                if !item.file_name().ends_with(".js") {
+                    continue;
+                }
+
+                let file_type = item.file_type()?;
+                if file_type.is_file() || file_type.is_symlink() {
+                    let name = item.path().file_stem().unwrap();
+                    self.run_config_by_name(name)?;
+                }
             }
 
-            // Skip non js files
-            if !item.file_name().ends_with(".js") {
-                continue;
-            }
-
-            let file_type = item.file_type()?;
-            if file_type.is_file() || file_type.is_symlink() {
-                let name = item.path().file_stem().unwrap();
-                self.run_config_by_name(name)?;
-            }
-        }
-
-        Ok(())
+            Ok(())
+        })
     }
 
     pub fn run_config_by_name(&mut self, name: &str) -> Result<(), RunConfigError> {
-        let script = self.load_config_script(name)?;
-        let script_nstr = NStr::from_str(&script).unwrap();
+        Config::with(|| {
+            let script = self.load_config_script(name)?;
+            let script_nstr = NStr::from_str(&script).unwrap();
 
-        let filename = format!("{name}.js\0");
-        let filename = NStr::from_str(&filename).unwrap();
+            let filename = format!("{name}.js\0");
+            let filename = NStr::from_str(&filename).unwrap();
 
-        // We create a new context for every script so they don't polute eachother's global state.
-        //
-        // Objects are free to be shared between contexts within the same runtime so we hold on to
-        // the config object though
-        let context = self.runtime.new_context().unwrap();
+            // We create a new context for every script so they don't polute eachother's global
+            // state.
+            //
+            // Objects are free to be shared between contexts within the same runtime so we hold on
+            // to the config object though
+            let context = self.runtime.new_context().unwrap();
 
-        // Provide the 'Configs' object which is where the scripts are expected to write their
-        // config into.
+            // Provide the 'Configs' object which is where the scripts are expected to write their
+            // config into.
 
-        let global = context.get_global_object();
-        if 0 > global.set_property_str("Configs", &self.config_object) {
-            return Err(js_exception_to_err(&context));
-        }
+            let global = context.get_global_object();
+            if 0 > global.set_property_str("Configs", &self.config_object) {
+                return Err(js_exception_to_err(&context));
+            }
 
-        Self::setup_global_environment(&context)?;
+            Self::setup_global_environment(&context)?;
 
-        // Run the setup script to provide the default functions
-        log::trace!("Running aleph-config.js");
-        let result = context.eval(
-            SETUP_SCRIPT,
-            nstr!("aleph-config.js"),
-            qjs::raw::JSEvalOptions::STRICT,
-        );
-        let _ = check_exception(&context, result)?;
+            // Run the setup script to provide the default functions
+            log::trace!("Running aleph-config.js");
+            let result = context.eval(
+                SETUP_SCRIPT,
+                nstr!("aleph-config.js"),
+                qjs::raw::JSEvalOptions::STRICT,
+            );
+            let _ = check_exception(&context, result)?;
 
-        // Load the script module itself. This won't run the config script, just load all the code
-        // into the context. We have to fetch the entry point and execute the entry point
-        // separately...
-        log::trace!("Running {filename}");
-        let result = context.eval(script_nstr, filename, qjs::raw::JSEvalOptions::STRICT);
-        let _ = check_exception(&context, result)?;
+            // Load the script module itself. This won't run the config script, just load all the
+            // code into the context. We have to fetch the entry point and execute the entry point
+            // separately...
+            log::trace!("Running {filename}");
+            let result = context.eval(script_nstr, filename, qjs::raw::JSEvalOptions::STRICT);
+            let _ = check_exception(&context, result)?;
 
-        Ok(())
+            Ok(())
+        })
     }
 
     pub fn run_override_script(&mut self) -> Result<(), RunConfigError> {
-        let script = self.load_config_script("@game")?;
-        let script_nstr = NStr::from_str(&script).unwrap();
+        Config::with(|| {
+            let script = self.load_config_script("@game")?;
+            let script_nstr = NStr::from_str(&script).unwrap();
 
-        let filename = nstr!("@game.js");
+            let filename = nstr!("@game.js");
 
-        // We create a new context for every script so they don't polute eachother's global state.
-        //
-        // Objects are free to be shared between contexts within the same runtime so we hold on to
-        // the config object though
-        let context = self.runtime.new_context().unwrap();
+            // We create a new context for every script so they don't polute eachother's global state.
+            //
+            // Objects are free to be shared between contexts within the same runtime so we hold on to
+            // the config object though
+            let context = self.runtime.new_context().unwrap();
 
-        // Provide the 'Configs' object which is where the scripts are expected to write their
-        // config into.
-        let global = context.get_global_object();
-        if 0 > global.set_property_str("Configs", &self.config_object) {
-            return Err(js_exception_to_err(&context));
-        }
+            // Provide the 'Configs' object which is where the scripts are expected to write their
+            // config into.
+            let global = context.get_global_object();
+            if 0 > global.set_property_str("Configs", &self.config_object) {
+                return Err(js_exception_to_err(&context));
+            }
 
-        Self::setup_global_environment(&context)?;
+            Self::setup_global_environment(&context)?;
 
-        // Load the script module itself. This won't run the config script, just load all the code
-        // into the context. We have to fetch the entry point and execute the entry point
-        // separately...
-        let result = context.eval(script_nstr, filename, qjs::raw::JSEvalOptions::STRICT);
-        let _ = check_exception(&context, result)?;
+            // Load the script module itself. This won't run the config script, just load all the code
+            // into the context. We have to fetch the entry point and execute the entry point
+            // separately...
+            let result = context.eval(script_nstr, filename, qjs::raw::JSEvalOptions::STRICT);
+            let _ = check_exception(&context, result)?;
 
-        Ok(())
+            Ok(())
+        })
     }
 
     pub fn finalize(self) -> serde_json::Map<String, serde_json::Value> {
-        let json = self.config_object.to_json().unwrap();
-        let mut json = match json {
-            serde_json::Value::Null
-            | serde_json::Value::Bool(_)
-            | serde_json::Value::Number(_)
-            | serde_json::Value::String(_)
-            | serde_json::Value::Array(_) => panic!("Unexpected serde_json::Value type"),
-            serde_json::Value::Object(v) => v,
-        };
-        Self::command_line_overrides(&mut json);
+        Config::with(|| {
+            let json = self.config_object.to_json().unwrap();
+            let mut json = match json {
+                serde_json::Value::Null
+                | serde_json::Value::Bool(_)
+                | serde_json::Value::Number(_)
+                | serde_json::Value::String(_)
+                | serde_json::Value::Array(_) => panic!("Unexpected serde_json::Value type"),
+                serde_json::Value::Object(v) => v,
+            };
+            Self::command_line_overrides(&mut json);
 
-        json
+            json
+        })
     }
 }
 
@@ -393,3 +412,9 @@ fn js_exception_to_err(context: &qjs::Context) -> RunConfigError {
 }
 
 const SETUP_SCRIPT: &NStr = nstr!(include_str!("../config/config.js"));
+
+struct Config;
+aleph_alloc::new_alloc_category!(Config, "01996b38-bed1-78a3-8b78-03cb717d5bb0");
+
+struct JavaScript;
+aleph_alloc::new_child_alloc_category!(Config, JavaScript, "01996b40-bb1b-7e33-9c11-2e22d2c68c6e");
