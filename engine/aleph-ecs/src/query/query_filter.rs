@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::{Archetype, EntityLayout, EntityLayoutBuf};
+use aleph_alloc::instrumentation::system;
+
+use crate::{Archetype, EcsSystem, EntityLayout, EntityLayoutBuf};
 
 ///
 /// The raw implementation of a world query that provides the implementation for an iteration over
@@ -52,12 +54,12 @@ pub struct QueryFilter {
     /// A list of components that *must* be present on a component for the query to match
     ///
     /// We create an owned copy to simplify FFI usage
-    matching_components: EntityLayoutBuf,
+    matching_components: EntityLayoutBuf<EcsSystem>,
 
     /// A list of components that *must not* be present on a component for the query to match
     ///
     /// We create an owned copy to simplify FFI usage
-    excluded_components: EntityLayoutBuf,
+    excluded_components: EntityLayoutBuf<EcsSystem>,
 }
 
 impl QueryFilter {
@@ -74,8 +76,8 @@ impl QueryFilter {
     ///
     pub fn new(matching: &EntityLayout, excluding: &EntityLayout) -> Self {
         Self {
-            matching_components: matching.to_owned(),
-            excluded_components: excluding.to_owned(),
+            matching_components: EntityLayoutBuf::from_layout_in(matching, system()),
+            excluded_components: EntityLayoutBuf::from_layout_in(excluding, system()),
         }
     }
 

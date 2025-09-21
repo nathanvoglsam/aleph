@@ -73,7 +73,7 @@ pub struct UnsafeQuery<Q: ComponentQuery> {
 
 impl<Q: ComponentQuery> UnsafeQuery<Q> {
     pub(crate) fn new(world: NonNull<World>) -> Self {
-        let mut matching = EntityLayoutBuf::new();
+        let mut matching = EntityLayoutBuf::default();
         Q::add_to_layout(&mut matching);
 
         let archetype_filter = QueryFilter::new(&matching, EntityLayout::empty());

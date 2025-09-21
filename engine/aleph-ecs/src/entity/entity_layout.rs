@@ -32,10 +32,10 @@ use std::convert::TryFrom;
 use std::iter::FromIterator;
 use std::ops::Deref;
 
+use aleph_alloc::alloc::{Allocator, Global};
+use aleph_alloc::vec::IntoIter as BIntoIter;
+use aleph_alloc::{BBox, BVec};
 use aleph_object_system::uuid::Uuid;
-use allocator_api2::alloc::{Allocator, Global};
-use allocator_api2::boxed::Box as ABox;
-use allocator_api2::vec::{IntoIter as AIntoIter, Vec as AVec};
 
 ///
 /// A wrapper over a slice of an EntityLayoutBuf
@@ -199,17 +199,6 @@ impl EntityLayout {
     }
 }
 
-impl ToOwned for EntityLayout {
-    type Owned = EntityLayoutBuf;
-
-    #[inline]
-    fn to_owned(&self) -> Self::Owned {
-        EntityLayoutBuf {
-            components: self.components.into(),
-        }
-    }
-}
-
 /// An entity layout description that describes the member components of an entity layout.
 ///
 /// This type is implemented as a sorted vector of component type ids. The ordering of component
@@ -235,12 +224,14 @@ impl ToOwned for EntityLayout {
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct EntityLayoutBuf<A: Allocator = Global> {
-    components: AVec<Uuid, A>,
+    components: BVec<Uuid, A>,
 }
 
-impl Default for EntityLayoutBuf<Global> {
+impl<A: Allocator + Default> Default for EntityLayoutBuf<A> {
     fn default() -> Self {
-        Self::new()
+        Self {
+            components: BVec::new_in(Default::default()),
+        }
     }
 }
 
@@ -249,7 +240,7 @@ impl EntityLayoutBuf<Global> {
     #[inline]
     pub const fn new() -> EntityLayoutBuf {
         Self {
-            components: AVec::new(),
+            components: BVec::new(),
         }
     }
 
@@ -257,7 +248,7 @@ impl EntityLayoutBuf<Global> {
     #[inline]
     pub fn with_capacity(capacity: usize) -> EntityLayoutBuf {
         Self {
-            components: AVec::with_capacity(capacity),
+            components: BVec::with_capacity(capacity),
         }
     }
 }
@@ -267,7 +258,7 @@ impl<A: Allocator> EntityLayoutBuf<A> {
     #[inline]
     pub const fn new_in(alloc: A) -> Self {
         Self {
-            components: AVec::new_in(alloc),
+            components: BVec::new_in(alloc),
         }
     }
 
@@ -275,8 +266,16 @@ impl<A: Allocator> EntityLayoutBuf<A> {
     #[inline]
     pub fn with_capacity_in(capacity: usize, alloc: A) -> Self {
         Self {
-            components: AVec::with_capacity_in(capacity, alloc),
+            components: BVec::with_capacity_in(capacity, alloc),
         }
+    }
+
+    /// Constructs a new [`EntityLayoutBuf`] from the given 'layout' using the given allocator.
+    #[inline]
+    pub fn from_layout_in(layout: &EntityLayout, alloc: A) -> Self {
+        let mut components = BVec::with_capacity_in(layout.components.len(), alloc);
+        components.extend(layout.components.iter().copied());
+        Self { components }
     }
 
     /// Adds the given component ID to the `EntityLayoutBuf`.
@@ -311,11 +310,11 @@ impl<A: Allocator> EntityLayoutBuf<A> {
 
 impl<A: Allocator + Clone> EntityLayoutBuf<A> {
     #[inline]
-    pub fn into_boxed_slice(&self) -> ABox<EntityLayout, A> {
+    pub fn into_boxed_slice(&self) -> BBox<EntityLayout, A> {
         let v = self.components.clone().into_boxed_slice();
-        let (v, a) = ABox::<[Uuid], A>::into_raw_with_allocator(v);
+        let (v, a) = BBox::<[Uuid], A>::into_raw_with_allocator(v);
         let v = v as *mut EntityLayout;
-        unsafe { ABox::<_, A>::from_raw_in(v, a) }
+        unsafe { BBox::<_, A>::from_raw_in(v, a) }
     }
 }
 
@@ -348,7 +347,7 @@ impl<A: Allocator> Borrow<EntityLayout> for EntityLayoutBuf<A> {
 impl<A: Allocator> IntoIterator for EntityLayoutBuf<A> {
     type Item = Uuid;
 
-    type IntoIter = AIntoIter<Uuid, A>;
+    type IntoIter = BIntoIter<Uuid, A>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -359,16 +358,16 @@ impl<A: Allocator> IntoIterator for EntityLayoutBuf<A> {
 impl FromIterator<Uuid> for EntityLayoutBuf<Global> {
     #[inline]
     fn from_iter<T: IntoIterator<Item = Uuid>>(iter: T) -> Self {
-        let mut components = AVec::from_iter(iter);
+        let mut components = BVec::from_iter(iter);
         components.sort();
         Self { components }
     }
 }
 
-impl<A: Allocator> TryFrom<AVec<Uuid, A>> for EntityLayoutBuf<A> {
+impl<A: Allocator> TryFrom<BVec<Uuid, A>> for EntityLayoutBuf<A> {
     type Error = ();
 
-    fn try_from(components: AVec<Uuid, A>) -> Result<Self, Self::Error> {
+    fn try_from(components: BVec<Uuid, A>) -> Result<Self, Self::Error> {
         if EntityLayout::from_inner(&components).is_some() {
             Ok(Self { components })
         } else {

@@ -31,10 +31,11 @@ pub mod component_query;
 pub mod component_registry;
 pub mod component_source;
 
-use std::collections::HashMap;
-
+use aleph_alloc::BHashMap;
 use aleph_object_system::IObject;
 use aleph_object_system::uuid::Uuid;
+
+use crate::EcsSystem;
 
 ///
 /// This trait needs to be implemented by any type that wishes to be used as a component
@@ -46,4 +47,4 @@ impl<T: IObject + Send + Sync + 'static> Component for T {}
 /// A type alias for a configuration of `std::hash::HashMap` that efficiently uses `ComponentTypeId`
 /// as a key. This alias is special as it skips hashing the `ComponentTypeId` and uses that id
 /// directly as the key.
-pub type ComponentIdMap<T> = HashMap<Uuid, T>;
+pub type ComponentIdMap<T> = BHashMap<Uuid, T, EcsSystem>;

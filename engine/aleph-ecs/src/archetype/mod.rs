@@ -27,16 +27,20 @@
 // SOFTWARE.
 //
 
+use std::alloc::{Layout, handle_alloc_error};
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
+use aleph_alloc::alloc::{Allocator, Global};
+use aleph_alloc::instrumentation::system;
+use aleph_alloc::{BBox, BVec};
 use aleph_object_system::ObjectDescription;
 use aleph_object_system::uuid::Uuid;
-use allocator_api2::boxed::Box as ABox;
-use virtual_buffer::{VirtualBuffer, VirtualVec};
 
 pub use crate::archetype::index::{ArchetypeEntityIndex, ArchetypeIndex};
-use crate::{ComponentRegistry, EntityId, EntityLayout, UnsafeComponentSource};
+use crate::{
+    ComponentRegistry, EcsSystem, EntityId, EntityLayout, EntityLayoutBuf, UnsafeComponentSource,
+};
 
 mod index {
     use std::num::NonZeroU32;
@@ -111,14 +115,11 @@ mod index {
 #[repr(C)]
 pub struct ComponentStorage {
     /// Pointer to the start of the virtual memory region that stores a given type of component
-    pub data: NonNull<u8>,
+    pub data: AlignedByteBuffer<EcsSystem>,
 
     /// A description of the type being stored
     pub desc: ObjectDescription,
 }
-
-unsafe impl Send for ComponentStorage {}
-unsafe impl Sync for ComponentStorage {}
 
 // TODO: State system based on linked list described here: https://ajmmertens.medium.com/why-storing-state-machines-in-ecs-is-a-bad-idea-742de7a18e59
 
@@ -159,24 +160,21 @@ unsafe impl Sync for ComponentStorage {}
 ///
 pub struct Archetype {
     /// The entity layout of this archetype
-    entity_layout: ABox<EntityLayout>,
+    entity_layout: BBox<EntityLayout, EcsSystem>,
 
     /// A table that maps a component's id to the storage index. The storage index is used to
     /// index into the `component_descriptions` and `storages` fields.
     storage_indices: ComponentMapper,
 
-    /// The virtual memory allocation that backs the component storages
-    component_buffer: VirtualBuffer,
-
     /// A list of all the storages of each component type in the entity layout, indexed by the
     /// storage index
-    storages: Box<[ComponentStorage]>,
+    storages: BVec<ComponentStorage, EcsSystem>,
 
     /// A list that maps an entity's index in the archetype storage back to the ID it was allocated
     /// with.
     ///
     /// Typically used by iterators that yield an `EntityID` alongside the components.
-    entity_ids: VirtualVec<EntityId>,
+    entity_ids: BVec<EntityId, EcsSystem>,
 
     /// The maximum number of entities that can be stored in this archetype
     capacity: u32,
@@ -218,54 +216,30 @@ impl Archetype {
         assert_ne!(layout.len(), 0);
 
         // Produce the index map from the layout
-        let storage_indices = ComponentMapper {
-            table: layout.iter().enumerate().map(|v| (*v.1, v.0)).collect(),
-        };
+        let mut table = BVec::with_capacity_in(layout.len(), system());
+        table.extend(layout.iter().enumerate().map(|v| (*v.1, v.0)));
+        let storage_indices = ComponentMapper { table };
 
-        let mut num_pages = 0;
-        for v in layout.iter() {
-            let type_description = registry
+        // Create a virtual memory reservation for each component's storage
+        let mut storages = BVec::new_in(system());
+        storages.extend(layout.iter().map(|v| {
+            let desc = registry
                 .lookup(v)
                 .expect("Tried to create an archetype with an unregistered component type")
                 .clone();
-
-            let wanted_bytes = capacity as usize * type_description.size;
-            let wanted_pages = wanted_bytes.div_ceil(VirtualBuffer::page_size());
-            num_pages += wanted_pages;
-        }
-
-        let component_buffer = VirtualBuffer::reserve(num_pages).unwrap();
-
-        // Create a virtual memory reservation for each component's storage
-        let component_ptr = component_buffer.data();
-        let mut base_page = 0;
-        let storages = layout
-            .iter()
-            .map(|v| {
-                let desc = registry
-                    .lookup(v)
-                    .expect("Tried to create an archetype with an unregistered component type")
-                    .clone();
-
-                let wanted_bytes = capacity as usize * desc.size;
-                let wanted_pages = wanted_bytes.div_ceil(VirtualBuffer::page_size());
-
-                let data = unsafe { component_ptr.add(base_page * VirtualBuffer::page_size()) };
-
-                base_page += wanted_pages;
-
-                ComponentStorage { data, desc }
-            })
-            .collect();
+            ComponentStorage {
+                data: AlignedByteBuffer::new_in(desc.align, system()),
+                desc,
+            }
+        }));
 
         // Create the buffer for mapping entity indices back to an entity id
-        let entity_ids = VirtualVec::new(capacity as usize)
-            .expect("Failed to reserve address space for entity id list");
+        let entity_ids = BVec::new_in(system());
 
+        let entity_layout = EntityLayoutBuf::from_layout_in(layout, system());
         Self {
-            entity_layout: layout.to_owned().into_boxed_slice(),
+            entity_layout: entity_layout.into_boxed_slice(),
             storage_indices,
-            component_buffer,
             storages,
             entity_ids,
             capacity,
@@ -298,12 +272,9 @@ impl Archetype {
             }
             let new_allocated = u32::clamp(new_allocated, 64, self.capacity);
             for storage in self.storages.iter_mut() {
-                unsafe {
-                    let start = storage.data.byte_offset_from(self.component_buffer.data());
-                    let start = start as usize;
-                    let end = start + new_allocated as usize * storage.desc.size;
-                    self.component_buffer.commit(start..end).unwrap();
-                }
+                storage
+                    .data
+                    .grow(new_allocated as usize * storage.desc.size);
             }
             self.allocated = new_allocated;
         }
@@ -346,7 +317,7 @@ impl Archetype {
                 let base = base * type_size;
 
                 // Get the target slice to copy into
-                let target = self.storages[i].data.add(base);
+                let target = self.storages[i].data.get().unwrap_unchecked().add(base);
 
                 // Perform the actual copy
                 target.copy_from_nonoverlapping(data.ptr, source.count as usize * type_size);
@@ -372,7 +343,11 @@ impl Archetype {
 
         unsafe {
             // Create the slice to copy into, no dropping is needed as the data is uninitialized
-            let dest_buffer = self.storages[type_index].data.add(dest_base);
+            let dest_buffer = self.storages[type_index]
+                .data
+                .get()
+                .unwrap_unchecked()
+                .add(dest_base);
 
             // Perform the actual copy
             dest_buffer.copy_from_nonoverlapping(data, type_size);
@@ -392,7 +367,11 @@ impl Archetype {
         if let Some(drop_fn) = drop_fn {
             let slot = slot.get_index();
             unsafe {
-                let component = self.storages[type_index].data.add(slot * type_size);
+                let component = self.storages[type_index]
+                    .data
+                    .get()
+                    .unwrap_unchecked()
+                    .add(slot * type_size);
                 drop_fn(component.cast(), 1);
             };
         }
@@ -411,10 +390,10 @@ impl Archetype {
 
         let type_size = storage.desc.size;
         unsafe {
-            let data = storage.data.as_ptr().add(slot * type_size);
+            let data = storage.data.get().unwrap_unchecked().add(slot * type_size);
 
             // Get a pointer to the position in the buffer the component can be found
-            Some(NonNull::new_unchecked(data))
+            Some(data)
         }
     }
 
@@ -487,8 +466,9 @@ impl Archetype {
             let last_offset = last_index * desc.size;
 
             unsafe {
-                let remove = storage.data.add(remove_offset);
-                let last = storage.data.add(last_offset);
+                let base = storage.data.get().unwrap_unchecked();
+                let remove = base.add(remove_offset);
+                let last = base.add(last_offset);
 
                 if DROP && let Some(fn_drop) = desc.destructor {
                     // SAFETY: This handles calling the drop function for a component through a raw
@@ -540,7 +520,11 @@ impl Archetype {
             //         incorrect by providing an incorrect ComponentTypeDescription using an
             //         unsafe function.
             unsafe {
-                let last_ptr = storage.data.add(last_index * desc.size);
+                let last_ptr = storage
+                    .data
+                    .get()
+                    .unwrap_unchecked()
+                    .add(last_index * desc.size);
                 fn_drop(last_ptr.cast(), 1);
             }
         }
@@ -568,7 +552,13 @@ impl Archetype {
             // Create a slice of the data to copy, exiting the loop if the component is not present
             // in the source archetype
             let source_buffer = if let Some(source_index) = source.storage_indices.get(source_id) {
-                unsafe { source.storages[source_index].data.add(source_base) }
+                unsafe {
+                    source.storages[source_index]
+                        .data
+                        .get()
+                        .unwrap_unchecked()
+                        .add(source_base)
+                }
             } else {
                 continue;
             };
@@ -579,7 +569,11 @@ impl Archetype {
 
             unsafe {
                 // Create a slice of the destination to copy into
-                let dest_buffer = self.storages[source_index].data.add(dest_base);
+                let dest_buffer = self.storages[source_index]
+                    .data
+                    .get()
+                    .unwrap_unchecked()
+                    .add(dest_base);
 
                 // Perform the actual copy
                 dest_buffer.copy_from_nonoverlapping(source_buffer, type_size);
@@ -627,8 +621,9 @@ impl Drop for Archetype {
                 //         is a sound operation. The drop function will never be invalid to call if
                 //         there is no unsafe code interfacing with the world.
                 unsafe {
-                    let current = storage.data;
-                    drop_fn(current.cast(), self.len as _);
+                    if let Some(ptr) = storage.data.get() {
+                        drop_fn(ptr.cast(), self.len as _);
+                    }
                 }
             }
         }
@@ -637,7 +632,7 @@ impl Drop for Archetype {
 
 #[repr(C)]
 struct ComponentMapper {
-    pub table: Box<[(Uuid, usize)]>,
+    table: BVec<(Uuid, usize), EcsSystem>,
 }
 
 impl ComponentMapper {
@@ -650,3 +645,68 @@ impl ComponentMapper {
         None
     }
 }
+
+pub struct AlignedByteBuffer<A: Allocator = Global> {
+    buffer: NonNull<u8>,
+    align: usize,
+    len: usize,
+    allocator: A,
+}
+
+impl<A: Allocator> AlignedByteBuffer<A> {
+    pub const fn new_in(align: usize, allocator: A) -> Self {
+        Self {
+            buffer: NonNull::dangling(),
+            align,
+            len: 0,
+            allocator,
+        }
+    }
+
+    pub const fn get(&self) -> Option<NonNull<u8>> {
+        if self.len > 0 {
+            Some(self.buffer)
+        } else {
+            None
+        }
+    }
+
+    pub fn grow(&mut self, new_size: usize) {
+        assert!(new_size > self.len);
+
+        let new_layout = Layout::from_size_align(new_size, self.align).unwrap();
+        if self.len == 0 {
+            let buffer = match self.allocator.allocate(new_layout) {
+                Ok(v) => v,
+                Err(_) => handle_alloc_error(new_layout),
+            };
+
+            self.len = new_size;
+            self.buffer = buffer.cast();
+        } else {
+            let old_layout = self.layout();
+            let buffer = unsafe {
+                match self.allocator.grow(self.buffer, old_layout, new_layout) {
+                    Ok(v) => v,
+                    Err(_) => handle_alloc_error(new_layout),
+                }
+            };
+
+            self.len = new_size;
+            self.buffer = buffer.cast();
+        }
+    }
+
+    fn layout(&self) -> Layout {
+        Layout::from_size_align(self.len, self.align).unwrap()
+    }
+}
+
+impl<A: Allocator> Drop for AlignedByteBuffer<A> {
+    fn drop(&mut self) {
+        unsafe { self.allocator.deallocate(self.buffer, self.layout()) }
+    }
+}
+
+unsafe impl<A: Allocator> Send for AlignedByteBuffer<A> {}
+unsafe impl<A: Allocator> Sync for AlignedByteBuffer<A> {}

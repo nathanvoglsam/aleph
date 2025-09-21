@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use std::collections::hash_map::Entry;
-
+use aleph_alloc::hash_map::Entry;
+use aleph_alloc::instrumentation::system;
 use aleph_object_system::ObjectDescription;
 use aleph_object_system::uuid::Uuid;
 
@@ -46,7 +46,7 @@ impl ComponentRegistry {
     #[inline]
     pub fn new() -> ComponentRegistry {
         Self {
-            descriptions: ComponentIdMap::with_hasher(Default::default()),
+            descriptions: ComponentIdMap::with_hasher_in(Default::default(), system()),
         }
     }
 

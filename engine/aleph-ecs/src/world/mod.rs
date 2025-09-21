@@ -27,21 +27,20 @@
 // SOFTWARE.
 //
 
-use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
+use aleph_alloc::alloc::Allocator;
+use aleph_alloc::instrumentation::system;
+use aleph_alloc::{BBox, BHashMap, BVec};
 use aleph_object_system::ObjectDescription;
 use aleph_object_system::uuid::Uuid;
-use allocator_api2::alloc::Allocator;
-use allocator_api2::boxed::Box as ABox;
-use allocator_api2::vec;
 
 use crate::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
-    ComponentQueryItem, ComponentRegistry, ComponentSource, EntityId, EntityLayout,
+    ComponentQueryItem, ComponentRegistry, ComponentSource, EcsSystem, EntityId, EntityLayout,
     EntityLayoutBuf, EntityLocation, EntityStorage, IntoComponentSource, IntoOneComponentSource,
     QueryMut, QueryRef, ReadOnlyComponentQuery, UnsafeComponentSource, UnsafeQuery,
 };
@@ -130,13 +129,14 @@ pub struct World {
     pub(crate) entities: EntityStorage,
 
     /// Map that maps an entity layout to the index inside the archetypes list
-    pub(crate) archetype_map: HashMap<ABox<EntityLayout>, Option<ArchetypeIndex>>,
+    pub(crate) archetype_map:
+        BHashMap<BBox<EntityLayout, EcsSystem>, Option<ArchetypeIndex>, EcsSystem>,
 
     /// The list of all archetypes in the ECS world
-    pub(crate) archetypes: Vec<Archetype>,
+    pub(crate) archetypes: BVec<Archetype, EcsSystem>,
 
     /// Holds the edges of the archetype graph. Maps component ID to the links.
-    pub(crate) archetype_edges: Vec<ComponentIdMap<ArchetypeEdge>>,
+    pub(crate) archetype_edges: BVec<ComponentIdMap<ArchetypeEdge>, EcsSystem>,
 }
 
 ///
@@ -154,12 +154,12 @@ impl World {
         let component_registry = ComponentRegistry::new();
         let entities = EntityStorage::new(options.entity_capacity)?;
 
-        let archetypes = Vec::new();
-        let archetype_edges = Vec::new();
+        let archetypes = BVec::new_in(system());
+        let archetype_edges = BVec::new_in(system());
 
         // Creates the table that maps entity layouts to archetypes. Maps the empty layout to 0.
-        let mut archetype_map = HashMap::new();
-        archetype_map.insert(EntityLayoutBuf::new().into_boxed_slice(), None);
+        let mut archetype_map = BHashMap::new_in(system());
+        archetype_map.insert(EntityLayoutBuf::new_in(system()).into_boxed_slice(), None);
 
         let out = Self {
             options,
@@ -225,10 +225,10 @@ impl World {
         &mut self,
         source: T,
         a: A,
-    ) -> vec::Vec<EntityId, A> {
+    ) -> BVec<EntityId, A> {
         let source = source.into_component_source();
         source.with_unsafe_source(|mut source| unsafe {
-            let mut ids = vec::Vec::with_capacity_in(source.count as usize, a);
+            let mut ids = BVec::with_capacity_in(source.count as usize, a);
             source.ids = Some(NonNull::new_unchecked(
                 ids.spare_capacity_mut().as_mut_ptr(),
             ));
@@ -264,7 +264,7 @@ impl World {
     /// directly into the archetype's buffers. The archetype is known based on the set of components
     /// the [`ComponentSource`] declares it to contain.
     pub unsafe fn extend_unsafe(&mut self, source: &UnsafeComponentSource) {
-        let mut layout = EntityLayoutBuf::with_capacity(source.components.len());
+        let mut layout = EntityLayoutBuf::with_capacity_in(source.components.len(), system());
         unsafe { source.fill_layout(&mut layout) };
 
         assert!(
@@ -273,7 +273,7 @@ impl World {
         );
 
         // Locate the archetype and allocate space in the archetype for the new entities
-        let archetype_index = self.find_or_create_archetype(&layout);
+        let archetype_index = self.find_or_create_archetype(layout);
         let archetype = &mut self.archetypes[archetype_index.get_index()];
         let archetype_entity_base = archetype.allocate_entities(source.count);
 
@@ -590,14 +590,15 @@ impl World {
 
         // Create the destination layout, returning None if the component we're following a link
         // for doesn't change the layout (i.e trying to go from src->src).
-        let source_layout = self.archetypes[source].entity_layout().to_owned();
+        let source_layout =
+            EntityLayoutBuf::from_layout_in(self.archetypes[source].entity_layout(), system());
         let mut destination_layout = source_layout;
         if !destination_layout.remove_component_type(*component) {
             return None;
         }
 
         // Lookup the archetype and update the graph edge in source
-        let index = self.find_or_create_archetype(&destination_layout);
+        let index = self.find_or_create_archetype(destination_layout);
         let edge = self.archetype_edges[source].entry(*component).or_default();
         edge.remove = Some(index);
 
@@ -625,22 +626,23 @@ impl World {
 
         // Create the destination layout, returning None if the component we're following a link
         // for doesn't change the layout (i.e trying to go from src->src).
-        let source_layout = self.archetypes[source].entity_layout().to_owned();
+        let source_layout =
+            EntityLayoutBuf::from_layout_in(self.archetypes[source].entity_layout(), system());
         let mut destination_layout = source_layout;
         if destination_layout.add_component_type(*component) {
             return None;
         }
 
         // Lookup the archetype and update the graph edge in source
-        let index = self.find_or_create_archetype(&destination_layout);
+        let index = self.find_or_create_archetype(destination_layout);
         let edge = self.archetype_edges[source].entry(*component).or_default();
         edge.add = Some(index);
 
         Some(index)
     }
 
-    fn find_or_create_archetype(&mut self, layout: &EntityLayout) -> ArchetypeIndex {
-        if let Some(archetype) = self.archetype_map.get(layout).cloned() {
+    fn find_or_create_archetype(&mut self, layout: EntityLayoutBuf<EcsSystem>) -> ArchetypeIndex {
+        if let Some(archetype) = self.archetype_map.get(layout.as_ref()).cloned() {
             archetype.expect("Tried to lookup the empty archetype")
         } else {
             let archetype_index = self.archetypes.len();
@@ -649,11 +651,11 @@ impl World {
             // 'ArchetypeIndex::new' checks if the index would be larger than max_archetypes
 
             let capacity = self.options.archetype_capacity;
-            let archetype = Archetype::new(capacity, layout, &self.component_registry);
-            let archetype_edges = ComponentIdMap::with_hasher(Default::default());
+            let archetype = Archetype::new(capacity, &layout, &self.component_registry);
+            let archetype_edges = ComponentIdMap::with_hasher_in(Default::default(), system());
 
             self.archetype_map
-                .insert(layout.to_owned().into_boxed_slice(), Some(archetype_index));
+                .insert(layout.into_boxed_slice(), Some(archetype_index));
             self.archetypes.push(archetype);
             self.archetype_edges.push(archetype_edges);
             archetype_index

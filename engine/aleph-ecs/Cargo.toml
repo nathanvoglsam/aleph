@@ -43,5 +43,4 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-object-system = { workspace = true }
-aleph-virtual-buffer = { workspace = true }
-allocator-api2 = { workspace = true }
+aleph-alloc = { workspace = true }

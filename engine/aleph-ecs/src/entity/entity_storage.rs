@@ -30,9 +30,10 @@
 use std::io::{Error, ErrorKind};
 use std::num::NonZeroU32;
 
-use virtual_buffer::VirtualVec;
+use aleph_alloc::BVec;
+use aleph_alloc::instrumentation::system;
 
-use crate::{ArchetypeEntityIndex, ArchetypeIndex, EntityId, EntityIndex, Generation};
+use crate::{ArchetypeEntityIndex, ArchetypeIndex, EcsSystem, EntityId, EntityIndex, Generation};
 
 ///
 /// This represents a reference to the location an entity is stored within the set of all archetypes
@@ -100,7 +101,7 @@ pub struct EntityEntry {
 #[repr(C)]
 pub struct EntityStorage {
     /// The backing storage for the entities
-    entities: VirtualVec<EntityEntry>,
+    entities: BVec<EntityEntry, EcsSystem>,
 
     /// The number of entities that are currently live
     count: usize,
@@ -132,7 +133,7 @@ impl EntityStorage {
         }
 
         // Create the backing storage with the given total capacity
-        let mut entities = VirtualVec::new((capacity + 1) as usize)?;
+        let mut entities = BVec::new_in(system());
 
         // Push the first element of the list. This first element must always exist and serves as
         // the head of the free list.

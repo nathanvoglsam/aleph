@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-extern crate aleph_virtual_buffer as virtual_buffer;
-
 pub extern crate aleph_object_system as object_system;
 
 mod archetype;
@@ -62,6 +60,11 @@ pub use self::world::{World, WorldOptions};
 
 #[cfg(test)]
 mod tests;
+
+pub struct Ecs;
+aleph_alloc::new_alloc_category!(Ecs, "01996aaa-df23-7790-ad3f-47f1b2420ee2");
+
+pub type EcsSystem = aleph_alloc::instrumentation::Instrumented<Ecs>;
 
 // TODO: CommandBuffers so that world modification commands can be queued by jobs and then resolved
 //       when the execution phase has completed. This completes the functionality of the ECS as

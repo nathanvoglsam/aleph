@@ -29,7 +29,7 @@
 
 use std::ptr::NonNull;
 
-use crate::{Archetype, ArchetypeEntityIndex, Component, EntityLayoutBuf};
+use crate::{Archetype, ArchetypeEntityIndex, Component, EcsSystem, EntityLayoutBuf};
 
 pub trait ComponentQuery: Send + Sync {
     type Fetch: for<'a> Fetch<'a>;
@@ -37,7 +37,7 @@ pub trait ComponentQuery: Send + Sync {
     /// Whether we want mutable access to the item we're querying for
     const MUTABLE: bool;
 
-    fn add_to_layout(layout: &mut EntityLayoutBuf);
+    fn add_to_layout(layout: &mut EntityLayoutBuf<EcsSystem>);
 }
 
 pub trait ReadOnlyComponentQuery: Send + Sync {
@@ -88,7 +88,7 @@ impl<T: Component> ComponentQuery for &T {
     const MUTABLE: bool = false;
 
     #[inline]
-    fn add_to_layout(layout: &mut EntityLayoutBuf) {
+    fn add_to_layout(layout: &mut EntityLayoutBuf<EcsSystem>) {
         if layout.add_component_type(T::ID) {
             panic!("Trying to lookup the same component multiple times within the same query");
         }
@@ -135,7 +135,7 @@ impl<T: Component> ComponentQuery for &mut T {
     const MUTABLE: bool = true;
 
     #[inline]
-    fn add_to_layout(layout: &mut EntityLayoutBuf) {
+    fn add_to_layout(layout: &mut EntityLayoutBuf<EcsSystem>) {
         if layout.add_component_type(T::ID) {
             panic!("Trying to lookup the same component multiple times within the same query");
         }
@@ -209,7 +209,7 @@ macro_rules! impl_query_for_tuple {
             const MUTABLE: bool = $($name::MUTABLE|)* false;
 
             #[inline]
-            fn add_to_layout(layout: &mut $crate::EntityLayoutBuf) {
+            fn add_to_layout(layout: &mut $crate::EntityLayoutBuf<$crate::EcsSystem>) {
                 ($($name::add_to_layout(layout),)*);
             }
         }

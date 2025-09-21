@@ -32,7 +32,7 @@ use std::ptr::NonNull;
 
 use object_system::uuid::Uuid;
 
-use crate::{Component, EntityId, EntityLayoutBuf};
+use crate::{Component, EcsSystem, EntityId, EntityLayoutBuf};
 
 #[repr(C)]
 pub struct UnsafeComponentSource {
@@ -50,7 +50,7 @@ pub struct UnsafeComponentSource {
 }
 
 impl UnsafeComponentSource {
-    pub unsafe fn fill_layout(&self, target: &mut EntityLayoutBuf) {
+    pub unsafe fn fill_layout(&self, target: &mut EntityLayoutBuf<EcsSystem>) {
         unsafe {
             for component in self.components.as_ref().iter() {
                 assert!(
