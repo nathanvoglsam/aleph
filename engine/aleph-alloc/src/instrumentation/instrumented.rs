@@ -72,6 +72,12 @@ impl<T: IAllocationCategory, A: Allocator + Default> Default for Instrumented<T,
     }
 }
 
+impl<T: IAllocationCategory, A: Allocator + Clone> Clone for Instrumented<T, A> {
+    fn clone(&self) -> Self {
+        Self::new(self.inner.clone())
+    }
+}
+
 unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, A> {
     #[cfg_attr(not(feature = "instrumentation-enabled"), inline(always))]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
