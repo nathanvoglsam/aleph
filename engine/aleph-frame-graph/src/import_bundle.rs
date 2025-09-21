@@ -27,11 +27,14 @@
 // SOFTWARE.
 //
 
+use aleph_alloc::BHashMap;
+
+use crate::internal::FgSystem;
 use crate::{ResourceRef, ResourceVariant};
 
 #[derive(Default)]
 pub struct ImportBundle {
-    pub(crate) imports: std::collections::HashMap<u16, ResourceVariant>,
+    pub(crate) imports: BHashMap<u16, ResourceVariant, FgSystem>,
 }
 
 impl ImportBundle {

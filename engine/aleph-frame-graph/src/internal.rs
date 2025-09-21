@@ -34,17 +34,16 @@
 
 use std::ptr::NonNull;
 
+use aleph_alloc::{BBox, BVec, Blink, BlinkAlloc};
 use aleph_nstr::NStr;
 use aleph_rhi_api::*;
-use allocator_api2::vec::Vec as BVec;
-use blink_alloc::{Blink, BlinkAlloc};
 
 use crate::render_pass::PassArgs;
 use crate::resource::ResourceId;
 use crate::{IRenderPass, ResourceVariant, Result};
 
 pub(crate) struct RenderPass<A: PassArgs> {
-    pub pass: Box<dyn IRenderPass<A>>,
+    pub pass: BBox<dyn IRenderPass<A>, FgSystem>,
     pub name: NonNull<NStr>,
     pub skip: bool,
 }
@@ -136,8 +135,8 @@ impl ResourceVersion {
     pub fn reads_sorted_by_image_layout_in<'a, 'b>(
         &'a self,
         format: Format,
-        bump: &'b Blink,
-    ) -> BVec<(&'a VersionReaderLink, ImageLayout), &'b BlinkAlloc> {
+        bump: &'b Blink<BlinkAlloc<FgSystem>>,
+    ) -> BVec<(&'a VersionReaderLink, ImageLayout), &'b BlinkAlloc<FgSystem>> {
         let mut reads = BVec::with_capacity_in(self.read_count, bump.allocator());
         reads.extend(
             self.reads_iter()
@@ -971,3 +970,8 @@ impl TransientResourceBundle {
         self.transients.get(&i)
     }
 }
+
+pub struct FrameGraph;
+aleph_alloc::new_alloc_category!(FrameGraph, "01996b09-7751-7510-ac93-79ba89b964ae");
+
+pub type FgSystem = aleph_alloc::instrumentation::Instrumented<FrameGraph>;

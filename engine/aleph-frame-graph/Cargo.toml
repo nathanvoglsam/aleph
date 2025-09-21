@@ -48,8 +48,7 @@ aleph-rhi-api = { workspace = true }
 aleph-profile = { workspace = true }
 aleph-nstr = { workspace = true }
 log = { workspace = true }
-blink-alloc = { workspace = true }
-allocator-api2 = { workspace = true }
+aleph-alloc = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]

@@ -51,11 +51,11 @@
 
 use std::ptr::NonNull;
 
+use aleph_alloc::instrumentation::system;
+use aleph_alloc::{BBox, BVec, Blink, BlinkAlloc};
 use aleph_device_allocators::{AllocatorPool, Grave, LinearDescriptorPoolFactory};
 use aleph_nstr::NStr;
 use aleph_rhi_api::*;
-use allocator_api2::vec::Vec as BVec;
-use blink_alloc::{Blink, BlinkAlloc};
 use thiserror::Error;
 
 use crate::internal::*;
@@ -150,21 +150,20 @@ impl GraphVizOutputOptions {
     }
 }
 
-#[derive(Default)]
 pub struct FrameGraphBuilder<A: PassArgs = ()> {
     /// An arena that will be moved into the FrameGraph once the graph is finalized. This can be
     /// used to store anything that persists to the fully constructed graph.
-    pub(crate) arena: Blink,
+    pub(crate) arena: Blink<BlinkAlloc<FgSystem>>,
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
-    pub(crate) render_passes: Vec<RenderPass<A>>,
+    pub(crate) render_passes: BVec<RenderPass<A>, FgSystem>,
 
     /// The backing storage used for all of the root resourcs objects. A root resource represents
     /// a concrete [ITexture] or [IBuffer] as created by the graph. This includes both the created
     /// transient resources as well as imported resources. Imported resources are identified by
     /// having their index in the 'imported_resources' set.
-    pub(crate) root_resources: Vec<ResourceRoot>,
+    pub(crate) root_resources: BVec<ResourceRoot, FgSystem>,
 
     /// The backing storage used for all the resource version objects. A resource version is an
     /// indexed set that is used to identify a particular version of a root resource.
@@ -176,23 +175,29 @@ pub struct FrameGraphBuilder<A: PassArgs = ()> {
     /// These entries are critical as resource versions are what form the core of the graph. They
     /// are what allows the graph to construct a stable program order via an SSA form graph
     /// construction.
-    pub(crate) resource_versions: Vec<ResourceVersion>,
+    pub(crate) resource_versions: BVec<ResourceVersion, FgSystem>,
 
     /// The set of resources within the graph that were imported, stored as indices into the
     /// root_resources array.
-    pub(crate) imported_resources: Vec<u16>,
+    pub(crate) imported_resources: BVec<u16, FgSystem>,
+}
+
+impl<A: PassArgs> Default for FrameGraphBuilder<A> {
+    fn default() -> Self {
+        Self {
+            arena: Default::default(),
+            render_passes: BVec::new_in(system()),
+            root_resources: BVec::new_in(system()),
+            resource_versions: BVec::new_in(system()),
+            imported_resources: BVec::new_in(system()),
+        }
+    }
 }
 
 impl<A: PassArgs> FrameGraphBuilder<A> {
     /// Creates a new, empty [FrameGraphBuilder]
     pub fn new() -> Self {
-        Self {
-            arena: Default::default(),
-            render_passes: Default::default(),
-            root_resources: Default::default(),
-            resource_versions: Default::default(),
-            imported_resources: Default::default(),
-        }
+        Self::default()
     }
 
     pub fn add_pass<
@@ -264,7 +269,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
     ) -> Result<FrameGraph<A>> {
         // An arena allocator used for allocating resources that only live as long as the graph is
         // being built
-        let build_arena = Blink::new();
+        let build_arena = Blink::new_in(BlinkAlloc::new_in(system()));
 
         self.validate_imported_resource_usages();
 
@@ -334,11 +339,17 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         let execution_bundles = pass_order_builder.bundles;
         let ir_nodes = ir_builder.nodes;
 
+        fn take_bvec<T>(v: &mut BVec<T, FgSystem>) -> BVec<T, FgSystem> {
+            let mut slot = BVec::new_in(system());
+            std::mem::swap(&mut slot, v);
+            slot
+        }
+
         let arena = std::mem::take(&mut self.arena);
-        let render_passes = std::mem::take(&mut self.render_passes);
-        let root_resources = std::mem::take(&mut self.root_resources);
-        let resource_versions = std::mem::take(&mut self.resource_versions);
-        let imported_resources = std::mem::take(&mut self.imported_resources);
+        let render_passes = take_bvec(&mut self.render_passes);
+        let root_resources = take_bvec(&mut self.root_resources);
+        let resource_versions = take_bvec(&mut self.resource_versions);
+        let imported_resources = take_bvec(&mut self.imported_resources);
 
         Ok(FrameGraph {
             _arena: Grave::new(arena),
@@ -349,8 +360,8 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
             root_resources,
             resource_versions,
             imported_resources,
-            transient_bundles: Vec::new(),
-            deletion_pools: Vec::new(),
+            transient_bundles: BVec::new_in(system()),
+            deletion_pools: BVec::new_in(system()),
             linear_descriptor_pools: AllocatorPool::new(
                 LinearDescriptorPoolFactory::new(device.upgrade(), 1024),
                 64,
@@ -731,7 +742,20 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         let name = NStr::from_bytes(name).unwrap();
         let name = NonNull::from(name);
 
-        let pass: Box<dyn IRenderPass<A>> = Box::new(pass);
+        let pass = BBox::new_in(pass, system());
+        // TODO: stolen from allocator_api2 because their macro is broken
+        let pass: BBox<dyn IRenderPass<A>, _> = {
+            let (ptr, allocator) = BBox::into_raw_with_allocator(pass);
+            // we don't want to allow casting to arbitrary type U, but we do want to allow unsize coercion to happen.
+            // that's exactly what's happening here -- this is *not* a pointer cast ptr as *mut _, but the compiler
+            // *will* allow an unsizing coercion to happen into the `ptr` place, if one is available. And we use _ so that the user can
+            // fill in what they want the unsized type to be by annotating the type of the variable this macro will
+            // assign its result to.
+            let ptr: *mut _ = ptr;
+            // SAFETY: see above for why ptr's type can only be something that can be safely coerced.
+            // also, ptr just came from a properly allocated box in the same allocator.
+            unsafe { BBox::from_raw_in(ptr, allocator) }
+        };
         let pass = RenderPass { pass, name, skip };
         self.render_passes.push(pass);
     }
@@ -1281,7 +1305,7 @@ struct IRBuilder<'arena, 'b, 'c, T: std::io::Write> {
     /// allocations that will not outlive the full frame graph build operation.
     ///
     /// That is: this arena will remain live for the scope of [FrameGraphBuilder::build_internal].
-    arena: &'arena Blink,
+    arena: &'arena Blink<BlinkAlloc<FgSystem>>,
 
     /// Our target writter for our graphviz output, if we have one.
     writer: Option<(&'b mut T, &'c GraphVizOutputOptions)>,
@@ -1297,26 +1321,26 @@ struct IRBuilder<'arena, 'b, 'c, T: std::io::Write> {
     ///
     /// That is, given an index 'i': `ir_builder.ir_nodes[i]` will hold a [RenderPassIRNode] that
     /// points to `frame_graph_build.render_passes[i]`.
-    nodes: Vec<IRNode>,
+    nodes: BVec<IRNode, FgSystem>,
 
     /// A temporary list used as part of the build algorithm. This list is SoA mapped to each render
     /// pass node in the IR graph. Each entry in this list is another Vec (arena allocated) that
     /// will be used to accumulate the 'prev' edges of the render pass IR nodes before they get
     /// patched onto their IR nodes at the end of the build phase.
-    pass_prevs: &'arena mut [BVec<usize, &'arena BlinkAlloc>],
+    pass_prevs: &'arena mut [BVec<usize, &'arena BlinkAlloc<FgSystem>>],
 
     /// See [IRBuilder::pass_prevs]. This is logically the same list, but instead used for storing
     /// the 'next' edges.
-    pass_nexts: &'arena mut [BVec<usize, &'arena BlinkAlloc>],
+    pass_nexts: &'arena mut [BVec<usize, &'arena BlinkAlloc<FgSystem>>],
 }
 
 impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     pub fn new(
-        arena: &'arena Blink,
+        arena: &'arena Blink<BlinkAlloc<FgSystem>>,
         writer: Option<(&'b mut T, &'c GraphVizOutputOptions)>,
         num_passes: usize,
     ) -> Self {
-        let mut ir_nodes: Vec<IRNode> = Vec::with_capacity(num_passes);
+        let mut ir_nodes: BVec<IRNode, _> = BVec::with_capacity_in(num_passes, system());
         for i in 0..num_passes {
             let ir_node = RenderPassIRNode {
                 prev: NonNull::from(&[]),
@@ -2532,7 +2556,7 @@ struct PassOrderBuilder<'arena> {
     /// allocations that will not outlive the full frame graph build operation.
     ///
     /// That is: this arena will remain live for the scope of [FrameGraphBuilder::build_internal].
-    arena: &'arena Blink,
+    arena: &'arena Blink<BlinkAlloc<FgSystem>>,
 
     /// A temporary buffer that associates with ir.nodes that flags whether the matching node has
     /// been scheduled or not.
@@ -2549,11 +2573,14 @@ struct PassOrderBuilder<'arena> {
     runnable_prev_nums: &'arena mut [usize],
 
     /// This list is our primary output, and contains the ordered list of execution bundles.
-    bundles: Vec<PassOrderBundle>,
+    bundles: BVec<PassOrderBundle, FgSystem>,
 }
 
 impl<'arena> PassOrderBuilder<'arena> {
-    pub fn new<T: std::io::Write>(arena: &'arena Blink, ir: &IRBuilder<'_, '_, '_, T>) -> Self {
+    pub fn new<T: std::io::Write>(
+        arena: &'arena Blink<BlinkAlloc<FgSystem>>,
+        ir: &IRBuilder<'_, '_, '_, T>,
+    ) -> Self {
         let mut node_scheduled = BVec::new_in(arena.allocator());
         node_scheduled.resize(ir.nodes.len(), false);
 
@@ -2568,7 +2595,7 @@ impl<'arena> PassOrderBuilder<'arena> {
             node_scheduled: node_scheduled.leak(),
             waiting_on_nums: waiting_on_nums.leak(),
             runnable_prev_nums: runnable_prev_nums.leak(),
-            bundles: Vec::new(),
+            bundles: BVec::new_in(system()),
         }
     }
 
@@ -2786,7 +2813,7 @@ impl<'arena> PassOrderBuilder<'arena> {
 
     fn schedule_pass_barriers<T: std::io::Write>(
         &mut self,
-        barriers: &mut BVec<usize, &'_ BlinkAlloc>,
+        barriers: &mut BVec<usize, &'_ BlinkAlloc<FgSystem>>,
         ir: &IRBuilder<'_, '_, '_, T>,
         node_variant: &RenderPassIRNode,
     ) {
@@ -2809,8 +2836,8 @@ impl<'arena> PassOrderBuilder<'arena> {
         roots: &[usize],
         leafs: &[usize],
     ) -> (
-        BVec<usize, &'graph BlinkAlloc>,
-        BVec<usize, &'graph BlinkAlloc>,
+        BVec<usize, &'graph BlinkAlloc<FgSystem>>,
+        BVec<usize, &'graph BlinkAlloc<FgSystem>>,
     ) {
         let num_export_barriers = barrier_type_counts[IRBarrierType::ExportAfterRead as usize]
             + barrier_type_counts[IRBarrierType::ExportAfterWrite as usize];
@@ -2922,8 +2949,8 @@ impl<'arena> PassOrderBuilder<'arena> {
         graph_builder: &FrameGraphBuilder<A>,
         ir: &IRBuilder<'arena, '_, '_, T>,
     ) -> (
-        BVec<usize, &'arena BlinkAlloc>,
-        BVec<usize, &'arena BlinkAlloc>,
+        BVec<usize, &'arena BlinkAlloc<FgSystem>>,
+        BVec<usize, &'arena BlinkAlloc<FgSystem>>,
     ) {
         // Find the root and leaf nodes of the graph by iterating all the nodes and filtering them
         // into the apropriate category based on whether they have an previous or next nodes.

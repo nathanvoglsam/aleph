@@ -30,17 +30,18 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use aleph_alloc::instrumentation::system;
+use aleph_alloc::{BVec, Blink, BlinkAlloc};
 use aleph_any::AnyArc;
 use aleph_device_allocators::{
     AllocatorPool, AllocatorPoolItem, Grave, LinearDescriptorPool, LinearDescriptorPoolFactory,
 };
 use aleph_nstr::nstr;
 use aleph_rhi_api::*;
-use blink_alloc::Blink;
 
 use crate::internal::{
-    FrameGraphBufferDesc, FrameGraphTextureDesc, IIRNode, IRNode, PassOrderBundle, RenderPass,
-    ResourceRoot, ResourceVersion, TransientResourceBundle,
+    FgSystem, FrameGraphBufferDesc, FrameGraphTextureDesc, IIRNode, IRNode, PassOrderBundle,
+    RenderPass, ResourceRoot, ResourceVersion, TransientResourceBundle,
 };
 use crate::render_pass::PassArgs;
 use crate::{FrameGraphBuilder, GraphChannel, ImportBundle, ResourceRef, ResourceVariant, Result};
@@ -54,7 +55,7 @@ pub struct FrameGraph<A: PassArgs = ()> {
     ///
     /// This won't be directly used by a constructed graph but must be stored inside the graph in
     /// order to keep the allocations for all the render passes alive.
-    pub(crate) _arena: Grave<Blink>,
+    pub(crate) _arena: Grave<Blink<BlinkAlloc<FgSystem>>>,
 
     /// The device object that this frame graph is created to work with
     pub(crate) device: AnyArc<dyn IDevice>,
@@ -62,24 +63,24 @@ pub struct FrameGraph<A: PassArgs = ()> {
     /// Our final pass + barrier execution order that is the final output of our graph building
     /// operations. The passes and barriers are executed by iterating this list and executing the
     /// barriers and passes referenced within in order.
-    pub(crate) execution_bundles: Vec<PassOrderBundle>,
+    pub(crate) execution_bundles: BVec<PassOrderBundle, FgSystem>,
 
     /// Backing storage for our IR nodes.
     ///
     /// This array is indexed by the [PassOrderBundle] objects in the
     /// [FrameGraph::execution_bundles] array. Each bundle contains a set of barriers and passes to
     /// execute in order, with each barrier and pass identified as an index into this array.
-    pub(crate) ir_nodes: Vec<IRNode>,
+    pub(crate) ir_nodes: BVec<IRNode, FgSystem>,
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
-    pub(crate) render_passes: Vec<RenderPass<A>>,
+    pub(crate) render_passes: BVec<RenderPass<A>, FgSystem>,
 
     /// The backing storage used for all of the root resourcs objects. A root resource represents
     /// a concrete [ITexture] or [IBuffer] as created by the graph. This includes both the created
     /// transient resources as well as imported resources. Imported resources are identified by
     /// having their index in the 'imported_resources' set.
-    pub(crate) root_resources: Vec<ResourceRoot>,
+    pub(crate) root_resources: BVec<ResourceRoot, FgSystem>,
 
     /// The backing storage used for all the resource version objects. A resource version is an
     /// indexed set that is used to identify a particular version of a root resource.
@@ -91,18 +92,18 @@ pub struct FrameGraph<A: PassArgs = ()> {
     /// These entries are critical as resource versions are what form the core of the graph. They
     /// are what allows the graph to construct a stable program order via an SSA form graph
     /// construction.
-    pub(crate) resource_versions: Vec<ResourceVersion>,
+    pub(crate) resource_versions: BVec<ResourceVersion, FgSystem>,
 
     /// The set of resources within the graph that were imported, stored as indices into the
     /// root_resources array.
-    pub(crate) imported_resources: Vec<u16>,
+    pub(crate) imported_resources: BVec<u16, FgSystem>,
 
     /// The transient resource bundles that the user requested by allocated for N frames in flight.
-    pub(crate) transient_bundles: Vec<TransientResourceBundle>,
+    pub(crate) transient_bundles: BVec<TransientResourceBundle, FgSystem>,
 
     /// Per-frame deletion pool for extending the lifetime of internally managed resources like
     /// command buffers or descriptor pool.
-    pub(crate) deletion_pools: Vec<DeletionPool>,
+    pub(crate) deletion_pools: BVec<DeletionPool, FgSystem>,
 
     /// Another 'transient pool' of sorts, but used for descriptors.
     pub(crate) linear_descriptor_pools: Arc<AllocatorPool<LinearDescriptorPoolFactory>>,
@@ -183,8 +184,8 @@ impl<A: PassArgs> FrameGraph<A> {
         let mut graph_channel = GraphChannel {
             has_global_or_buffer_barrier: false,
             global_barrier: GlobalBarrier::default(),
-            texture_objects: Vec::new(),
-            texture_barriers: Vec::new(),
+            texture_objects: BVec::new_in(system()),
+            texture_barriers: BVec::new_in(system()),
         };
         for bundle in self.execution_bundles.iter() {
             let mut has_memory_barrier =
