@@ -150,16 +150,18 @@ pub unsafe fn emit_free_n(ptr: *mut u8, name: &'static std::ffi::CStr) {
     }
 }
 
-#[cfg(feature = "memory-callstacks")]
 const CALLSTACK_DEPTH: i32 = clamp_depth(62);
 
-#[cfg(not(feature = "memory-callstacks"))]
-const CALLSTACK_DEPTH: i32 = clamp_depth(0);
-
 const fn clamp_depth(v: i32) -> i32 {
-    match v {
-        v if v < 0 => 0,
-        v if v > 62 => 62,
-        v => v,
+    if !cfg!(feature = "memory-callstacks") {
+        0
+    } else if cfg!(windows) {
+        match v {
+            v if v < 0 => 0,
+            v if v > 62 => 62,
+            v => v,
+        }
+    } else {
+        v
     }
 }
