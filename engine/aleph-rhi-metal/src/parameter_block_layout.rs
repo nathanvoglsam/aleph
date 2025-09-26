@@ -103,10 +103,6 @@ pub struct CompiledParameterBlockLayout {
     /// block.
     pub num_arguments: usize,
 
-    /// The total number of sampler arguments the block layout will consume to serve all parameters
-    /// in the block.
-    pub num_samplers: usize,
-
     /// Table that associates with 'params' in [`ParameterBlockDesc`]. Stores the base offset of
     /// the parameter into the read-only used resources set.
     pub use_read_bases: BVec<usize, RhiSystem>,
@@ -126,7 +122,10 @@ impl CompiledParameterBlockLayout {
     /// Create a new [`CompiledParameterBlockLayout`] derived from the given [`ParameterBlockDesc`].
     pub fn new(desc: &ParameterBlockDesc) -> Self {
         let visibility = match desc.visibility {
-            DescriptorShaderVisibility::All => {
+            // Map compute to this as a dummy value. If visibility is 'compute' then it's illegal
+            // to bind any parameter blocks with this layout to the graphics pipeline. We don't read
+            // this on the compute encoder paths so it can just be set to a dummy value.
+            DescriptorShaderVisibility::All | DescriptorShaderVisibility::Compute => {
                 MTLRenderStages::Vertex
                     | MTLRenderStages::Fragment
                     | MTLRenderStages::Object
@@ -136,14 +135,12 @@ impl CompiledParameterBlockLayout {
             DescriptorShaderVisibility::Fragment => MTLRenderStages::Fragment,
             DescriptorShaderVisibility::Amplification => MTLRenderStages::Object,
             DescriptorShaderVisibility::Mesh => MTLRenderStages::Mesh,
-            DescriptorShaderVisibility::Compute => unreachable!(),
             DescriptorShaderVisibility::Hull => unimplemented!(),
             DescriptorShaderVisibility::Domain => unimplemented!(),
             DescriptorShaderVisibility::Geometry => unimplemented!(),
         };
 
         let mut num_arguments = 0;
-        let mut num_samplers = 0;
         let mut num_reads = 0;
         let mut num_writes = 0;
         let mut use_read_bases = BVec::new_in(RhiSystem::default());
@@ -152,7 +149,7 @@ impl CompiledParameterBlockLayout {
         for param in desc.params {
             num_arguments += param.array_size.count() as usize;
             if param.ty == ParameterType::SamplerState {
-                num_samplers += param.array_size.count() as usize;
+                // Do nothing
             } else if param.ty.is_srv() || param.ty.is_constant_buffer() {
                 use_read_bases.push(num_reads);
                 num_reads += param.array_size.count() as usize;
@@ -167,7 +164,6 @@ impl CompiledParameterBlockLayout {
         Self {
             visibility,
             num_arguments,
-            num_samplers,
             use_read_bases,
             num_reads,
             use_write_bases,

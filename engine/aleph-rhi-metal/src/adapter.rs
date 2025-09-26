@@ -54,7 +54,7 @@ declare_interfaces!(Adapter, [IAdapter]);
 
 impl IGetPlatformInterface for Adapter {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        todo!()
+        None
     }
 }
 

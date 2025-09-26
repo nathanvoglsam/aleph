@@ -63,7 +63,7 @@ declare_interfaces!(Queue, [IQueue]);
 
 impl IGetPlatformInterface for Queue {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        todo!()
+        None
     }
 }
 

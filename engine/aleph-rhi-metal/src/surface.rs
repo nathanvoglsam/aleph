@@ -50,7 +50,7 @@ declare_interfaces!(Surface, [ISurface]);
 
 impl IGetPlatformInterface for Surface {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        todo!()
+        None
     }
 }
 

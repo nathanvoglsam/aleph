@@ -134,6 +134,64 @@ pub const fn pixel_mtl_to_format(format: MTLPixelFormat) -> Format {
     }
 }
 
+pub const fn vertex_format_to_mtl(v: VertexFormat) -> MTLVertexFormat {
+    match v {
+        VertexFormat::UChar => MTLVertexFormat::UChar,
+        VertexFormat::UChar2 => MTLVertexFormat::UChar2,
+        VertexFormat::UChar3 => MTLVertexFormat::UChar3,
+        VertexFormat::UChar4 => MTLVertexFormat::UChar4,
+        VertexFormat::Char => MTLVertexFormat::Char,
+        VertexFormat::Char2 => MTLVertexFormat::Char2,
+        VertexFormat::Char3 => MTLVertexFormat::Char3,
+        VertexFormat::Char4 => MTLVertexFormat::Char4,
+        VertexFormat::UCharNormalized => MTLVertexFormat::UCharNormalized,
+        VertexFormat::UChar2Normalized => MTLVertexFormat::UChar2Normalized,
+        VertexFormat::UChar3Normalized => MTLVertexFormat::UChar3Normalized,
+        VertexFormat::UChar4Normalized => MTLVertexFormat::UChar4Normalized,
+        VertexFormat::UChar4NormalizedBgra => MTLVertexFormat::UChar4Normalized_BGRA,
+        VertexFormat::CharNormalized => MTLVertexFormat::CharNormalized,
+        VertexFormat::Char2Normalized => MTLVertexFormat::Char2Normalized,
+        VertexFormat::Char3Normalized => MTLVertexFormat::Char3Normalized,
+        VertexFormat::Char4Normalized => MTLVertexFormat::Char4Normalized,
+        VertexFormat::UShort => MTLVertexFormat::UShort,
+        VertexFormat::UShort2 => MTLVertexFormat::UShort2,
+        VertexFormat::UShort3 => MTLVertexFormat::UShort3,
+        VertexFormat::UShort4 => MTLVertexFormat::UShort4,
+        VertexFormat::Short => MTLVertexFormat::Short,
+        VertexFormat::Short2 => MTLVertexFormat::Short2,
+        VertexFormat::Short3 => MTLVertexFormat::Short3,
+        VertexFormat::Short4 => MTLVertexFormat::Short4,
+        VertexFormat::UShortNormalized => MTLVertexFormat::UShortNormalized,
+        VertexFormat::UShort2Normalized => MTLVertexFormat::UShort2Normalized,
+        VertexFormat::UShort3Normalized => MTLVertexFormat::UShort3Normalized,
+        VertexFormat::UShort4Normalized => MTLVertexFormat::UShort4Normalized,
+        VertexFormat::ShortNormalized => MTLVertexFormat::ShortNormalized,
+        VertexFormat::Short2Normalized => MTLVertexFormat::Short2Normalized,
+        VertexFormat::Short3Normalized => MTLVertexFormat::Short3Normalized,
+        VertexFormat::Short4Normalized => MTLVertexFormat::Short4Normalized,
+        VertexFormat::Half => MTLVertexFormat::Half,
+        VertexFormat::Half2 => MTLVertexFormat::Half2,
+        VertexFormat::Half3 => MTLVertexFormat::Half3,
+        VertexFormat::Half4 => MTLVertexFormat::Half4,
+        VertexFormat::Float => MTLVertexFormat::Float,
+        VertexFormat::Float2 => MTLVertexFormat::Float2,
+        VertexFormat::Float3 => MTLVertexFormat::Float3,
+        VertexFormat::Float4 => MTLVertexFormat::Float4,
+        VertexFormat::Int => MTLVertexFormat::Int,
+        VertexFormat::Int2 => MTLVertexFormat::Int2,
+        VertexFormat::Int3 => MTLVertexFormat::Int3,
+        VertexFormat::Int4 => MTLVertexFormat::Int4,
+        VertexFormat::UInt => MTLVertexFormat::UInt,
+        VertexFormat::UInt2 => MTLVertexFormat::UInt2,
+        VertexFormat::UInt3 => MTLVertexFormat::UInt3,
+        VertexFormat::UInt4 => MTLVertexFormat::UInt4,
+        VertexFormat::Int1010102Normalized => MTLVertexFormat::Int1010102Normalized,
+        VertexFormat::UInt1010102Normalized => MTLVertexFormat::UInt1010102Normalized,
+        VertexFormat::FloatRG11B10 => MTLVertexFormat::FloatRG11B10,
+        VertexFormat::FloatRGB9E5 => MTLVertexFormat::FloatRGB9E5,
+    }
+}
+
 pub const fn rect_to_mtl_scissor_rect(rect: &Rect) -> MTLScissorRect {
     MTLScissorRect {
         x: rect.x as usize,
@@ -288,7 +346,6 @@ pub const fn attachment_store_op_to_mtl(v: AttachmentStoreOp) -> MTLStoreAction 
     match v {
         AttachmentStoreOp::Store => MTLStoreAction::Store,
         AttachmentStoreOp::DontCare => MTLStoreAction::DontCare,
-        AttachmentStoreOp::None => unimplemented!(),
     }
 }
 
@@ -396,4 +453,11 @@ pub const fn resource_usage_to_texture_usage_mtl(v: ResourceUsageFlags) -> MTLTe
     }
 
     usage
+}
+
+pub const fn vertex_input_rate_to_mtl(v: VertexInputRate) -> MTLVertexStepFunction {
+    match v {
+        VertexInputRate::PerVertex => MTLVertexStepFunction::PerVertex,
+        VertexInputRate::PerInstance => MTLVertexStepFunction::PerInstance,
+    }
 }

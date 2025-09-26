@@ -76,7 +76,7 @@ pub struct Encoder<'a> {
 
 impl<'a> IGetPlatformInterface for Encoder<'a> {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        todo!()
+        None
     }
 }
 
@@ -257,52 +257,42 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 AttachmentLoadOp::DontCare => {
                     mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
                 }
-                AttachmentLoadOp::None => {
-                    // TODO: this doesn't seem right
-                    mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
-                }
             }
 
             let store_op = conv::attachment_store_op_to_mtl(color_attachment.store_op);
             mtl_attachment.setStoreAction(store_op);
         }
 
-        if let Some(depth_attachment) = info.depth_stencil_attachment {
-            let view = depth_attachment.image_view;
+        if let Some(attachment) = info.depth_stencil_attachment {
+            let view = attachment.image_view;
             let view = unsafe { view.into_raw::<ImageViewObject>().as_ref() };
             let texture = view.texture.as_ref();
 
-            // TODO: if we need a depth buffer
-            if true {
+            if let Some(ops) = &attachment.depth {
                 let mtl_attachment = unsafe { MTLRenderPassDepthAttachmentDescriptor::new() };
                 mtl_attachment.setTexture(Some(texture));
                 mtl_attachment.setLevel(0);
                 mtl_attachment.setSlice(0);
 
-                match &depth_attachment.depth_load_op {
+                match &ops.load_op {
                     AttachmentLoadOp::Load => {
                         mtl_attachment.setLoadAction(MTLLoadAction::Load);
                     }
                     AttachmentLoadOp::Clear(v) => {
                         mtl_attachment.setLoadAction(MTLLoadAction::Clear);
-                        mtl_attachment.setClearDepth(v.depth as f64);
+                        mtl_attachment.setClearDepth(*v as f64);
                     }
                     AttachmentLoadOp::DontCare => {
                         mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
                     }
-                    AttachmentLoadOp::None => {
-                        // TODO: this doesn't seem right
-                        mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
-                    }
                 }
 
-                let store_op = conv::attachment_store_op_to_mtl(depth_attachment.depth_store_op);
+                let store_op = conv::attachment_store_op_to_mtl(ops.store_op);
                 mtl_attachment.setStoreAction(store_op);
                 mtl_desc.setDepthAttachment(Some(&mtl_attachment));
             }
 
-            // TODO: if we need a stencil buffer
-            if true {
+            if let Some(ops) = &attachment.stencil {
                 let mtl_attachment = unsafe { MTLRenderPassStencilAttachmentDescriptor::new() };
 
                 // We use the same attachment here intentionally
@@ -310,24 +300,20 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 mtl_attachment.setLevel(0);
                 mtl_attachment.setSlice(0);
 
-                match &depth_attachment.stencil_load_op {
+                match &ops.load_op {
                     AttachmentLoadOp::Load => {
                         mtl_attachment.setLoadAction(MTLLoadAction::Load);
                     }
                     AttachmentLoadOp::Clear(v) => {
                         mtl_attachment.setLoadAction(MTLLoadAction::Clear);
-                        mtl_attachment.setClearStencil(v.stencil as u32);
+                        mtl_attachment.setClearStencil(*v as u32);
                     }
                     AttachmentLoadOp::DontCare => {
                         mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
                     }
-                    AttachmentLoadOp::None => {
-                        // TODO: this doesn't seem right
-                        mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
-                    }
                 }
 
-                let store_op = conv::attachment_store_op_to_mtl(depth_attachment.stencil_store_op);
+                let store_op = conv::attachment_store_op_to_mtl(ops.store_op);
                 mtl_attachment.setStoreAction(store_op);
                 mtl_desc.setStencilAttachment(Some(&mtl_attachment));
             }
@@ -453,19 +439,21 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                         );
                     }
 
-                    if let Some(resources) = block.reads {
-                        let count = block_layout.compiled.num_reads;
+                    let num_reads = block_layout.compiled.num_reads;
+                    if num_reads != 0 {
+                        let resources = block.reads.cast();
                         let usage = MTLResourceUsage::Read;
                         unsafe {
-                            encoder.useResources_count_usage(resources, count, usage);
+                            encoder.useResources_count_usage(resources, num_reads, usage);
                         }
                     }
 
-                    if let Some(resources) = block.writes {
-                        let count = block_layout.compiled.num_writes;
+                    let num_writes = block_layout.compiled.num_writes;
+                    if num_writes != 0 {
+                        let resources = block.reads.cast();
                         let usage = MTLResourceUsage::Write;
                         unsafe {
-                            encoder.useResources_count_usage(resources, count, usage);
+                            encoder.useResources_count_usage(resources, num_writes, usage);
                         }
                     }
                 }
@@ -508,23 +496,27 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                         DescriptorShaderVisibility::Geometry => unimplemented!(),
                     }
 
-                    if let Some(resources) = block.reads {
-                        let count = block_layout.compiled.num_reads;
+                    let num_reads = block_layout.compiled.num_reads;
+                    if num_reads != 0 {
+                        let resources = block.reads.cast();
                         let usage = MTLResourceUsage::Read;
                         let stages = block_layout.compiled.visibility;
                         unsafe {
-                            encoder
-                                .useResources_count_usage_stages(resources, count, usage, stages);
+                            encoder.useResources_count_usage_stages(
+                                resources, num_reads, usage, stages,
+                            );
                         }
                     }
 
-                    if let Some(resources) = block.writes {
-                        let count = block_layout.compiled.num_writes;
+                    let num_writes = block_layout.compiled.num_writes;
+                    if num_writes != 0 {
+                        let resources = block.reads.cast();
                         let usage = MTLResourceUsage::Write;
                         let stages = block_layout.compiled.visibility;
                         unsafe {
-                            encoder
-                                .useResources_count_usage_stages(resources, count, usage, stages);
+                            encoder.useResources_count_usage_stages(
+                                resources, num_writes, usage, stages,
+                            );
                         }
                     }
                 }

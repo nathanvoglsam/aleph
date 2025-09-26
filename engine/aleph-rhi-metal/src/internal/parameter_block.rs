@@ -65,11 +65,11 @@ pub struct ParameterBlock {
 
     /// Array of resource handles. Filled out by update calls and used for hazard tracking with
     /// useResources. This is the set of read only resources in the parameter block.
-    pub reads: Option<NonNull<NonNull<ProtocolObject<dyn MTLResource>>>>,
+    pub reads: NonNull<[*mut ProtocolObject<dyn MTLResource>]>,
 
     /// Array of resource handles. Filled out by update calls and used for hazard tracking with
     /// useResources. This is the set of writable resources in the parameter block.
-    pub writes: Option<NonNull<NonNull<ProtocolObject<dyn MTLResource>>>>,
+    pub writes: NonNull<[*mut ProtocolObject<dyn MTLResource>]>,
 }
 
 unsafe impl Send for ParameterBlock {}

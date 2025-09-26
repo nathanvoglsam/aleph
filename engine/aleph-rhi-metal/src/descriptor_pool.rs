@@ -27,24 +27,19 @@
 // SOFTWARE.
 //
 
-use std::alloc::Layout;
 use std::any::TypeId;
 use std::mem::MaybeUninit;
-use std::num::NonZero;
 use std::ptr::NonNull;
 
+use aleph_alloc::instrumentation::system;
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
-use aleph_rhi_impl_utils::parameter_block_pool::{IBlockFactory, ParameterBlockPool};
-use allocator_api2::alloc::Allocator;
+use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
 use blink_alloc::BlinkAlloc;
-use objc2::__framework_prelude::ProtocolObject;
-use objc2_metal::MTLResource;
 
+use crate::descriptor_arena::LinearBlockFactory;
 use crate::device::Device;
 use crate::internal::memory_block::MemoryBlock;
-use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::unwrap;
 use crate::parameter_block_layout::ParameterBlockLayout;
 
@@ -113,7 +108,7 @@ impl DescriptorPool {
 
         let factory = LinearBlockFactory {
             next_resource_index: 0,
-            arena: BlinkAlloc::new_in(RhiSystem::default()),
+            arena: BlinkAlloc::new_in(system()),
         };
         let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
 
@@ -125,116 +120,5 @@ impl DescriptorPool {
         });
 
         Ok(pool)
-    }
-}
-
-pub struct LinearBlockFactory {
-    /// Bump allocator offset into 'resource_arena'.
-    pub next_resource_index: usize,
-
-    /// A bump arena used to allocate the backing buffers for the useResources arrays.
-    pub arena: BlinkAlloc<RhiSystem>,
-}
-
-unsafe impl IBlockFactory for LinearBlockFactory {
-    type Param<'a> = (&'a MemoryBlock, &'a ParameterBlockLayout);
-    type T = ParameterBlock;
-
-    fn init_blocks<'a>(
-        &mut self,
-        p: Self::Param<'a>,
-        blocks: &mut [MaybeUninit<Self::T>],
-    ) -> Result<(), DescriptorAllocateError> {
-        let (memory_block, block_layout) = p;
-        let num_arguments = 0; // TODO: total including samplers
-
-        // Check if the given block has enough space to serve the requested number of resources.
-        let total_num = num_arguments * blocks.len();
-        let end = self.next_resource_index + total_num;
-        if end * 8 > memory_block.len {
-            return Err(DescriptorAllocateError::OutOfMemory);
-        }
-
-        let backing_buffer = NonNull::from(memory_block.buffer.as_ref());
-        for block in blocks {
-            // Get the sub-slice of the resource arena that we've allocated for this parameter
-            // block.
-            let offset = self.next_resource_index * 8;
-            let cpu = unsafe { memory_block.cpu_base.add(offset) };
-            let gpu = memory_block.gpu_base.saturating_add(offset as u64);
-            self.next_resource_index += num_arguments;
-
-            let reads = if block_layout.compiled.num_reads != 0 {
-                let layout = Layout::array::<NonNull<ProtocolObject<dyn MTLResource>>>(
-                    block_layout.compiled.num_reads,
-                )
-                .unwrap();
-                let arr = self
-                    .arena
-                    .allocate_zeroed(layout)
-                    .map_err(|_| DescriptorAllocateError::OutOfMemory)?;
-                Some(arr.cast())
-            } else {
-                None
-            };
-
-            let writes = if block_layout.compiled.num_writes != 0 {
-                let layout = Layout::array::<NonNull<ProtocolObject<dyn MTLResource>>>(
-                    block_layout.compiled.num_writes,
-                )
-                .unwrap();
-                let arr = self
-                    .arena
-                    .allocate_zeroed(layout)
-                    .map_err(|_| DescriptorAllocateError::OutOfMemory)?;
-                Some(arr.cast())
-            } else {
-                None
-            };
-
-            let new = ParameterBlock {
-                _layout: NonNull::from(block_layout),
-                backing_buffer,
-                resource_allocation: Default::default(), // Never used here
-                resource_handle_cpu: Some(cpu.cast()),
-                resource_handle_gpu: NonZero::new(gpu.get() as usize),
-                reads,
-                writes,
-            };
-            block.write(new);
-        }
-        Ok(())
-    }
-
-    fn reuse_blocks(
-        &mut self,
-        _p: Self::Param<'_>,
-        _blocks: impl Iterator<Item = NonNull<Self::T>>,
-    ) -> Result<(), DescriptorAllocateError> {
-        // Intentional no-op
-        Ok(())
-    }
-
-    fn free_blocks(&mut self, _blocks: impl Iterator<Item = NonNull<Self::T>>) {
-        // Intentional no-op
-    }
-
-    fn reset_blocks(&mut self, blocks: &mut [Self::T]) {
-        for block in blocks {
-            // block.resource_allocation is unused in this use case
-            block.resource_handle_cpu = None;
-            block.resource_handle_gpu = None;
-            block.reads = None;
-            block.writes = None;
-        }
-        self.next_resource_index = 0;
-        self.arena.reset();
-    }
-
-    fn drop_blocks(&mut self, _blocks: &mut [Self::T]) {
-        // Intentional no-op
-        //
-        // All allocations made by 'LinearBlockFactory' are from internal pools. There's no work
-        // that needs to be done here, the pools clean themselves up while being dropped.
     }
 }

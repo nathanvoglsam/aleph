@@ -79,6 +79,36 @@ impl GraphicsPipeline {
 
         let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
+        if !desc.vertex_layout.input_bindings.is_empty()
+            || desc.vertex_layout.input_attributes.is_empty()
+        {
+            let v_desc = unsafe { MTLVertexDescriptor::new() };
+            let v_attrs = v_desc.attributes();
+            for attribute in desc.vertex_layout.input_attributes.iter() {
+                unsafe {
+                    let a_desc = MTLVertexAttributeDescriptor::new();
+                    a_desc.setBufferIndex(attribute.binding as usize);
+                    a_desc.setOffset(attribute.offset as usize);
+                    a_desc.setFormat(conv::vertex_format_to_mtl(attribute.format));
+                    v_attrs
+                        .setObject_atIndexedSubscript(Some(&a_desc), attribute.location as usize);
+                }
+            }
+
+            let v_layouts = v_desc.layouts();
+            for binding in desc.vertex_layout.input_bindings {
+                unsafe {
+                    let b_desc = MTLVertexBufferLayoutDescriptor::new();
+                    b_desc.setStride(binding.stride as usize);
+                    b_desc.setStepFunction(conv::vertex_input_rate_to_mtl(binding.input_rate));
+                    b_desc.setStepRate(1);
+                    v_layouts.setObject_atIndexedSubscript(Some(&b_desc), binding.binding as usize);
+                }
+            }
+
+            mtl_desc.setVertexDescriptor(Some(&v_desc));
+        }
+
         // vertex_layout: &'a VertexInputStateDesc<'a>,
         // TODO
 
@@ -401,7 +431,7 @@ pub unsafe fn compile_function(
         .map_err(|_| PipelineCreateError::Platform)?;
 
     let function = library
-        .newFunctionWithName(ns_string!("main"))
+        .newFunctionWithName(ns_string!("main_0"))
         .ok_or_else(|| {
             log::error!("No 'main' function found in MTLLibrary");
             PipelineCreateError::Platform

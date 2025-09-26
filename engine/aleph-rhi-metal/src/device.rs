@@ -40,7 +40,6 @@ use aleph_rhi_impl_utils::parameter_block_layout_visitor::{
     ParameterBlockLayoutVisitor, ParameterBlockLayoutVisitorElement,
 };
 use allocator_api2::vec::Vec as BVec;
-use blink_alloc::Blink;
 use block2::RcBlock;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
@@ -52,7 +51,7 @@ use crate::binding_signature::BindingSignature;
 use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::context::Context;
-use crate::descriptor_arena::DescriptorArena;
+use crate::descriptor_arena::{DescriptorArenaHeap, DescriptorArenaLinear};
 use crate::descriptor_pool::DescriptorPool;
 use crate::fence::Fence;
 use crate::internal::image_view::ImageViewObject;
@@ -206,12 +205,10 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorArenaDesc,
     ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
-        let pool: Box<dyn IDescriptorArena> = Box::new(DescriptorArena {
-            _device: self.this.upgrade().unwrap(),
-            arena: Blink::new(),
-        });
-
-        Ok(pool)
+        match desc.arena_type {
+            DescriptorArenaType::Linear => DescriptorArenaLinear::create(self, desc),
+            DescriptorArenaType::Heap => DescriptorArenaHeap::create(self, desc),
+        }
     }
 
     // ========================================================================================== //
@@ -279,19 +276,17 @@ impl IDevice for Device {
         let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
         let cpu_handle = block.resource_handle_cpu.unwrap();
 
-        let update_use_sets =
+        let mut update_use_sets =
             |write_group: &ParameterBlockLayoutVisitorElement,
              src: &ProtocolObject<dyn MTLResource>| unsafe {
                 if write_group.ty.is_uav() {
                     let base = layout.compiled.use_write_bases[write_group.binding as usize]
                         + write_group.element as usize;
-                    let target = block.writes.unwrap_unchecked().add(base);
-                    target.write(NonNull::from(src));
+                    block.writes.as_mut()[base] = NonNull::from(src).as_ptr();
                 } else {
                     let base = layout.compiled.use_read_bases[write_group.binding as usize]
                         + write_group.element as usize;
-                    let target = block.reads.unwrap_unchecked().add(base);
-                    target.write(NonNull::from(src));
+                    block.reads.as_mut()[base] = NonNull::from(src).as_ptr();
                 }
             };
 
