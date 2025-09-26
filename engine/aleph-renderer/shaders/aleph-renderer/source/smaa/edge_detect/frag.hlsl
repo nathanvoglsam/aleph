@@ -50,6 +50,11 @@ PUSH_CONSTANT(SmaaMetrics, g_constants);
 
 [shader("fragment")]
 float4 main(in PixelInput input) : SV_Target0 {
-    let result = SMAAColorEdgeDetectionPS(input.uv, input.offset, g_params.colorTexGamma);
+    float4 offsets[3];
+    offsets[0] = input.offset_0;
+    offsets[1] = input.offset_1;
+    offsets[2] = input.offset_2;
+
+    let result = SMAAColorEdgeDetectionPS(input.uv, offsets, g_params.colorTexGamma);
     return float4(result.x, result.y, 0, 0);
 }

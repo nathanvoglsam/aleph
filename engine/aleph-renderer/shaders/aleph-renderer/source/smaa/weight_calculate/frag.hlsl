@@ -53,12 +53,17 @@ PUSH_CONSTANT(SmaaMetrics, g_constants);
 [shader("fragment")]
 float4 main(PixelInput input) : SV_Target0
 {
+    float4 offsets[3];
+    offsets[0] = input.offset_0;
+    offsets[1] = input.offset_1;
+    offsets[2] = input.offset_2;
+
     // Unused, needed for temporal SMAA which we aren't using
     float4 subsampleIndices = float4(0, 0, 0, 0);
     return SMAABlendingWeightCalculationPS(
         input.uv,
         input.pixcoord,
-        input.offset,
+        offsets,
         g_params.edgesTex,
         g_params.areaTex,
         g_params.searchTex,

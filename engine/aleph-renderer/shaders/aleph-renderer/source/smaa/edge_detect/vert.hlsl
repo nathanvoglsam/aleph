@@ -47,7 +47,11 @@ PixelInput main(uint id : SV_VertexID) {
 	output.sv_position = float4(output.uv * float2(2, -2) + float2(-1, 1), 0, 1);
 
 	// Writes into output.offset
-    SMAAEdgeDetectionVS(output.uv, output.offset);
+	float4 output_offsets[3];
+    SMAAEdgeDetectionVS(output.uv, output_offsets);
+	output.offset_0 = output_offsets[0];
+	output.offset_1 = output_offsets[1];
+	output.offset_2 = output_offsets[2];
 
 	return output;
 }
