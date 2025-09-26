@@ -32,7 +32,7 @@ use std::any::TypeId;
 use aleph_any::{AnyArc, AnyWeak, box_downcast, declare_interfaces};
 use aleph_rhi_api::*;
 use crossbeam::queue::ArrayQueue;
-use objc2::rc::Retained;
+use objc2::rc::{Retained, autoreleasepool};
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::ns_string;
 use objc2_metal::*;
@@ -125,88 +125,92 @@ impl IQueue for Queue {
     }
 
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
-        let _lock = self.submit_lock.lock();
+        autoreleasepool(|_| {
+            let _lock = self.submit_lock.lock();
 
-        let lists: Vec<_> = desc
-            .command_lists
-            .iter()
-            .map(|v| {
-                let v = v.take().unwrap();
-                box_downcast::<_, CommandList>(v).ok().unwrap()
-            })
-            .collect();
+            let lists: Vec<_> = desc
+                .command_lists
+                .iter()
+                .map(|v| {
+                    let v = v.take().unwrap();
+                    box_downcast::<_, CommandList>(v).ok().unwrap()
+                })
+                .collect();
 
-        let wait_list = if !desc.wait_semaphores.is_empty() {
-            let list = self.objects.queue.commandBuffer().unwrap();
+            let wait_list = if !desc.wait_semaphores.is_empty() {
+                let list = self.objects.queue.commandBuffer().unwrap();
 
-            for semaphore in desc.wait_semaphores {
-                let semaphore = Semaphore::get(semaphore);
-                list.encodeWaitForEvent_value(
-                    semaphore.objects.event.as_ref(),
-                    semaphore.get_wait_value(),
-                );
-            }
-
-            Some(list)
-        } else {
-            None
-        };
-
-        match lists.last() {
-            Some(last) => {
-                for semaphore in desc.signal_semaphores {
+                for semaphore in desc.wait_semaphores {
                     let semaphore = Semaphore::get(semaphore);
-
-                    last.objects.list.encodeSignalEvent_value(
+                    list.encodeWaitForEvent_value(
                         semaphore.objects.event.as_ref(),
-                        semaphore.get_next_signal_value(),
+                        semaphore.get_wait_value(),
                     );
                 }
-                if let Some(fence) = desc.fence {
-                    let fence = Fence::get(fence);
 
-                    last.objects.list.encodeSignalEvent_value(
-                        fence.objects.event.as_ref(),
-                        fence.get_next_signal_value(),
-                    );
+                Some(list)
+            } else {
+                None
+            };
+
+            match lists.last() {
+                Some(last) => {
+                    for semaphore in desc.signal_semaphores {
+                        let semaphore = Semaphore::get(semaphore);
+
+                        last.objects.list.encodeSignalEvent_value(
+                            semaphore.objects.event.as_ref(),
+                            semaphore.get_next_signal_value(),
+                        );
+                    }
+                    if let Some(fence) = desc.fence {
+                        let fence = Fence::get(fence);
+
+                        last.objects.list.encodeSignalEvent_value(
+                            fence.objects.event.as_ref(),
+                            fence.get_next_signal_value(),
+                        );
+                    }
                 }
+                None => panic!("Can't call IQueue::submit with zero command buffers!"),
             }
-            None => panic!("Can't call IQueue::submit with zero command buffers!"),
-        }
 
-        if let Some(wait_list) = wait_list {
-            wait_list.commit();
-        }
+            if let Some(wait_list) = wait_list {
+                wait_list.commit();
+            }
 
-        for list in lists {
-            assert_eq!(list.list_type, self.queue_type);
-            assert_eq!(list.state, ListState::Closed);
+            for list in lists {
+                assert_eq!(list.list_type, self.queue_type);
+                assert_eq!(list.state, ListState::Closed);
 
-            // TODO: flush barriers between submits?
+                // TODO: flush barriers between submits?
 
-            list.objects.list.commit();
-        }
+                list.objects.list.commit();
+            }
 
-        Ok(())
+            Ok(())
+        })
     }
 
     unsafe fn present(&self, swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
-        let _lock = self.submit_lock.lock();
+        autoreleasepool(|_| {
+            let _lock = self.submit_lock.lock();
 
-        let mut swap_image = {
-            let v = swap_image;
-            let v = v
-                .query_interface::<SwapImage>()
-                .expect("Unknown ISwapImage implementation");
-            v
-        };
-        let swap_image = AnyArc::get_mut(&mut swap_image).unwrap();
+            let mut swap_image = {
+                let v = swap_image;
+                let v = v
+                    .query_interface::<SwapImage>()
+                    .expect("Unknown ISwapImage implementation");
+                v
+            };
+            let swap_image = AnyArc::get_mut(&mut swap_image).unwrap();
 
-        let list = &swap_image.objects.list;
-        list.presentDrawable(swap_image.objects.drawable.as_ref());
-        list.commit();
+            let list = &swap_image.objects.list;
+            list.presentDrawable(swap_image.objects.drawable.as_ref());
+            list.commit();
 
-        Ok(())
+            Ok(())
+        })
     }
 }
 

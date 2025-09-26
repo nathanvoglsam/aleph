@@ -37,7 +37,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use blink_alloc::{Blink, BlinkAlloc};
-use objc2::rc::Retained;
+use objc2::rc::{autoreleasepool, Retained};
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::{NSRange, NSString};
 use objc2_metal::*;
@@ -202,9 +202,11 @@ impl Texture {
                             )
                             .expect("Failed to construct MTLTexture image view")
                     };
-                    if self._device.context.debug {
-                        view.setLabel(self.objects.texture.label().as_deref())
-                    }
+                    autoreleasepool(|_| {
+                        if self._device.context.debug {
+                            view.setLabel(self.objects.texture.label().as_deref())
+                        }
+                    });
                     view
                 }
             };

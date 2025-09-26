@@ -32,7 +32,7 @@ use std::any::TypeId;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
-use objc2::rc::Retained;
+use objc2::rc::{Retained, autoreleasepool};
 use objc2::runtime::ProtocolObject;
 use objc2_metal::*;
 
@@ -79,38 +79,40 @@ impl IAdapter for Adapter {
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
-        if let Some(surface) = self.surface.as_ref() {
-            unsafe {
-                surface.objects.layer.setDevice(Some(&self.objects.device));
-            }
+        autoreleasepool(|_| {
+            if let Some(surface) = self.surface.as_ref() {
+                unsafe {
+                    surface.objects.layer.setDevice(Some(&self.objects.device));
+                }
 
-            let preferred = unsafe { surface.objects.layer.preferredDevice() };
-            if let Some(preferred) = preferred {
-                if preferred != self.objects.device {
-                    log::warn!("Selected Device is not Preferred by CAMetalLayer");
+                let preferred = unsafe { surface.objects.layer.preferredDevice() };
+                if let Some(preferred) = preferred {
+                    if preferred != self.objects.device {
+                        log::warn!("Selected Device is not Preferred by CAMetalLayer");
+                    }
                 }
             }
-        }
 
-        let device = AnyArc::new_cyclic(move |v| {
-            let mut device = Device {
-                this: v.clone(),
-                _adapter: self.this.upgrade().unwrap(),
-                context: self.context.clone(),
-                device: self.objects.device.clone(),
-                listener: MTLSharedEventListener::new(),
-                general_queue: None,
-                compute_queue: None,
-                transfer_queue: None,
-                object_counter: ObjectCounter::new(),
-            };
+            let device = AnyArc::new_cyclic(move |v| {
+                let mut device = Device {
+                    this: v.clone(),
+                    _adapter: self.this.upgrade().unwrap(),
+                    context: self.context.clone(),
+                    device: self.objects.device.clone(),
+                    listener: MTLSharedEventListener::new(),
+                    general_queue: None,
+                    compute_queue: None,
+                    transfer_queue: None,
+                    object_counter: ObjectCounter::new(),
+                };
 
-            Self::build_queue_objects(&mut device);
+                Self::build_queue_objects(&mut device);
 
-            device
-        });
+                device
+            });
 
-        Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
+            Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
+        })
     }
 }
 

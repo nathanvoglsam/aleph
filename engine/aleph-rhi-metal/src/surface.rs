@@ -31,7 +31,7 @@ use std::any::TypeId;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
-use objc2::rc::Retained;
+use objc2::rc::{Retained, autoreleasepool};
 use objc2_core_foundation::CGSize;
 use objc2_quartz_core::CAMetalLayer;
 use parking_lot::Mutex;
@@ -72,79 +72,81 @@ impl ISurface for Surface {
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
     ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
-        let device = unwrap::device(device);
+        autoreleasepool(|_| {
+            let device = unwrap::device(device);
 
-        unsafe {
-            let size = self.objects.layer.drawableSize();
-            let width = size.width as u32;
-            let height = size.height as u32;
+            unsafe {
+                let size = self.objects.layer.drawableSize();
+                let width = size.width as u32;
+                let height = size.height as u32;
 
-            if width != config.width || height != config.height {
-                log::debug!(
-                    "CAMetalLayer size was ({}, {}). Setting to ({}, {})",
-                    width,
-                    height,
-                    config.width,
-                    config.height
-                );
+                if width != config.width || height != config.height {
+                    log::debug!(
+                        "CAMetalLayer size was ({}, {}). Setting to ({}, {})",
+                        width,
+                        height,
+                        config.width,
+                        config.height
+                    );
 
-                self.objects.layer.setDrawableSize(CGSize {
-                    width: config.width as f64,
-                    height: config.height as f64,
-                });
-            } else {
-                log::debug!("CAMetalLayer size is already ({}, {})", width, height);
+                    self.objects.layer.setDrawableSize(CGSize {
+                        width: config.width as f64,
+                        height: config.height as f64,
+                    });
+                } else {
+                    log::debug!("CAMetalLayer size is already ({}, {})", width, height);
+                }
+
+                let format = conv::pixel_mtl_to_format(self.objects.layer.pixelFormat());
+                if format != config.format {
+                    log::debug!(
+                        "CAMetalLayer format was {}. Setting to {}",
+                        format,
+                        config.format
+                    );
+
+                    let mtl_format = conv::format_to_pixel_mtl(config.format);
+                    self.objects.layer.setPixelFormat(mtl_format);
+                } else {
+                    log::debug!(
+                        "CAMetalLayer format is already {}. Doing nothing",
+                        config.format
+                    );
+                }
+
+                let image_count = self.objects.layer.maximumDrawableCount();
+                if image_count != config.buffer_count as usize {
+                    log::debug!(
+                        "CAMetalLayer maximumDrawableCount was '{}'. Setting to '{}'",
+                        image_count,
+                        config.buffer_count
+                    );
+
+                    self.objects
+                        .layer
+                        .setMaximumDrawableCount(config.buffer_count as usize);
+                } else {
+                    log::debug!(
+                        "CAMetalLayer maximumDrawableCount is already '{}'",
+                        image_count
+                    );
+                }
             }
 
-            let format = conv::pixel_mtl_to_format(self.objects.layer.pixelFormat());
-            if format != config.format {
-                log::debug!(
-                    "CAMetalLayer format was {}. Setting to {}",
-                    format,
-                    config.format
-                );
-
-                let mtl_format = conv::format_to_pixel_mtl(config.format);
-                self.objects.layer.setPixelFormat(mtl_format);
-            } else {
-                log::debug!(
-                    "CAMetalLayer format is already {}. Doing nothing",
-                    config.format
-                );
-            }
-
-            let image_count = self.objects.layer.maximumDrawableCount();
-            if image_count != config.buffer_count as usize {
-                log::debug!(
-                    "CAMetalLayer maximumDrawableCount was '{}'. Setting to '{}'",
-                    image_count,
-                    config.buffer_count
-                );
-
-                self.objects
-                    .layer
-                    .setMaximumDrawableCount(config.buffer_count as usize);
-            } else {
-                log::debug!(
-                    "CAMetalLayer maximumDrawableCount is already '{}'",
-                    image_count
-                );
-            }
-        }
-
-        let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
-            this: v.clone(),
-            device: device.this.upgrade().unwrap(),
-            _surface: self.this.upgrade().unwrap(),
-            queue_type: config.present_queue,
-            objects: SwapChainObjects {
-                layer: self.objects.layer.clone(),
-            },
-            inner: Mutex::new(SwapChainState {
-                config: config.clone(),
-            }),
-        });
-        Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
+            let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
+                this: v.clone(),
+                device: device.this.upgrade().unwrap(),
+                _surface: self.this.upgrade().unwrap(),
+                queue_type: config.present_queue,
+                objects: SwapChainObjects {
+                    layer: self.objects.layer.clone(),
+                },
+                inner: Mutex::new(SwapChainState {
+                    config: config.clone(),
+                }),
+            });
+            Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
+        })
     }
 }
 

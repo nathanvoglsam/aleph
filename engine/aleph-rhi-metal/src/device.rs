@@ -41,7 +41,7 @@ use aleph_rhi_impl_utils::parameter_block_layout_visitor::{
 };
 use allocator_api2::vec::Vec as BVec;
 use block2::RcBlock;
-use objc2::rc::Retained;
+use objc2::rc::{Retained, autoreleasepool};
 use objc2::runtime::ProtocolObject;
 use objc2_metal::*;
 use parking_lot::{Condvar, Mutex};
@@ -174,7 +174,7 @@ impl IDevice for Device {
         &self,
         desc: &GraphicsPipelineDesc,
     ) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
-        GraphicsPipeline::create(self, desc)
+        autoreleasepool(|_| GraphicsPipeline::create(self, desc))
     }
 
     // ========================================================================================== //
@@ -185,7 +185,7 @@ impl IDevice for Device {
         &self,
         desc: &ComputePipelineDesc,
     ) -> Result<ComputePipelineHandle, PipelineCreateError> {
-        ComputePipeline::create(self, desc)
+        autoreleasepool(|_| ComputePipeline::create(self, desc))
     }
 
     // ========================================================================================== //
@@ -195,7 +195,7 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        DescriptorPool::create(self, desc)
+        autoreleasepool(|_| DescriptorPool::create(self, desc))
     }
 
     // ========================================================================================== //
@@ -205,31 +205,31 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorArenaDesc,
     ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
-        match desc.arena_type {
+        autoreleasepool(|_| match desc.arena_type {
             DescriptorArenaType::Linear => DescriptorArenaLinear::create(self, desc),
             DescriptorArenaType::Heap => DescriptorArenaHeap::create(self, desc),
-        }
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError> {
-        Buffer::create(self, desc)
+        autoreleasepool(|_| Buffer::create(self, desc))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError> {
-        Texture::create(self, desc)
+        autoreleasepool(|_| Texture::create(self, desc))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_sampler(&self, desc: &SamplerDesc) -> Result<SamplerHandle, SamplerCreateError> {
-        Sampler::create(self, desc)
+        autoreleasepool(|_| Sampler::create(self, desc))
     }
 
     // ========================================================================================== //
@@ -323,14 +323,14 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError> {
-        Fence::create(self, signalled)
+        autoreleasepool(|_| Fence::create(self, signalled))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError> {
-        Semaphore::create(self)
+        autoreleasepool(|_| Semaphore::create(self))
     }
 
     // ========================================================================================== //
