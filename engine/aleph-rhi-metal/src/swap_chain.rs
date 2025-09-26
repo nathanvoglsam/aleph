@@ -35,7 +35,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use blink_alloc::{Blink, BlinkAlloc};
-use objc2::rc::{autoreleasepool, Retained};
+use objc2::rc::{Retained, autoreleasepool};
 use objc2_core_foundation::CGSize;
 use objc2_foundation::ns_string;
 use objc2_metal::{MTLCommandQueue, MTLResource};
@@ -103,10 +103,10 @@ impl ISwapChain for SwapChain {
                 let mut state = self.inner.lock();
 
                 log::debug!(
-                "Setting CAMetalLayer 'drawableSize' to ({}, {})",
-                new_size.width,
-                new_size.height
-            );
+                    "Setting CAMetalLayer 'drawableSize' to ({}, {})",
+                    new_size.width,
+                    new_size.height
+                );
                 self.objects.layer.setDrawableSize(new_size);
 
                 state.config.width = new_size.width as u32;
@@ -127,7 +127,7 @@ impl ISwapChain for SwapChain {
         let drawable = unsafe { self.objects.layer.nextDrawable().unwrap() };
 
         let texture = unsafe { drawable.texture() };
-        
+
         autoreleasepool(|_| {
             if self.device.context.debug {
                 texture.setLabel(Some(ns_string!("Swap Image")));
