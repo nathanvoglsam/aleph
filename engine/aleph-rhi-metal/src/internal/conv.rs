@@ -446,7 +446,8 @@ pub const fn resource_usage_to_texture_usage_mtl(v: ResourceUsageFlags) -> MTLTe
     }
     if v.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
         usage.0 |= MTLTextureUsage::ShaderWrite.0;
-        usage.0 |= MTLTextureUsage::ShaderAtomic.0;
+        // TODO: should we make this an explicit request? or only enable when supported?
+        // usage.0 |= MTLTextureUsage::ShaderAtomic.0;
     }
     if v.contains(ResourceUsageFlags::RENDER_TARGET) {
         usage.0 |= MTLTextureUsage::RenderTarget.0;
