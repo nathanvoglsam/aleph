@@ -87,7 +87,7 @@ impl GraphicsPipeline {
             for attribute in desc.vertex_layout.input_attributes.iter() {
                 unsafe {
                     let a_desc = MTLVertexAttributeDescriptor::new();
-                    a_desc.setBufferIndex(attribute.binding as usize);
+                    a_desc.setBufferIndex(attribute.binding as usize + 10);
                     a_desc.setOffset(attribute.offset as usize);
                     a_desc.setFormat(conv::vertex_format_to_mtl(attribute.format));
                     v_attrs
@@ -102,7 +102,8 @@ impl GraphicsPipeline {
                     b_desc.setStride(binding.stride as usize);
                     b_desc.setStepFunction(conv::vertex_input_rate_to_mtl(binding.input_rate));
                     b_desc.setStepRate(1);
-                    v_layouts.setObject_atIndexedSubscript(Some(&b_desc), binding.binding as usize);
+                    v_layouts
+                        .setObject_atIndexedSubscript(Some(&b_desc), binding.binding as usize + 10);
                 }
             }
 

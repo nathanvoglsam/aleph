@@ -126,7 +126,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             mtl_offsets.extend(bindings.iter().map(|v| v.offset as usize));
 
             let range = NSRange {
-                location: first_binding as usize,
+                location: first_binding as usize + 10,
                 length: bindings.len(),
             };
 
