@@ -900,9 +900,7 @@ impl ActiveEncoder {
             ActiveEncoder::Copy(old) => {
                 old.endEncoding();
             }
-            ActiveEncoder::None => {
-                log::debug!("Trying to end an already ended encoder!");
-            }
+            ActiveEncoder::None => {}
         }
         *self = ActiveEncoder::None;
     }
