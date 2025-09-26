@@ -621,7 +621,15 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         buffer_barriers: &[BufferBarrier],
         texture_barriers: &[TextureBarrier],
     ) {
-        todo!()
+        // TODO: actually do real barriers for real...
+        match &self.active {
+            ActiveEncoder::Graphics(_) => {}
+            ActiveEncoder::Compute(v) => unsafe {
+                v.memoryBarrierWithScope(MTLBarrierScope::Buffers | MTLBarrierScope::Textures);
+            },
+            ActiveEncoder::Copy(_) => {}
+            ActiveEncoder::None => {}
+        }
     }
 
     unsafe fn copy_buffer_regions(
@@ -836,6 +844,7 @@ impl ActiveEncoder {
             ActiveEncoder::None => {}
         };
 
+        // TODO: concurrent dispatch + use memory barriers
         let encoder = list
             .computeCommandEncoderWithDispatchType(MTLDispatchType::Serial)
             .unwrap();
