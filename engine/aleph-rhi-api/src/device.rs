@@ -126,10 +126,10 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     ///
     /// By flattening the parameter space we significantly reduce the amount of struct noise we need
     /// to encode the parameter updates. If we made this explicit we'd required multiple nested
-    /// arrays of fields. Authoring code this way is very painful and error prone.
+    /// arrays of fields. Authoring code this way is very painful and error-prone.
     ///
     /// The nested field approach also makes it difficult for data driven rendering to generate
-    /// parameter block updates as allocating the nested arrays reqiures arenas (complexity) or a
+    /// parameter block updates as allocating the nested arrays requires arenas (complexity) or a
     /// duplicate 'owned' version of [`ParameterWrite`].
     ///
     /// The two most common ways we predict 'update_parameter_block' to be called are:
@@ -170,7 +170,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     /// Some implementations may re-use handles, where allocating a new block may return a
     /// previously freed block using the same handle. The implication is that use-after free will
     /// not cause immediate UB or validation errors on the platform API in some cases due to
-    /// implementation detail. Instead you will observe 'spooky action at a distance' where two
+    /// implementation detail. Instead, you will observe 'spooky action at a distance' where two
     /// systems think they own the block, when instead they're sharing one, and they clobber each
     /// other's descriptors or have synchronization issues if they're being shared across threads.
     ///

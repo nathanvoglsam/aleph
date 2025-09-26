@@ -46,12 +46,10 @@ pub trait IAdapter: IAny + IGetPlatformInterface + Send + Sync {
 /// The set of preferences that can be requested for the type of adapter to select.
 #[derive(Copy, Clone, Debug)]
 pub enum AdapterTypePreference {
-    /// Instructs the context to prefer a hardware adapter if one is available. This option means
-    /// that a hardware adapter will always be selected over a software adapter unconditionally.
+    /// Instructs the context to prefer a hardware adapter if one is available.
     Hardware,
 
-    /// Instructs the context to prefer a software adapter if one is available. This option means
-    /// that a software adapter will always be selected over a hardware adapter unconditionally.
+    /// Instructs the context to prefer a software adapter if one is available.
     Software,
 }
 
@@ -147,6 +145,9 @@ impl<'a> std::fmt::Debug for AdapterRequestOptions<'a> {
         f.debug_struct("AdapterRequestOptions")
             .field("surface", &self.surface.as_ref().map(|_| "<ptr>"))
             .field("power_class", &self.power_class)
+            .field("type_preference", &self.type_preference)
+            .field("allow_software_adapters", &self.allow_software_adapters)
+            .field("deny_hardware_adapters", &self.deny_hardware_adapters)
             .finish()
     }
 }
