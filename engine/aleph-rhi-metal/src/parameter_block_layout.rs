@@ -148,13 +148,17 @@ impl CompiledParameterBlockLayout {
 
         for param in desc.params {
             num_arguments += param.array_size.count() as usize;
+
+            // Take the current number of reads/writes as the offset into the respective arrays used
+            // for hazard tracking.
+            use_write_bases.push(num_writes);
+            use_read_bases.push(num_reads);
+
             if param.ty == ParameterType::SamplerState {
                 // Do nothing
             } else if param.ty.is_srv() || param.ty.is_constant_buffer() {
-                use_read_bases.push(num_reads);
                 num_reads += param.array_size.count() as usize;
             } else if param.ty.is_uav() {
-                use_write_bases.push(num_writes);
                 num_writes += param.array_size.count() as usize;
             } else {
                 unreachable!();

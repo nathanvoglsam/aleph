@@ -172,10 +172,7 @@ impl IQueue for Queue {
             wait_list.commit();
         }
 
-        for list in desc.command_lists {
-            let list = list.take().unwrap();
-            let list = box_downcast::<_, CommandList>(list).ok().unwrap();
-
+        for list in lists {
             assert_eq!(list.list_type, self.queue_type);
             assert_eq!(list.state, ListState::Closed);
 

@@ -274,7 +274,7 @@ impl IDevice for Device {
     ) {
         let layout = unwrap::parameter_block_layout(layout);
         let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
-        let cpu_handle = block.resource_handle_cpu.unwrap();
+        let cpu_handle = block.cpu_addr.unwrap();
 
         let mut update_use_sets =
             |write_group: &ParameterBlockLayoutVisitorElement,

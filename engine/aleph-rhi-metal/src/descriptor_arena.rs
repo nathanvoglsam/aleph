@@ -30,7 +30,6 @@
 use std::alloc::{Layout, handle_alloc_error};
 use std::any::TypeId;
 use std::mem::MaybeUninit;
-use std::num::NonZero;
 use std::ptr::NonNull;
 
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
@@ -167,8 +166,7 @@ unsafe impl IBlockFactory for LinearBlockFactory {
             // Get the sub-slice of the resource arena that we've allocated for this parameter
             // block.
             let offset = self.next_resource_index * 8;
-            let cpu = unsafe { memory_block.cpu_base.add(offset) };
-            let gpu = memory_block.gpu_base.saturating_add(offset as u64);
+            let cpu_addr = unsafe { memory_block.cpu_base.add(offset) };
             self.next_resource_index += num_arguments;
 
             let num_reads = block_layout.compiled.num_reads;
@@ -181,8 +179,8 @@ unsafe impl IBlockFactory for LinearBlockFactory {
                 _layout: NonNull::from(block_layout),
                 backing_buffer,
                 resource_allocation: Default::default(), // Never used here
-                resource_handle_cpu: Some(cpu.cast()),
-                resource_handle_gpu: NonZero::new(gpu.get() as usize),
+                cpu_addr: Some(cpu_addr.cast()),
+                gpu_offset: offset,
                 reads,
                 writes,
             };
@@ -207,8 +205,8 @@ unsafe impl IBlockFactory for LinearBlockFactory {
     fn reset_blocks(&mut self, blocks: &mut [Self::T]) {
         for block in blocks {
             // block.resource_allocation is unused in this use case
-            block.resource_handle_cpu = None;
-            block.resource_handle_gpu = None;
+            block.cpu_addr = None;
+            block.gpu_offset = 0;
             block.reads = NonNull::slice_from_raw_parts(NonNull::dangling(), 0);
             block.writes = NonNull::slice_from_raw_parts(NonNull::dangling(), 0);
         }
@@ -353,16 +351,15 @@ unsafe impl IBlockFactory for HeapBlockFactory {
 
             // Get the sub-slice of the resource arena that we've allocated for this parameter
             // block.
-            let offset = alloc.offset * 8;
-            let cpu = unsafe { memory_block.cpu_base.add(offset as usize) };
-            let gpu = memory_block.gpu_base.saturating_add(offset as u64);
+            let offset = alloc.offset as usize * 8;
+            let cpu_addr = unsafe { memory_block.cpu_base.add(offset) };
 
             let new = ParameterBlock {
                 _layout: NonNull::from(block_layout),
                 backing_buffer,
                 resource_allocation: alloc,
-                resource_handle_cpu: Some(cpu.cast()),
-                resource_handle_gpu: NonZero::new(gpu.get() as usize),
+                cpu_addr: Some(cpu_addr.cast()),
+                gpu_offset: offset,
                 reads,
                 writes,
             };
@@ -397,13 +394,12 @@ unsafe impl IBlockFactory for HeapBlockFactory {
 
                 // Get the sub-slice of the resource arena that we've allocated for this parameter
                 // block.
-                let offset = allocation.offset * 8;
-                let cpu = memory_block.cpu_base.add(offset as usize);
-                let gpu = memory_block.gpu_base.saturating_add(offset as u64);
+                let offset = allocation.offset as usize * 8;
+                let cpu = memory_block.cpu_base.add(offset);
 
                 block.resource_allocation = allocation;
-                block.resource_handle_cpu = Some(cpu.cast());
-                block.resource_handle_gpu = NonZero::new(gpu.get() as usize);
+                block.cpu_addr = Some(cpu.cast());
+                block.gpu_offset = offset;
             }
         }
         Ok(())
@@ -421,8 +417,8 @@ unsafe impl IBlockFactory for HeapBlockFactory {
                 if !block.resource_allocation.is_fail() {
                     self.resource_pool.free(block.resource_allocation);
                     block.resource_allocation = Default::default();
-                    block.resource_handle_cpu = None;
-                    block.resource_handle_gpu = None;
+                    block.cpu_addr = None;
+                    block.gpu_offset = 0;
                 }
             }
         }
@@ -440,8 +436,8 @@ unsafe impl IBlockFactory for HeapBlockFactory {
             if !block.resource_allocation.is_fail() {
                 self.resource_pool.free(block.resource_allocation);
                 block.resource_allocation = Default::default();
-                block.resource_handle_cpu = None;
-                block.resource_handle_gpu = None;
+                block.cpu_addr = None;
+                block.gpu_offset = 0;
             }
         }
     }

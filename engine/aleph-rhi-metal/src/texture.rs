@@ -146,27 +146,66 @@ impl Texture {
         let view = if let Some(view) = views.get(desc) {
             *view
         } else {
-            let pixel_format = conv::format_to_pixel_mtl(desc.format);
-            let texture_type = conv::image_view_type_to_mtl(desc.view_type);
-            let level_range = NSRange::new(
-                desc.sub_resources.base_mip_level as usize,
-                desc.sub_resources.num_mip_levels as usize,
-            );
-            let slice_range = NSRange::new(
-                desc.sub_resources.base_array_slice as usize,
-                desc.sub_resources.num_array_slices as usize,
-            );
-            let view = unsafe {
-                self.objects
-                    .texture
-                    .newTextureViewWithPixelFormat_textureType_levels_slices(
-                        pixel_format,
-                        texture_type,
-                        level_range,
-                        slice_range,
-                    )
-                    .expect("Failed to construct MTLTexture image view")
+            // Check if we were asked to make a view of the same texture type as the base texture
+            // resource.
+            let is_resource_an_array = self.desc().array_size > 1;
+            let view_type_matches_resource = match (is_resource_an_array, self.desc().dimension) {
+                (false, TextureDimension::Texture1D) => desc.view_type == ImageViewType::Tex1D,
+                (false, TextureDimension::Texture2D) => desc.view_type == ImageViewType::Tex2D,
+                (false, TextureDimension::Texture3D) => desc.view_type == ImageViewType::Tex3D,
+                (true, TextureDimension::Texture1D) => desc.view_type == ImageViewType::TexArray1D,
+                (true, TextureDimension::Texture2D) => desc.view_type == ImageViewType::TexArray2D,
+                (true, TextureDimension::Texture3D) => unreachable!(),
             };
+
+            // Determine if the requested view covers the _entire_ resource.
+            let all_mips_and_slices = desc.sub_resources.base_mip_level == 0
+                && desc.sub_resources.num_mip_levels == self.desc().mip_levels
+                && desc.sub_resources.base_array_slice == 0
+                && desc.sub_resources.num_array_slices == self.desc().array_size;
+
+            // Determine if the requested view is asking for the same format as the texture resource
+            // itself
+            let view_format_matches_texture = desc.format == self.desc().format;
+
+            let view = match (
+                all_mips_and_slices,
+                view_type_matches_resource,
+                view_format_matches_texture,
+            ) {
+                (true, true, true) => self.objects.texture.clone(),
+                (true, true, false) => {
+                    // This is a special path for views that are aliasing the format without
+                    // changing anything about mips/slices.
+                    self.objects
+                        .texture
+                        .newTextureViewWithPixelFormat(conv::format_to_pixel_mtl(desc.format))
+                        .expect("Failed to construct MTLTexture image view")
+                }
+                _ => {
+                    let texture_type = conv::image_view_type_to_mtl(desc.view_type);
+                    let level_range = NSRange::new(
+                        desc.sub_resources.base_mip_level as usize,
+                        desc.sub_resources.num_mip_levels as usize,
+                    );
+                    let slice_range = NSRange::new(
+                        desc.sub_resources.base_array_slice as usize,
+                        desc.sub_resources.num_array_slices as usize,
+                    );
+                    unsafe {
+                        self.objects
+                            .texture
+                            .newTextureViewWithPixelFormat_textureType_levels_slices(
+                                conv::format_to_pixel_mtl(desc.format),
+                                texture_type,
+                                level_range,
+                                slice_range,
+                            )
+                            .expect("Failed to construct MTLTexture image view")
+                    }
+                }
+            };
+
             let view = unsafe {
                 // Allocate the view into the internal bump allocator
                 let alloc = self.image_views.lock();

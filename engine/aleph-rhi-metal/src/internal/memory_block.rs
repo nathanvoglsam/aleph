@@ -50,9 +50,8 @@ pub struct MemoryBlock {
 
     /// The CPU handle to the start of the memory block
     pub cpu_base: NonNull<u8>,
-
-    /// The GPU handle to the start of the memory block
-    pub gpu_base: NonZero<u64>,
+    // /// The GPU handle to the start of the memory block
+    // pub gpu_base: NonZero<u64>,
 }
 
 unsafe impl Send for MemoryBlock {}
@@ -66,13 +65,13 @@ impl MemoryBlock {
         let buffer = device.device.newBufferWithLength_options(len, options)?;
 
         let cpu_base = buffer.contents().cast();
-        let gpu_base = NonZero::new(buffer.gpuAddress()).unwrap();
+        // let gpu_base = NonZero::new(buffer.gpuAddress()).unwrap();
 
         Some(Self {
             buffer,
             len,
             cpu_base,
-            gpu_base,
+            // gpu_base,
         })
     }
 }

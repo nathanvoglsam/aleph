@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::num::NonZero;
 use std::ptr::NonNull;
 
 use aleph_rhi_impl_utils::offset_allocator;
@@ -58,10 +57,10 @@ pub struct ParameterBlock {
     /// CPU address for the backing allocation of the argument buffer we're using to back this
     /// parameter block. This is used for writing the descriptors into the buffer from the host
     /// before being bound.
-    pub resource_handle_cpu: Option<NonNull<u64>>,
+    pub cpu_addr: Option<NonNull<u64>>,
 
     /// Offset into 'backing_buffer' where the argument buffer sub-allocation is located.
-    pub resource_handle_gpu: Option<NonZero<usize>>,
+    pub gpu_offset: usize,
 
     /// Array of resource handles. Filled out by update calls and used for hazard tracking with
     /// useResources. This is the set of read only resources in the parameter block.

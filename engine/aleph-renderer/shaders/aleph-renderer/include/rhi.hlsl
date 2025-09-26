@@ -50,7 +50,7 @@ struct aleph_PushConstantBlockAttribute {};
 #define PUSH_CONSTANT_D3D(T, name) [aleph::PushConstantBlock] ConstantBuffer<T> name : register(b0, space1024)
 
 /// PUSH_CONSTANT impl for Metal
-#define PUSH_CONSTANT_MTL(T, name) [aleph::PushConstantBlock] ConstantBuffer<T> name
+#define PUSH_CONSTANT_MTL(T, name) [aleph::PushConstantBlock] ConstantBuffer<T> name : register(b9)
 
 /// Map the impl to the platform as a separate layer so we can document API directly on
 /// 'PUSH_CONSTANT'.

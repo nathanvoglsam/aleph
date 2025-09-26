@@ -216,7 +216,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
         let index = 9;
 
-        state.push_constant_block.copy_from_slice(data);
+        state.push_constant_block[..data.len()].copy_from_slice(data);
 
         let block_bytes = &state.push_constant_block[0..block.size.get() as usize];
         let bytes = NonNull::from(block_bytes).cast::<c_void>();
@@ -322,19 +322,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         mtl_desc.setRenderTargetWidth(info.extent.width as usize);
         mtl_desc.setRenderTargetHeight(info.extent.height as usize);
 
-        let encoder = self
-            .objects
-            .list
-            .renderCommandEncoderWithDescriptor(&mtl_desc);
-        match encoder {
-            Some(v) => {
-                self.active.set_render(v);
-            }
-            None => {
-                log::error!("Failed to create 'MTLCommandRenderEncoder'!");
-                panic!("Failed to create 'MTLCommandRenderEncoder'!");
-            }
-        }
+        self.active.set_render(&self.objects.list, &mtl_desc);
     }
 
     unsafe fn end_rendering(&mut self) {
@@ -434,7 +422,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                     unsafe {
                         encoder.setBuffer_offset_atIndex(
                             Some(block.backing_buffer.as_ref()),
-                            block.resource_handle_gpu.unwrap().get(),
+                            block.gpu_offset,
                             i,
                         );
                     }
@@ -469,7 +457,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                     let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
 
                     let buffer = unsafe { Some(block.backing_buffer.as_ref()) };
-                    let offset = block.resource_handle_gpu.unwrap().get();
+                    let offset = block.gpu_offset;
                     match block_layout_desc.visibility {
                         DescriptorShaderVisibility::All => unsafe {
                             encoder.setFragmentBuffer_offset_atIndex(buffer, offset, i);
@@ -774,7 +762,11 @@ pub enum ActiveEncoder {
 }
 
 impl ActiveEncoder {
-    pub fn set_render(&mut self, encoder: Retained<ProtocolObject<dyn MTLRenderCommandEncoder>>) {
+    pub fn set_render(
+        &mut self,
+        list: &ProtocolObject<dyn MTLCommandBuffer>,
+        desc: &MTLRenderPassDescriptor,
+    ) {
         match self {
             ActiveEncoder::Graphics(_) => {
                 log::error!("Must end previous render encoder with 'end_rendering'!");
@@ -782,14 +774,21 @@ impl ActiveEncoder {
             }
             ActiveEncoder::Compute(old) => {
                 old.endEncoding();
-                *self = ActiveEncoder::Graphics(encoder);
             }
             ActiveEncoder::Copy(old) => {
                 old.endEncoding();
-                *self = ActiveEncoder::Graphics(encoder);
             }
-            ActiveEncoder::None => {
-                *self = ActiveEncoder::Graphics(encoder);
+            ActiveEncoder::None => {}
+        }
+
+        let encoder = list.renderCommandEncoderWithDescriptor(desc);
+        match encoder {
+            Some(v) => {
+                *self = ActiveEncoder::Graphics(v);
+            }
+            None => {
+                log::error!("Failed to create 'MTLCommandRenderEncoder'!");
+                panic!("Failed to create 'MTLCommandRenderEncoder'!");
             }
         }
     }
@@ -825,21 +824,20 @@ impl ActiveEncoder {
                 log::error!("Must end render encoders with 'end_rendering'!");
                 panic!("Must end render encoders with 'end_rendering'!")
             }
-            ActiveEncoder::Compute(_) => {}
+            ActiveEncoder::Compute(_) => {
+                // Early exit because we don't need to start a new encoder
+                return;
+            }
             ActiveEncoder::Copy(old) => {
                 old.endEncoding();
-                let encoder = list
-                    .computeCommandEncoderWithDispatchType(MTLDispatchType::Concurrent)
-                    .unwrap();
-                *self = ActiveEncoder::Compute(encoder);
             }
-            ActiveEncoder::None => {
-                let encoder = list
-                    .computeCommandEncoderWithDispatchType(MTLDispatchType::Concurrent)
-                    .unwrap();
-                *self = ActiveEncoder::Compute(encoder);
-            }
+            ActiveEncoder::None => {}
         };
+
+        let encoder = list
+            .computeCommandEncoderWithDispatchType(MTLDispatchType::Serial)
+            .unwrap();
+        *self = ActiveEncoder::Compute(encoder);
     }
 
     pub fn get_compute<'a>(&'a self) -> &'a ProtocolObject<dyn MTLComputeCommandEncoder> {
@@ -859,15 +857,16 @@ impl ActiveEncoder {
             }
             ActiveEncoder::Compute(old) => {
                 old.endEncoding();
-                let encoder = list.blitCommandEncoder().unwrap();
-                *self = ActiveEncoder::Copy(encoder);
             }
-            ActiveEncoder::Copy(_) => {}
-            ActiveEncoder::None => {
-                let encoder = list.blitCommandEncoder().unwrap();
-                *self = ActiveEncoder::Copy(encoder);
+            ActiveEncoder::Copy(_) => {
+                // Early exit because we don't need to start a new encoder
+                return;
             }
+            ActiveEncoder::None => {}
         };
+
+        let encoder = list.blitCommandEncoder().unwrap();
+        *self = ActiveEncoder::Copy(encoder);
     }
 
     pub fn get_blit<'a>(&'a self) -> &'a ProtocolObject<dyn MTLBlitCommandEncoder> {
