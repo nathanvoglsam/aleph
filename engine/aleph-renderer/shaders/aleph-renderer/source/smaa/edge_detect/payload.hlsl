@@ -32,7 +32,7 @@
 struct PixelInput {
     float4 sv_position : SV_Position;
     [[vk::location(0)]] float2 uv : A0;
-    [[vk::location(2)]] float4 offset_0 : A1;
+    [[vk::location(1)]] float4 offset_0 : A1;
     [[vk::location(2)]] float4 offset_1 : A2;
-    [[vk::location(2)]] float4 offset_2 : A3;
+    [[vk::location(3)]] float4 offset_2 : A3;
 };

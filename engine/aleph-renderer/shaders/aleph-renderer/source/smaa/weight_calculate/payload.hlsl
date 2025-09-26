@@ -34,6 +34,6 @@ struct PixelInput {
     [[vk::location(0)]] float2 uv : A0;
     [[vk::location(1)]] float2 pixcoord : A1;
     [[vk::location(2)]] float4 offset_0 : A2;
-    [[vk::location(2)]] float4 offset_1 : A3;
-    [[vk::location(2)]] float4 offset_2 : A4;
+    [[vk::location(3)]] float4 offset_1 : A3;
+    [[vk::location(4)]] float4 offset_2 : A4;
 };
