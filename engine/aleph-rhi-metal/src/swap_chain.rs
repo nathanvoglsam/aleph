@@ -37,7 +37,8 @@ use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use blink_alloc::{Blink, BlinkAlloc};
 use objc2::rc::Retained;
 use objc2_core_foundation::CGSize;
-use objc2_metal::MTLCommandQueue;
+use objc2_foundation::ns_string;
+use objc2_metal::{MTLCommandQueue, MTLResource};
 use objc2_quartz_core::{CAMetalDrawable, CAMetalLayer};
 use parking_lot::Mutex;
 
@@ -124,6 +125,11 @@ impl ISwapChain for SwapChain {
         let drawable = unsafe { self.objects.layer.nextDrawable().unwrap() };
 
         let texture = unsafe { drawable.texture() };
+
+        if self.device.context.debug {
+            texture.setLabel(Some(ns_string!("Swap Image")));
+        }
+
         let texture = Texture {
             _device: self.device.clone(),
             id: self.device.object_counter.next_texture(),

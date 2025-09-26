@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::num::NonZero;
 use std::ptr::NonNull;
 
 use objc2::rc::Retained;

@@ -39,7 +39,7 @@ use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use blink_alloc::{Blink, BlinkAlloc};
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2_foundation::NSRange;
+use objc2_foundation::{NSRange, NSString};
 use objc2_metal::*;
 use parking_lot::Mutex;
 
@@ -68,12 +68,12 @@ impl Texture {
         let mtl_desc = unsafe { MTLTextureDescriptor::new() };
         unsafe {
             let (array_len, texture_type) = match (desc.array_size, desc.dimension) {
-                (0, TextureDimension::Texture1D) => (1, MTLTextureType::Type1D),
-                (0, TextureDimension::Texture2D) => (1, MTLTextureType::Type2D),
-                (0, TextureDimension::Texture3D) => (1, MTLTextureType::Type3D),
-                (v, TextureDimension::Texture1D) => (v, MTLTextureType::Type1DArray),
-                (v, TextureDimension::Texture2D) => (v, MTLTextureType::Type2DArray),
-                (_, TextureDimension::Texture3D) => unimplemented!(),
+                (v, TextureDimension::Texture1D) if v > 1 => (v, MTLTextureType::Type1DArray),
+                (v, TextureDimension::Texture2D) if v > 1 => (v, MTLTextureType::Type2DArray),
+                (v, TextureDimension::Texture3D) if v > 1 => unimplemented!(),
+                (_, TextureDimension::Texture1D) => (1, MTLTextureType::Type1D),
+                (_, TextureDimension::Texture2D) => (1, MTLTextureType::Type2D),
+                (_, TextureDimension::Texture3D) => (1, MTLTextureType::Type3D),
             };
             mtl_desc.setTextureType(texture_type);
             mtl_desc.setPixelFormat(conv::format_to_pixel_mtl(desc.format));
@@ -93,6 +93,13 @@ impl Texture {
             Some(v) => v,
             None => return Err(TextureCreateError::Platform),
         };
+
+        if let Some(name) = desc.name
+            && device.context.debug
+        {
+            let label = NSString::from_str(name);
+            texture.setLabel(Some(&label));
+        }
 
         let out = Texture {
             _device: device.this.upgrade().unwrap(),
@@ -174,14 +181,6 @@ impl Texture {
                 view_format_matches_texture,
             ) {
                 (true, true, true) => self.objects.texture.clone(),
-                (true, true, false) => {
-                    // This is a special path for views that are aliasing the format without
-                    // changing anything about mips/slices.
-                    self.objects
-                        .texture
-                        .newTextureViewWithPixelFormat(conv::format_to_pixel_mtl(desc.format))
-                        .expect("Failed to construct MTLTexture image view")
-                }
                 _ => {
                     let texture_type = conv::image_view_type_to_mtl(desc.view_type);
                     let level_range = NSRange::new(
@@ -192,7 +191,7 @@ impl Texture {
                         desc.sub_resources.base_array_slice as usize,
                         desc.sub_resources.num_array_slices as usize,
                     );
-                    unsafe {
+                    let view = unsafe {
                         self.objects
                             .texture
                             .newTextureViewWithPixelFormat_textureType_levels_slices(
@@ -202,7 +201,11 @@ impl Texture {
                                 slice_range,
                             )
                             .expect("Failed to construct MTLTexture image view")
+                    };
+                    if self._device.context.debug {
+                        view.setLabel(self.objects.texture.label().as_deref())
                     }
+                    view
                 }
             };
 

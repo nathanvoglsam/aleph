@@ -45,7 +45,7 @@ use blink_alloc::Blink;
 use objc2::ffi::NSUInteger;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2_foundation::NSRange;
+use objc2_foundation::{NSRange, NSString};
 use objc2_metal::*;
 
 use crate::binding_signature::BindingSignature;
@@ -438,7 +438,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
 
                     let num_writes = block_layout.compiled.num_writes;
                     if num_writes != 0 {
-                        let resources = block.reads.cast();
+                        let resources = block.writes.cast();
                         let usage = MTLResourceUsage::Write;
                         unsafe {
                             encoder.useResources_count_usage(resources, num_writes, usage);
@@ -498,7 +498,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
 
                     let num_writes = block_layout.compiled.num_writes;
                     if num_writes != 0 {
-                        let resources = block.reads.cast();
+                        let resources = block.writes.cast();
                         let usage = MTLResourceUsage::Write;
                         let stages = block_layout.compiled.visibility;
                         unsafe {
@@ -738,12 +738,14 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         // TODO: this
     }
 
-    unsafe fn begin_event(&mut self, _color: Color, _message: &aleph_nstr::NStr) {
-        // TODO: this
+    unsafe fn begin_event(&mut self, _color: Color, message: &aleph_nstr::NStr) {
+        self.objects
+            .list
+            .pushDebugGroup(&NSString::from_str(message.to_str()))
     }
 
     unsafe fn end_event(&mut self) {
-        // TODO: this
+        self.objects.list.popDebugGroup();
     }
 }
 

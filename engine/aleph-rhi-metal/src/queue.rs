@@ -34,6 +34,7 @@ use aleph_rhi_api::*;
 use crossbeam::queue::ArrayQueue;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
+use objc2_foundation::ns_string;
 use objc2_metal::*;
 use parking_lot::{Mutex, MutexGuard};
 
@@ -72,6 +73,11 @@ impl Queue {
     pub(crate) fn new(device: &Device, queue_type: QueueType) -> Option<AnyArc<Self>> {
         // TODO: should this be configurable? metal 4 will make this go away anyway I think?
         let queue = device.device.newCommandQueueWithMaxCommandBufferCount(64)?;
+        match queue_type {
+            QueueType::General => queue.setLabel(Some(ns_string!("GeneralQueue"))),
+            QueueType::Compute => queue.setLabel(Some(ns_string!("ComputeQueue"))),
+            QueueType::Transfer => queue.setLabel(Some(ns_string!("TransferQueue"))),
+        }
 
         let out = AnyArc::new_cyclic(|v| Self {
             _this: v.clone(),

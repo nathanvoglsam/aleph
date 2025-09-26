@@ -109,9 +109,6 @@ impl GraphicsPipeline {
             mtl_desc.setVertexDescriptor(Some(&v_desc));
         }
 
-        // vertex_layout: &'a VertexInputStateDesc<'a>,
-        // TODO
-
         let primitive_topology = desc.input_assembly_state.primitive_topology;
         let primitive_type = conv::primitive_topology_to_mtl(primitive_topology);
         unsafe {
