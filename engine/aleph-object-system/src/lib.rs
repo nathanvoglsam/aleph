@@ -35,10 +35,10 @@ use std::collections::HashMap;
 use std::mem::{ManuallyDrop, needs_drop};
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
-use std::sync::atomic::{AtomicPtr, Ordering};
 use std::sync::{Arc, LazyLock};
 
 use aleph_nstr::NStr;
+use crossbeam::atomic::AtomicCell;
 
 /// This trait represents the capability of a type to interact with the 'object system'
 pub unsafe trait IObject: Sized {
@@ -329,9 +329,7 @@ macro_rules! unsafe_impl_iobject {
             const fn __internal_register_node_scope() -> bool {
                 #[$crate::ctor::ctor(crate_path = $crate::ctor)]
                 fn internal_register_t() {
-                    unsafe {
-                        $crate::register_type(<$t>::__internal_node());
-                    }
+                    $crate::register_type(<$t>::__internal_node());
                 }
                 true
             }
@@ -368,7 +366,7 @@ pub static TYPES: LazyLock<HashMap<uuid::Uuid, &'static ObjectDescription>> = La
 /// main. While this is safe, it's not particularly fast. [`TYPES`] is much more efficient to
 /// iterate.
 pub struct ObjectTypeIter {
-    next: *mut ObjectTypeListNode,
+    next: Option<&'static ObjectTypeListNode>,
 }
 
 impl Default for ObjectTypeIter {
@@ -380,11 +378,9 @@ impl Default for ObjectTypeIter {
 impl ObjectTypeIter {
     /// Constructs a new [`ObjectTypeIter`] instance.
     pub fn new() -> Self {
-        // All accesses to the list pointer must leave it as null or a valid static pointer to a
-        // 'ObjectTypeListNode' instance. All access to the head pointer is unsafe gated and so it's
-        // impossible to break this expectation without other unsafe code.
-        let next = unsafe { object_type_list_head().load(Ordering::Relaxed) };
-        Self { next }
+        Self {
+            next: OBJECT_TYPE_LIST_HEAD.load(),
+        }
     }
 }
 
@@ -392,15 +388,11 @@ impl Iterator for ObjectTypeIter {
     type Item = &'static ObjectDescription;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let ptr = self.next;
-        if ptr.is_null() {
-            None
+        if let Some(ptr) = self.next {
+            self.next = ptr.next.load();
+            Some(ptr.vtable)
         } else {
-            unsafe {
-                let out: &'static ObjectTypeListNode = ptr.as_ref().unwrap_unchecked();
-                self.next = out.next.load(Ordering::Relaxed);
-                Some(out.vtable)
-            }
+            None
         }
     }
 }
@@ -430,7 +422,7 @@ pub fn assert_no_duplicate_ids_registered() {
 #[repr(C)]
 pub struct ObjectTypeListNode {
     vtable: &'static ObjectDescription,
-    next: AtomicPtr<ObjectTypeListNode>,
+    next: AtomicCell<Option<&'static ObjectTypeListNode>>,
 }
 
 impl ObjectTypeListNode {
@@ -439,37 +431,26 @@ impl ObjectTypeListNode {
     pub const fn new(vtable: &'static ObjectDescription) -> Self {
         Self {
             vtable,
-            next: AtomicPtr::new(core::ptr::null_mut()),
+            next: AtomicCell::new(None),
         }
     }
 }
 
-/// Super-duper ultra unsafe do not access but needs to be public so macros can touch it.
-///
-/// Forms the head of the linked list of all declared IObject types. Will be setup before main.
-///
-/// Call to get a reference to the head of the list. Unsafe because if you call this outside of this
-/// library (it's implementation detail) I will beat you.
-#[doc(hidden)]
-pub const unsafe fn object_type_list_head() -> &'static AtomicPtr<ObjectTypeListNode> {
-    static OBJECT_TYPE_LIST_HEAD: AtomicPtr<ObjectTypeListNode> =
-        AtomicPtr::new(core::ptr::null_mut());
-    &OBJECT_TYPE_LIST_HEAD
-}
-
-/// Super-duper ultra unsafe do not access but needs to be public so macros can touch it.
+/// Do not access but needs to be public so macros can touch it.
 ///
 /// Utility function used by the unsafe_impl_iobject macro for registering the type into the global
 /// linked list of all types.
 #[doc(hidden)]
-pub unsafe fn register_type(v: &'static ObjectTypeListNode) {
-    unsafe {
-        let ptr: *mut ObjectTypeListNode =
-            v as *const ObjectTypeListNode as *mut ObjectTypeListNode;
-        let next = object_type_list_head().swap(ptr, Ordering::SeqCst);
-        v.next.store(next, Ordering::SeqCst);
-    }
+pub fn register_type(v: &'static ObjectTypeListNode) {
+    let next = OBJECT_TYPE_LIST_HEAD.swap(Some(v));
+    v.next.store(next);
 }
+
+/// Forms the head of the linked list of all declared category types. Will be setup before main.
+///
+/// Call to get a reference to the head of the list.
+static OBJECT_TYPE_LIST_HEAD: AtomicCell<Option<&'static ObjectTypeListNode>> =
+    AtomicCell::new(None);
 
 // struct Test();
 // unsafe_impl_iobject!(Test, "019212d8-f424-7221-8d34-97b9f318bf0b");

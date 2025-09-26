@@ -45,3 +45,4 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 uuid = { workspace = true }
 aleph-nstr = { workspace = true }
 ctor = { workspace = true }
+crossbeam = { workspace = true }
