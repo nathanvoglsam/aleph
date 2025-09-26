@@ -309,43 +309,39 @@ impl std::fmt::Display for PipelineBindPoint {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum AttachmentLoadOp<ClearValue> {
+    /// Specifies that the contents of the attachment are not important and can be safely ignored.
+    /// The result of a read from a "don't care" attachment is undefined. The implementation is free
+    /// to not even access the attachment.
+    ///
+    /// This is still logically a read as 'DontCare' is allowed to read the texture even if the
+    /// results are supposed to be undefined. This is just a hint that we don't use the attachment's
+    /// existing contents and the driver can do whatever is fastest or possible on the device.
+    /// However, you are still required to synchronize as-if this was a read even if you never
+    /// explicitly access the attachment. Drivers are allowed to issue reads if they aren't able
+    /// to skip them!
+    DontCare,
+
     /// Specifies that the attachment will be loaded from the data in memory
     Load,
 
     /// Specifies that the attachment will be cleared with a specified colour
     Clear(ClearValue),
-
-    /// Specifies that the contents of the attachment are not important and can be safely discarded.
-    /// Any loads will read undefined data. This is still logically a read, unlike
-    /// [AttachmentLoadOp::None], as 'DontCare' is allowed to read the texture even if we're
-    /// not allowed to use what it reads. This is just a hint that we don't use what we read and the
-    /// driver will do whatever is fastest or possible on the device.
-    DontCare,
-
-    /// Specifies that the attachment is *not* loaded (unused). This is similar to
-    /// [AttachmentLoadOp::DontCare], but will leave the attachment untouched rather than undefined.
-    None,
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum AttachmentStoreOp {
+    /// Specifies that the results of rendering operations will be discarded and *may* not be
+    /// written to memory. The contents of the attachment will become undefined.
+    ///
+    /// This operation is not a guarantee that the attachment will not be written to. The driver is
+    /// still allowed to write to the attachment if it is not able/not efficient to skip the writes.
+    ///
+    /// You must still synchronize as if this operation writes to the attachment.
+    DontCare,
+
     /// Specifies that the results of rendering operations will be written to the attachment's
     /// memory
     Store,
-
-    /// Specifies that the results of rendering operations will be discarded and *not* written to
-    /// memory. The contents of the attachment will become undefined.
-    ///
-    /// This is still logically a write operation. 'DontCare' is allowed to write to the texture
-    /// if the driver requires even if we're not allowed to read what it writes. This is just a hint
-    /// to the driver that we won't read the output, and the driver is free to write anyway if it
-    /// thinks it's faster or if the device must write the attachment.
-    DontCare,
-
-    /// Specifies that the attachment is *not* stored to (unused). This is similar to
-    /// [AttachmentStoreOp::DontCare], but will leave the attachment untouched rather than
-    /// undefined.
-    None,
 }
 
 #[derive(Clone, Debug)]
@@ -361,8 +357,8 @@ impl RenderingColorAttachmentInfo {
         Self {
             image_view,
             image_layout: ImageLayout::ColorAttachment,
-            load_op: AttachmentLoadOp::None,
-            store_op: AttachmentStoreOp::None,
+            load_op: AttachmentLoadOp::DontCare,
+            store_op: AttachmentStoreOp::DontCare,
         }
     }
 
@@ -393,10 +389,6 @@ impl RenderingColorAttachmentInfo {
         self.with_load_op(AttachmentLoadOp::DontCare)
     }
 
-    pub const fn load_none(self) -> Self {
-        self.with_load_op(AttachmentLoadOp::None)
-    }
-
     pub const fn store(self) -> Self {
         self.with_store_op(AttachmentStoreOp::Store)
     }
@@ -404,20 +396,14 @@ impl RenderingColorAttachmentInfo {
     pub const fn store_dont_care(self) -> Self {
         self.with_store_op(AttachmentStoreOp::DontCare)
     }
-
-    pub const fn store_none(self) -> Self {
-        self.with_store_op(AttachmentStoreOp::None)
-    }
 }
 
 #[derive(Clone, Debug)]
 pub struct RenderingDepthStencilAttachmentInfo {
     pub image_view: ImageView,
     pub image_layout: ImageLayout,
-    pub depth_load_op: AttachmentLoadOp<DepthStencilClearValue>,
-    pub depth_store_op: AttachmentStoreOp,
-    pub stencil_load_op: AttachmentLoadOp<DepthStencilClearValue>,
-    pub stencil_store_op: AttachmentStoreOp,
+    pub depth: Option<AttachmentOps<f32>>,
+    pub stencil: Option<AttachmentOps<u8>>,
 }
 
 impl RenderingDepthStencilAttachmentInfo {
@@ -425,10 +411,8 @@ impl RenderingDepthStencilAttachmentInfo {
         Self {
             image_view,
             image_layout: ImageLayout::DepthStencilAttachment,
-            depth_load_op: AttachmentLoadOp::None,
-            depth_store_op: AttachmentStoreOp::None,
-            stencil_load_op: AttachmentLoadOp::None,
-            stencil_store_op: AttachmentStoreOp::None,
+            depth: None,
+            stencil: None,
         }
     }
 
@@ -437,29 +421,63 @@ impl RenderingDepthStencilAttachmentInfo {
         self
     }
 
-    pub const fn with_depth_load_op(
-        mut self,
-        load_op: AttachmentLoadOp<DepthStencilClearValue>,
-    ) -> Self {
-        self.depth_load_op = load_op;
+    pub const fn with_depth_load_op(mut self, load_op: AttachmentLoadOp<f32>) -> Self {
+        match &mut self.depth {
+            None => {
+                self.depth = Some(AttachmentOps {
+                    load_op,
+                    store_op: AttachmentStoreOp::DontCare,
+                });
+            }
+            Some(v) => {
+                v.load_op = load_op;
+            }
+        }
         self
     }
 
     pub const fn with_depth_store_op(mut self, store_op: AttachmentStoreOp) -> Self {
-        self.depth_store_op = store_op;
+        match &mut self.depth {
+            None => {
+                self.depth = Some(AttachmentOps {
+                    load_op: AttachmentLoadOp::DontCare,
+                    store_op,
+                });
+            }
+            Some(v) => {
+                v.store_op = store_op;
+            }
+        }
         self
     }
 
-    pub const fn with_stencil_load_op(
-        mut self,
-        load_op: AttachmentLoadOp<DepthStencilClearValue>,
-    ) -> Self {
-        self.stencil_load_op = load_op;
+    pub const fn with_stencil_load_op(mut self, load_op: AttachmentLoadOp<u8>) -> Self {
+        match &mut self.stencil {
+            None => {
+                self.stencil = Some(AttachmentOps {
+                    load_op,
+                    store_op: AttachmentStoreOp::DontCare,
+                });
+            }
+            Some(v) => {
+                v.load_op = load_op;
+            }
+        }
         self
     }
 
     pub const fn with_stencil_store_op(mut self, store_op: AttachmentStoreOp) -> Self {
-        self.stencil_store_op = store_op;
+        match &mut self.stencil {
+            None => {
+                self.stencil = Some(AttachmentOps {
+                    load_op: AttachmentLoadOp::DontCare,
+                    store_op,
+                });
+            }
+            Some(v) => {
+                v.store_op = store_op;
+            }
+        }
         self
     }
 
@@ -467,16 +485,12 @@ impl RenderingDepthStencilAttachmentInfo {
         self.with_depth_load_op(AttachmentLoadOp::Load)
     }
 
-    pub const fn depth_clear(self, value: DepthStencilClearValue) -> Self {
+    pub const fn depth_clear(self, value: f32) -> Self {
         self.with_depth_load_op(AttachmentLoadOp::Clear(value))
     }
 
     pub const fn depth_load_dont_care(self) -> Self {
         self.with_depth_load_op(AttachmentLoadOp::DontCare)
-    }
-
-    pub const fn depth_load_none(self) -> Self {
-        self.with_depth_load_op(AttachmentLoadOp::None)
     }
 
     pub const fn depth_store(self) -> Self {
@@ -487,24 +501,16 @@ impl RenderingDepthStencilAttachmentInfo {
         self.with_depth_store_op(AttachmentStoreOp::DontCare)
     }
 
-    pub const fn depth_store_none(self) -> Self {
-        self.with_depth_store_op(AttachmentStoreOp::None)
-    }
-
     pub const fn stencil_load(self) -> Self {
         self.with_stencil_load_op(AttachmentLoadOp::Load)
     }
 
-    pub const fn stencil_clear(self, value: DepthStencilClearValue) -> Self {
+    pub const fn stencil_clear(self, value: u8) -> Self {
         self.with_stencil_load_op(AttachmentLoadOp::Clear(value))
     }
 
     pub const fn stencil_load_dont_care(self) -> Self {
         self.with_stencil_load_op(AttachmentLoadOp::DontCare)
-    }
-
-    pub const fn stencil_load_none(self) -> Self {
-        self.with_stencil_load_op(AttachmentLoadOp::None)
     }
 
     pub const fn stencil_store(self) -> Self {
@@ -514,9 +520,27 @@ impl RenderingDepthStencilAttachmentInfo {
     pub const fn stencil_store_dont_care(self) -> Self {
         self.with_stencil_store_op(AttachmentStoreOp::DontCare)
     }
+}
 
-    pub const fn stencil_store_none(self) -> Self {
-        self.with_stencil_store_op(AttachmentStoreOp::None)
+#[derive(Clone, Debug)]
+pub struct AttachmentOps<ClearValue> {
+    pub load_op: AttachmentLoadOp<ClearValue>,
+    pub store_op: AttachmentStoreOp,
+}
+
+impl<ClearValue> AttachmentOps<ClearValue> {
+    pub const fn new() -> Self {
+        Self {
+            load_op: AttachmentLoadOp::DontCare,
+            store_op: AttachmentStoreOp::DontCare,
+        }
+    }
+}
+
+impl<ClearValue> Default for AttachmentOps<ClearValue> {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -572,20 +572,22 @@ impl<'a> Encoder<'a> {
             color_attachments.push(info);
         }
 
-        let (depth_attachment, stencil_attachment) = if let Some(v) = info.depth_stencil_attachment
-        {
+        let (depth_attachment, stencil_attachment) = if let Some(v) = info.depth_stencil_attachment {
             let image_view: vk::ImageView = unsafe { std::mem::transmute(v.image_view) };
 
-            let depth_info = if !matches!(&v.depth_load_op, &AttachmentLoadOp::None) {
+            let depth = if let Some(ops) = &v.depth {
                 let mut info = vk::RenderingAttachmentInfo::default()
                     .image_view(image_view)
                     .image_layout(image_layout_to_vk(v.image_layout))
-                    .load_op(load_op_to_vk(&v.depth_load_op))
-                    .store_op(store_op_to_vk(&v.depth_store_op));
+                    .load_op(load_op_to_vk(&ops.load_op))
+                    .store_op(store_op_to_vk(&ops.store_op));
 
-                if let AttachmentLoadOp::Clear(v) = &v.depth_load_op {
+                if let AttachmentLoadOp::Clear(v) = &ops.load_op {
                     info = info.clear_value(vk::ClearValue {
-                        depth_stencil: depth_stencil_clear_to_vk(*v),
+                        depth_stencil: vk::ClearDepthStencilValue {
+                            depth: *v,
+                            stencil: 0,
+                        },
                     });
                 };
 
@@ -594,16 +596,19 @@ impl<'a> Encoder<'a> {
                 None
             };
 
-            let stencil_info = if !matches!(&v.stencil_load_op, &AttachmentLoadOp::None) {
+            let stencil = if let Some(ops) = &v.stencil {
                 let mut info = vk::RenderingAttachmentInfo::default()
                     .image_view(image_view)
                     .image_layout(image_layout_to_vk(v.image_layout))
-                    .load_op(load_op_to_vk(&v.stencil_load_op))
-                    .store_op(store_op_to_vk(&v.stencil_store_op));
+                    .load_op(load_op_to_vk(&ops.load_op))
+                    .store_op(store_op_to_vk(&ops.store_op));
 
-                if let AttachmentLoadOp::Clear(v) = &v.stencil_load_op {
+                if let AttachmentLoadOp::Clear(v) = &ops.load_op {
                     let value = vk::ClearValue {
-                        depth_stencil: depth_stencil_clear_to_vk(*v),
+                        depth_stencil: vk::ClearDepthStencilValue {
+                            depth: 0.0,
+                            stencil: *v as u32,
+                        },
                     };
                     info = info.clear_value(value);
                 };
@@ -613,7 +618,7 @@ impl<'a> Encoder<'a> {
                 None
             };
 
-            (depth_info, stencil_info)
+            (depth, stencil)
         } else {
             (None, None)
         };

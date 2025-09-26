@@ -621,7 +621,7 @@ pub const fn load_op_to_vk<T>(load_op: &AttachmentLoadOp<T>) -> vk::AttachmentLo
         AttachmentLoadOp::Load => vk::AttachmentLoadOp::LOAD,
         AttachmentLoadOp::Clear(_) => vk::AttachmentLoadOp::CLEAR,
         AttachmentLoadOp::DontCare => vk::AttachmentLoadOp::DONT_CARE,
-        AttachmentLoadOp::None => vk::AttachmentLoadOp::NONE_EXT,
+        // AttachmentLoadOp::None => vk::AttachmentLoadOp::NONE_EXT,
     }
 }
 
@@ -629,7 +629,7 @@ pub const fn store_op_to_vk(store_op: &AttachmentStoreOp) -> vk::AttachmentStore
     match store_op {
         AttachmentStoreOp::Store => vk::AttachmentStoreOp::STORE,
         AttachmentStoreOp::DontCare => vk::AttachmentStoreOp::DONT_CARE,
-        AttachmentStoreOp::None => vk::AttachmentStoreOp::NONE,
+        // AttachmentStoreOp::None => vk::AttachmentStoreOp::NONE,
     }
 }
 
@@ -658,13 +658,6 @@ pub fn color_clear_to_vk(v: &ColorClearValue) -> vk::ClearColorValue {
         ColorClearValue::Int(v) => vk::ClearColorValue {
             float32: decode_u32_color_to_float(*v),
         },
-    }
-}
-
-pub const fn depth_stencil_clear_to_vk(v: DepthStencilClearValue) -> vk::ClearDepthStencilValue {
-    vk::ClearDepthStencilValue {
-        depth: v.depth,
-        stencil: v.stencil as u32,
     }
 }
 

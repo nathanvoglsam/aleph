@@ -195,7 +195,7 @@ pub fn pass(
                 ],
                 depth_stencil_attachment: Some(
                     &RenderingDepthStencilAttachmentInfo::new(depth_buffer_dsv)
-                        .depth_clear(DepthStencilClearValue::depth(0.0))
+                        .depth_clear(0.0)
                         .depth_store(),
                 ),
                 allow_uav_writes: false,

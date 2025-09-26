@@ -192,10 +192,8 @@ pub fn rendering_depth_stencil_attachment_info(
     RenderingDepthStencilAttachmentInfo {
         image_view,
         image_layout: info.image_layout,
-        depth_load_op: info.depth_load_op,
-        depth_store_op: info.depth_store_op,
-        stencil_load_op: info.stencil_load_op,
-        stencil_store_op: info.stencil_store_op,
+        depth: info.depth.clone(),
+        stencil: info.stencil.clone(),
     }
 }
 
