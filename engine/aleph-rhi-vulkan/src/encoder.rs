@@ -572,7 +572,8 @@ impl<'a> Encoder<'a> {
             color_attachments.push(info);
         }
 
-        let (depth_attachment, stencil_attachment) = if let Some(v) = info.depth_stencil_attachment {
+        let (depth_attachment, stencil_attachment) = if let Some(v) = info.depth_stencil_attachment
+        {
             let image_view: vk::ImageView = unsafe { std::mem::transmute(v.image_view) };
 
             let depth = if let Some(ops) = &v.depth {

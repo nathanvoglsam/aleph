@@ -168,7 +168,7 @@ pub struct VertexInputAttributeDesc {
     pub binding: u32,
 
     /// The format of the vertex attribute, describing size and layout
-    pub format: Format,
+    pub format: VertexFormat,
 
     /// Byte offset of this attribute relative to the start of an element in the vertex input
     /// binding

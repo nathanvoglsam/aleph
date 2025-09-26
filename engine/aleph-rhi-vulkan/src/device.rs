@@ -1268,7 +1268,7 @@ impl Device {
                 .location(v.location)
                 .binding(v.binding)
                 .offset(v.offset)
-                .format(texture_format_to_vk(v.format))
+                .format(vertex_format_to_vk(v.format))
         });
         let mut out = BVec::new_in(bump);
         out.extend(iter);

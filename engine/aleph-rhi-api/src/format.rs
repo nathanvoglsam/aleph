@@ -394,3 +394,131 @@ impl std::fmt::Display for Format {
         f.write_str(self.metadata().name)
     }
 }
+
+/// Enumeration of all available _vertex_ formats. These are distinct from pixel formats as they
+/// are generally a distinct set of formats. There are many valid vertex formats that are not valid
+/// pixel formats, and vice versa.
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum VertexFormat {
+    UChar,
+    UChar2,
+    UChar3,
+    UChar4,
+    Char,
+    Char2,
+    Char3,
+    Char4,
+    UCharNormalized,
+    UChar2Normalized,
+    UChar3Normalized,
+    UChar4Normalized,
+    UChar4NormalizedBgra,
+    CharNormalized,
+    Char2Normalized,
+    Char3Normalized,
+    Char4Normalized,
+    UShort,
+    UShort2,
+    UShort3,
+    UShort4,
+    Short,
+    Short2,
+    Short3,
+    Short4,
+    UShortNormalized,
+    UShort2Normalized,
+    UShort3Normalized,
+    UShort4Normalized,
+    ShortNormalized,
+    Short2Normalized,
+    Short3Normalized,
+    Short4Normalized,
+    Half,
+    Half2,
+    Half3,
+    Half4,
+    Float,
+    Float2,
+    Float3,
+    Float4,
+    Int,
+    Int2,
+    Int3,
+    Int4,
+    UInt,
+    UInt2,
+    UInt3,
+    UInt4,
+    Int1010102Normalized,
+    UInt1010102Normalized,
+    FloatRG11B10,
+    FloatRGB9E5,
+}
+
+impl Default for VertexFormat {
+    #[inline]
+    fn default() -> Self {
+        Self::UChar
+    }
+}
+
+impl std::fmt::Display for VertexFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let string = match self {
+            VertexFormat::UChar => "UChar",
+            VertexFormat::UChar2 => "UChar2",
+            VertexFormat::UChar3 => "UChar3",
+            VertexFormat::UChar4 => "UChar4",
+            VertexFormat::Char => "Char",
+            VertexFormat::Char2 => "Char2",
+            VertexFormat::Char3 => "Char3",
+            VertexFormat::Char4 => "Char4",
+            VertexFormat::UCharNormalized => "UCharNormalized",
+            VertexFormat::UChar2Normalized => "UChar2Normalized",
+            VertexFormat::UChar3Normalized => "UChar3Normalized",
+            VertexFormat::UChar4Normalized => "UChar4Normalized",
+            VertexFormat::UChar4NormalizedBgra => "UChar4NormalizedBgra",
+            VertexFormat::CharNormalized => "CharNormalized",
+            VertexFormat::Char2Normalized => "Char2Normalized",
+            VertexFormat::Char3Normalized => "Char3Normalized",
+            VertexFormat::Char4Normalized => "Char4Normalized",
+            VertexFormat::UShort => "UShort",
+            VertexFormat::UShort2 => "UShort2",
+            VertexFormat::UShort3 => "UShort3",
+            VertexFormat::UShort4 => "UShort4",
+            VertexFormat::Short => "Short",
+            VertexFormat::Short2 => "Short2",
+            VertexFormat::Short3 => "Short3",
+            VertexFormat::Short4 => "Short4",
+            VertexFormat::UShortNormalized => "UShortNormalized",
+            VertexFormat::UShort2Normalized => "UShort2Normalized",
+            VertexFormat::UShort3Normalized => "UShort3Normalized",
+            VertexFormat::UShort4Normalized => "UShort4Normalized",
+            VertexFormat::ShortNormalized => "ShortNormalized",
+            VertexFormat::Short2Normalized => "Short2Normalized",
+            VertexFormat::Short3Normalized => "Short3Normalized",
+            VertexFormat::Short4Normalized => "Short4Normalized",
+            VertexFormat::Half => "Half",
+            VertexFormat::Half2 => "Half2",
+            VertexFormat::Half3 => "Half3",
+            VertexFormat::Half4 => "Half4",
+            VertexFormat::Float => "Float",
+            VertexFormat::Float2 => "Float2",
+            VertexFormat::Float3 => "Float3",
+            VertexFormat::Float4 => "Float4",
+            VertexFormat::Int => "Int",
+            VertexFormat::Int2 => "Int2",
+            VertexFormat::Int3 => "Int3",
+            VertexFormat::Int4 => "Int4",
+            VertexFormat::UInt => "UInt",
+            VertexFormat::UInt2 => "UInt2",
+            VertexFormat::UInt3 => "UInt3",
+            VertexFormat::UInt4 => "UInt4",
+            VertexFormat::Int1010102Normalized => "Int1010102Normalized",
+            VertexFormat::UInt1010102Normalized => "UInt1010102Normalized",
+            VertexFormat::FloatRG11B10 => "FloatRG11B10",
+            VertexFormat::FloatRGB9E5 => "FloatRGB9E5",
+        };
+        f.write_str(string)
+    }
+}

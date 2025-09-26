@@ -461,19 +461,19 @@ impl EguiState {
                 VertexInputAttributeDesc {
                     location: 0,
                     binding: 0,
-                    format: Format::Rg32Float,
+                    format: VertexFormat::Float2,
                     offset: 0,
                 },
                 VertexInputAttributeDesc {
                     location: 1,
                     binding: 0,
-                    format: Format::Rg32Float,
+                    format: VertexFormat::Float2,
                     offset: 8,
                 },
                 VertexInputAttributeDesc {
                     location: 2,
                     binding: 0,
-                    format: Format::Rgba8Unorm,
+                    format: VertexFormat::UChar4Normalized,
                     offset: 16,
                 },
             ],
