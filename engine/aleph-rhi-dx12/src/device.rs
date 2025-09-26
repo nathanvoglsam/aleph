@@ -70,7 +70,7 @@ use crate::internal::conv::{
     blend_factor_to_dx12, blend_op_to_dx12, compare_op_to_dx12, cull_mode_to_dx12,
     front_face_order_to_dx12, polygon_mode_to_dx12, primitive_topology_to_dx12, queue_type_to_dx12,
     stencil_op_to_dx12, texture_create_clear_value_to_dx12, texture_create_desc_to_dx12,
-    texture_format_to_dxgi,
+    texture_format_to_dxgi, vertex_format_to_dxgi,
 };
 use crate::internal::descriptor_chunk::DescriptorChunk;
 use crate::internal::descriptor_heaps::DescriptorHeaps;
@@ -1181,7 +1181,7 @@ impl Device {
             input_layout.push(D3D12_INPUT_ELEMENT_DESC {
                 SemanticName: PCSTR(semantic_name.as_ptr() as *const _),
                 SemanticIndex: semantic_index,
-                Format: texture_format_to_dxgi(attribute.format),
+                Format: vertex_format_to_dxgi(attribute.format),
                 InputSlot: input_slot,
                 AlignedByteOffset: aligned_byte_offset,
                 InputSlotClass: input_slot_class,

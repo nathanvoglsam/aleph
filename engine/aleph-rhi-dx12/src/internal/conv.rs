@@ -142,6 +142,65 @@ pub const fn texture_format_to_dxgi_view(format: Format) -> DXGI_FORMAT {
     }
 }
 
+pub const fn vertex_format_to_dxgi(v: VertexFormat) -> DXGI_FORMAT {
+    match v {
+        VertexFormat::UChar => DXGI_FORMAT_R8_UINT,
+        VertexFormat::UChar2 => DXGI_FORMAT_R8G8_UINT,
+        // VertexFormat::UChar3 => DXGI_FORMAT_R8G8B8_UINT,
+        VertexFormat::UChar4 => DXGI_FORMAT_R8G8B8A8_UINT,
+        VertexFormat::Char => DXGI_FORMAT_R8_SINT,
+        VertexFormat::Char2 => DXGI_FORMAT_R8G8_SINT,
+        // VertexFormat::Char3 => DXGI_FORMAT_R8G8B8_SINT,
+        VertexFormat::Char4 => DXGI_FORMAT_R8G8B8A8_SINT,
+        VertexFormat::UCharNormalized => DXGI_FORMAT_R8_UNORM,
+        VertexFormat::UChar2Normalized => DXGI_FORMAT_R8G8_UNORM,
+        // VertexFormat::UChar3Normalized => DXGI_FORMAT_R8G8B8_UNORM,
+        VertexFormat::UChar4Normalized => DXGI_FORMAT_R8G8B8A8_UNORM,
+        VertexFormat::UChar4NormalizedBgra => DXGI_FORMAT_B8G8R8A8_UNORM,
+        VertexFormat::CharNormalized => DXGI_FORMAT_R8_SNORM,
+        VertexFormat::Char2Normalized => DXGI_FORMAT_R8G8_SNORM,
+        // VertexFormat::Char3Normalized => DXGI_FORMAT_R8G8B8_SNORM,
+        VertexFormat::Char4Normalized => DXGI_FORMAT_R8G8B8A8_SNORM,
+        VertexFormat::UShort => DXGI_FORMAT_R16_UINT,
+        VertexFormat::UShort2 => DXGI_FORMAT_R16G16_UINT,
+        // VertexFormat::UShort3 => DXGI_FORMAT_R16G16B16_UINT,
+        VertexFormat::UShort4 => DXGI_FORMAT_R16G16B16A16_UINT,
+        VertexFormat::Short => DXGI_FORMAT_R16_SINT,
+        VertexFormat::Short2 => DXGI_FORMAT_R16G16_SINT,
+        // VertexFormat::Short3 => DXGI_FORMAT_R16G16B16_SINT,
+        VertexFormat::Short4 => DXGI_FORMAT_R16G16B16A16_SINT,
+        VertexFormat::UShortNormalized => DXGI_FORMAT_R16_UNORM,
+        VertexFormat::UShort2Normalized => DXGI_FORMAT_R16G16_UNORM,
+        // VertexFormat::UShort3Normalized => DXGI_FORMAT_R16G16B16_UNORM,
+        VertexFormat::UShort4Normalized => DXGI_FORMAT_R16G16B16A16_UNORM,
+        VertexFormat::ShortNormalized => DXGI_FORMAT_R16_SNORM,
+        VertexFormat::Short2Normalized => DXGI_FORMAT_R16G16_SNORM,
+        // VertexFormat::Short3Normalized => DXGI_FORMAT_R16G16B16_SNORM,
+        VertexFormat::Short4Normalized => DXGI_FORMAT_R16G16B16A16_SNORM,
+        VertexFormat::Half => DXGI_FORMAT_R16_FLOAT,
+        VertexFormat::Half2 => DXGI_FORMAT_R16G16_FLOAT,
+        // VertexFormat::Half3 => DXGI_FORMAT_R16G16B16_FLOAT,
+        VertexFormat::Half4 => DXGI_FORMAT_R16G16B16A16_FLOAT,
+        VertexFormat::Float => DXGI_FORMAT_R32_FLOAT,
+        VertexFormat::Float2 => DXGI_FORMAT_R32G32_FLOAT,
+        VertexFormat::Float3 => DXGI_FORMAT_R32G32B32_FLOAT,
+        VertexFormat::Float4 => DXGI_FORMAT_R32G32B32A32_FLOAT,
+        VertexFormat::Int => DXGI_FORMAT_R32_SINT,
+        VertexFormat::Int2 => DXGI_FORMAT_R32G32_SINT,
+        VertexFormat::Int3 => DXGI_FORMAT_R32G32B32_SINT,
+        VertexFormat::Int4 => DXGI_FORMAT_R32G32B32A32_SINT,
+        VertexFormat::UInt => DXGI_FORMAT_R32_UINT,
+        VertexFormat::UInt2 => DXGI_FORMAT_R32G32_UINT,
+        VertexFormat::UInt3 => DXGI_FORMAT_R32G32B32_UINT,
+        VertexFormat::UInt4 => DXGI_FORMAT_R32G32B32A32_UINT,
+        // VertexFormat::Int1010102Normalized => DXGI_FORMAT_R10G10B10A2_SNORM
+        VertexFormat::UInt1010102Normalized => DXGI_FORMAT_R10G10B10A2_UNORM,
+        VertexFormat::FloatRG11B10 => DXGI_FORMAT_R11G11B10_FLOAT,
+        VertexFormat::FloatRGB9E5 => DXGI_FORMAT_R9G9B9E5_SHAREDEXP,
+        _ => unimplemented!(),
+    }
+}
+
 pub const fn shader_visibility_to_dx12(
     visibility: DescriptorShaderVisibility,
 ) -> D3D12_SHADER_VISIBILITY {
@@ -721,16 +780,32 @@ impl TranslateClearValue for ColorClearValue {
     }
 }
 
-impl TranslateClearValue for DepthStencilClearValue {
+impl TranslateClearValue for f32 {
     #[inline]
     fn translate_clear_value(&self, format: Option<impl Into<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE {
-        let v = D3D12_DEPTH_STENCIL_VALUE {
-            Depth: self.depth,
-            Stencil: self.stencil,
-        };
         D3D12_CLEAR_VALUE {
             Format: format.map(|v| v.into()).unwrap_or_default(),
-            Anonymous: D3D12_CLEAR_VALUE_0 { DepthStencil: v },
+            Anonymous: D3D12_CLEAR_VALUE_0 {
+                DepthStencil: D3D12_DEPTH_STENCIL_VALUE {
+                    Depth: *self,
+                    Stencil: 0,
+                },
+            },
+        }
+    }
+}
+
+impl TranslateClearValue for u8 {
+    #[inline]
+    fn translate_clear_value(&self, format: Option<impl Into<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE {
+        D3D12_CLEAR_VALUE {
+            Format: format.map(|v| v.into()).unwrap_or_default(),
+            Anonymous: D3D12_CLEAR_VALUE_0 {
+                DepthStencil: D3D12_DEPTH_STENCIL_VALUE {
+                    Depth: 0.0,
+                    Stencil: *self,
+                },
+            },
         }
     }
 }
@@ -756,10 +831,6 @@ pub fn translate_beginning_access(
             Type: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD,
             Anonymous: Default::default(),
         },
-        AttachmentLoadOp::None => D3D12_RENDER_PASS_BEGINNING_ACCESS {
-            Type: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS,
-            Anonymous: Default::default(),
-        },
     }
 }
 
@@ -771,10 +842,6 @@ pub fn translate_ending_access(store_op: &AttachmentStoreOp) -> D3D12_RENDER_PAS
         },
         AttachmentStoreOp::DontCare => D3D12_RENDER_PASS_ENDING_ACCESS {
             Type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD,
-            Anonymous: Default::default(),
-        },
-        AttachmentStoreOp::None => D3D12_RENDER_PASS_ENDING_ACCESS {
-            Type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS,
             Anonymous: Default::default(),
         },
     }
@@ -798,13 +865,34 @@ pub fn translate_rendering_depth_stencil_attachment(
     format: Option<impl Into<DXGI_FORMAT>>,
 ) -> D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
     let format = format.map(|v| v.into());
-    D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
+    let mut desc = D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
         cpuDescriptor: descriptor.into(),
-        DepthBeginningAccess: translate_beginning_access(&info.depth_load_op, format),
-        StencilBeginningAccess: translate_beginning_access(&info.stencil_load_op, format),
-        DepthEndingAccess: translate_ending_access(&info.depth_store_op),
-        StencilEndingAccess: translate_ending_access(&info.stencil_store_op),
+        DepthBeginningAccess: D3D12_RENDER_PASS_BEGINNING_ACCESS {
+            Type: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS,
+            Anonymous: Default::default(),
+        },
+        StencilBeginningAccess: D3D12_RENDER_PASS_BEGINNING_ACCESS {
+            Type: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS,
+            Anonymous: Default::default(),
+        },
+        DepthEndingAccess: D3D12_RENDER_PASS_ENDING_ACCESS {
+            Type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS,
+            Anonymous: Default::default(),
+        },
+        StencilEndingAccess: D3D12_RENDER_PASS_ENDING_ACCESS {
+            Type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS,
+            Anonymous: Default::default(),
+        },
+    };
+    if let Some(ops) = &info.depth {
+        desc.DepthBeginningAccess = translate_beginning_access(&ops.load_op, format);
+        desc.DepthEndingAccess = translate_ending_access(&ops.store_op);
     }
+    if let Some(ops) = &info.stencil {
+        desc.StencilBeginningAccess = translate_beginning_access(&ops.load_op, format);
+        desc.StencilEndingAccess = translate_ending_access(&ops.store_op);
+    }
+    desc
 }
 
 /// Returns (FirstPlane, NumPlanes) for the given barrier texture aspect
