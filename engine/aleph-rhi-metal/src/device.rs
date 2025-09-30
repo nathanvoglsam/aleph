@@ -117,15 +117,17 @@ impl IDevice for Device {
         let _lock1 = self.general_queue.as_ref().map(|v| v.submit_lock());
         let _lock2 = self.compute_queue.as_ref().map(|v| v.submit_lock());
         let _lock3 = self.transfer_queue.as_ref().map(|v| v.submit_lock());
-        if let Some(queue) = &self.general_queue {
-            queue.garbage_collect_internal();
-        }
-        if let Some(queue) = &self.compute_queue {
-            queue.garbage_collect_internal();
-        }
-        if let Some(queue) = &self.transfer_queue {
-            queue.garbage_collect_internal();
-        }
+        autoreleasepool(|_| {
+            if let Some(queue) = &self.general_queue {
+                queue.garbage_collect_internal();
+            }
+            if let Some(queue) = &self.compute_queue {
+                queue.garbage_collect_internal();
+            }
+            if let Some(queue) = &self.transfer_queue {
+                queue.garbage_collect_internal();
+            }
+        })
     }
 
     // ========================================================================================== //
@@ -135,15 +137,17 @@ impl IDevice for Device {
         let _lock1 = self.general_queue.as_ref().map(|v| v.submit_lock());
         let _lock2 = self.compute_queue.as_ref().map(|v| v.submit_lock());
         let _lock3 = self.transfer_queue.as_ref().map(|v| v.submit_lock());
-        if let Some(queue) = &self.general_queue {
-            queue.wait_idle_internal();
-        }
-        if let Some(queue) = &self.compute_queue {
-            queue.wait_idle_internal();
-        }
-        if let Some(queue) = &self.transfer_queue {
-            queue.wait_idle_internal();
-        }
+        autoreleasepool(|_| {
+            if let Some(queue) = &self.general_queue {
+                queue.wait_idle_internal();
+            }
+            if let Some(queue) = &self.compute_queue {
+                queue.wait_idle_internal();
+            }
+            if let Some(queue) = &self.transfer_queue {
+                queue.wait_idle_internal();
+            }
+        })
     }
 
     // ========================================================================================== //
@@ -239,7 +243,7 @@ impl IDevice for Device {
         &self,
         desc: &CommandListDesc,
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
-        CommandList::create(self, desc)
+        autoreleasepool(|_| CommandList::create(self, desc))
     }
 
     // ========================================================================================== //

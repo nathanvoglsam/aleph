@@ -114,14 +114,18 @@ impl IQueue for Queue {
     fn garbage_collect(&self) {
         // Lock access to the queue to ensure nobody submits while we're running the GC cycle.
         let _lock = self.submit_lock.lock();
-        self.garbage_collect_internal();
+        autoreleasepool(|_| {
+            self.garbage_collect_internal();
+        })
     }
 
     fn wait_idle(&self) {
         // Lock access to the queue to ensure nobody submits while we're waiting for all outstanding
         // work to complete
         let _lock = self.submit_lock.lock();
-        self.wait_idle_internal();
+        autoreleasepool(|_| {
+            self.wait_idle_internal();
+        })
     }
 
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {

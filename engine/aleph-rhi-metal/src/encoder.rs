@@ -43,7 +43,7 @@ use aleph_rhi_impl_utils::parameter_block_layout_visitor::{
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::Blink;
 use objc2::ffi::NSUInteger;
-use objc2::rc::Retained;
+use objc2::rc::{Retained, autoreleasepool};
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::{NSRange, NSString};
 use objc2_metal::*;
@@ -225,108 +225,112 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
-        let mtl_desc = unsafe { MTLRenderPassDescriptor::new() };
+        autoreleasepool(|_| {
+            let mtl_desc = unsafe { MTLRenderPassDescriptor::new() };
 
-        let mtl_color_attachments = mtl_desc.colorAttachments();
-        for (i, color_attachment) in info.color_attachments.iter().enumerate() {
-            let mtl_attachment = unsafe { mtl_color_attachments.objectAtIndexedSubscript(i) };
+            let mtl_color_attachments = mtl_desc.colorAttachments();
+            for (i, color_attachment) in info.color_attachments.iter().enumerate() {
+                let mtl_attachment = unsafe { mtl_color_attachments.objectAtIndexedSubscript(i) };
 
-            let view = color_attachment.image_view;
-            let view = unsafe { view.into_raw::<ImageViewObject>().as_ref() };
-            let texture = view.texture.as_ref();
-            mtl_attachment.setTexture(Some(texture));
-            mtl_attachment.setLevel(0);
-            mtl_attachment.setSlice(0);
-
-            match &color_attachment.load_op {
-                AttachmentLoadOp::Load => {
-                    mtl_attachment.setLoadAction(MTLLoadAction::Load);
-                }
-                AttachmentLoadOp::Clear(clear_color) => {
-                    mtl_attachment.setLoadAction(MTLLoadAction::Clear);
-
-                    let [r, g, b, a] = clear_color.to_float();
-                    let clear_color = MTLClearColor {
-                        red: r as f64,
-                        green: g as f64,
-                        blue: b as f64,
-                        alpha: a as f64,
-                    };
-                    mtl_attachment.setClearColor(clear_color);
-                }
-                AttachmentLoadOp::DontCare => {
-                    mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
-                }
-            }
-
-            let store_op = conv::attachment_store_op_to_mtl(color_attachment.store_op);
-            mtl_attachment.setStoreAction(store_op);
-        }
-
-        if let Some(attachment) = info.depth_stencil_attachment {
-            let view = attachment.image_view;
-            let view = unsafe { view.into_raw::<ImageViewObject>().as_ref() };
-            let texture = view.texture.as_ref();
-
-            if let Some(ops) = &attachment.depth {
-                let mtl_attachment = unsafe { MTLRenderPassDepthAttachmentDescriptor::new() };
+                let view = color_attachment.image_view;
+                let view = unsafe { view.into_raw::<ImageViewObject>().as_ref() };
+                let texture = view.texture.as_ref();
                 mtl_attachment.setTexture(Some(texture));
                 mtl_attachment.setLevel(0);
                 mtl_attachment.setSlice(0);
 
-                match &ops.load_op {
+                match &color_attachment.load_op {
                     AttachmentLoadOp::Load => {
                         mtl_attachment.setLoadAction(MTLLoadAction::Load);
                     }
-                    AttachmentLoadOp::Clear(v) => {
+                    AttachmentLoadOp::Clear(clear_color) => {
                         mtl_attachment.setLoadAction(MTLLoadAction::Clear);
-                        mtl_attachment.setClearDepth(*v as f64);
+
+                        let [r, g, b, a] = clear_color.to_float();
+                        let clear_color = MTLClearColor {
+                            red: r as f64,
+                            green: g as f64,
+                            blue: b as f64,
+                            alpha: a as f64,
+                        };
+                        mtl_attachment.setClearColor(clear_color);
                     }
                     AttachmentLoadOp::DontCare => {
                         mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
                     }
                 }
 
-                let store_op = conv::attachment_store_op_to_mtl(ops.store_op);
+                let store_op = conv::attachment_store_op_to_mtl(color_attachment.store_op);
                 mtl_attachment.setStoreAction(store_op);
-                mtl_desc.setDepthAttachment(Some(&mtl_attachment));
             }
 
-            if let Some(ops) = &attachment.stencil {
-                let mtl_attachment = unsafe { MTLRenderPassStencilAttachmentDescriptor::new() };
+            if let Some(attachment) = info.depth_stencil_attachment {
+                let view = attachment.image_view;
+                let view = unsafe { view.into_raw::<ImageViewObject>().as_ref() };
+                let texture = view.texture.as_ref();
 
-                // We use the same attachment here intentionally
-                mtl_attachment.setTexture(Some(texture));
-                mtl_attachment.setLevel(0);
-                mtl_attachment.setSlice(0);
+                if let Some(ops) = &attachment.depth {
+                    let mtl_attachment = unsafe { MTLRenderPassDepthAttachmentDescriptor::new() };
+                    mtl_attachment.setTexture(Some(texture));
+                    mtl_attachment.setLevel(0);
+                    mtl_attachment.setSlice(0);
 
-                match &ops.load_op {
-                    AttachmentLoadOp::Load => {
-                        mtl_attachment.setLoadAction(MTLLoadAction::Load);
+                    match &ops.load_op {
+                        AttachmentLoadOp::Load => {
+                            mtl_attachment.setLoadAction(MTLLoadAction::Load);
+                        }
+                        AttachmentLoadOp::Clear(v) => {
+                            mtl_attachment.setLoadAction(MTLLoadAction::Clear);
+                            mtl_attachment.setClearDepth(*v as f64);
+                        }
+                        AttachmentLoadOp::DontCare => {
+                            mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
+                        }
                     }
-                    AttachmentLoadOp::Clear(v) => {
-                        mtl_attachment.setLoadAction(MTLLoadAction::Clear);
-                        mtl_attachment.setClearStencil(*v as u32);
-                    }
-                    AttachmentLoadOp::DontCare => {
-                        mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
-                    }
+
+                    let store_op = conv::attachment_store_op_to_mtl(ops.store_op);
+                    mtl_attachment.setStoreAction(store_op);
+                    mtl_desc.setDepthAttachment(Some(&mtl_attachment));
                 }
 
-                let store_op = conv::attachment_store_op_to_mtl(ops.store_op);
-                mtl_attachment.setStoreAction(store_op);
-                mtl_desc.setStencilAttachment(Some(&mtl_attachment));
+                if let Some(ops) = &attachment.stencil {
+                    let mtl_attachment = unsafe { MTLRenderPassStencilAttachmentDescriptor::new() };
+
+                    // We use the same attachment here intentionally
+                    mtl_attachment.setTexture(Some(texture));
+                    mtl_attachment.setLevel(0);
+                    mtl_attachment.setSlice(0);
+
+                    match &ops.load_op {
+                        AttachmentLoadOp::Load => {
+                            mtl_attachment.setLoadAction(MTLLoadAction::Load);
+                        }
+                        AttachmentLoadOp::Clear(v) => {
+                            mtl_attachment.setLoadAction(MTLLoadAction::Clear);
+                            mtl_attachment.setClearStencil(*v as u32);
+                        }
+                        AttachmentLoadOp::DontCare => {
+                            mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
+                        }
+                    }
+
+                    let store_op = conv::attachment_store_op_to_mtl(ops.store_op);
+                    mtl_attachment.setStoreAction(store_op);
+                    mtl_desc.setStencilAttachment(Some(&mtl_attachment));
+                }
             }
-        }
 
-        mtl_desc.setRenderTargetWidth(info.extent.width as usize);
-        mtl_desc.setRenderTargetHeight(info.extent.height as usize);
+            mtl_desc.setRenderTargetWidth(info.extent.width as usize);
+            mtl_desc.setRenderTargetHeight(info.extent.height as usize);
 
-        self.active.set_render(&self.objects.list, &mtl_desc);
+            self.active.set_render(&self.objects.list, &mtl_desc);
+        })
     }
 
     unsafe fn end_rendering(&mut self) {
-        self.active.end_render();
+        autoreleasepool(|_| {
+            self.active.end_render();
+        })
     }
 
     unsafe fn draw(
@@ -747,13 +751,17 @@ impl<'a> ITransferEncoder for Encoder<'a> {
     }
 
     unsafe fn begin_event(&mut self, _color: Color, message: &aleph_nstr::NStr) {
-        self.objects
-            .list
-            .pushDebugGroup(&NSString::from_str(message.to_str()))
+        autoreleasepool(|_| {
+            self.objects
+                .list
+                .pushDebugGroup(&NSString::from_str(message.to_str()))
+        })
     }
 
     unsafe fn end_event(&mut self) {
-        self.objects.list.popDebugGroup();
+        autoreleasepool(|_| {
+            self.objects.list.popDebugGroup();
+        })
     }
 }
 
@@ -845,10 +853,12 @@ impl ActiveEncoder {
         };
 
         // TODO: concurrent dispatch + use memory barriers
-        let encoder = list
-            .computeCommandEncoderWithDispatchType(MTLDispatchType::Serial)
-            .unwrap();
-        *self = ActiveEncoder::Compute(encoder);
+        autoreleasepool(|_| {
+            let encoder = list
+                .computeCommandEncoderWithDispatchType(MTLDispatchType::Serial)
+                .unwrap();
+            *self = ActiveEncoder::Compute(encoder);
+        })
     }
 
     pub fn get_compute<'a>(&'a self) -> &'a ProtocolObject<dyn MTLComputeCommandEncoder> {
@@ -876,8 +886,10 @@ impl ActiveEncoder {
             ActiveEncoder::None => {}
         };
 
-        let encoder = list.blitCommandEncoder().unwrap();
-        *self = ActiveEncoder::Copy(encoder);
+        autoreleasepool(|_| {
+            let encoder = list.blitCommandEncoder().unwrap();
+            *self = ActiveEncoder::Copy(encoder);
+        })
     }
 
     pub fn get_blit<'a>(&'a self) -> &'a ProtocolObject<dyn MTLBlitCommandEncoder> {
@@ -890,19 +902,21 @@ impl ActiveEncoder {
     }
 
     pub fn end_all(&mut self) {
-        match self {
-            ActiveEncoder::Graphics(old) => {
-                old.endEncoding();
+        autoreleasepool(|_| {
+            match self {
+                ActiveEncoder::Graphics(old) => {
+                    old.endEncoding();
+                }
+                ActiveEncoder::Compute(old) => {
+                    old.endEncoding();
+                }
+                ActiveEncoder::Copy(old) => {
+                    old.endEncoding();
+                }
+                ActiveEncoder::None => {}
             }
-            ActiveEncoder::Compute(old) => {
-                old.endEncoding();
-            }
-            ActiveEncoder::Copy(old) => {
-                old.endEncoding();
-            }
-            ActiveEncoder::None => {}
-        }
-        *self = ActiveEncoder::None;
+            *self = ActiveEncoder::None;
+        })
     }
 }
 

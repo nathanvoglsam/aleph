@@ -191,7 +191,7 @@ impl Texture {
                         desc.sub_resources.base_array_slice as usize,
                         desc.sub_resources.num_array_slices as usize,
                     );
-                    let view = unsafe {
+                    let view = autoreleasepool(|_| unsafe {
                         self.objects
                             .texture
                             .newTextureViewWithPixelFormat_textureType_levels_slices(
@@ -201,12 +201,10 @@ impl Texture {
                                 slice_range,
                             )
                             .expect("Failed to construct MTLTexture image view")
-                    };
-                    autoreleasepool(|_| {
-                        if self._device.context.debug {
-                            view.setLabel(self.objects.texture.label().as_deref())
-                        }
                     });
+                    if self._device.context.debug {
+                        autoreleasepool(|_| view.setLabel(self.objects.texture.label().as_deref()));
+                    }
                     view
                 }
             };

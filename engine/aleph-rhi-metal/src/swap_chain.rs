@@ -122,55 +122,55 @@ impl ISwapChain for SwapChain {
     }
 
     unsafe fn acquire_next_image(&self) -> Result<AcquiredImage, ImageAcquireError> {
-        let inner = self.inner.lock();
-
-        let drawable = unsafe { self.objects.layer.nextDrawable().unwrap() };
-
-        let texture = unsafe { drawable.texture() };
-
         autoreleasepool(|_| {
+            let inner = self.inner.lock();
+
+            let drawable = unsafe { self.objects.layer.nextDrawable().unwrap() };
+
+            let texture = unsafe { drawable.texture() };
+
             if self.device.context.debug {
                 texture.setLabel(Some(ns_string!("Swap Image")));
             }
-        });
 
-        let texture = Texture {
-            _device: self.device.clone(),
-            id: self.device.object_counter.next_texture(),
-            views: Default::default(),
-            objects: TextureObjects { texture },
-            rtvs: Default::default(),
-            dsvs: Default::default(),
-            image_views: Mutex::new(Blink::new_in(BlinkAlloc::new_in(RhiSystem::default()))),
-            desc: OwnedTextureDesc::new(TextureDesc {
-                width: inner.config.width,
-                height: inner.config.height,
-                depth: 1,
-                format: inner.config.format,
-                dimension: TextureDimension::Texture2D,
-                clear_value: None,
-                array_size: 1,
-                mip_levels: 1,
-                sample_count: 1,
-                sample_quality: 0,
-                usage: ResourceUsageFlags::RENDER_TARGET,
-                name: Some("Metal Internal SwapChain Image"),
-            }),
-        };
-        let texture = Object::new_arc_opaque(texture);
-        let texture = unsafe { TextureHandle::new(texture) };
+            let texture = Texture {
+                _device: self.device.clone(),
+                id: self.device.object_counter.next_texture(),
+                views: Default::default(),
+                objects: TextureObjects { texture },
+                rtvs: Default::default(),
+                dsvs: Default::default(),
+                image_views: Mutex::new(Blink::new_in(BlinkAlloc::new_in(RhiSystem::default()))),
+                desc: OwnedTextureDesc::new(TextureDesc {
+                    width: inner.config.width,
+                    height: inner.config.height,
+                    depth: 1,
+                    format: inner.config.format,
+                    dimension: TextureDimension::Texture2D,
+                    clear_value: None,
+                    array_size: 1,
+                    mip_levels: 1,
+                    sample_count: 1,
+                    sample_quality: 0,
+                    usage: ResourceUsageFlags::RENDER_TARGET,
+                    name: Some("Metal Internal SwapChain Image"),
+                }),
+            };
+            let texture = Object::new_arc_opaque(texture);
+            let texture = unsafe { TextureHandle::new(texture) };
 
-        let queue = self.device.get_queue_internal(self.queue_type).unwrap();
-        let list = queue.objects.queue.commandBuffer().unwrap();
+            let queue = self.device.get_queue_internal(self.queue_type).unwrap();
+            let list = queue.objects.queue.commandBuffer().unwrap();
 
-        let swap_image = AnyArc::new(SwapImage {
-            _swap_chain: self.this.upgrade().unwrap(),
-            objects: SwapImageObjects { list, drawable },
-            texture,
-        });
-        let swap_image = AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v);
+            let swap_image = AnyArc::new(SwapImage {
+                _swap_chain: self.this.upgrade().unwrap(),
+                objects: SwapImageObjects { list, drawable },
+                texture,
+            });
+            let swap_image = AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v);
 
-        Ok(AcquiredImage::Ok(swap_image))
+            Ok(AcquiredImage::Ok(swap_image))
+        })
     }
 }
 
