@@ -33,12 +33,12 @@ use std::ops::Deref;
 use std::ptr::NonNull;
 use std::sync::atomic::AtomicU64;
 
+use aleph_alloc::offset_allocator::OffsetAllocator;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
-use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
 use aleph_rhi_impl_utils::owned_desc::{
     OwnedBufferDesc, OwnedParameterBlockDesc, OwnedSamplerDesc, OwnedTextureDesc,
 };

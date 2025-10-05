@@ -45,7 +45,6 @@ pub mod bump_cell;
 pub mod conv;
 pub mod manually_drop;
 pub mod object_counter;
-pub mod offset_allocator;
 pub mod owned_desc;
 pub mod parameter_block_layout_visitor;
 pub mod parameter_block_pool;

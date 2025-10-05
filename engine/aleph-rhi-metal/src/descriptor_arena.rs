@@ -33,9 +33,9 @@ use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
+use aleph_alloc::offset_allocator::OffsetAllocator;
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
 use aleph_rhi_impl_utils::parameter_block_pool::{IBlockFactory, ParameterBlockPool};
 use aleph_rhi_impl_utils::{Rhi, RhiSystem};
 use allocator_api2::alloc::Allocator;

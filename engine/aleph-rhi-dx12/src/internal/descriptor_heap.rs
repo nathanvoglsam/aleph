@@ -29,8 +29,8 @@
 
 use std::num::{NonZeroU64, NonZeroUsize};
 
-use aleph_rhi_impl_utils::offset_allocator;
-use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
+use aleph_alloc::offset_allocator;
+use aleph_alloc::offset_allocator::OffsetAllocator;
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};

@@ -29,7 +29,7 @@
 
 use std::ptr::NonNull;
 
-use aleph_rhi_impl_utils::offset_allocator;
+use aleph_alloc::offset_allocator;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
 use crate::parameter_block_layout::ParameterBlockLayout;

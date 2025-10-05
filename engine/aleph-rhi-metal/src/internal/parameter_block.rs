@@ -29,7 +29,7 @@
 
 use std::ptr::NonNull;
 
-use aleph_rhi_impl_utils::offset_allocator;
+use aleph_alloc::offset_allocator;
 use objc2::runtime::ProtocolObject;
 use objc2_metal::*;
 

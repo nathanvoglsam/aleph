@@ -44,6 +44,7 @@ pub extern crate const_format;
 
 pub mod instrumentation;
 pub mod mallocator;
+pub mod offset_allocator;
 
 pub use allocator_api2::boxed::Box as BBox;
 pub use allocator_api2::vec::Vec as BVec;
