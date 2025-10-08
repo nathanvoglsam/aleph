@@ -63,7 +63,7 @@ pub fn engine_runner() {
     engine.plugin(aleph_egui::PluginEgui::new());
     engine.plugin(aleph_render::PluginRender::new());
     engine.plugin(PluginGameLogic::new());
-    engine.build(|engine| engine.run())
+    engine.build().run();
 }
 
 struct PluginGameLogic();

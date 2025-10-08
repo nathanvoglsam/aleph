@@ -55,7 +55,6 @@ use std::sync::LazyLock;
 use log::LevelFilter;
 
 use crate::interfaces::plugin::IPlugin;
-use crate::platform::intercept_main;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 
 pub struct EngineBuilder {
@@ -139,11 +138,8 @@ impl EngineBuilder {
         self
     }
 
-    pub fn build(self, cont: impl FnOnce(Engine)) {
-        intercept_main(move || {
-            let engine = self.init();
-            cont(engine)
-        });
+    pub fn build(self) -> Engine {
+        self.init()
     }
 
     fn init(self) -> Engine {

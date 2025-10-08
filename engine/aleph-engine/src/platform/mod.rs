@@ -34,7 +34,6 @@ mod gamepad;
 mod keyboard;
 mod mouse;
 mod sdl_alloc_wrapper;
-mod sdl_main_wrapper;
 mod window;
 
 use std::any::TypeId;
@@ -60,7 +59,6 @@ pub use keyboard::Keyboard;
 pub use mouse::Mouse;
 use parking_lot::RwLockWriteGuard;
 pub use sdl_alloc_wrapper::set_memory_functions;
-pub use sdl_main_wrapper::intercept_main;
 use sdl3::mouse::SystemCursor;
 pub use window::Window;
 
@@ -168,7 +166,7 @@ impl PlatformSDL3 {
         let events = Events::new();
         let clipboard = unsafe {
             // Safety: We always call this on the main thread currently.
-            //         However we don't guarantee it based on the interface. Might want to fix?
+            //         However, we don't guarantee it based on the interface. Might want to fix?
             Clipboard::new()
         };
 
