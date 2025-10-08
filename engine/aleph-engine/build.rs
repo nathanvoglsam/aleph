@@ -35,18 +35,18 @@ use std::path::PathBuf;
 use target::Platform;
 
 ///
-/// Main driver for compiling SDL2, handles switching between w/e implementation is needed for the
+/// Main driver for compiling SDL3, handles switching between w/e implementation is needed for the
 /// target platforms.
 ///
 fn main() {
     println!("cargo::rerun-if-changed=src");
-    println!("cargo::rerun-if-changed=SDL2-builds");
+    println!("cargo::rerun-if-changed=SDL3-builds");
 
     let target_platform = target::build::target_platform();
     let target_arch = target::build::target_architecture();
 
     let mut binary_path = PathBuf::new();
-    binary_path.push("SDL2-builds");
+    binary_path.push("SDL3-builds");
     binary_path.push("out");
     binary_path.push(compile::standard_binary_path_for(target_platform, target_arch).unwrap());
 
@@ -73,25 +73,28 @@ fn main() {
                 "cargo:rustc-link-search=all={}",
                 lib_path.canonicalize().unwrap().display()
             );
+            println!("cargo:rustc-link-lib=dylib=SDL3");
 
             compile::copy_file_to_artifacts_dir(&dll_path)
-                .expect("Failed to copy SDL2 dll to artifacts dir");
+                .expect("Failed to copy SDL3 dll to artifacts dir");
             compile::copy_file_to_target_dir(&dll_path)
-                .expect("Failed to copy SDL2 dll to target dir");
+                .expect("Failed to copy SDL3 dll to target dir");
         }
         Platform::Linux => {
             // Nothing has to be done on linux as the most sane choice is to use the system provided
-            // SDL2 lest we wake the horrible demons of distributing your own libraries on linux.
+            // SDL3 lest we wake the horrible demons of distributing your own libraries on linux.
             // If it's in the distro repository, get it from there as it will probably play much
             // nicer than compiling our own.
+            println!("cargo:rustc-link-lib=dylib=SDL3");
         }
         Platform::IOS => {
             // On iOS we link to a framework rather than directly to a binary. We just need to set
-            // the search path, the sdl2 crate handles the linker directives.
+            // the search path, the sdl3 crate handles the linker directives.
             println!(
                 "cargo:rustc-link-search=framework={}",
                 binary_path.canonicalize().unwrap().display()
             );
+            todo!();
         }
         Platform::Unknown => {
             // Do nothing on 'unknown' as a safe default.
@@ -107,8 +110,8 @@ const fn dll_name(platform: Platform) -> &'static str {
         Platform::WindowsGNU
         | Platform::WindowsMSVC
         | Platform::UniversalWindowsGNU
-        | Platform::UniversalWindowsMSVC => "SDL2.dll",
-        Platform::Linux | Platform::Android => "libSDL2.so",
+        | Platform::UniversalWindowsMSVC => "SDL3.dll",
+        Platform::Linux | Platform::Android => "libSDL3.so",
         Platform::MacOS => "libSDL2-2.0.0.dylib",
         Platform::IOS => "",
         Platform::Unknown => "",

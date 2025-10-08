@@ -40,22 +40,22 @@ pub struct FrameTimer {
 }
 
 impl FrameTimer {
-    pub(crate) fn new(timer: &sdl2::TimerSubsystem) -> AnyArc<Self> {
+    pub(crate) fn new() -> AnyArc<Self> {
         log::info!("Initializing the Frame Timer");
         let out = Self {
-            freq: AtomicU64::new(timer.performance_frequency()),
-            first: AtomicU64::new(timer.performance_counter()),
-            last: AtomicU64::new(timer.performance_counter()),
-            current: AtomicU64::new(timer.performance_counter() + 1),
+            freq: AtomicU64::new(sdl3::timer::performance_frequency()),
+            first: AtomicU64::new(sdl3::timer::performance_counter()),
+            last: AtomicU64::new(sdl3::timer::performance_counter()),
+            current: AtomicU64::new(sdl3::timer::performance_counter() + 1),
         };
         AnyArc::new(out)
     }
 
-    pub(crate) fn update(&self, timer: &sdl2::TimerSubsystem) {
+    pub(crate) fn update(&self) {
         self.last
             .store(self.current.load(Ordering::Relaxed), Ordering::Relaxed);
         self.current
-            .store(timer.performance_counter(), Ordering::Relaxed);
+            .store(sdl3::timer::performance_counter(), Ordering::Relaxed);
     }
 }
 

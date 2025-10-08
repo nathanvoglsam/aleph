@@ -43,7 +43,7 @@ use crate::platform::Sdl2System;
 /// before any other interaction with the library.
 pub unsafe fn set_memory_functions() {
     unsafe {
-        sdl2_sys::SDL_SetMemoryFunctions(
+        sdl3::sys::stdinc::SDL_SetMemoryFunctions(
             Some(malloc_func),
             Some(calloc_func),
             Some(realloc_func),

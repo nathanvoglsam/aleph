@@ -44,7 +44,7 @@ pub trait IMouse: IAny + Send + Sync + 'static {
     ///
     /// Set the position of the mouse
     ///
-    fn set_pos(&self, x: i32, y: i32);
+    fn set_pos(&self, x: f32, y: f32);
 
     ///
     /// Sets the mouse cursor
@@ -169,8 +169,8 @@ pub struct MouseButtonUpEvent {
 ///
 #[derive(Clone, Debug)]
 pub struct MouseWheelEvent {
-    pub x: i32,
-    pub y: i32,
+    pub x: f32,
+    pub y: f32,
     pub direction: MouseWheelDirection,
 }
 

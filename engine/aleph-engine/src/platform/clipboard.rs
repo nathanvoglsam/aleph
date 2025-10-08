@@ -52,17 +52,14 @@ impl IClipboard for Clipboard {
     fn has(&self) -> bool {
         // Safety: These functions are only safe to call from the main thread. We enforce that via
         //         an unsafe constructor and denying Send+Sync on the Clipboard object.
-        unsafe {
-            let has = sdl2::sys::SDL_HasClipboardText();
-            has != sdl2::sys::SDL_bool::SDL_FALSE
-        }
+        unsafe { sdl3::sys::clipboard::SDL_HasClipboardText() }
     }
 
     fn get(&self) -> Option<String> {
         // Safety: These functions are only safe to call from the main thread. We enforce that via
         //         an unsafe constructor and denying Send+Sync on the Clipboard object.
         unsafe {
-            let buf = sdl2::sys::SDL_GetClipboardText();
+            let buf = sdl3::sys::clipboard::SDL_GetClipboardText();
 
             if buf.is_null() {
                 None
@@ -71,7 +68,7 @@ impl IClipboard for Clipboard {
                 let cstr = cstr.to_str().ok()?;
                 let string = cstr.to_string();
 
-                sdl2::sys::SDL_free(buf as *mut c_void);
+                sdl3::sys::stdinc::SDL_free(buf as *mut c_void);
 
                 Some(string)
             }
@@ -82,7 +79,7 @@ impl IClipboard for Clipboard {
         // Safety: These functions are only safe to call from the main thread. We enforce that via
         //         an unsafe constructor and denying Send+Sync on the Clipboard object.
         unsafe {
-            let buf = sdl2::sys::SDL_GetClipboardText();
+            let buf = sdl3::sys::clipboard::SDL_GetClipboardText();
 
             if buf.is_null() {
                 None
@@ -90,7 +87,7 @@ impl IClipboard for Clipboard {
                 let cstr = CStr::from_ptr(buf as *const _);
                 let cstring = cstr.to_owned();
 
-                sdl2::sys::SDL_free(buf as *mut c_void);
+                sdl3::sys::stdinc::SDL_free(buf as *mut c_void);
 
                 Some(cstring)
             }
@@ -104,7 +101,7 @@ impl IClipboard for Clipboard {
             let mut string = value.to_string();
             string.push('\0');
 
-            sdl2::sys::SDL_SetClipboardText(string.as_ptr() as *const _);
+            sdl3::sys::clipboard::SDL_SetClipboardText(string.as_ptr() as *const _);
         }
     }
 
@@ -112,7 +109,7 @@ impl IClipboard for Clipboard {
         // Safety: These functions are only safe to call from the main thread. We enforce that via
         //         an unsafe constructor and denying Send+Sync on the Clipboard object.
         unsafe {
-            sdl2::sys::SDL_SetClipboardText(value.as_ptr() as *const _);
+            sdl3::sys::clipboard::SDL_SetClipboardText(value.as_ptr() as *const _);
         }
     }
 }

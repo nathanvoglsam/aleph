@@ -39,7 +39,7 @@ use interfaces::platform::{
     GamepadEvent, GamepadId, GamepadState, IGamepads, IGamepadsAccessor,
 };
 use parking_lot::RwLock;
-use sdl2::controller::GameController;
+use sdl3::gamepad::Gamepad;
 
 pub(crate) type GamepadsMap = HashMap<u32, GamepadEntry, BuildHasherDefault<IdentityHasher>>;
 
@@ -78,25 +78,26 @@ impl Gamepads {
     pub(crate) fn process_gamepad_event(
         &self,
         gamepads: &mut GamepadsMap,
-        joystick: &sdl2::JoystickSubsystem,
-        controller: &sdl2::GameControllerSubsystem,
-        event: &sdl2::event::Event,
+        joystick: &sdl3::JoystickSubsystem,
+        gamepad: &sdl3::GamepadSubsystem,
+        event: &sdl3::event::Event,
     ) {
-        use sdl2::event::Event as SdlEvent;
+        use sdl3::event::Event as SdlEvent;
         match event {
             SdlEvent::ControllerDeviceAdded { which, .. } => {
                 let which = *which;
 
-                let is_controller = controller.is_game_controller(which);
-                let name = controller.name_for_index(which).unwrap();
-                let guid = joystick.device_guid(which).unwrap().string();
+                let is_controller = gamepad.is_gamepad(which);
+                let name = gamepad.name_for_id(which).unwrap();
+                let guid = joystick.open(which).unwrap().guid();
+
                 log::info!("Controller Added: {which}");
                 log::info!("name = {name}; guid = {guid}; is_controller = {is_controller};");
 
                 if is_controller {
-                    let pad = controller.open(which).unwrap();
+                    let pad = gamepad.open(which).unwrap();
 
-                    let instance_id = pad.instance_id();
+                    let instance_id = pad.id().unwrap();
                     let current_highest = self.highest_id.take();
                     self.highest_id.set(instance_id.max(current_highest));
 
@@ -117,6 +118,7 @@ impl Gamepads {
 
                 if let Some(gamepad) = gamepads.get(&which) {
                     let name = gamepad.pad.name();
+                    let name = name.as_deref().unwrap_or("Unknown");
                     log::info!("Removing Controler: name = {name}; guid = ;");
                     gamepads.remove(&which);
 
@@ -183,7 +185,7 @@ impl Gamepads {
     pub(crate) fn publish_active_state(
         &self,
         gamepads: &GamepadsMap,
-        events: &[sdl2::event::Event],
+        events: &[sdl3::event::Event],
     ) {
         let mut shared_state = self.accessor.shared_state.write();
         if let Some(active) = self.active_controller.get() {
@@ -196,7 +198,7 @@ impl Gamepads {
         let mut shared_events = self.accessor.shared_events.write();
         if let Some(active) = self.active_controller.get() {
             let filtered_events = events.iter().filter_map(|v| {
-                use sdl2::event::Event as SdlEvent;
+                use sdl3::event::Event as SdlEvent;
                 match v {
                     SdlEvent::ControllerAxisMotion {
                         which, axis, value, ..
@@ -249,7 +251,7 @@ impl IGamepads for Gamepads {
 
 pub(crate) struct GamepadEntry {
     pub(crate) _device_index: u32,
-    pub(crate) pad: GameController,
+    pub(crate) pad: Gamepad,
     pub(crate) state: GamepadState,
 }
 
@@ -275,13 +277,13 @@ impl IGamepadsAccessor for GamepadsAccessor {
 
 #[inline(always)]
 /// The current state of the given axis.
-fn set_axis(state: &mut GamepadState, axis: sdl2::controller::Axis, value: i16) {
+fn set_axis(state: &mut GamepadState, axis: sdl3::gamepad::Axis, value: i16) {
     state.axis[axis as usize] = value;
 }
 
 #[inline(always)]
 /// Lookup the state of the given button. True = 'pressed', false = 'released'
-fn set_button(state: &mut GamepadState, button: sdl2::controller::Button, value: bool) {
+fn set_button(state: &mut GamepadState, button: sdl3::gamepad::Button, value: bool) {
     // Convert button to index in bitmap
     let button = 0b1u32 << (button as u32);
 
@@ -292,39 +294,43 @@ fn set_button(state: &mut GamepadState, button: sdl2::controller::Button, value:
     }
 }
 
-const fn map_button(button: sdl2::controller::Button) -> GamepadButton {
+const fn map_button(button: sdl3::gamepad::Button) -> GamepadButton {
     match button {
-        sdl2::controller::Button::A => GamepadButton::A,
-        sdl2::controller::Button::B => GamepadButton::B,
-        sdl2::controller::Button::X => GamepadButton::X,
-        sdl2::controller::Button::Y => GamepadButton::Y,
-        sdl2::controller::Button::Back => GamepadButton::Back,
-        sdl2::controller::Button::Guide => GamepadButton::Guide,
-        sdl2::controller::Button::Start => GamepadButton::Start,
-        sdl2::controller::Button::LeftStick => GamepadButton::LeftStick,
-        sdl2::controller::Button::RightStick => GamepadButton::RightStick,
-        sdl2::controller::Button::LeftShoulder => GamepadButton::LeftShoulder,
-        sdl2::controller::Button::RightShoulder => GamepadButton::RightShoulder,
-        sdl2::controller::Button::DPadUp => GamepadButton::DPadUp,
-        sdl2::controller::Button::DPadDown => GamepadButton::DPadDown,
-        sdl2::controller::Button::DPadLeft => GamepadButton::DPadLeft,
-        sdl2::controller::Button::DPadRight => GamepadButton::DPadRight,
-        sdl2::controller::Button::Misc1 => GamepadButton::Misc1,
-        sdl2::controller::Button::Paddle1 => GamepadButton::RightPaddle1,
-        sdl2::controller::Button::Paddle2 => GamepadButton::LeftPaddle1,
-        sdl2::controller::Button::Paddle3 => GamepadButton::RightPaddle2,
-        sdl2::controller::Button::Paddle4 => GamepadButton::LeftPaddle2,
-        sdl2::controller::Button::Touchpad => GamepadButton::Touchpad,
+        sdl3::gamepad::Button::South => GamepadButton::A,
+        sdl3::gamepad::Button::East => GamepadButton::B,
+        sdl3::gamepad::Button::West => GamepadButton::X,
+        sdl3::gamepad::Button::North => GamepadButton::Y,
+        sdl3::gamepad::Button::Back => GamepadButton::Back,
+        sdl3::gamepad::Button::Guide => GamepadButton::Guide,
+        sdl3::gamepad::Button::Start => GamepadButton::Start,
+        sdl3::gamepad::Button::LeftStick => GamepadButton::LeftStick,
+        sdl3::gamepad::Button::RightStick => GamepadButton::RightStick,
+        sdl3::gamepad::Button::LeftShoulder => GamepadButton::LeftShoulder,
+        sdl3::gamepad::Button::RightShoulder => GamepadButton::RightShoulder,
+        sdl3::gamepad::Button::DPadUp => GamepadButton::DPadUp,
+        sdl3::gamepad::Button::DPadDown => GamepadButton::DPadDown,
+        sdl3::gamepad::Button::DPadLeft => GamepadButton::DPadLeft,
+        sdl3::gamepad::Button::DPadRight => GamepadButton::DPadRight,
+        sdl3::gamepad::Button::Misc1 => GamepadButton::Misc1,
+        sdl3::gamepad::Button::RightPaddle1 => GamepadButton::RightPaddle1,
+        sdl3::gamepad::Button::LeftPaddle1 => GamepadButton::LeftPaddle1,
+        sdl3::gamepad::Button::RightPaddle2 => GamepadButton::RightPaddle2,
+        sdl3::gamepad::Button::LeftPaddle2 => GamepadButton::LeftPaddle2,
+        sdl3::gamepad::Button::Touchpad => GamepadButton::Touchpad,
+        sdl3::gamepad::Button::Misc2 => GamepadButton::Misc2,
+        sdl3::gamepad::Button::Misc3 => GamepadButton::Misc3,
+        sdl3::gamepad::Button::Misc4 => GamepadButton::Misc4,
+        sdl3::gamepad::Button::Misc5 => GamepadButton::Misc5,
     }
 }
 
-const fn map_axis(axis: sdl2::controller::Axis) -> GamepadAxis {
+const fn map_axis(axis: sdl3::gamepad::Axis) -> GamepadAxis {
     match axis {
-        sdl2::controller::Axis::LeftX => GamepadAxis::LeftX,
-        sdl2::controller::Axis::LeftY => GamepadAxis::LeftY,
-        sdl2::controller::Axis::RightX => GamepadAxis::RightX,
-        sdl2::controller::Axis::RightY => GamepadAxis::RightY,
-        sdl2::controller::Axis::TriggerLeft => GamepadAxis::TriggerLeft,
-        sdl2::controller::Axis::TriggerRight => GamepadAxis::TriggerRight,
+        sdl3::gamepad::Axis::LeftX => GamepadAxis::LeftX,
+        sdl3::gamepad::Axis::LeftY => GamepadAxis::LeftY,
+        sdl3::gamepad::Axis::RightX => GamepadAxis::RightX,
+        sdl3::gamepad::Axis::RightY => GamepadAxis::RightY,
+        sdl3::gamepad::Axis::TriggerLeft => GamepadAxis::TriggerLeft,
+        sdl3::gamepad::Axis::TriggerRight => GamepadAxis::TriggerRight,
     }
 }

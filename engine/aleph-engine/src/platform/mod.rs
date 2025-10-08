@@ -61,7 +61,7 @@ pub use mouse::Mouse;
 use parking_lot::RwLockWriteGuard;
 pub use sdl_alloc_wrapper::set_memory_functions;
 pub use sdl_main_wrapper::intercept_main;
-use sdl2::mouse::SystemCursor;
+use sdl3::mouse::SystemCursor;
 pub use window::Window;
 
 pub(crate) fn platform_interfaces() -> [TypeId; 7] {
@@ -91,11 +91,11 @@ pub(crate) struct Objects {
     pub(crate) clipboard: Option<AnyArc<Clipboard>>,
 }
 
-pub(crate) struct PlatformSDL2 {
+pub(crate) struct PlatformSDL3 {
     sdl: Rc<Cell<Option<SdlObjects>>>,
 }
 
-impl PlatformSDL2 {
+impl PlatformSDL3 {
     pub(crate) fn new() -> Self {
         let sdl = SdlObjects {
             _ctx: None,
@@ -103,10 +103,9 @@ impl PlatformSDL2 {
             _event: None,
             event_pump: None,
             mouse_util: None,
-            timer: None,
             window: None,
             joystick: None,
-            gamecontroller: None,
+            gamepad: None,
         };
         Self {
             sdl: Rc::new(Cell::new(Some(sdl))),
@@ -114,7 +113,7 @@ impl PlatformSDL2 {
     }
 }
 
-impl PlatformSDL2 {
+impl PlatformSDL3 {
     pub(crate) fn on_init(&mut self, registry: &mut RegistryAccessor) {
         let quit_handle = registry.quit_handle.clone();
         ctrlc::set_handler(move || {
@@ -123,67 +122,33 @@ impl PlatformSDL2 {
         })
         .expect("Failed to registr ctrl+c handler");
 
-        #[cfg(windows)]
-        {
-            sdl2::hint::set("SDL_WINDOWS_DPI_SCALING", "1");
-            // TODO: oh boy
-            // SDL2's DPI scaling stuff on windows is _problematic_. When using the "DPI_SCALING"
-            // mode SDL2 will apply all the scaling into logical points inside the backend before
-            // giving them to us. That's fine, but unfortunately this is all done with integers.
-            // Guess what happens when fractional scaling is turned on? If you bet truncated output
-            // you'd be _very_ correct!!!!
-            //
-            // SDL3 is better and uses floats for the positions so you can get fractional positions
-            // and scales. We _can_ work around this ourselves by using this alternative hint.
-            //
-            // sdl2::hint::set("SDL_WINDOWS_DPI_AWARENESS", "permonitorv2");
-            //
-            // This enables DPI awareness the same as the DPI_SCALING hint but doesn't apply any
-            // scaling to the numbers we get from SDL. We have to do this ourselves, but critically
-            // we get to convert to float and do the scaling right with fractional values.
-            //
-            // This can cause a few problems
-            // - Artificially restricted input resolution as it will snap to integer mouse
-            //   positions.
-            // - Egui breaks as it can't cope with the rounding errors introduced by SDL2's scaling.
-            //
-            // Solving this should be possible by just looking at SDL2 and doing all the same
-            // scaling but in floats. Mouse positions etc are fine but I'm not so sure about window
-            // coordinates.
-        }
+        log::info!("Initializing SDL3 Library");
+        let sdl = sdl3::init().expect("Failed to initialize SDL3");
 
-        log::info!("Initializing SDL2 Library");
-        let sdl = sdl2::init().expect("Failed to initialize SDL2");
-
-        log::info!("Initializing SDL2 Timer Subsystem");
-        let sdl_timer = sdl
-            .timer()
-            .expect("Failed to initialize SDL2 timer subsystem");
-
-        log::info!("Initializing SDL2 Video Subsystem");
+        log::info!("Initializing SDL3 Video Subsystem");
         let sdl_video = sdl
             .video()
-            .expect("Failed to initialize SDL2 video subsystem");
+            .expect("Failed to initialize SDL3 video subsystem");
 
-        log::info!("Initializing SDL2 Event Subsystem");
+        log::info!("Initializing SDL3 Event Subsystem");
         let sdl_event = sdl
             .event()
-            .expect("Failed to initialize SDL2 event subsystem");
+            .expect("Failed to initialize SDL3 event subsystem");
 
-        log::info!("Initializing SDL2 Event Pump");
+        log::info!("Initializing SDL3 Event Pump");
         let sdl_event_pump = sdl
             .event_pump()
-            .expect("Failed to initialize SDL2 event pump");
+            .expect("Failed to initialize SDL3 event pump");
 
-        log::info!("Initializing SDL2 Joystick Subsystem");
+        log::info!("Initializing SDL3 Joystick Subsystem");
         let sdl_joystick = sdl
             .joystick()
-            .expect("Failed to initialize SDL2 joystick subsystem");
+            .expect("Failed to initialize SDL3 joystick subsystem");
 
-        log::info!("Initializing SDL2 Game Controller Subsystem");
-        let sdl_gamecontroller = sdl
-            .game_controller()
-            .expect("Failed to initialize SDL2 controller subsystem");
+        log::info!("Initializing SDL3 Gamepad Subsystem");
+        let sdl_gamepad = sdl
+            .gamepad()
+            .expect("Failed to initialize SDL3 controller subsystem");
 
         let sdl_mouse_util = sdl.mouse();
 
@@ -195,7 +160,7 @@ impl PlatformSDL2 {
         };
 
         // Initialize all our implementations
-        let frame_timer = FrameTimer::new(&sdl_timer);
+        let frame_timer = FrameTimer::new();
         let mouse = Mouse::new();
         let (window, sdl_window) = Window::new(&sdl_video, "test");
         let keyboard = Keyboard::new();
@@ -207,17 +172,16 @@ impl PlatformSDL2 {
             Clipboard::new()
         };
 
-        // Update our SDL2 handle storages with the created handles
+        // Update our SDL3 handle storages with the created handles
         let mut sdl_o = self.sdl.take().unwrap();
         sdl_o._ctx = Some(sdl);
         sdl_o.video = Some(sdl_video);
         sdl_o._event = Some(sdl_event);
         sdl_o.event_pump = Some(sdl_event_pump);
         sdl_o.mouse_util = Some(sdl_mouse_util);
-        sdl_o.timer = Some(sdl_timer);
         sdl_o.window = Some(sdl_window);
         sdl_o.joystick = Some(sdl_joystick);
-        sdl_o.gamecontroller = Some(sdl_gamecontroller);
+        sdl_o.gamepad = Some(sdl_gamepad);
         self.sdl.set(Some(sdl_o));
 
         // Update our provider with the newly created implementations
@@ -239,7 +203,7 @@ impl PlatformSDL2 {
             .schedule
             .add_exclusive_at_start_system_to_stage(
                 CoreStage::InputCollection.into(),
-                make_label!("platform_sdl2::input_collection"),
+                make_label!("platform_sdl3::input_collection"),
                 move || {
                     let objects = &send_objects;
                     let sdl_cell = send_sdl.deref();
@@ -247,9 +211,7 @@ impl PlatformSDL2 {
 
                     let mut sdl = sdl_cell.take().unwrap();
                     {
-                        let timer = sdl.timer.take().unwrap();
-                        Self::frame_timer(objects).unwrap().update(&timer);
-                        sdl.timer = Some(timer);
+                        Self::frame_timer(objects).unwrap().update();
 
                         Self::handle_requests(&cursors, &mut sdl, objects);
                         Self::handle_events(&mut sdl, objects, quit_handle);
@@ -308,9 +270,9 @@ impl PlatformSDL2 {
     }
 }
 
-impl PlatformSDL2 {
+impl PlatformSDL3 {
     fn handle_requests(
-        cursors: &HashMap<Cursor, sdl2::mouse::Cursor>,
+        cursors: &HashMap<Cursor, sdl3::mouse::Cursor>,
         sdl: &mut SdlObjects,
         provider: &Objects,
     ) {
@@ -331,12 +293,11 @@ impl PlatformSDL2 {
     }
 
     fn handle_events(sdl: &mut SdlObjects, provider: &Objects, quit_handle: &dyn IQuitHandle) {
-        use sdl2::event::Event as SdlEvent;
+        use sdl3::event::Event as SdlEvent;
 
-        let video_ctx = sdl.video.take().unwrap();
         let mut event_pump = sdl.event_pump.take().unwrap();
         let mut sdl_window = sdl.window.take().unwrap();
-        let controller = sdl.gamecontroller.take().unwrap();
+        let sdl_gamepad = sdl.gamepad.take().unwrap();
         let joystick = sdl.joystick.take().unwrap();
 
         let window = Self::window(provider).unwrap();
@@ -369,7 +330,7 @@ impl PlatformSDL2 {
                 }
                 SdlEvent::Window { win_event, .. } => {
                     window.process_window_event(
-                        &video_ctx,
+                        &sdl_window,
                         &mut window_state,
                         &mut window_events,
                         &mut all_events,
@@ -401,7 +362,7 @@ impl PlatformSDL2 {
                     gamepads.process_gamepad_event(
                         &mut gamepads_map,
                         &joystick,
-                        &controller,
+                        &sdl_gamepad,
                         &event,
                     );
                     gamepad_events.push(event);
@@ -427,15 +388,14 @@ impl PlatformSDL2 {
 
         drop(gamepads_map);
 
-        sdl.video = Some(video_ctx);
         sdl.event_pump = Some(event_pump);
         sdl.window = Some(sdl_window);
-        sdl.gamecontroller = Some(controller);
+        sdl.gamepad = Some(sdl_gamepad);
         sdl.joystick = Some(joystick);
     }
 }
 
-impl PlatformSDL2 {
+impl PlatformSDL3 {
     fn window_state(provider: &Objects) -> Option<RwLockWriteGuard<'_, WindowState>> {
         provider.window.as_ref().map(|v| v.state.write())
     }
@@ -481,57 +441,56 @@ impl PlatformSDL2 {
     }
 }
 
-fn init_cursor_map() -> HashMap<Cursor, sdl2::mouse::Cursor> {
+fn init_cursor_map() -> HashMap<Cursor, sdl3::mouse::Cursor> {
     let mut cursors = HashMap::new();
     cursors.insert(
         Cursor::Arrow,
-        sdl2::mouse::Cursor::from_system(SystemCursor::Arrow).unwrap(),
+        sdl3::mouse::Cursor::from_system(SystemCursor::Arrow).unwrap(),
     );
     cursors.insert(
         Cursor::IBeam,
-        sdl2::mouse::Cursor::from_system(SystemCursor::IBeam).unwrap(),
+        sdl3::mouse::Cursor::from_system(SystemCursor::IBeam).unwrap(),
     );
     cursors.insert(
         Cursor::SizeAll,
-        sdl2::mouse::Cursor::from_system(SystemCursor::SizeAll).unwrap(),
+        sdl3::mouse::Cursor::from_system(SystemCursor::SizeAll).unwrap(),
     );
     cursors.insert(
         Cursor::SizeNS,
-        sdl2::mouse::Cursor::from_system(SystemCursor::SizeNS).unwrap(),
+        sdl3::mouse::Cursor::from_system(SystemCursor::SizeNS).unwrap(),
     );
     cursors.insert(
         Cursor::SizeWE,
-        sdl2::mouse::Cursor::from_system(SystemCursor::SizeWE).unwrap(),
+        sdl3::mouse::Cursor::from_system(SystemCursor::SizeWE).unwrap(),
     );
     cursors.insert(
         Cursor::SizeNESW,
-        sdl2::mouse::Cursor::from_system(SystemCursor::SizeNESW).unwrap(),
+        sdl3::mouse::Cursor::from_system(SystemCursor::SizeNESW).unwrap(),
     );
     cursors.insert(
         Cursor::SizeNWSE,
-        sdl2::mouse::Cursor::from_system(SystemCursor::SizeNWSE).unwrap(),
+        sdl3::mouse::Cursor::from_system(SystemCursor::SizeNWSE).unwrap(),
     );
     cursors.insert(
         Cursor::Hand,
-        sdl2::mouse::Cursor::from_system(SystemCursor::Hand).unwrap(),
+        sdl3::mouse::Cursor::from_system(SystemCursor::Hand).unwrap(),
     );
     cursors.insert(
         Cursor::No,
-        sdl2::mouse::Cursor::from_system(SystemCursor::No).unwrap(),
+        sdl3::mouse::Cursor::from_system(SystemCursor::No).unwrap(),
     );
     cursors
 }
 
 struct SdlObjects {
-    _ctx: Option<sdl2::Sdl>,
-    video: Option<sdl2::VideoSubsystem>,
-    _event: Option<sdl2::EventSubsystem>,
-    event_pump: Option<sdl2::EventPump>,
-    mouse_util: Option<sdl2::mouse::MouseUtil>,
-    timer: Option<sdl2::TimerSubsystem>,
-    window: Option<sdl2::video::Window>,
-    joystick: Option<sdl2::JoystickSubsystem>,
-    gamecontroller: Option<sdl2::GameControllerSubsystem>,
+    _ctx: Option<sdl3::Sdl>,
+    video: Option<sdl3::VideoSubsystem>,
+    _event: Option<sdl3::EventSubsystem>,
+    event_pump: Option<sdl3::EventPump>,
+    mouse_util: Option<sdl3::mouse::MouseUtil>,
+    window: Option<sdl3::video::Window>,
+    joystick: Option<sdl3::JoystickSubsystem>,
+    gamepad: Option<sdl3::GamepadSubsystem>,
 }
 
 impl SdlObjects {
@@ -541,10 +500,9 @@ impl SdlObjects {
         self._event = None;
         self.event_pump = None;
         self.mouse_util = None;
-        self.timer = None;
         self.window = None;
         self.joystick = None;
-        self.gamecontroller = None;
+        self.gamepad = None;
     }
 }
 

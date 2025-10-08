@@ -43,7 +43,7 @@ use smallbox::{SmallBox, smallbox};
 /// Internal enum for representing a mouse request
 ///
 pub(crate) enum MouseRequest {
-    SetPos(i32, i32),
+    SetPos(f32, f32),
     SetCursor(Cursor),
     ShowCursor,
     HideCursor,
@@ -84,9 +84,9 @@ impl Mouse {
     ///
     pub(crate) fn process_mouse_requests(
         &self,
-        window: &sdl2::video::Window,
-        mouse_utils: &sdl2::mouse::MouseUtil,
-        cursors: &HashMap<Cursor, sdl2::mouse::Cursor>,
+        window: &sdl3::video::Window,
+        mouse_utils: &sdl3::mouse::MouseUtil,
+        cursors: &HashMap<Cursor, sdl3::mouse::Cursor>,
     ) {
         for request in self.requests.lock().drain(..) {
             match request {
@@ -121,10 +121,10 @@ impl Mouse {
         &self,
         mouse_events: &mut Vec<MouseEvent>,
         all_events: &mut Vec<Event>,
-        event: sdl2::event::Event,
+        event: sdl3::event::Event,
     ) {
         match event {
-            sdl2::event::Event::MouseMotion {
+            sdl3::event::Event::MouseMotion {
                 mousestate,
                 x,
                 y,
@@ -146,7 +146,7 @@ impl Mouse {
                 mouse_events.push(event.clone());
                 all_events.push(Event::MouseEvent(event));
             }
-            sdl2::event::Event::MouseButtonDown {
+            sdl3::event::Event::MouseButtonDown {
                 mouse_btn,
                 clicks,
                 x,
@@ -154,12 +154,12 @@ impl Mouse {
                 ..
             } => {
                 let button = match mouse_btn {
-                    sdl2::mouse::MouseButton::Unknown => return,
-                    sdl2::mouse::MouseButton::Left => MouseButton::Left,
-                    sdl2::mouse::MouseButton::Middle => MouseButton::Middle,
-                    sdl2::mouse::MouseButton::Right => MouseButton::Right,
-                    sdl2::mouse::MouseButton::X1 => MouseButton::X1,
-                    sdl2::mouse::MouseButton::X2 => MouseButton::X2,
+                    sdl3::mouse::MouseButton::Unknown => return,
+                    sdl3::mouse::MouseButton::Left => MouseButton::Left,
+                    sdl3::mouse::MouseButton::Middle => MouseButton::Middle,
+                    sdl3::mouse::MouseButton::Right => MouseButton::Right,
+                    sdl3::mouse::MouseButton::X1 => MouseButton::X1,
+                    sdl3::mouse::MouseButton::X2 => MouseButton::X2,
                 };
                 let event = MouseButtonDownEvent {
                     button,
@@ -171,7 +171,7 @@ impl Mouse {
                 mouse_events.push(event.clone());
                 all_events.push(Event::MouseEvent(event));
             }
-            sdl2::event::Event::MouseButtonUp {
+            sdl3::event::Event::MouseButtonUp {
                 mouse_btn,
                 clicks,
                 x,
@@ -179,12 +179,12 @@ impl Mouse {
                 ..
             } => {
                 let button = match mouse_btn {
-                    sdl2::mouse::MouseButton::Unknown => return,
-                    sdl2::mouse::MouseButton::Left => MouseButton::Left,
-                    sdl2::mouse::MouseButton::Middle => MouseButton::Middle,
-                    sdl2::mouse::MouseButton::Right => MouseButton::Right,
-                    sdl2::mouse::MouseButton::X1 => MouseButton::X1,
-                    sdl2::mouse::MouseButton::X2 => MouseButton::X2,
+                    sdl3::mouse::MouseButton::Unknown => return,
+                    sdl3::mouse::MouseButton::Left => MouseButton::Left,
+                    sdl3::mouse::MouseButton::Middle => MouseButton::Middle,
+                    sdl3::mouse::MouseButton::Right => MouseButton::Right,
+                    sdl3::mouse::MouseButton::X1 => MouseButton::X1,
+                    sdl3::mouse::MouseButton::X2 => MouseButton::X2,
                 };
                 let event = MouseButtonUpEvent {
                     button,
@@ -196,13 +196,13 @@ impl Mouse {
                 mouse_events.push(event.clone());
                 all_events.push(Event::MouseEvent(event));
             }
-            sdl2::event::Event::MouseWheel {
+            sdl3::event::Event::MouseWheel {
                 x, y, direction, ..
             } => {
                 let direction = match direction {
-                    sdl2::mouse::MouseWheelDirection::Normal => MouseWheelDirection::Normal,
-                    sdl2::mouse::MouseWheelDirection::Flipped => MouseWheelDirection::Flipped,
-                    sdl2::mouse::MouseWheelDirection::Unknown(_) => return,
+                    sdl3::mouse::MouseWheelDirection::Normal => MouseWheelDirection::Normal,
+                    sdl3::mouse::MouseWheelDirection::Flipped => MouseWheelDirection::Flipped,
+                    sdl3::mouse::MouseWheelDirection::Unknown(_) => return,
                 };
                 let event = MouseWheelEvent { x, y, direction };
                 let event = MouseEvent::MouseWheel(event);
@@ -216,8 +216,8 @@ impl Mouse {
     ///
     /// Internal function for getting new mouse state from SDL2
     ///
-    pub(crate) fn update_state(&self, event_pump: &sdl2::EventPump) {
-        let state = sdl2::mouse::MouseState::new(event_pump);
+    pub(crate) fn update_state(&self, event_pump: &sdl3::EventPump) {
+        let state = sdl3::mouse::MouseState::new(event_pump);
 
         *self.state.write().deref_mut() = MouseState {
             pos: (state.x() as f32, state.y() as f32),
@@ -232,7 +232,7 @@ impl IMouse for Mouse {
         lock.deref().clone()
     }
 
-    fn set_pos(&self, x: i32, y: i32) {
+    fn set_pos(&self, x: f32, y: f32) {
         self.requests.lock().push(MouseRequest::SetPos(x, y));
     }
 

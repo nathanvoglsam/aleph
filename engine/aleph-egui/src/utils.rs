@@ -53,7 +53,7 @@ pub fn get_egui_input(
 
     let modifiers = get_egui_modifiers(keyboard);
 
-    let events = get_egui_events(events, &modifiers);
+    let events = get_egui_events(window, events, &modifiers);
 
     let viewport_info = ViewportInfo {
         native_pixels_per_point: Some(window.current_display_scale()),
@@ -99,7 +99,12 @@ pub fn process_egui_output(
     }
 }
 
-pub fn get_egui_events(events: &dyn IEvents, modifiers: &egui::Modifiers) -> Vec<egui::Event> {
+pub fn get_egui_events(
+    window: &dyn IWindow,
+    events: &dyn IEvents,
+    modifiers: &egui::Modifiers,
+) -> Vec<egui::Event> {
+    let display_scale = window.current_display_scale();
     let events = events.get();
 
     let mut out = Vec::new();
@@ -148,7 +153,7 @@ pub fn get_egui_events(events: &dyn IEvents, modifiers: &egui::Modifiers) -> Vec
                 }
             },
             Event::MouseEvent(event) => {
-                if let Some(event) = translate_mouse_event(event, modifiers) {
+                if let Some(event) = translate_mouse_event(event, modifiers, display_scale) {
                     out.push(event);
                 }
             }
@@ -161,12 +166,12 @@ pub fn get_egui_events(events: &dyn IEvents, modifiers: &egui::Modifiers) -> Vec
 pub fn get_egui_modifiers(keyboard: &dyn IKeyboard) -> egui::Modifiers {
     // TODO: Use KeyCode api when KeyCode->ScanCode translation works again
     let keyboard_state = keyboard.get_state();
-    let alt = keyboard_state.scan_code_down(ScanCode::LeftAlt)
-        || keyboard_state.scan_code_down(ScanCode::RightAlt);
-    let ctrl = keyboard_state.scan_code_down(ScanCode::LeftCtrl)
-        || keyboard_state.scan_code_down(ScanCode::RightCtrl);
-    let shift = keyboard_state.scan_code_down(ScanCode::LeftShift)
-        || keyboard_state.scan_code_down(ScanCode::RightShift);
+    let alt = keyboard_state.scan_code_down(ScanCode::LAlt)
+        || keyboard_state.scan_code_down(ScanCode::RAlt);
+    let ctrl = keyboard_state.scan_code_down(ScanCode::LCtrl)
+        || keyboard_state.scan_code_down(ScanCode::RCtrl);
+    let shift = keyboard_state.scan_code_down(ScanCode::LShift)
+        || keyboard_state.scan_code_down(ScanCode::RShift);
 
     egui::Modifiers {
         alt,
@@ -180,16 +185,17 @@ pub fn get_egui_modifiers(keyboard: &dyn IKeyboard) -> egui::Modifiers {
 pub fn translate_mouse_event(
     event: &MouseEvent,
     modifiers: &egui::Modifiers,
+    display_scale: f32,
 ) -> Option<egui::Event> {
     match event {
         MouseEvent::MouseMotion(e) => {
-            let pos = egui::Pos2::new(e.x, e.y);
+            let pos = egui::Pos2::new(e.x / display_scale, e.y / display_scale);
             let event = egui::Event::PointerMoved(pos);
             Some(event)
         }
         MouseEvent::MouseButtonDown(e) => {
-            let pos = egui::Pos2::new(e.x, e.y);
-            let button = translate_mouse_button(&e.button)?;
+            let pos = egui::Pos2::new(e.x / display_scale, e.y / display_scale);
+            let button = translate_mouse_button(&e.button);
             let event = egui::Event::PointerButton {
                 pos,
                 button,
@@ -199,8 +205,8 @@ pub fn translate_mouse_event(
             Some(event)
         }
         MouseEvent::MouseButtonUp(e) => {
-            let pos = egui::Pos2::new(e.x, e.y);
-            let button = translate_mouse_button(&e.button)?;
+            let pos = egui::Pos2::new(e.x / display_scale, e.y / display_scale);
+            let button = translate_mouse_button(&e.button);
             let event = egui::Event::PointerButton {
                 pos,
                 button,
@@ -211,9 +217,9 @@ pub fn translate_mouse_event(
         }
         MouseEvent::MouseWheel(e) => {
             let delta = if matches!(e.direction, MouseWheelDirection::Normal) {
-                egui::Vec2::new(e.x as f32, e.y as f32)
+                egui::Vec2::new(e.x, e.y)
             } else {
-                egui::Vec2::new(-e.x as f32, -e.y as f32)
+                egui::Vec2::new(-e.x, -e.y)
             };
             let event = egui::Event::MouseWheel {
                 unit: egui::MouseWheelUnit::Line,
@@ -225,13 +231,13 @@ pub fn translate_mouse_event(
     }
 }
 
-pub fn translate_mouse_button(button: &MouseButton) -> Option<egui::PointerButton> {
+pub fn translate_mouse_button(button: &MouseButton) -> egui::PointerButton {
     match button {
-        MouseButton::Left => Some(egui::PointerButton::Primary),
-        MouseButton::Middle => Some(egui::PointerButton::Middle),
-        MouseButton::Right => Some(egui::PointerButton::Secondary),
-        MouseButton::X1 => None, // Skip emitting an event for this button
-        MouseButton::X2 => None, // Skip emitting an event for this button
+        MouseButton::Left => egui::PointerButton::Primary,
+        MouseButton::Middle => egui::PointerButton::Middle,
+        MouseButton::Right => egui::PointerButton::Secondary,
+        MouseButton::X1 => egui::PointerButton::Extra1,
+        MouseButton::X2 => egui::PointerButton::Extra2,
     }
 }
 
@@ -364,20 +370,20 @@ pub fn translate_scan_code(key: ScanCode) -> Option<egui::Key> {
         ScanCode::PageUp => Some(egui::Key::PageUp),
         ScanCode::End => Some(egui::Key::End),
         ScanCode::PageDown => Some(egui::Key::PageDown),
-        ScanCode::ArrowRight => Some(egui::Key::ArrowRight),
-        ScanCode::ArrowLeft => Some(egui::Key::ArrowLeft),
-        ScanCode::ArrowDown => Some(egui::Key::ArrowDown),
-        ScanCode::ArrowUp => Some(egui::Key::ArrowUp),
-        ScanCode::PadNum1 => Some(egui::Key::Num1),
-        ScanCode::PadNum2 => Some(egui::Key::Num2),
-        ScanCode::PadNum3 => Some(egui::Key::Num3),
-        ScanCode::PadNum4 => Some(egui::Key::Num4),
-        ScanCode::PadNum5 => Some(egui::Key::Num5),
-        ScanCode::PadNum6 => Some(egui::Key::Num6),
-        ScanCode::PadNum7 => Some(egui::Key::Num7),
-        ScanCode::PadNum8 => Some(egui::Key::Num8),
-        ScanCode::PadNum9 => Some(egui::Key::Num9),
-        ScanCode::PadNum0 => Some(egui::Key::Num0),
+        ScanCode::Right => Some(egui::Key::ArrowRight),
+        ScanCode::Left => Some(egui::Key::ArrowLeft),
+        ScanCode::Down => Some(egui::Key::ArrowDown),
+        ScanCode::Up => Some(egui::Key::ArrowUp),
+        ScanCode::Kp1 => Some(egui::Key::Num1),
+        ScanCode::Kp2 => Some(egui::Key::Num2),
+        ScanCode::Kp3 => Some(egui::Key::Num3),
+        ScanCode::Kp4 => Some(egui::Key::Num4),
+        ScanCode::Kp5 => Some(egui::Key::Num5),
+        ScanCode::Kp6 => Some(egui::Key::Num6),
+        ScanCode::Kp7 => Some(egui::Key::Num7),
+        ScanCode::Kp8 => Some(egui::Key::Num8),
+        ScanCode::Kp9 => Some(egui::Key::Num9),
+        ScanCode::Kp0 => Some(egui::Key::Num0),
         _ => None,
     }
 }

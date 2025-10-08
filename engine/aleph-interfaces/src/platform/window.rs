@@ -52,7 +52,6 @@ pub enum WindowEvent {
     FocusGained,
     FocusLost,
     Close,
-    TakeFocus,
     HitTest,
 }
 
@@ -182,11 +181,6 @@ pub trait IWindow: IAny + HasDisplayHandle + HasWindowHandle + Send + Sync + 'st
     /// Will only take affect at the beginning of the next frame
     ///
     fn toggle_fullscreen(&self);
-
-    ///
-    /// Returns what the current horizontal DPI of the display the window is on.
-    ///
-    fn current_dpi(&self) -> f32;
 
     ///
     /// Returns the display scaling factor of the display the window is on.

@@ -45,7 +45,7 @@ pub use builder::PluginRegistryBuilder;
 
 use crate::interfaces::any::{AnyArc, IAny};
 use crate::interfaces::plugin::{IPlugin, IQuitHandle, IRegistryAccessor};
-use crate::platform::PlatformSDL2;
+use crate::platform::PlatformSDL3;
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 use crate::rhi::Rhi;
 
@@ -76,7 +76,7 @@ pub struct PluginRegistry {
     world: Option<Box<World>>,
 
     /// The SDL integration object for managing the connection to the SDL library
-    platform: PlatformSDL2,
+    platform: PlatformSDL3,
 
     /// The RHI integration object
     rhi: Rhi,

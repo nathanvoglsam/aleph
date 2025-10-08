@@ -36,7 +36,7 @@ use interfaces::schedule::CoreStage;
 use interfaces::scheduler::{Schedule, SystemSchedule, TypedTable};
 
 use crate::interfaces::plugin::IPlugin;
-use crate::platform::{PlatformSDL2, platform_interfaces};
+use crate::platform::{PlatformSDL3, platform_interfaces};
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 use crate::plugin_registry::registrar::PluginRegistrar;
 use crate::plugin_registry::{PluginEntry, PluginRegistry};
@@ -105,7 +105,7 @@ impl PluginRegistryBuilder {
             schedule: Some(Box::new(schedule)),
             resources: Some(Box::new(TypedTable::default())),
             world: Some(Box::new(world)),
-            platform: PlatformSDL2::new(),
+            platform: PlatformSDL3::new(),
             rhi: Rhi::new(),
         };
 
