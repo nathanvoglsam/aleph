@@ -296,8 +296,7 @@ impl PlatformSDL3 {
         let mut event_pump = sdl.event_pump.take().unwrap();
         let mut sdl_window = sdl.window.take().unwrap();
         let sdl_gamepad = sdl.gamepad.take().unwrap();
-        let joystick = sdl.joystick.take().unwrap();
-        
+
         let sdl_display = sdl_window.get_display().expect("Failed to get display");
 
         let window = Self::window(provider).unwrap();
@@ -358,12 +357,7 @@ impl PlatformSDL3 {
                 | event @ SdlEvent::ControllerAxisMotion { .. }
                 | event @ SdlEvent::ControllerButtonDown { .. }
                 | event @ SdlEvent::ControllerButtonUp { .. } => {
-                    gamepads.process_gamepad_event(
-                        &mut gamepads_map,
-                        &joystick,
-                        &sdl_gamepad,
-                        &event,
-                    );
+                    gamepads.process_gamepad_event(&mut gamepads_map, &sdl_gamepad, &event);
                     gamepad_events.push(event);
                 }
                 _ => {}
@@ -393,7 +387,6 @@ impl PlatformSDL3 {
         sdl.event_pump = Some(event_pump);
         sdl.window = Some(sdl_window);
         sdl.gamepad = Some(sdl_gamepad);
-        sdl.joystick = Some(joystick);
     }
 }
 

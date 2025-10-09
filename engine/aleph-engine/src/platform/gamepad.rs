@@ -78,7 +78,6 @@ impl Gamepads {
     pub(crate) fn process_gamepad_event(
         &self,
         gamepads: &mut GamepadsMap,
-        joystick: &sdl3::JoystickSubsystem,
         gamepad: &sdl3::GamepadSubsystem,
         event: &sdl3::event::Event,
     ) {
@@ -89,10 +88,9 @@ impl Gamepads {
 
                 let is_controller = gamepad.is_gamepad(which);
                 let name = gamepad.name_for_id(which).unwrap();
-                let guid = joystick.open(which).unwrap().guid();
 
                 log::info!("Controller Added: {which}");
-                log::info!("name = {name}; guid = {guid}; is_controller = {is_controller};");
+                log::info!("name = {name}; is_controller = {is_controller};");
 
                 if is_controller {
                     let pad = gamepad.open(which).unwrap();
@@ -118,7 +116,7 @@ impl Gamepads {
                 if let Some(gamepad) = gamepads.get(&which) {
                     let name = gamepad.pad.name();
                     let name = name.as_deref().unwrap_or("Unknown");
-                    log::info!("Removing Controler: name = {name}; guid = ;");
+                    log::info!("Removing Controler: name = {name};");
                     gamepads.remove(&which);
 
                     // Remove the active controller if we happened to have it disconnect
