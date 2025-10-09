@@ -95,6 +95,6 @@ inline func UnprojectPointWithMatrix<T : __BuiltinFloatingPointType>(
 ) -> vector<T, 3> {
     let a = proj._m00;
     let b = proj._m11;
-    let near = proj._m32;
+    let near = proj._m23;
     return UnprojectPoint(a, b, near, point);
 }
