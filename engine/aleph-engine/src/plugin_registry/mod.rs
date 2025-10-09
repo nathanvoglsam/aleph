@@ -225,11 +225,13 @@ impl PluginRegistry {
         resources.insert::<WorldResource>(WorldResource(*world));
 
         while !self.quit_handle.quit_requested() {
-            aleph_profile::scope_named!("OnUpdate");
+            aleph_objc::autoreleasepool(|| {
+                aleph_profile::scope_named!("OnUpdate");
 
-            schedule.run(&(), &mut resources);
+                schedule.run(&(), &mut resources);
 
-            aleph_profile::finish_frame!();
+                aleph_profile::finish_frame!();
+            });
         }
 
         let world = resources.take::<WorldResource>().unwrap();

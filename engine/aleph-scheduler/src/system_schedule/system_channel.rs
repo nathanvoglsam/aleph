@@ -158,52 +158,54 @@ impl<A: ScheduleArgs, C: GenericSystemCell<A> + Send + Sync> SystemChannel<A, C>
             resources: &TypedTable,
             system_index: usize,
         ) {
-            // Unpack the payload
-            let payload = if let Some(payload) = payloads[system_index].take() {
-                payload
-            } else {
-                return;
-            };
+            aleph_objc::autoreleasepool(|| {
+                // Unpack the payload
+                let payload = if let Some(payload) = payloads[system_index].take() {
+                    payload
+                } else {
+                    return;
+                };
 
-            // Unpack the wait group to explicitly drop it to "use" it
-            let wg = payload.wg;
+                // Unpack the wait group to explicitly drop it to "use" it
+                let wg = payload.wg;
 
-            // SAFETY: This is unsafe to call in the event of unsafe implementations of System
-            //         that do not access world according to their access flags. If a System
-            //         does correctly respect its access declarations then the work scheduler
-            //         ensures that aliasing requirements will be upheld, making this safe to
-            //         call. This is only unsafe in the presence of other unsafe code.
-            unsafe {
-                let system = &systems[system_index];
-                aleph_profile::scope_named!("ExecSystem", system.access.label);
-                system.system.execute(args, resources);
-            }
+                // SAFETY: This is unsafe to call in the event of unsafe implementations of System
+                //         that do not access world according to their access flags. If a System
+                //         does correctly respect its access declarations then the work scheduler
+                //         ensures that aliasing requirements will be upheld, making this safe to
+                //         call. This is only unsafe in the presence of other unsafe code.
+                unsafe {
+                    let system = &systems[system_index];
+                    aleph_profile::scope_named!("ExecSystem", system.access.label);
+                    system.system.execute(args, resources);
+                }
 
-            // Update the "done" flag now that the system has executed
-            done[system_index].store(true, Ordering::Relaxed);
+                // Update the "done" flag now that the system has executed
+                done[system_index].store(true, Ordering::Relaxed);
 
-            // Spawn new tasks for each successor system and execute it, if all of its predecessors
-            // have completed.
-            systems[system_index]
-                .edges
-                .successors
-                .par_iter()
-                .copied()
-                .for_each(|successor| {
-                    let successor: usize = successor;
-                    if systems[successor]
-                        .edges
-                        .predecessors
-                        .iter()
-                        .copied()
-                        .all(|predecessor| done[predecessor].load(Ordering::Relaxed))
-                    {
-                        exec_task(args, systems, done, payloads, resources, successor);
-                    }
-                });
+                // Spawn new tasks for each successor system and execute it, if all of its
+                // predecessors have completed.
+                systems[system_index]
+                    .edges
+                    .successors
+                    .par_iter()
+                    .copied()
+                    .for_each(|successor| {
+                        let successor: usize = successor;
+                        if systems[successor]
+                            .edges
+                            .predecessors
+                            .iter()
+                            .copied()
+                            .all(|predecessor| done[predecessor].load(Ordering::Relaxed))
+                        {
+                            exec_task(args, systems, done, payloads, resources, successor);
+                        }
+                    });
 
-            // Explicitly drop the wait group to "use" it according to the compiler.
-            drop(wg);
+                // Explicitly drop the wait group to "use" it according to the compiler.
+                drop(wg);
+            })
         }
 
         let systems = std::mem::take(&mut self.systems);

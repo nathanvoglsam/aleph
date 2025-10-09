@@ -55,6 +55,7 @@ members = [
     "engine/aleph-malloc-info",
     "engine/aleph-math",
     "engine/aleph-nstr",
+    "engine/aleph-objc",
     "engine/aleph-object-system",
     "engine/aleph-pin-board",
     "engine/aleph-pix",
@@ -205,6 +206,7 @@ aleph-label = { path = "./engine/aleph-label", version = "1" }
 aleph-malloc-info = { path = "./engine/aleph-malloc-info", version = "0.1" }
 aleph-math = { path = "./engine/aleph-math", version = "0.1" }
 aleph-nstr = { path = "./engine/aleph-nstr", version = "0.1" }
+aleph-objc = { path = "./engine/aleph-objc", version = "0.1" }
 aleph-object-system = { path = "./engine/aleph-object-system", version = "0.1" }
 aleph-pin-board = { path = "./engine/aleph-pin-board", version = "0.1" }
 aleph-pix = { path = "./engine/aleph-pix", version = "0.1" }

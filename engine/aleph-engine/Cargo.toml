@@ -57,6 +57,7 @@ aleph-config = { workspace = true }
 aleph-identity-hasher = { workspace = true }
 aleph-rhi-loader = { workspace = true }
 aleph-rhi-api = { workspace = true }
+aleph-objc = { workspace = true }
 
 log = { workspace = true }
 utf16_lit = { workspace = true }

@@ -29,24 +29,22 @@
 
 
 [package]
-name = "aleph-scheduler"
+name = "aleph-objc"
 version = "0.1.0"
 authors.workspace = true
-description = "Aleph's ecs"
+description = "Apple specific utilities for aleph-engine"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-scheduler/"
+documentation = "https://docs.rs/aleph-objc/"
 edition.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies]
-aleph-object-system = { workspace = true }
-aleph-label = { workspace = true }
-aleph-profile = { workspace = true }
-aleph-typed-table = { workspace = true }
-aleph-objc = { workspace = true }
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+objc2 = { workspace = true }
+objc2-metal = { workspace = true }
+objc2-quartz-core = { workspace = true }
+objc2-core-foundation = { workspace = true }
+objc2-foundation = { workspace = true }
 
-crossbeam = { workspace = true }
-rayon = { workspace = true }
