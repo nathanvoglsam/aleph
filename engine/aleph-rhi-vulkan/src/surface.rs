@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::sync::Arc;
 
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
@@ -41,6 +42,7 @@ use crate::context::Context;
 use crate::device::Device;
 use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
+use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::unwrap;
 use crate::swap_chain::{SwapChain, SwapChainState};
 
@@ -126,6 +128,10 @@ impl ISurface for Surface {
 
         let queue_support = unsafe { Surface::get_queue_support(device, self.surface).unwrap() };
 
+        let mut semaphore_pools = BVec::with_capacity_in(5, Default::default());
+        let iter = std::iter::repeat_n((), 5).map(|_| Arc::new(SemaphorePool::new()));
+        semaphore_pools.extend(iter);
+
         let inner = SwapChainState {
             swap_chain: vk::SwapchainKHR::null(),
             format: Format::Bgra8Unorm,
@@ -135,7 +141,7 @@ impl ISurface for Surface {
             vk_present_mode: Default::default(),
             extent: Default::default(),
             images: BVec::new_in(Default::default()),
-            semaphore_pools: BVec::new_in(Default::default()),
+            semaphore_pools,
         };
         let swap_chain = Rhi::with(|| {
             AnyArc::new_cyclic(move |v| SwapChain {

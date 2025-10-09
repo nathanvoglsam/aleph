@@ -327,22 +327,12 @@ impl SwapChain {
         });
         new_images.extend(iter);
 
-        for mut pool in inner.semaphore_pools.drain(..) {
-            let pool = Arc::get_mut(&mut pool).unwrap();
-            unsafe { pool.destroy(&self.device.device) };
-        }
-
-        let mut new_semaphore_pools = BVec::with_capacity_in(images.len(), Default::default());
-        let iter = std::iter::repeat_n((), images.len()).map(|_| Arc::new(SemaphorePool::new()));
-        new_semaphore_pools.extend(iter);
-
         inner.extent = extents;
         inner.format = config.format;
         inner.vk_format = format;
         inner.color_space = color_space;
         inner.vk_present_mode = present_mode;
         inner.images = new_images;
-        inner.semaphore_pools = new_semaphore_pools;
 
         Ok(())
     }
