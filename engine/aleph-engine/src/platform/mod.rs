@@ -297,6 +297,8 @@ impl PlatformSDL3 {
         let mut sdl_window = sdl.window.take().unwrap();
         let sdl_gamepad = sdl.gamepad.take().unwrap();
         let joystick = sdl.joystick.take().unwrap();
+        
+        let sdl_display = sdl_window.get_display().expect("Failed to get display");
 
         let window = Self::window(provider).unwrap();
         let mouse = Self::mouse(provider).unwrap();
@@ -328,7 +330,6 @@ impl PlatformSDL3 {
                 }
                 SdlEvent::Window { win_event, .. } => {
                     window.process_window_event(
-                        &sdl_window,
                         &mut window_state,
                         &mut window_events,
                         &mut all_events,
@@ -368,6 +369,9 @@ impl PlatformSDL3 {
                 _ => {}
             }
         }
+
+        window_state.current_display_scale = sdl_window.display_scale();
+        window_state.current_content_scale = sdl_display.get_content_scale().unwrap_or(1.0);
 
         // Update the mouse's state from the fresh sequence of events
         mouse.update_state(&event_pump);

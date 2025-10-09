@@ -74,7 +74,10 @@ pub(crate) struct WindowState {
     pub(crate) focused: bool,
 
     /// Is the scaling of the window based on the display it is currently on
-    pub(crate) current_scale: f32,
+    pub(crate) current_display_scale: f32,
+
+    /// Is the content scaling of the window based on the display it is currently on
+    pub(crate) current_content_scale: f32,
 
     /// The window's display handle
     pub(crate) display_handle: RawDisplayHandle,
@@ -171,8 +174,10 @@ impl Window {
         }
 
         let mut window = window.build().expect("Failed to create window");
+        let display = window.get_display().expect("Failed to get display");
 
         let scale = window.display_scale();
+        let content_scale = display.get_content_scale().unwrap_or(1.0);
 
         let drawable_size = window.size_in_pixels();
 
@@ -189,7 +194,7 @@ impl Window {
             #[cfg(any(target_os = "macos", target_os = "ios"))]
             unsafe {
                 use raw_window_handle::{AppKitWindowHandle, UiKitWindowHandle};
-                use sdl2_sys::{SDL_Metal_CreateView, SDL_Metal_GetLayer};
+                use sdl3::sys::metal::{SDL_Metal_CreateView, SDL_Metal_GetLayer};
 
                 // TODO: to move to 'VK_EXT_metal_surface' in the future we'll need to share the
                 //       CAMetalLayer from SDL_Metal_GetLayer instead of the NSView.
@@ -228,7 +233,8 @@ impl Window {
             windowed_height: DEFAULT_HEIGHT,
             fullscreen: false,
             focused: false,
-            current_scale: scale,
+            current_display_scale: scale,
+            current_content_scale: content_scale,
             display_handle,
             window_handle,
             metal_layer,
@@ -252,7 +258,6 @@ impl Window {
     ///
     pub(crate) fn process_window_event(
         &self,
-        window: &sdl3::video::Window,
         window_state: &mut WindowState,
         window_events: &mut Vec<WindowEvent>,
         all_events: &mut Vec<Event>,
@@ -279,13 +284,8 @@ impl Window {
                 log::trace!("Window size changed");
                 log::trace!("Window Size: {}x{}", width, height);
             }
-            sdl3::event::WindowEvent::DisplayChanged(i) => {
-                let scale = window.display_scale();
-                window_state.current_scale = scale;
-                log::trace!("Window display changed");
-                log::trace!("Window Display: {} at {} scale", i, scale);
-            }
-            sdl3::event::WindowEvent::Moved(_, _)
+            sdl3::event::WindowEvent::DisplayChanged(_)
+            | sdl3::event::WindowEvent::Moved(_, _)
             | sdl3::event::WindowEvent::Minimized
             | sdl3::event::WindowEvent::Maximized
             | sdl3::event::WindowEvent::Restored
@@ -517,7 +517,12 @@ impl IWindow for Window {
 
     fn current_display_scale(&self) -> f32 {
         let state = self.state.read();
-        state.current_scale
+        state.current_display_scale
+    }
+
+    fn current_content_scale(&self) -> f32 {
+        let state = self.state.read();
+        state.current_content_scale
     }
 
     fn metal_layer(&self) -> Option<NonNull<c_void>> {
@@ -548,7 +553,7 @@ impl Drop for Window {
     fn drop(&mut self) {
         #[cfg(any(target_os = "macos", target_os = "ios"))]
         unsafe {
-            use sdl2_sys::SDL_Metal_DestroyView;
+            use sdl3::sys::metal::SDL_Metal_DestroyView;
             let state = self.state.write();
 
             match &state.window_handle {

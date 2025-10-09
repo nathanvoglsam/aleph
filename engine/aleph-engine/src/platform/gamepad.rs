@@ -96,7 +96,6 @@ impl Gamepads {
 
                 if is_controller {
                     let pad = gamepad.open(which).unwrap();
-
                     let instance_id = pad.id().unwrap();
                     let current_highest = self.highest_id.take();
                     self.highest_id.set(instance_id.max(current_highest));

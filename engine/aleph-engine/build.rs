@@ -112,7 +112,7 @@ const fn dll_name(platform: Platform) -> &'static str {
         | Platform::UniversalWindowsGNU
         | Platform::UniversalWindowsMSVC => "SDL3.dll",
         Platform::Linux | Platform::Android => "libSDL3.so",
-        Platform::MacOS => "libSDL2-2.0.0.dylib",
+        Platform::MacOS => "libSDL3.0.dylib",
         Platform::IOS => "",
         Platform::Unknown => "",
     }

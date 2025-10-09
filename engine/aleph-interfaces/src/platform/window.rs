@@ -188,6 +188,13 @@ pub trait IWindow: IAny + HasDisplayHandle + HasWindowHandle + Send + Sync + 'st
     fn current_display_scale(&self) -> f32;
 
     ///
+    /// Returns a scaling factor for mouse input coordinates that will scale the input coordinates
+    /// from the platform's reported numbers into logical 'points' in the possibly scaled coordinate
+    /// system.
+    ///
+    fn current_content_scale(&self) -> f32;
+
+    ///
     /// Returns the 'CAMetalLayer' pointer for the window, if one exists.
     ///
     fn metal_layer(&self) -> Option<NonNull<c_void>>;

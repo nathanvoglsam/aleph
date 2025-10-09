@@ -104,7 +104,7 @@ pub fn get_egui_events(
     events: &dyn IEvents,
     modifiers: &egui::Modifiers,
 ) -> Vec<egui::Event> {
-    let display_scale = window.current_display_scale();
+    let content_scale = window.current_content_scale();
     let events = events.get();
 
     let mut out = Vec::new();
@@ -153,7 +153,7 @@ pub fn get_egui_events(
                 }
             },
             Event::MouseEvent(event) => {
-                if let Some(event) = translate_mouse_event(event, modifiers, display_scale) {
+                if let Some(event) = translate_mouse_event(event, modifiers, content_scale) {
                     out.push(event);
                 }
             }
@@ -185,16 +185,16 @@ pub fn get_egui_modifiers(keyboard: &dyn IKeyboard) -> egui::Modifiers {
 pub fn translate_mouse_event(
     event: &MouseEvent,
     modifiers: &egui::Modifiers,
-    display_scale: f32,
+    content_scale: f32,
 ) -> Option<egui::Event> {
     match event {
         MouseEvent::MouseMotion(e) => {
-            let pos = egui::Pos2::new(e.x / display_scale, e.y / display_scale);
+            let pos = egui::Pos2::new(e.x / content_scale, e.y / content_scale);
             let event = egui::Event::PointerMoved(pos);
             Some(event)
         }
         MouseEvent::MouseButtonDown(e) => {
-            let pos = egui::Pos2::new(e.x / display_scale, e.y / display_scale);
+            let pos = egui::Pos2::new(e.x / content_scale, e.y / content_scale);
             let button = translate_mouse_button(&e.button);
             let event = egui::Event::PointerButton {
                 pos,
@@ -205,7 +205,7 @@ pub fn translate_mouse_event(
             Some(event)
         }
         MouseEvent::MouseButtonUp(e) => {
-            let pos = egui::Pos2::new(e.x / display_scale, e.y / display_scale);
+            let pos = egui::Pos2::new(e.x / content_scale, e.y / content_scale);
             let button = translate_mouse_button(&e.button);
             let event = egui::Event::PointerButton {
                 pos,
