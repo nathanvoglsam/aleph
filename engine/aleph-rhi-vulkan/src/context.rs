@@ -63,7 +63,6 @@ declare_interfaces!(Context, [IContext]);
 
 impl IGetPlatformInterface for Context {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        // TODO: expose the instance loader via an arc or something
         None
     }
 }

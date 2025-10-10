@@ -95,7 +95,6 @@ declare_interfaces!(Device, [IDevice]);
 
 impl IGetPlatformInterface for Device {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        // TODO: Expose the device loader through an arc or something
         None
     }
 }

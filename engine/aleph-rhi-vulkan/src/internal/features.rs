@@ -509,35 +509,53 @@ impl CheckMeetsProfile for vk::PhysicalDeviceProperties {
 
     fn merge(&mut self, v: &Self) {
         loop {
-            let major_version = vk::api_version_major(self.api_version);
-            let minor_version = vk::api_version_minor(self.api_version);
-            let patch_version = vk::api_version_patch(self.api_version);
+            let base_major_version = vk::api_version_major(self.api_version);
+            let base_minor_version = vk::api_version_minor(self.api_version);
+            let base_patch_version = vk::api_version_patch(self.api_version);
             let wanted_major_version = vk::api_version_major(v.api_version);
             let wanted_minor_version = vk::api_version_minor(v.api_version);
             let wanted_patch_version = vk::api_version_patch(v.api_version);
 
-            match major_version.cmp(&wanted_major_version) {
-                std::cmp::Ordering::Less => self.api_version = v.api_version,
-                std::cmp::Ordering::Greater => break,
-                _ => todo!(),
-            }
-
-            match minor_version.cmp(&wanted_minor_version) {
+            match base_major_version.cmp(&wanted_major_version) {
                 std::cmp::Ordering::Less => {
                     self.api_version = vk::make_api_version(
                         0,
-                        major_version,
+                        wanted_major_version,
                         wanted_minor_version,
                         wanted_patch_version,
                     );
+                    break;
                 }
                 std::cmp::Ordering::Greater => break,
-                _ => todo!(),
+                std::cmp::Ordering::Equal => {} // fall through
             }
 
-            if patch_version < wanted_patch_version {
-                self.api_version =
-                    vk::make_api_version(0, major_version, minor_version, wanted_patch_version);
+            match base_minor_version.cmp(&wanted_minor_version) {
+                std::cmp::Ordering::Less => {
+                    self.api_version = vk::make_api_version(
+                        0,
+                        base_major_version,
+                        wanted_minor_version,
+                        wanted_patch_version,
+                    );
+                    break;
+                }
+                std::cmp::Ordering::Greater => break,
+                std::cmp::Ordering::Equal => {}
+            }
+
+            match base_patch_version.cmp(&wanted_patch_version) {
+                std::cmp::Ordering::Less => {
+                    self.api_version = vk::make_api_version(
+                        0,
+                        base_major_version,
+                        base_minor_version,
+                        wanted_patch_version,
+                    );
+                    break;
+                }
+                std::cmp::Ordering::Greater => break,
+                std::cmp::Ordering::Equal => {}
             }
 
             break;

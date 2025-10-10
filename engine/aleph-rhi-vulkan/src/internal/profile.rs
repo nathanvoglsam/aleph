@@ -178,6 +178,7 @@ impl CreateProfile for vk::PhysicalDeviceSparseProperties {
 impl CreateProfile for vk::PhysicalDeviceProperties {
     fn baseline() -> Self {
         Self {
+            api_version: vk::API_VERSION_1_1,
             limits: CreateProfile::baseline(),
             sparse_properties: CreateProfile::baseline(),
             ..Default::default()

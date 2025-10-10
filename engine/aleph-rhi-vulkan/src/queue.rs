@@ -311,7 +311,6 @@ impl IQueue for Queue {
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
         }
 
-        // TODO: we want to do some garbage collection for resources
         self.in_flight
             .push(submission)
             .ok()
