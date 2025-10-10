@@ -472,20 +472,6 @@ impl IContext for Context {
                         .create_xcb_surface(&create_info, GLOBAL)
                 }
 
-                #[cfg(target_os = "android")]
-                (RawDisplayHandle::Android(_), RawWindowHandle::AndroidNdk(window)) => {
-                    let create_info = vk::AndroidSurfaceCreateInfoKHR {
-                        window: window.a_native_window.as_ptr(),
-                        ..Default::default()
-                    };
-
-                    self.surface_loaders
-                        .android
-                        .as_ref()
-                        .unwrap()
-                        .create_android_surface(&create_info, GLOBAL)
-                }
-
                 #[cfg(target_os = "macos")]
                 (RawDisplayHandle::AppKit(_), RawWindowHandle::AppKit(window)) => {
                     let create_info = vk::MacOSSurfaceCreateInfoMVK {
@@ -607,7 +593,6 @@ pub struct SurfaceLoaders {
     pub xlib: Option<ash::khr::xlib_surface::Instance>,
     pub xcb: Option<ash::khr::xcb_surface::Instance>,
     pub wayland: Option<ash::khr::wayland_surface::Instance>,
-    pub android: Option<ash::khr::android_surface::Instance>,
     pub metal: Option<ash::ext::metal_surface::Instance>,
     pub macos: Option<ash::mvk::macos_surface::Instance>,
     pub ios: Option<ash::mvk::ios_surface::Instance>,

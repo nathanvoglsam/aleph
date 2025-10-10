@@ -29,10 +29,10 @@
 
 use std::io::Write;
 
+use aleph_alloc::Blink;
 use aleph_target::build::target_platform;
 use aleph_target::{Platform, Profile};
 use anyhow::anyhow;
-use blink_alloc::Blink;
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::ArgMatches;
 use rayon::prelude::*;
@@ -527,7 +527,6 @@ fn dxcompiler_library() -> &'static Utf8Path {
         Platform::WindowsGNU => Utf8Path::new("dxcompiler.dll"),
         Platform::WindowsMSVC => Utf8Path::new("dxcompiler.dll"),
         Platform::Linux => Utf8Path::new("libdxcompiler.so"),
-        Platform::Android => panic!("Perhaps you should reconsider"),
         Platform::MacOS => Utf8Path::new("libdxcompiler.dylib"),
         Platform::IOS => panic!("How did we get here?"),
         Platform::Unknown => panic!("Unknown host platform"),
@@ -539,7 +538,6 @@ fn slang_executable() -> &'static Utf8Path {
         Platform::WindowsGNU => Utf8Path::new("slangc.exe"),
         Platform::WindowsMSVC => Utf8Path::new("slangc.exe"),
         Platform::Linux => Utf8Path::new("slangc"),
-        Platform::Android => panic!("Perhaps you should reconsider"),
         Platform::MacOS => Utf8Path::new("slangc"),
         Platform::IOS => panic!("How did we get here?"),
         Platform::Unknown => panic!("Unknown host platform"),

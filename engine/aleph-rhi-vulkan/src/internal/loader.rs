@@ -40,9 +40,6 @@ pub const fn platform_library_search_stack() -> &'static [&'static str] {
         // IOS doesn't fall victim to the same flaw because we're in an app bundle, and there's no
         // global Vulkan loader to find anyway.
         &["libvulkan.dylib"]
-    } else if cfg!(target_os = "android") {
-        // Android matches cfg!(unix) but has a different name than linux typically uses
-        &["libvulkan.so"]
     } else if cfg!(unix) {
         // This covers linux and friends with a spread of possible loader library names
         &["libvulkan.so.1", "libvulkan.so"]

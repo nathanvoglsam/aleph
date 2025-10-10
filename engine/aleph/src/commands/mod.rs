@@ -37,7 +37,7 @@ pub mod imgproc;
 pub mod shaders;
 mod uuid;
 
-use blink_alloc::Blink;
+use aleph_alloc::Blink;
 pub use build::Build;
 pub use bundle::Bundle;
 use clap::{Arg, ArgMatches, Command};
@@ -170,7 +170,7 @@ impl ISubcommand for SubcommandSet {
 fn platform_arg() -> Arg {
     Arg::new("platform")
         .help("The platform to build shaders for.")
-        .long_help("The platform to build shaders for. Supported values: native, android, ios, windows, macos, linux.")
+        .long_help("The platform to build shaders for. Supported values: native, ios, windows, macos, linux.")
         .default_value("native")
         .required(false)
 }

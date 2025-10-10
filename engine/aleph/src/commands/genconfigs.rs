@@ -29,8 +29,8 @@
 
 use std::collections::HashSet;
 
+use aleph_alloc::Blink;
 use anyhow::anyhow;
-use blink_alloc::Blink;
 use clap::ArgMatches;
 use tera::{Context, Tera};
 

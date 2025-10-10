@@ -38,9 +38,6 @@ pub struct ProjectSchema<'a> {
 
     /// Windows specific project configuration
     pub windows: Option<WindowsSchema<'a>>,
-
-    /// Android specific project configuration
-    pub android: Option<AndroidSchema<'a>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -55,7 +52,7 @@ pub struct GameSchema<'a> {
     pub author: Cow<'a, str>,
 
     /// A list of supported platforms that the project is allowed to target. Allowed values:
-    /// "android", "windows", "macos", "linux"
+    /// "windows", "macos", "linux"
     pub target_platforms: Vec<Cow<'a, str>>,
 }
 
@@ -67,32 +64,10 @@ pub struct WindowsSchema<'a> {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AndroidSchema<'a> {
-    /// Specification of branding information for the Android app. This includes information like
-    /// the app icons to use.
-    pub branding: Option<AndroidBrandingSchema<'a>>,
-
-    /// The app's ID. Example: "com.mycoolstudio.mycoolgame.game"
-    pub app_id: Cow<'a, str>,
-
-    /// The app's version code. Monotonically increasing version count for app releases.
-    pub version_id: usize,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WindowsBrandingSchema<'a> {
     /// A path, relative to the "aleph-project.toml", to the .ico file to use as the application's
     /// icon.
     pub icon: Cow<'a, str>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AndroidBrandingSchema<'a> {
-    pub icon_mdpi: Cow<'a, str>,
-    pub icon_hdpi: Cow<'a, str>,
-    pub icon_xhdpi: Cow<'a, str>,
-    pub icon_xxhdpi: Cow<'a, str>,
-    pub icon_xxxhdpi: Cow<'a, str>,
 }
 
 #[cfg(test)]

@@ -52,16 +52,6 @@ mod linux {
     }
 }
 
-#[cfg(target_os = "android")]
-mod android {
-    pub fn get_allocated_bytes() -> usize {
-        unsafe {
-            let stats = libc::mallinfo();
-            stats.uordblks
-        }
-    }
-}
-
 #[cfg(target_os = "windows")]
 mod windows {
     pub fn get_allocated_bytes() -> usize {
@@ -95,9 +85,6 @@ pub fn get_allocated_bytes() -> usize {
 
     #[cfg(target_os = "linux")]
     return linux::get_allocated_bytes();
-
-    #[cfg(target_os = "android")]
-    return android::get_allocated_bytes();
 
     #[cfg(target_os = "windows")]
     return windows::get_allocated_bytes();

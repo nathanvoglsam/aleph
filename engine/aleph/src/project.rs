@@ -27,25 +27,26 @@
 // SOFTWARE.
 //
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
+use aleph_alloc::{BVec, Blink};
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Platform, Profile};
 use anyhow::{Context, anyhow};
-use blink_alloc::Blink;
 use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::{Package, TargetKind};
+use cargo_metadata::semver::{Version, VersionReq};
+use cargo_metadata::{DependencyKind, Package, TargetKind};
 use once_cell::sync::OnceCell;
 
 use crate::project_schema::ProjectSchema;
-use crate::utils::{BuildPlatform, Target, find_project_file};
+use crate::utils::{Target, find_project_file};
 
-// /// A tuple of [`Version`] and an unwrapped [cargo_metadata::PackageId]. Unrapping the type to a str
-// /// instead of a String allows avoiding extra .clone calls when building the table.
-// pub type VersionedPackageId<'a> = (Version, &'a str);
-//
-// /// A table of crate versions keyed by the name of the crate.
-// pub type CrateTable<'a> = HashMap<&'a str, &'a [VersionedPackageId<'a>]>;
+/// A tuple of [`Version`] and an unwrapped [cargo_metadata::PackageId]. Unrapping the type to a str
+/// instead of a String allows avoiding extra .clone calls when building the table.
+pub type VersionedPackageId<'a> = (Version, &'a str);
+
+/// A table of crate versions keyed by the name of the crate.
+pub type CrateTable<'a> = HashMap<&'a str, &'a [VersionedPackageId<'a>]>;
 
 /// A hash table that maps a [cargo_metadata::PackageId] to the index in the metadata's packages
 /// array.
@@ -54,7 +55,7 @@ pub type CrateIdMap<'a> = HashMap<&'a str, usize>;
 #[derive(Clone)]
 pub struct AlephProject<'a> {
     /// A bump allocated arena for the project to use for w/e purpose is needed
-    arena: &'a Blink,
+    _arena: &'a Blink,
 
     /// The path to the 'aleph-project.toml' file for this project
     project_file: Utf8PathBuf,
@@ -69,18 +70,14 @@ pub struct AlephProject<'a> {
     /// The path to the '.aleph/shaders' folder for this project
     shader_build_path: Utf8PathBuf,
 
-    // /// The path to the '.aleph/assets' folder for this project
-    // assets_build_path: Utf8PathBuf,
+    /// The path to the '.aleph/assets' folder for this project
+    _assets_build_path: Utf8PathBuf,
+
     /// The path to the '.aleph/configs' folder for this project
     configs_build_path: Utf8PathBuf,
 
-    /// Path to the android project in the '.aleph/proj' directory
-    android_proj_path: Utf8PathBuf,
-
-    // /// The path to the '.aleph/sdk/{platform}/{arch}' folder appropriate for the host system,
-    // sdk_path: Utf8PathBuf,
-    /// The path to the '.aleph/sdk/**/ndk' folder for this project
-    ndk_path: Utf8PathBuf,
+    /// The path to the '.aleph/sdk/{platform}/{arch}' folder appropriate for the host system,
+    _sdk_path: Utf8PathBuf,
 
     /// The path to the '.aleph/sdk/**/dxc/bin/{platform}/dxc' executable for this project
     dxc_path: Utf8PathBuf,
@@ -99,22 +96,26 @@ pub struct AlephProject<'a> {
     vscode_workspace_file: Utf8PathBuf,
 
     /// The cargo target directory
-    cargo_target_dir: Utf8PathBuf,
+    _cargo_target_dir: Utf8PathBuf,
 
     /// A cached copy of the collect Cargo metadata
     cargo_metadata: OnceCell<cargo_metadata::Metadata>,
 
-    // /// A precomputed lookup acceleration table based on cargo metadata. Maps any crate name to a
-    // /// list of (version, package_id) pairs that represents all versions of that crate referenced
-    // /// by the entire workspace.
-    // crate_table: OnceCell<CrateTable<'a>>,
+    /// A precomputed lookup acceleration table based on cargo metadata. Maps any crate name to a
+    /// list of (version, package_id) pairs that represents all versions of that crate referenced
+    /// by the entire workspace.
+    _crate_table: OnceCell<CrateTable<'a>>,
+
     /// A hash table that maps a [cargo_metadata::PackageId] to the index in the metadata's packages
     /// array.
-    crate_id_map: OnceCell<CrateIdMap<'a>>,
+    _crate_id_map: OnceCell<CrateIdMap<'a>>,
 
     /// A cache of the (package index, target index) values for the 'game' crate specified by the
     /// project schema
-    game_crate_and_target: OnceCell<(usize, Option<usize>)>,
+    _game_crate_and_target: OnceCell<(usize, Option<usize>)>,
+
+    /// A cache of all direct and transient dependencies of the game crate.
+    _game_crate_dependency_set: OnceCell<HashSet<usize>>,
 
     /// A cached copy of the aleph-project.toml file
     project_schema: OnceCell<ProjectSchema<'static>>,
@@ -135,20 +136,14 @@ impl<'a> AlephProject<'a> {
         let vscode_workspace_file = project_root.join("aleph.code-workspace");
         let cargo_target_dir = project_root.join("target");
 
-        let target = Target::new(Architecture::Unknown, BuildPlatform::Android);
-        let android_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
-
         let shader_build_path = dot_aleph_path.join("shaders");
-        // let assets_build_path = dot_aleph_path.join("data").join("assets");
+        let assets_build_path = dot_aleph_path.join("data").join("assets");
         let configs_build_path = dot_aleph_path.join("configs");
 
         let mut sdk_path = dot_aleph_path.clone();
         sdk_path.push("sdk");
         sdk_path.push(sdk_platform_name());
         sdk_path.push(target_architecture().name());
-
-        let mut ndk_path = sdk_path.clone();
-        ndk_path.push("ndk");
 
         let mut dxc_path = sdk_path.clone();
         dxc_path.push("dxc");
@@ -182,35 +177,26 @@ impl<'a> AlephProject<'a> {
             ninja_path.push("ninja");
         }
 
-        let mut haxe_path = sdk_path.clone();
-        haxe_path.push("haxe");
-        if target_platform().is_windows() {
-            haxe_path.push("haxe.exe");
-        } else {
-            haxe_path.push("haxe");
-        }
-
         let out = Self {
-            arena,
+            _arena: arena,
             project_file,
             project_root,
             dot_aleph_path,
             shader_build_path,
-            // assets_build_path,
+            _assets_build_path: assets_build_path,
             configs_build_path,
-            android_proj_path,
-            // sdk_path,
-            ndk_path,
+            _sdk_path: sdk_path,
             dxc_path,
             slang_path,
             ninja_path,
             cargo_toml_file,
             vscode_workspace_file,
-            cargo_target_dir,
+            _cargo_target_dir: cargo_target_dir,
             cargo_metadata: Default::default(),
-            // crate_table: Default::default(),
-            crate_id_map: Default::default(),
-            game_crate_and_target: Default::default(),
+            _crate_table: Default::default(),
+            _crate_id_map: Default::default(),
+            _game_crate_and_target: Default::default(),
+            _game_crate_dependency_set: Default::default(),
             project_schema: Default::default(),
         };
 
@@ -230,11 +216,11 @@ impl<'a> AlephProject<'a> {
         &self.project_root
     }
 
-    // /// The path to the '.aleph' directory for the current project. The .aleph directory will be
-    // /// in the same directory as the 'aleph-project.toml' file.
-    // pub fn dot_aleph_path(&self) -> &Path {
-    //     &self.dot_aleph_path
-    // }
+    /// The path to the '.aleph' directory for the current project. The .aleph directory will be
+    /// in the same directory as the 'aleph-project.toml' file.
+    pub fn _dot_aleph_path(&self) -> &Utf8Path {
+        &self.dot_aleph_path
+    }
 
     /// Returns the path to the folder that contains the `shaders` directory that will be used as
     /// the output directory for our shader builds
@@ -242,11 +228,11 @@ impl<'a> AlephProject<'a> {
         &self.shader_build_path
     }
 
-    // /// Returns the path to the folder that contains the `assets` directory that will be used as
-    // /// the output directory for our cooked assets
-    // pub fn assets_build_path(&self) -> &Utf8Path {
-    //     &self.assets_build_path
-    // }
+    /// Returns the path to the folder that contains the `assets` directory that will be used as
+    /// the output directory for our cooked assets
+    pub fn _assets_build_path(&self) -> &Utf8Path {
+        &self._assets_build_path
+    }
 
     /// Returns the path to the folder that contains the `configs` directory that will be used as
     /// the output directory for our config files
@@ -273,7 +259,6 @@ impl<'a> AlephProject<'a> {
     /// All other targets will return Err()
     pub fn target_project_root(&self, target: &Target) -> anyhow::Result<&Utf8Path> {
         match target.platform {
-            BuildPlatform::Android => Ok(&self.android_proj_path),
             _ => Err(anyhow!(
                 "Platform \"{}\" does not have a target specific sub-project.",
                 target.platform.name()
@@ -295,20 +280,14 @@ impl<'a> AlephProject<'a> {
 
     /// Returns the path to the cargo target directory root, which will be adjacent to the
     /// 'aleph-project.toml' and 'Cargo.toml'
-    pub fn cargo_target_dir(&self) -> &Utf8Path {
-        &self.cargo_target_dir
+    pub fn _cargo_target_dir(&self) -> &Utf8Path {
+        &self._cargo_target_dir
     }
-
-    // /// Returns the path to the project's bundled NDK, in '.aleph/sdk/**/ndk'. This path may not
-    // /// exist so check before using!
-    // pub fn sdk_path(&self) -> &Utf8Path {
-    //     &self.sdk_path
-    // }
 
     /// Returns the path to the project's bundled NDK, in '.aleph/sdk/**/ndk'. This path may not
     /// exist so check before using!
-    pub fn ndk_path(&self) -> &Utf8Path {
-        &self.ndk_path
+    pub fn _sdk_path(&self) -> &Utf8Path {
+        &self._sdk_path
     }
 
     /// Returns the path to the project's bundled dxc, in '.aleph/sdk/**/dxc/bin/{platform}/dxc'.
@@ -331,20 +310,14 @@ impl<'a> AlephProject<'a> {
     }
 
     /// Returns the './target/{target-triple}/{profile}' path for the request target + profile set.
-    pub fn cargo_build_dir_for_target(
+    pub fn _cargo_build_dir_for_target(
         &self,
         target: &Target,
-        profile: Profile,
+        _profile: Profile,
     ) -> anyhow::Result<Utf8PathBuf> {
         assert_ne!(target.arch, Architecture::Unknown);
 
         match target.platform {
-            BuildPlatform::Android => {
-                let mut target_dir = self.cargo_target_dir().to_path_buf();
-                target_dir.push(format!("{}-linux-android", target.arch.name()));
-                target_dir.push(profile.name());
-                Ok(target_dir)
-            }
             _ => Err(anyhow!(
                 "Platform \"{}\" does not support cargo_build_dir_for_target",
                 target.platform.name()
@@ -384,99 +357,103 @@ impl<'a> AlephProject<'a> {
         })
     }
 
-    // /// Computes and returns the 'crate table' structure.
-    // ///
-    // /// A precomputed lookup acceleration table based on cargo metadata. Maps any crate name to a
-    // /// list of (version, package_id) pairs that represents all versions of that crate referenced
-    // /// by the entire workspace.
-    // ///
-    // /// This can be used to efficiently look up a crate by name using a hash lookup instead of a
-    // /// linear search through an array. It is also logically a multimap, containing N elements at
-    // /// any table entry. Those N elements will be the different versions of the crate present in
-    // /// the workspace as it's possible for multiple versions of a crate to be present.
-    // ///
-    // /// This calls [Self::get_cargo_metadata] internally so can error in the same way as that
-    // /// function.
-    // pub fn get_crate_table(&self) -> anyhow::Result<&CrateTable> {
-    //     self.crate_table.get_or_try_init(|| {
-    //         let cargo_metadata = self.get_cargo_metadata()?;
-    //
-    //         // Temporary arena that makes it cheap to build the list of crates as a linked list
-    //         // before we ossify it to flat arrays allocated out of the [`AlephProject`]'s arena.
-    //         //
-    //         // Size hint to avoid allocating new pages in the loop. We should have exactly
-    //         // num_packages links.
-    //         let size_hint = size_of::<CrateLink>() * cargo_metadata.packages.len();
-    //         let temp_arena = Bump::with_capacity(size_hint);
-    //
-    //         // Link in the linked list we build while accumulating all the present versions of a
-    //         // given crate
-    //         struct CrateLink<'a, 'x> {
-    //             pub item: VersionedPackageId<'a>,
-    //             pub next: Option<&'x CrateLink<'a, 'x>>,
-    //         }
-    //
-    //         // First stage, iterate over all packages and bundle up all the versions of each crate
-    //         // by building a temporary linked list for every crate name key in the map.
-    //         //
-    //         // Using the linked list avoids reallocs, and allocation out of the temporary arena
-    //         // is cheap.
-    //         let mut crate_table = HashMap::new();
-    //         for package in cargo_metadata.packages.iter() {
-    //             let name = &*self.arena.alloc_str(&package.name);
-    //             let id = &*self.arena.alloc_str(&package.id.repr);
-    //             crate_table
-    //                 .entry(name)
-    //                 .and_modify(|old| {
-    //                     let next = *old;
-    //                     let link = temp_arena.alloc(CrateLink {
-    //                         item: (package.version.clone(), id),
-    //                         next: Some(next),
-    //                     });
-    //                     *old = link;
-    //                 })
-    //                 .or_insert_with(|| {
-    //                     temp_arena.alloc(CrateLink {
-    //                         item: (package.version.clone(), id),
-    //                         next: None,
-    //                     })
-    //                 });
-    //         }
-    //
-    //         let mut final_crate_table = HashMap::with_capacity(crate_table.capacity());
-    //         for (name, list) in crate_table.drain() {
-    //             // Count the number of entries in the crate list
-    //             let mut num_links = 1;
-    //             let mut next = list.next;
-    //             while let Some(v) = next {
-    //                 next = v.next;
-    //                 num_links += 1;
-    //             }
-    //
-    //             // 'Arrayify' our linked list
-    //             let mut link = Some(list);
-    //             let list = self.arena.alloc_slice_fill_with(num_links, |_| {
-    //                 let l = link.unwrap();
-    //                 link = list.next;
-    //                 l.item.clone()
-    //             });
-    //             final_crate_table.insert(name, &*list);
-    //         }
-    //
-    //         Ok(final_crate_table)
-    //     })
-    // }
+    /// Computes and returns the 'crate table' structure.
+    ///
+    /// A precomputed lookup acceleration table based on cargo metadata. Maps any crate name to a
+    /// list of (version, package_id) pairs that represents all versions of that crate referenced
+    /// by the entire workspace.
+    ///
+    /// This can be used to efficiently look up a crate by name using a hash lookup instead of a
+    /// linear search through an array. It is also logically a multimap, containing N elements at
+    /// any table entry. Those N elements will be the different versions of the crate present in
+    /// the workspace as it's possible for multiple versions of a crate to be present.
+    ///
+    /// This calls [Self::get_cargo_metadata] internally so can error in the same way as that
+    /// function.
+    pub fn _get_crate_table(&self) -> anyhow::Result<&CrateTable<'_>> {
+        self._crate_table.get_or_try_init(|| {
+            let cargo_metadata = self.get_cargo_metadata()?;
+
+            // Temporary arena that makes it cheap to build the list of crates as a linked list
+            // before we ossify it to flat arrays allocated out of the [`AlephProject`]'s arena.
+            //
+            // Size hint to avoid allocating new pages in the loop. We should have exactly
+            // num_packages links.
+            let temp_arena = Blink::new();
+
+            // Link in the linked list we build while accumulating all the present versions of a
+            // given crate
+            struct CrateLink<'a, 'x> {
+                pub item: VersionedPackageId<'a>,
+                pub next: Option<&'x CrateLink<'a, 'x>>,
+            }
+
+            // First stage, iterate over all packages and bundle up all the versions of each crate
+            // by building a temporary linked list for every crate name key in the map.
+            //
+            // Using the linked list avoids reallocs, and allocation out of the temporary arena
+            // is cheap.
+            let mut crate_table = HashMap::new();
+            for package in cargo_metadata.packages.iter() {
+                let name = &*self._arena.copy_str(&package.name);
+                let id = &*self._arena.copy_str(&package.id.repr);
+                crate_table
+                    .entry(name)
+                    .and_modify(|old| {
+                        let next = *old;
+                        // This will leak package.version. We accept this limitation.
+                        let link = temp_arena.put_no_drop(CrateLink {
+                            item: (package.version.clone(), id),
+                            next: Some(next),
+                        });
+                        *old = link;
+                    })
+                    .or_insert_with(|| {
+                        // This will leak package.version. We accept this limitation.
+                        temp_arena.put_no_drop(CrateLink {
+                            item: (package.version.clone(), id),
+                            next: None,
+                        })
+                    });
+            }
+
+            let mut final_crate_table = HashMap::with_capacity(crate_table.capacity());
+            for (name, list) in crate_table.drain() {
+                // Count the number of entries in the crate list
+                let mut num_links = 1;
+                let mut next = list.next;
+                while let Some(v) = next {
+                    next = v.next;
+                    num_links += 1;
+                }
+
+                // 'Arrayify' our linked list
+                let mut link = Some(list);
+                let mut out_list =
+                    BVec::with_capacity_in(num_links as usize, self._arena.allocator());
+                for _ in 0..num_links {
+                    let l = link.unwrap();
+                    link = list.next;
+                    out_list.push(l.item.clone());
+                }
+                let out_list = out_list.leak();
+                final_crate_table.insert(name, &*out_list);
+            }
+
+            Ok(final_crate_table)
+        })
+    }
 
     /// Computes and returns a hash table that maps a [cargo_metadata::PackageId] to the index in
     /// the [cargo_metadata::Metadata::packages] array the package is from.
-    pub fn get_crate_id_map(&self) -> anyhow::Result<&CrateIdMap<'_>> {
-        self.crate_id_map.get_or_try_init(|| {
+    pub fn _get_crate_id_map(&self) -> anyhow::Result<&CrateIdMap<'_>> {
+        self._crate_id_map.get_or_try_init(|| {
             let cargo_metadata = self.get_cargo_metadata()?;
 
             let mut crate_id_table = HashMap::with_capacity(cargo_metadata.packages.len());
             for (i, package) in cargo_metadata.packages.iter().enumerate() {
                 if !crate_id_table.contains_key(package.id.repr.as_str()) {
-                    let key = &*self.arena.copy_str(&package.id.repr);
+                    let key = &*self._arena.copy_str(&package.id.repr);
                     crate_id_table.insert(key, i);
                 }
             }
@@ -485,63 +462,63 @@ impl<'a> AlephProject<'a> {
         })
     }
 
-    // /// Utility function that will return a package reference for the given criteria.
-    // ///
-    // /// The function searches for a crate with the given name and the highest version number that
-    // /// matches the provided version spec.
-    // ///
-    // /// This is useful for looking up the concrete package for a crate's dependency spec.
-    // pub fn find_matching_crate(
-    //     &self,
-    //     name: &str,
-    //     version_spec: &VersionReq,
-    // ) -> anyhow::Result<Option<&Package>> {
-    //     let cargo_metadata = self.get_cargo_metadata()?;
-    //     self.find_matching_crate_index(name, version_spec)
-    //         .map(|v| v.map(|v| &cargo_metadata.packages[v]))
-    // }
+    /// Utility function that will return a package reference for the given criteria.
+    ///
+    /// The function searches for a crate with the given name and the highest version number that
+    /// matches the provided version spec.
+    ///
+    /// This is useful for looking up the concrete package for a crate's dependency spec.
+    pub fn _find_matching_crate(
+        &self,
+        name: &str,
+        version_spec: &VersionReq,
+    ) -> anyhow::Result<Option<&Package>> {
+        let cargo_metadata = self.get_cargo_metadata()?;
+        self._find_matching_crate_index(name, version_spec)
+            .map(|v| v.map(|v| &cargo_metadata.packages[v]))
+    }
 
-    // /// Utility function that will return a package index for the given criteria.
-    // ///
-    // /// The function searches for a crate with the given name and the highest version number that
-    // /// matches the provided version spec.
-    // ///
-    // /// This is useful for looking up the concrete package for a crate's dependency spec.
-    // pub fn find_matching_crate_index(
-    //     &self,
-    //     name: &str,
-    //     version_spec: &VersionReq,
-    // ) -> anyhow::Result<Option<usize>> {
-    //     let crate_table = self.get_crate_table()?;
-    //
-    //     if let Some(&versions) = crate_table.get(name) {
-    //         let best_match = versions.iter().fold(&versions[0], |acc, v| {
-    //             if version_spec.matches(&acc.0) && acc.0 > v.0 {
-    //                 acc
-    //             } else {
-    //                 v
-    //             }
-    //         });
-    //
-    //         let crate_id_map = self.get_crate_id_map()?;
-    //         if let Some(&package_index) = crate_id_map.get(best_match.1) {
-    //             Ok(Some(package_index))
-    //         } else {
-    //             Ok(None)
-    //         }
-    //     } else {
-    //         Ok(None)
-    //     }
-    // }
+    /// Utility function that will return a package index for the given criteria.
+    ///
+    /// The function searches for a crate with the given name and the highest version number that
+    /// matches the provided version spec.
+    ///
+    /// This is useful for looking up the concrete package for a crate's dependency spec.
+    pub fn _find_matching_crate_index(
+        &self,
+        name: &str,
+        version_spec: &VersionReq,
+    ) -> anyhow::Result<Option<usize>> {
+        let crate_table = self._get_crate_table()?;
 
-    pub fn get_game_crate_and_target(
+        if let Some(&versions) = crate_table.get(name) {
+            let best_match = versions.iter().fold(&versions[0], |acc, v| {
+                if version_spec.matches(&acc.0) && acc.0 > v.0 {
+                    acc
+                } else {
+                    v
+                }
+            });
+
+            let crate_id_map = self._get_crate_id_map()?;
+            if let Some(&package_index) = crate_id_map.get(best_match.1) {
+                Ok(Some(package_index))
+            } else {
+                Ok(None)
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn _get_game_crate_and_target(
         &self,
     ) -> anyhow::Result<(&Package, Option<&cargo_metadata::Target>)> {
         let cargo_metadata = self.get_cargo_metadata()?;
-        self.game_crate_and_target
+        self._game_crate_and_target
             .get_or_try_init(|| {
                 let project = self.get_project_schema()?;
-                let crate_id_map = self.get_crate_id_map()?;
+                let crate_id_map = self._get_crate_id_map()?;
 
                 let name = project.game.crate_name.as_ref();
 
@@ -571,35 +548,35 @@ impl<'a> AlephProject<'a> {
             })
     }
 
-    // pub fn get_game_crate_dependencu_set(&self) -> anyhow::Result<&HashSet<usize>> {
-    //     self.game_crate_dependency_set.get_or_try_init(|| {
-    //         let cargo_metadata = self.get_cargo_metadata()?;
-    //         let (package, _) = self.get_game_crate_and_target()?;
-    //         let mut package_indices = HashSet::new();
-    //
-    //         let mut package_stack = Vec::new();
-    //         package_stack.push(package);
-    //         while let Some(next_package) = package_stack.pop() {
-    //             for dependency in next_package.dependencies.iter() {
-    //                 // We only care about regular dependencies and not any other kind
-    //                 if dependency.kind != DependencyKind::Normal {
-    //                     continue;
-    //                 }
-    //
-    //                 let name = dependency.name.as_str();
-    //                 let version_spec = &dependency.req;
-    //                 let found_crate = self.find_matching_crate_index(name, version_spec)?;
-    //                 if let Some(found_crate) = found_crate {
-    //                     let not_found = package_indices.insert(found_crate);
-    //                     if not_found {
-    //                         package_stack.push(&cargo_metadata.packages[found_crate]);
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //         Ok(package_indices)
-    //     })
-    // }
+    pub fn _get_game_crate_dependencu_set(&self) -> anyhow::Result<&HashSet<usize>> {
+        self._game_crate_dependency_set.get_or_try_init(|| {
+            let cargo_metadata = self.get_cargo_metadata()?;
+            let (package, _) = self._get_game_crate_and_target()?;
+            let mut package_indices = HashSet::new();
+
+            let mut package_stack = Vec::new();
+            package_stack.push(package);
+            while let Some(next_package) = package_stack.pop() {
+                for dependency in next_package.dependencies.iter() {
+                    // We only care about regular dependencies and not any other kind
+                    if dependency.kind != DependencyKind::Normal {
+                        continue;
+                    }
+
+                    let name = dependency.name.as_str();
+                    let version_spec = &dependency.req;
+                    let found_crate = self._find_matching_crate_index(name, version_spec)?;
+                    if let Some(found_crate) = found_crate {
+                        let not_found = package_indices.insert(found_crate);
+                        if not_found {
+                            package_stack.push(&cargo_metadata.packages[found_crate]);
+                        }
+                    }
+                }
+            }
+            Ok(package_indices)
+        })
+    }
 
     /// Utility that
     pub fn find_tool(
@@ -608,7 +585,6 @@ impl<'a> AlephProject<'a> {
         name: &Utf8Path,
     ) -> anyhow::Result<Option<Utf8PathBuf>> {
         let mut search_set = Vec::new();
-        search_set.push(self.ndk_path());
         search_set.push(self.dxc_path().parent().unwrap());
         search_set.push(self.slang_path().parent().unwrap());
         search_set.push(self.ninja_path().parent().unwrap());
@@ -650,24 +626,6 @@ impl<'a> AlephProject<'a> {
 
         Ok(())
     }
-
-    fn compute_target_project_root(
-        root: &Utf8Path,
-        target: &Target,
-    ) -> anyhow::Result<Utf8PathBuf> {
-        match target.platform {
-            BuildPlatform::Android => {
-                let mut root = root.to_path_buf();
-                root.push("proj");
-                root.push("android");
-                Ok(root)
-            }
-            _ => Err(anyhow!(
-                "Platform \"{}\" does not have a target specific sub-project.",
-                target.platform.name()
-            )),
-        }
-    }
 }
 
 #[derive(Copy, Clone)]
@@ -684,7 +642,6 @@ fn sdk_platform_name() -> &'static str {
         Platform::WindowsGNU => "windows",
         Platform::WindowsMSVC => "windows",
         Platform::Linux => "linux",
-        Platform::Android => panic!("Uuuuh, no?"),
         Platform::MacOS => "macos",
         Platform::IOS => panic!("What are you doing???????"),
         Platform::Unknown => panic!("Unknown host platform"),

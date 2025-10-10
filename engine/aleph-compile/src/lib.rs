@@ -163,14 +163,6 @@ pub fn standard_binary_path_for(platform: Platform, architecture: Architecture) 
             out.push("linux");
             Some(out)
         }
-        Platform::Android => {
-            let mut out = PathBuf::new();
-            out.push(architecture.name());
-            out.push("android");
-            out.push("api-30"); // We assume api-30 for binaries we provide
-
-            Some(out)
-        }
         Platform::MacOS => {
             let mut out = PathBuf::new();
             out.push(architecture.name());

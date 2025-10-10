@@ -29,10 +29,10 @@
 
 use std::collections::hash_map::Entry;
 
+use aleph_alloc::Blink;
 use aleph_shader_db::{ParameterBlockDesc, ShaderDatabase, ShaderEntry};
 use aleph_target::Profile;
 use anyhow::anyhow;
-use blink_alloc::Blink;
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::ArgMatches;
 

@@ -70,6 +70,7 @@ ctrlc = { workspace = true }
 parking_lot = { workspace = true }
 raw-window-handle = { workspace = true }
 smallbox = { workspace = true }
+env_logger = { workspace = true }
 
 [build-dependencies]
 aleph-compile = { workspace = true }
@@ -80,9 +81,3 @@ aleph-windows = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = { workspace = true }
-
-[target.'cfg(not(target_os = "android"))'.dependencies]
-env_logger = { workspace = true }
-
-[target.'cfg(target_os = "android")'.dependencies]
-android_logger = { workspace = true }

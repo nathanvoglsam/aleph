@@ -85,13 +85,7 @@ pub struct VulkanConfig {
     pub deny_sync_2: bool,
 }
 
-#[cfg(any(
-    windows,
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(any(windows, target_os = "macos", target_os = "ios", target_os = "linux",))]
 impl Into<aleph_rhi_vulkan::VulkanConfig> for VulkanConfig {
     fn into(self) -> aleph_rhi_vulkan::VulkanConfig {
         aleph_rhi_vulkan::VulkanConfig {
@@ -222,7 +216,7 @@ impl RhiLoader {
         }
     }
 
-    #[cfg(any(target_os = "linux", target_os = "android"))]
+    #[cfg(any(target_os = "linux"))]
     fn make_loader() -> Self {
         return Self {
             backends: vec![BackendAPI::Vulkan],
@@ -247,13 +241,7 @@ impl RhiLoader {
             self.d3d12 = Some(&aleph_rhi_dx12::RHI_BACKEND_OBJECT);
         }
 
-        #[cfg(any(
-            windows,
-            target_os = "macos",
-            target_os = "ios",
-            target_os = "linux",
-            target_os = "android"
-        ))]
+        #[cfg(any(windows, target_os = "macos", target_os = "ios", target_os = "linux",))]
         {
             self.vulkan = Some(&aleph_rhi_vulkan::RHI_BACKEND_OBJECT);
         }
@@ -346,13 +334,7 @@ trait IRhiBackend {
     ) -> Result<AnyArc<dyn IContext>, ContextCreateError>;
 }
 
-#[cfg(any(
-    windows,
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(any(windows, target_os = "macos", target_os = "ios", target_os = "linux",))]
 impl IRhiBackend for aleph_rhi_vulkan::VulkanLoader {
     fn is_available(&self) -> bool {
         aleph_rhi_vulkan::VulkanLoader::is_available(self)

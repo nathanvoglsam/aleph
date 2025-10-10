@@ -27,51 +27,6 @@
 // SOFTWARE.
 //
 
-use std::io::Cursor;
-
-use zip::ZipArchive;
-
-pub const ANDROID_PROJECT: &[u8] = include_bytes!("../templates/android.zip");
-
-pub fn android_project_bundle() -> ZipArchive<Cursor<&'static [u8]>> {
-    let reader = Cursor::new(ANDROID_PROJECT);
-    ZipArchive::new(reader)
-        .expect("Failed to open internal zip archive for bundled project template")
-}
-
-pub const ANDROID_ACTIVITY_SOURCE_TEMPLATE: &str = r#"
-package {{ANDROID_GAME_APPLICATION_ID}};
-
-import org.libsdl.app.SDLActivity;
-
-public class AlephActivity extends SDLActivity {
-    @Override
-    protected String[] getLibraries() {
-        return new String[] {
-                "SDL2",
-                // "SDL2_image",
-                // "SDL2_mixer",
-                // "SDL2_net",
-                // "SDL2_ttf",
-                "{{ANDROID_GAME_LIBRARY}}"
-        };
-    }
-}
-"#;
-
-pub const LOCAL_PROPERTIES_TEMPLATE: &str = r#"
-## This file must *NOT* be checked into Version Control Systems,
-# as it contains information specific to your local configuration.
-#
-# Location of the SDK. This is only used by Gradle.
-# For customization when using a Version Control System, please read the
-# header note.
-#Sun Jun 18 15:19:45 AEST 2023
-## Set these to your android SDK and NDK directories, e.g.
-## sdk.dir=C\:\\Users\\Nathan\\AppData\\Local\\Android\\Sdk
-## ndk.dir=C\:\\Users\\Nathan\\Programs\\Loose\\android-ndk-r25c
-"#;
-
 pub const SHADER_NINJA_RULES: &str = include_str!("../templates/shader_rules.ninja");
 
 pub const JS_CONFIG_TEMPLATE: &str = r#"

@@ -246,11 +246,6 @@ impl VulkanLoader {
         } else {
             None
         };
-        let android_loader = if supported_extensions.contains(&ash::khr::android_surface::NAME) {
-            Some(ash::khr::android_surface::Instance::new(entry, instance))
-        } else {
-            None
-        };
         let win32_loader = if supported_extensions.contains(&ash::khr::win32_surface::NAME) {
             Some(ash::khr::win32_surface::Instance::new(entry, instance))
         } else {
@@ -279,7 +274,6 @@ impl VulkanLoader {
             xlib_loader,
             xcb_loader,
             wayland_loader,
-            android_loader,
             win32_loader,
             metal_surface_loader,
             macos_loader,
@@ -368,21 +362,12 @@ fn get_wanted_extensions(debug: bool) -> Vec<&'static CStr> {
     let mut extensions = vec![ash::khr::surface::NAME];
 
     // Push all possible WSI extensions for the underlying platform
-    if cfg!(all(
-        unix,
-        not(target_os = "android"),
-        not(target_os = "macos"),
-        not(target_os = "ios")
-    )) {
+    if cfg!(all(unix, not(target_os = "macos"), not(target_os = "ios"))) {
         // This is the branch for linux. Linux has a bunch of WSI extensions so add them all,
         // any unsupported extensions will be stripped later.
         extensions.push(ash::khr::xlib_surface::NAME);
         extensions.push(ash::khr::xcb_surface::NAME);
         extensions.push(ash::khr::wayland_surface::NAME);
-    }
-    if cfg!(target_os = "android") {
-        // Android, only one. A sane platform
-        extensions.push(ash::khr::android_surface::NAME);
     }
     if cfg!(target_os = "windows") {
         // Windows, again a single WSI extension.
@@ -569,7 +554,6 @@ struct Extensions {
     xlib_loader: Option<ash::khr::xlib_surface::Instance>,
     xcb_loader: Option<ash::khr::xcb_surface::Instance>,
     wayland_loader: Option<ash::khr::wayland_surface::Instance>,
-    android_loader: Option<ash::khr::android_surface::Instance>,
     win32_loader: Option<ash::khr::win32_surface::Instance>,
     metal_surface_loader: Option<ash::ext::metal_surface::Instance>,
     macos_loader: Option<ash::mvk::macos_surface::Instance>,
@@ -584,7 +568,6 @@ impl Extensions {
             xlib: self.xlib_loader.clone(),
             xcb: self.xcb_loader.clone(),
             wayland: self.wayland_loader.clone(),
-            android: self.android_loader.clone(),
             metal: self.metal_surface_loader.clone(),
             macos: self.macos_loader.clone(),
             ios: self.ios_loader.clone(),

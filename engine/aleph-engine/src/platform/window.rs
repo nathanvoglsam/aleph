@@ -153,22 +153,12 @@ impl Window {
         window.resizable();
         window.high_pixel_density();
 
-        // Android can only use Vulkan, and we need to set this flag to *use* Vulkan so I think this
-        // is the best way to handle it. There shouldn't be any coupling between the RHI and'
-        // windowing ideally but in practice this works and keeps the rest of the engine clean.
-        //
-        // It's not like you can use D3D12 on Android anyway.
-        #[cfg(target_os = "android")]
-        {
-            window.vulkan();
-        }
-
         #[cfg(any(target_os = "macos", target_os = "ios"))]
         {
             window.metal_view();
         }
 
-        #[cfg(any(target_os = "ios", target_os = "android"))]
+        #[cfg(any(target_os = "ios"))]
         {
             window.fullscreen();
         }

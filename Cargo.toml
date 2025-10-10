@@ -99,7 +99,6 @@ license = "MIT"
 
 # Third Party Crates
 allocator-api2 = "0.2"
-android_logger = "0.15"
 anyhow = "1"
 ash = { version = "0.38", default-features = false, features = ["debug"] }
 bitflags = "2"
@@ -107,14 +106,14 @@ blink-alloc = { version = "0.3" }
 block2 = { version = "0.6" }
 bytemuck = { version = "1", features = ["derive"] }
 byteorder = "1"
-cargo_metadata = "0.22"
+cargo_metadata = "0.23"
 camino = "1"
 cc = "1"
 clap = "4"
 console = "0.16"
 const_format = { version = "0.2", features = ["fmt"] }
 crossbeam = "0.8"
-ctor = "0.5"
+ctor = "0.6"
 ctrlc = "3"
 dunce = "1"
 egui = { version = "0.32", features = ["bytemuck"] }
@@ -151,7 +150,6 @@ tracy-client = "0.18"
 ultraviolet = { version = "0.10", features = ["f64", "int"] }
 utf16_lit = "2"
 uuid = { version = "1", features = ["v7"] }
-zip = "4"
 num-integer = "0.1"
 arrayvec = "0.7"
 memmap2 = "0.9"

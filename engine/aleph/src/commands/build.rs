@@ -38,7 +38,6 @@ use crate::commands::{ISubcommand, arch_arg, config_arg, platform_arg};
 use crate::project::AlephProject;
 use crate::utils::{
     BuildPlatform, Target, architecture_from_arg, resolve_absolute_or_root_relative_path,
-    resolve_ndk_from_proj_or_env,
 };
 
 pub struct Build {}
@@ -109,17 +108,10 @@ impl ISubcommand for Build {
 
         let build_std = matches.get_flag("build-std");
 
-        if build_std && matches!(platform, BuildPlatform::Android) {
-            log::warn!(
-                "--build-std flag specified for Android, but Android does not support this flag. --build-std will be ignored!"
-            );
-        }
-
         match target.platform {
             BuildPlatform::Windows => self.windows(project, profile, &target, build_std),
             BuildPlatform::MacOS => self.macos(project, profile, &target, build_std),
             BuildPlatform::Linux => self.linux(project, profile, &target, build_std),
-            BuildPlatform::Android => self.android(project, profile, &target),
             BuildPlatform::IOS => self.ios(project, profile, &target, build_std),
         }
     }
@@ -171,26 +163,6 @@ impl Build {
         self.plain_cargo_build(project, profile, target, build_std)
     }
 
-    fn android(
-        &self,
-        project: &AlephProject,
-        profile: Profile,
-        target: &Target,
-    ) -> anyhow::Result<()> {
-        let project_schema = project.get_project_schema()?;
-
-        let mut command = android_build(project, target, profile, &project_schema.game.crate_name)?;
-        log::info!("{:?}", &command);
-        let status = command.status()?;
-
-        if !status.success() {
-            log::error!("Cargo invocation failed! Terminating build.");
-            return Err(anyhow!("cargo invocation failed!"));
-        }
-
-        Ok(())
-    }
-
     fn ios(
         &self,
         project: &AlephProject,
@@ -208,8 +180,6 @@ impl Build {
             log::error!("Cargo invocation failed! Terminating build.");
             return Err(anyhow!("cargo invocation failed!"));
         }
-
-        // self.copy_android_build_to_gradle_project(project, profile, target)?;
 
         Ok(())
     }
@@ -304,34 +274,6 @@ fn ios_build(target: &Target, profile: Profile, package: &str, build_std: bool) 
 
     let target = format!("{}-apple-ios", target.arch.name());
     bin_build(profile, Some(&target), package, build_std)
-}
-
-fn android_build(
-    project: &AlephProject,
-    target: &Target,
-    profile: Profile,
-    package: &str,
-) -> anyhow::Result<Command> {
-    assert_eq!(target.platform, BuildPlatform::Android);
-
-    let mut cmd = Command::new("cargo");
-    cmd.arg("ndk");
-    cmd.arg("-t");
-    cmd.arg(target.arch.ndk_name());
-    cmd.arg("-p");
-    cmd.arg("30");
-    cmd.arg("build");
-    cmd.arg(format!("--target={}-linux-android", target.arch.name()));
-    cmd.arg("--package");
-    cmd.arg(package);
-    cmd.arg("--lib");
-
-    profile_args(&mut cmd, profile);
-
-    let ndk_home = resolve_ndk_from_proj_or_env(project)?;
-    cmd.env("ANDROID_NDK_HOME", ndk_home);
-
-    Ok(cmd)
 }
 
 fn profile_args(cmd: &mut Command, profile: Profile) {

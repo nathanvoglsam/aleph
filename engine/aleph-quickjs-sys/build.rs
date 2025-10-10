@@ -58,7 +58,6 @@ fn main() {
         Platform::WindowsGNU
         | Platform::WindowsMSVC
         | Platform::MacOS
-        | Platform::Android
         | Platform::IOS
         | Platform::Linux => {
             println!(

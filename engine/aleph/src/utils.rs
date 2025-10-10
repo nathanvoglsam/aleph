@@ -28,17 +28,11 @@
 //
 
 use std::fmt::{Display, Formatter};
-use std::io::{Read, Seek};
 
+use aleph_alloc::Blink;
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Platform};
-use anyhow::anyhow;
-use blink_alloc::Blink;
 use camino::{Utf8Path, Utf8PathBuf};
-use zip::ZipArchive;
-
-use crate::project::AlephProject;
-use crate::utils::dunce_utf8::simplified;
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Target {
@@ -47,9 +41,9 @@ pub struct Target {
 }
 
 impl Target {
-    pub const fn new(arch: Architecture, platform: BuildPlatform) -> Self {
-        Self { arch, platform }
-    }
+    // pub const fn new(arch: Architecture, platform: BuildPlatform) -> Self {
+    //     Self { arch, platform }
+    // }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -57,7 +51,6 @@ pub enum BuildPlatform {
     Windows,
     MacOS,
     Linux,
-    Android,
     IOS,
 }
 
@@ -70,7 +63,6 @@ impl BuildPlatform {
             "windows" => Some(BuildPlatform::Windows),
             "macos" => Some(BuildPlatform::MacOS),
             "linux" => Some(BuildPlatform::Linux),
-            "android" => Some(BuildPlatform::Android),
             "ios" => Some(BuildPlatform::IOS),
             "native" => Some(Self::native()),
             _ => None,
@@ -87,7 +79,6 @@ impl BuildPlatform {
             BuildPlatform::Windows => "windows",
             BuildPlatform::MacOS => "macos",
             BuildPlatform::Linux => "linux",
-            BuildPlatform::Android => "android",
             BuildPlatform::IOS => "ios",
         }
     }
@@ -99,7 +90,6 @@ impl BuildPlatform {
             BuildPlatform::Windows => true,
             BuildPlatform::MacOS => true,
             BuildPlatform::Linux => true,
-            BuildPlatform::Android => false,
             BuildPlatform::IOS => false,
         }
     }
@@ -111,7 +101,6 @@ impl From<Platform> for BuildPlatform {
             Platform::WindowsGNU => BuildPlatform::Windows,
             Platform::WindowsMSVC => BuildPlatform::Windows,
             Platform::Linux => BuildPlatform::Linux,
-            Platform::Android => BuildPlatform::Android,
             Platform::MacOS => BuildPlatform::MacOS,
             Platform::IOS => BuildPlatform::IOS,
             Platform::Unknown => panic!("Unknown platform"),
@@ -171,73 +160,6 @@ pub fn find_file_in_parents_of<A: AsRef<Utf8Path>, B: AsRef<Utf8Path>>(
             file, path,
         ),
     ))
-}
-
-pub fn extract_zip<R: Seek + Read>(
-    archive: &mut ZipArchive<R>,
-    target_dir: Option<&Utf8Path>,
-) -> anyhow::Result<()> {
-    for i in 0..archive.len() {
-        let mut file = archive.by_index(i)?;
-        let outpath = match file.enclosed_name() {
-            Some(path) => {
-                if let Some(v) = Utf8Path::from_path(&path) {
-                    v.to_owned()
-                } else {
-                    continue;
-                }
-            }
-            None => continue,
-        };
-        let outpath = match target_dir {
-            None => outpath,
-            Some(v) => v.join(outpath),
-        };
-
-        if (*file.name()).ends_with('/') {
-            std::fs::create_dir_all(&outpath)?;
-        } else {
-            if let Some(p) = outpath.parent() {
-                if !p.exists() {
-                    std::fs::create_dir_all(p)?;
-                }
-            }
-            let mut outfile = std::fs::File::create(&outpath)?;
-            std::io::copy(&mut file, &mut outfile)?;
-        }
-
-        // Get and Set permissions
-        #[cfg(unix)]
-        {
-            if let Some(mode) = file.unix_mode() {
-                use std::fs;
-                use std::os::unix::fs::PermissionsExt;
-                fs::set_permissions(&outpath, fs::Permissions::from_mode(mode)).unwrap();
-            }
-        }
-    }
-    Ok(())
-}
-
-pub fn resolve_ndk_from_proj_or_env(project: &AlephProject) -> anyhow::Result<Utf8PathBuf> {
-    std::env::var("ANDROID_NDK_HOME").map(Utf8PathBuf::from).or_else(|_err| {
-        let ndk_path = project.ndk_path();
-        if !ndk_path.exists() {
-            log::error!("ANDROID_NDK_HOME is not set and .aleph/sdks/ndk is missing!");
-            log::error!("Building for android requires either ANDROID_NDK_HOME to be set or for an NDK to be present at .aleph/sdks/ndk");
-            Err(anyhow!("ANDROID_NDK_HOME is not set and .aleph/sdks/ndk is missing!"))
-        } else {
-            Ok(simplified(ndk_path).to_path_buf())
-        }
-    })
-}
-
-pub const fn get_gradlew_name() -> &'static str {
-    if target_platform().is_windows() {
-        "gradlew.bat"
-    } else {
-        "gradlew"
-    }
 }
 
 pub fn resolve_absolute_or_root_relative_path<P: AsRef<Utf8Path>>(

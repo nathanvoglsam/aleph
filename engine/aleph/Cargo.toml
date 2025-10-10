@@ -46,7 +46,6 @@ cargo_metadata = { workspace = true }
 clap = { workspace = true }
 log = { workspace = true }
 env_logger = { workspace = true }
-zip = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
 tera = { workspace = true }
@@ -62,9 +61,8 @@ image = { workspace = true }
 bytemuck = { workspace = true }
 memmap2 = { workspace = true }
 half = { workspace = true }
-allocator-api2 = { workspace = true }
-blink-alloc = { workspace = true }
 
+aleph-alloc = { workspace = true }
 aleph-image = { workspace = true }
 aleph-math = { workspace = true }
 aleph-target = { workspace = true }

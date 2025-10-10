@@ -5,22 +5,11 @@ rustflags = ["-C", "target-cpu=haswell"]
 [target.x86_64-pc-windows-msvc]
 rustflags = ["-C", "target-cpu=haswell"]
 
-[target.x86_64-uwp-windows-gnu]
-rustflags = ["-C", "target-cpu=haswell"]
-
-[target.x86_64-uwp-windows-msvc]
-rustflags = ["-C", "target-cpu=haswell"]
-
 ## Linux
 [target.x86_64-unknown-linux-gnu]
 rustflags = ["-C", "target-cpu=haswell"]
 
 [target.i686-unknown-linux-gnu]
-rustflags = ["-C", "target-cpu=haswell"]
-
-
-## Android
-[target.x86_64-linux-android]
 rustflags = ["-C", "target-cpu=haswell"]
 
 [profile.release]

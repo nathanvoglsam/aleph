@@ -50,10 +50,6 @@ pub fn add_platform_flags() {
     if target_platform().is_linux() {
         println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
     }
-
-    if target_platform().is_android() {
-        println!("cargo:rustc-link-lib=dylib=c++_shared");
-    }
 }
 
 #[cfg(windows)]

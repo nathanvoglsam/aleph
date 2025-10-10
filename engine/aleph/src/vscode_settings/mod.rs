@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use blink_alloc::Blink;
+use aleph_alloc::Blink;
 use serde::{Deserialize, Serialize};
 
 use crate::project::AlephProject;
