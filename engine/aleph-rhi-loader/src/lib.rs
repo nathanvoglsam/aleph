@@ -255,10 +255,7 @@ impl RhiLoader {
             target_os = "android"
         ))]
         {
-            // Except on UWP where there's no Vulkan
-            if !cfg!(target_vendor = "uwp") {
-                self.vulkan = Some(&aleph_rhi_vulkan::RHI_BACKEND_OBJECT);
-            }
+            self.vulkan = Some(&aleph_rhi_vulkan::RHI_BACKEND_OBJECT);
         }
 
         #[cfg(any(target_os = "macos", target_os = "ios"))]

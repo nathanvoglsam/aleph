@@ -144,11 +144,8 @@ pub fn standard_binary_path_for(platform: Platform, architecture: Architecture) 
     assert!(!architecture.is_unknown());
 
     match platform {
-        Platform::WindowsGNU
-        | Platform::WindowsMSVC
-        | Platform::UniversalWindowsMSVC
-        | Platform::UniversalWindowsGNU => {
-            let vendor = if platform.is_uwp() { "winrt" } else { "win32" };
+        Platform::WindowsGNU | Platform::WindowsMSVC => {
+            let vendor = "win32";
             let abi = if platform.is_gnu() { "gnu" } else { "msvc" };
 
             let mut out = PathBuf::new();

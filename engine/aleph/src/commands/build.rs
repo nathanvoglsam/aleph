@@ -114,17 +114,11 @@ impl ISubcommand for Build {
                 "--build-std flag specified for Android, but Android does not support this flag. --build-std will be ignored!"
             );
         }
-        if build_std && matches!(platform, BuildPlatform::Uwp) {
-            log::warn!(
-                "--build-std flag specified for UWP, but UWP does not require this flag. UWP always builds with build-std"
-            );
-        }
 
         match target.platform {
             BuildPlatform::Windows => self.windows(project, profile, &target, build_std),
             BuildPlatform::MacOS => self.macos(project, profile, &target, build_std),
             BuildPlatform::Linux => self.linux(project, profile, &target, build_std),
-            BuildPlatform::Uwp => self.uwp(project, profile, &target),
             BuildPlatform::Android => self.android(project, profile, &target),
             BuildPlatform::IOS => self.ios(project, profile, &target, build_std),
         }
@@ -175,23 +169,6 @@ impl Build {
             "It is only valid to build linux on linux"
         );
         self.plain_cargo_build(project, profile, target, build_std)
-    }
-
-    fn uwp(&self, project: &AlephProject, profile: Profile, target: &Target) -> anyhow::Result<()> {
-        let project_schema = project.get_project_schema()?;
-
-        let mut command = uwp_build(target, profile, &project_schema.game.crate_name);
-        self.add_win32_branding_env_vars(project, target, &mut command)?;
-
-        log::info!("{:?}", &command);
-        let status = command.status()?;
-
-        if !status.success() {
-            log::error!("Cargo invocation failed! Terminating build.");
-            return Err(anyhow!("cargo invocation failed!"));
-        }
-
-        Ok(())
     }
 
     fn android(
@@ -270,8 +247,8 @@ impl Build {
     ) -> anyhow::Result<()> {
         let project_schema = project.get_project_schema()?;
 
-        // For windows or uwp we need to add an environment var for configuring the executable icon
-        if matches!(target.platform, BuildPlatform::Windows | BuildPlatform::Uwp) {
+        // For windows we need to add an environment var for configuring the executable icon
+        if matches!(target.platform, BuildPlatform::Windows) {
             if let Some(branding) = project_schema
                 .windows
                 .as_ref()
@@ -314,13 +291,6 @@ fn bin_build(profile: Profile, target: Option<&str>, package: &str, build_std: b
     profile_args(&mut cmd, profile);
 
     cmd
-}
-
-fn uwp_build(target: &Target, profile: Profile, package: &str) -> Command {
-    assert_eq!(target.platform, BuildPlatform::Uwp);
-
-    let target = format!("{}-uwp-windows-msvc", target.arch.name());
-    bin_build(profile, Some(&target), package, true)
 }
 
 fn native_build(profile: Profile, package: &str, build_std: bool) -> Command {

@@ -57,8 +57,6 @@ fn main() {
     match target_platform {
         Platform::WindowsGNU
         | Platform::WindowsMSVC
-        | Platform::UniversalWindowsMSVC
-        | Platform::UniversalWindowsGNU
         | Platform::MacOS
         | Platform::Android
         | Platform::IOS

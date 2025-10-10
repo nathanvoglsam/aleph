@@ -51,13 +51,9 @@ use aleph_target_build::build::{target_architecture, target_build_config, target
 /// This currently works for the following targets:
 ///
 /// - `x86_64-pc-windows-msvc`
-/// - `x86_64-uwp-windows-msvc`
 /// - `i686-pc-windows-msvc`
-/// - `i686-uwp-windows-msvc`
 /// - `x86_64-pc-windows-gnu`
-/// - `x86_64-uwp-windows-gnu`
 /// - `i686-pc-windows-gnu`
-/// - `i686-uwp-windows-gnu`
 ///
 /// This function will do nothing on non windows platforms.
 ///
@@ -156,7 +152,6 @@ macro_rules! export_standard_agility_sdk_symbols {
 /// This currently works for the following targets:
 ///
 /// - `x86_64-pc-windows-msvc`
-/// - `x86_64-uwp-windows-msvc`
 ///
 pub fn extract_agility_sdk_binaries() {
     if target_platform().is_windows() {

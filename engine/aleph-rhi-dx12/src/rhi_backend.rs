@@ -41,7 +41,7 @@ impl D3D12Loader {
                 let dxgi_factory = create_dxgi_factory(validation)
                     .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
-                let gpu_assisted = !cfg!(target_vendor = "uwp");
+                let gpu_assisted = true;
                 let debug_interface = unsafe { setup_debug_layer(validation, gpu_assisted) };
                 let dxgi_debug = unsafe { setup_dxgi_debug_interface(debug) };
 

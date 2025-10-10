@@ -65,15 +65,7 @@ pub mod build {
     ///
     pub const fn target_platform() -> aleph_target::Platform {
         if cfg!(target_os = "windows") {
-            if cfg!(target_vendor = "uwp") {
-                if cfg!(target_env = "msvc") {
-                    aleph_target::Platform::UniversalWindowsMSVC
-                } else if cfg!(target_env = "gnu") {
-                    aleph_target::Platform::UniversalWindowsGNU
-                } else {
-                    aleph_target::Platform::Unknown
-                }
-            } else if cfg!(target_env = "msvc") {
+            if cfg!(target_env = "msvc") {
                 aleph_target::Platform::WindowsMSVC
             } else if cfg!(target_env = "gnu") {
                 aleph_target::Platform::WindowsGNU

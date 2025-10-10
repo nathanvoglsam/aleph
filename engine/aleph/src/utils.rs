@@ -57,7 +57,6 @@ pub enum BuildPlatform {
     Windows,
     MacOS,
     Linux,
-    Uwp,
     Android,
     IOS,
 }
@@ -71,7 +70,6 @@ impl BuildPlatform {
             "windows" => Some(BuildPlatform::Windows),
             "macos" => Some(BuildPlatform::MacOS),
             "linux" => Some(BuildPlatform::Linux),
-            "uwp" => Some(BuildPlatform::Uwp),
             "android" => Some(BuildPlatform::Android),
             "ios" => Some(BuildPlatform::IOS),
             "native" => Some(Self::native()),
@@ -89,7 +87,6 @@ impl BuildPlatform {
             BuildPlatform::Windows => "windows",
             BuildPlatform::MacOS => "macos",
             BuildPlatform::Linux => "linux",
-            BuildPlatform::Uwp => "uwp",
             BuildPlatform::Android => "android",
             BuildPlatform::IOS => "ios",
         }
@@ -102,7 +99,6 @@ impl BuildPlatform {
             BuildPlatform::Windows => true,
             BuildPlatform::MacOS => true,
             BuildPlatform::Linux => true,
-            BuildPlatform::Uwp => false,
             BuildPlatform::Android => false,
             BuildPlatform::IOS => false,
         }
@@ -112,8 +108,6 @@ impl BuildPlatform {
 impl From<Platform> for BuildPlatform {
     fn from(value: Platform) -> Self {
         match value {
-            Platform::UniversalWindowsGNU => BuildPlatform::Uwp,
-            Platform::UniversalWindowsMSVC => BuildPlatform::Uwp,
             Platform::WindowsGNU => BuildPlatform::Windows,
             Platform::WindowsMSVC => BuildPlatform::Windows,
             Platform::Linux => BuildPlatform::Linux,

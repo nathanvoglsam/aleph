@@ -31,8 +31,6 @@ use std::fmt::Display;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Platform {
-    UniversalWindowsGNU,
-    UniversalWindowsMSVC,
     WindowsGNU,
     WindowsMSVC,
     Linux,
@@ -45,8 +43,6 @@ pub enum Platform {
 impl Platform {
     pub const fn name(self) -> &'static str {
         match self {
-            Platform::UniversalWindowsGNU => "uwp-gnu",
-            Platform::UniversalWindowsMSVC => "uwp-msvc",
             Platform::WindowsGNU => "windows-gnu",
             Platform::WindowsMSVC => "windows-msvc",
             Platform::Linux => "linux",
@@ -59,8 +55,6 @@ impl Platform {
 
     pub const fn pretty_name(self) -> &'static str {
         match self {
-            Platform::UniversalWindowsGNU => "Universal Windows GNU",
-            Platform::UniversalWindowsMSVC => "Universal Windows MSVC",
             Platform::WindowsGNU => "Windows GNU",
             Platform::WindowsMSVC => "Windows MSVC",
             Platform::Linux => "Linux",
@@ -79,21 +73,7 @@ impl Platform {
 
     /// Is this platform any of the windows or universal windows platforms
     pub const fn is_windows(self) -> bool {
-        matches!(
-            self,
-            Platform::WindowsMSVC
-                | Platform::WindowsGNU
-                | Platform::UniversalWindowsGNU
-                | Platform::UniversalWindowsMSVC
-        )
-    }
-
-    /// Is this platform any of the universal windows platforms
-    pub const fn is_uwp(self) -> bool {
-        matches!(
-            self,
-            Platform::UniversalWindowsGNU | Platform::UniversalWindowsMSVC
-        )
+        matches!(self, Platform::WindowsMSVC | Platform::WindowsGNU)
     }
 
     pub const fn is_linux(self) -> bool {
@@ -113,11 +93,11 @@ impl Platform {
     }
 
     pub const fn is_msvc(self) -> bool {
-        matches!(self, Platform::WindowsMSVC | Platform::UniversalWindowsMSVC)
+        matches!(self, Platform::WindowsMSVC)
     }
 
     pub const fn is_gnu(self) -> bool {
-        matches!(self, Platform::WindowsGNU | Platform::UniversalWindowsGNU)
+        matches!(self, Platform::WindowsGNU)
     }
 
     pub const fn is_android(self) -> bool {
@@ -143,14 +123,6 @@ pub fn get_platform_from(triple: &str) -> Platform {
             Platform::WindowsMSVC
         } else if target.contains("gnu") {
             Platform::WindowsGNU
-        } else {
-            Platform::Unknown
-        }
-    } else if target.contains("uwp-windows") {
-        if target.contains("msvc") {
-            Platform::UniversalWindowsMSVC
-        } else if target.contains("gnu") {
-            Platform::UniversalWindowsGNU
         } else {
             Platform::Unknown
         }

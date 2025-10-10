@@ -39,9 +39,6 @@ pub struct ProjectSchema<'a> {
     /// Windows specific project configuration
     pub windows: Option<WindowsSchema<'a>>,
 
-    /// UWP specific project configuration
-    pub uwp: Option<UwpSchema<'a>>,
-
     /// Android specific project configuration
     pub android: Option<AndroidSchema<'a>>,
 }
@@ -57,7 +54,7 @@ pub struct GameSchema<'a> {
     /// The name of the game author. Example: "My Cool Studio"
     pub author: Cow<'a, str>,
 
-    /// A list of supported platforms that the project is allowed to target. Allowed values: "uwp",
+    /// A list of supported platforms that the project is allowed to target. Allowed values:
     /// "android", "windows", "macos", "linux"
     pub target_platforms: Vec<Cow<'a, str>>,
 }
@@ -67,20 +64,6 @@ pub struct WindowsSchema<'a> {
     /// Specification of branding information for the windows executable. This includes things like
     /// the .exe icon to use.
     pub branding: Option<WindowsBrandingSchema<'a>>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct UwpSchema<'a> {
-    /// Specification of branding information for the UWP executable. This includes things like
-    /// the app icon to use, as well as other iconography for the app.
-    pub branding: Option<UwpBrandingSchema<'a>>,
-
-    /// A path, relative to the "aleph-project.toml", to the .pfx file used to sign the output app
-    /// bundles.
-    pub certificate: Cow<'a, str>,
-
-    pub identity_name: Cow<'a, str>,
-    pub identity_publisher: Cow<'a, str>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -101,16 +84,6 @@ pub struct WindowsBrandingSchema<'a> {
     /// A path, relative to the "aleph-project.toml", to the .ico file to use as the application's
     /// icon.
     pub icon: Cow<'a, str>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct UwpBrandingSchema<'a> {
-    pub lock_screen_logo: Cow<'a, str>,
-    pub splash_screen: Cow<'a, str>,
-    pub square_44_x_44_logo: Cow<'a, str>,
-    pub square_150_x_150_logo: Cow<'a, str>,
-    pub store_logo: Cow<'a, str>,
-    pub wide_310_x_150_logo: Cow<'a, str>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -35,18 +35,13 @@
 //! PC Windows can dynamically lookup the symbol from DXGIDebug.dll, so we do exactly that as it
 //! doesn't impose any linking requirements.
 //!
-//! UWP supposedly requires linking directly to DXGIGetDebugInterface1. While PC can do it as well
-//! I would prefer to avoid it so we use a special case on UWP.
-//!
 //! Other platforms get an 'unimplemented!' stub.
 //!
 
-#[cfg(all(target_os = "windows", not(target_vendor = "uwp")))]
+#[cfg(target_os = "windows")]
 pub use self::pc::dxgi_get_debug_interface;
 #[cfg(not(target_os = "windows"))]
 pub use self::unimplemented::dxgi_get_debug_interface;
-#[cfg(all(target_os = "windows", target_vendor = "uwp"))]
-pub use self::uwp::dxgi_get_debug_interface;
 
 #[cfg(target_os = "windows")]
 mod windows {
@@ -68,7 +63,7 @@ mod windows {
     }
 }
 
-#[cfg(all(target_os = "windows", not(target_vendor = "uwp")))]
+#[cfg(target_os = "windows")]
 mod pc {
     use utf16_lit::utf16_null;
     use windows::Win32::Foundation::*;
@@ -102,22 +97,6 @@ mod pc {
             create_fn(&<T as Interface>::IID, &mut result__ as *mut _ as *mut _)
                 .map(|| result__.unwrap())
         }
-    }
-}
-
-#[cfg(all(target_os = "windows", target_vendor = "uwp"))]
-mod uwp {
-    use windows::Win32::Graphics::Dxgi::*;
-    use windows::core::Interface;
-
-    pub unsafe fn dxgi_get_debug_interface<T: Interface>(
-        enable_exit_callback: bool,
-    ) -> windows::core::Result<T> {
-        if enable_exit_callback {
-            super::windows::register_on_exit_callback();
-        }
-
-        DXGIGetDebugInterface1(0)
     }
 }
 

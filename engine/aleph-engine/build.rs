@@ -63,12 +63,7 @@ fn main() {
     };
 
     match target_platform {
-        Platform::WindowsGNU
-        | Platform::WindowsMSVC
-        | Platform::UniversalWindowsMSVC
-        | Platform::UniversalWindowsGNU
-        | Platform::MacOS
-        | Platform::Android => {
+        Platform::WindowsGNU | Platform::WindowsMSVC | Platform::MacOS | Platform::Android => {
             println!(
                 "cargo:rustc-link-search=all={}",
                 lib_path.canonicalize().unwrap().display()
@@ -107,10 +102,7 @@ fn main() {
 ///
 const fn dll_name(platform: Platform) -> &'static str {
     match platform {
-        Platform::WindowsGNU
-        | Platform::WindowsMSVC
-        | Platform::UniversalWindowsGNU
-        | Platform::UniversalWindowsMSVC => "SDL3.dll",
+        Platform::WindowsGNU | Platform::WindowsMSVC => "SDL3.dll",
         Platform::Linux | Platform::Android => "libSDL3.so",
         Platform::MacOS => "libSDL3.0.dylib",
         Platform::IOS => "",

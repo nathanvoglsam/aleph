@@ -33,7 +33,7 @@ use aleph_target::Profile;
 use aleph_target::build::target_platform;
 use anyhow::anyhow;
 use blink_alloc::Blink;
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8Path;
 use clap::ArgMatches;
 
 use crate::commands::{ISubcommand, arch_arg, config_arg, platform_arg};
@@ -41,8 +41,7 @@ use crate::project::AlephProject;
 use crate::shader_system::ShaderSubproject;
 use crate::utils::dunce_utf8::simplified;
 use crate::utils::{
-    BuildPlatform, Target, architecture_from_arg, get_gradlew_name,
-    resolve_absolute_or_root_relative_path, resolve_ndk_from_proj_or_env,
+    BuildPlatform, Target, architecture_from_arg, get_gradlew_name, resolve_ndk_from_proj_or_env,
 };
 
 pub struct Bundle {}
@@ -56,7 +55,7 @@ impl ISubcommand for Bundle {
         const LONG: &str = "\
             Tool for building the game for the requested platform/architecture/config. This will \
             copy build artefacts into project dirs and generate a 'bundle' for the target \
-            platform. On Android you get an APK, iOS an App Bundle, on UWP an MSIX.\
+            platform. On Android you get an APK, and iOS an App Bundle.\
         ";
         clap::Command::new(self.name())
             .about("Bundles the game for the requested platform/architecture/config")
@@ -113,7 +112,6 @@ impl ISubcommand for Bundle {
             BuildPlatform::Windows => self.windows(project, profile, &target),
             BuildPlatform::MacOS => self.macos(project, profile, &target),
             BuildPlatform::Linux => self.linux(project, profile, &target),
-            BuildPlatform::Uwp => self.uwp(project, profile, &target),
             BuildPlatform::Android => self.android(project, profile, &target),
             BuildPlatform::IOS => self.ios(project, profile, &target),
         }
@@ -146,21 +144,6 @@ impl Bundle {
         _target: &Target,
     ) -> anyhow::Result<()> {
         unimplemented!()
-    }
-
-    fn uwp(&self, project: &AlephProject, profile: Profile, target: &Target) -> anyhow::Result<()> {
-        if !target_platform().is_windows() {
-            log::error!("Tying to create UWP bundle on a non-windows host");
-            return Err(anyhow!("Bundling UWP is only supported on a Windows host"));
-        }
-
-        // TODO: we need to handle assets _way_ better eventually
-        self.copy_uwp_build_to_appx_folder(project, profile, target)?;
-        self.copy_shader_db_to_appx_folder(project, target)?;
-        self.uwp_bundle_to_appx(project, target)?;
-        self.uwp_sign_appx(project, target)?;
-
-        Ok(())
     }
 
     fn android(
@@ -286,156 +269,6 @@ impl Bundle {
         }
 
         Ok(())
-    }
-
-    fn copy_uwp_build_to_appx_folder(
-        &self,
-        project: &AlephProject,
-        profile: Profile,
-        target: &Target,
-    ) -> anyhow::Result<()> {
-        let uwp_project_root = project.target_project_root(target)?;
-        let target_dir = project.cargo_build_dir_for_target(target, profile)?;
-
-        if uwp_project_root.exists() {
-            let (package, _) = project.get_game_crate_and_target()?;
-            let exe_name = format!("{}.exe", &package.name);
-
-            let src_exe = target_dir.join(&exe_name);
-            let dst_exe = uwp_project_root.join(&exe_name);
-            log::trace!("Copying '{}' -> '{}'", src_exe, dst_exe);
-            std::fs::copy(src_exe, dst_exe)?;
-
-            Self::copy_artifacts_from_target_to_project(&target_dir, uwp_project_root)?;
-        } else {
-            log::warn!(
-                "Skipping uwp build artifact copy as \"{}\" does not exist",
-                uwp_project_root
-            );
-        }
-
-        Ok(())
-    }
-
-    fn copy_shader_db_to_appx_folder(
-        &self,
-        project: &AlephProject,
-        target: &Target,
-    ) -> anyhow::Result<()> {
-        let uwp_project_root = project.target_project_root(target)?;
-
-        if uwp_project_root.exists() {
-            // Build the base level project context for our shader build system
-            let arena = Blink::new();
-            let project_ctx = ShaderSubproject::load(&arena, project)?;
-
-            let src_file = project_ctx.meta.output_root.join("shaders.shaderdb");
-            let dst_file = uwp_project_root.join("shaders.shaderdb");
-            log::trace!("Copying '{}' -> '{}'", src_file, dst_file);
-            std::fs::copy(src_file, dst_file)?;
-        } else {
-            log::warn!(
-                "Skipping uwp shaderdb copy as \"{}\" does not exist",
-                uwp_project_root
-            );
-        }
-
-        Ok(())
-    }
-
-    fn uwp_bundle_to_appx(&self, project: &AlephProject, target: &Target) -> anyhow::Result<()> {
-        let uwp_project_root = project.target_project_root(target)?;
-
-        if uwp_project_root.exists() {
-            // TODO: we need to locate makeappx so we can run it
-            let output_msix = Self::get_msix_path_for_project(project, uwp_project_root)?;
-
-            let mut command = Command::new("makeappx");
-            command.arg("/o"); // Overwrite existing package
-            command.arg("/d"); // Input bundle directory
-            command.arg(&uwp_project_root);
-            command.arg("/p"); // Output .msix bundle
-            command.arg(&output_msix);
-
-            log::info!(
-                "Bundling {} into MSIX package {}",
-                &uwp_project_root,
-                &output_msix
-            );
-
-            let status = command.status()?;
-
-            if !status.success() {
-                log::error!("makeappx invocation failed! Terminating build.");
-                return Err(anyhow!("makeappx invocation failed!"));
-            }
-        } else {
-            log::warn!(
-                "Skipping appx packaging as \"{}\" does not exist",
-                uwp_project_root
-            );
-        }
-
-        Ok(())
-    }
-
-    fn uwp_sign_appx(&self, project: &AlephProject, target: &Target) -> anyhow::Result<()> {
-        let uwp_project_root = project.target_project_root(target)?;
-
-        if uwp_project_root.exists() {
-            // TODO: we need to locate signtool so we can run it
-            let project_schema = project.get_project_schema()?;
-            let cert: &str = project_schema
-                .uwp
-                .as_ref()
-                .ok_or_else(|| anyhow!("Missing UWP info in aleph-project.toml"))?
-                .certificate
-                .as_ref();
-            let cert = resolve_absolute_or_root_relative_path(project.project_root(), cert);
-
-            let target_msix = Self::get_msix_path_for_project(project, uwp_project_root)?;
-
-            let mut command = Command::new("signtool");
-            command.arg("sign");
-            command.arg("/a");
-            command.arg("/fd");
-            command.arg("SHA256");
-            // command.arg("/p"); // Password
-            // command.arg("");
-            command.arg("/f"); // Certificate File
-            command.arg(&cert);
-            command.arg(&target_msix);
-
-            log::info!(
-                "Signing MSIX package {} with certificate {}",
-                &cert,
-                &target_msix
-            );
-
-            let status = command.status()?;
-
-            if !status.success() {
-                log::error!("signtool invocation failed! Terminating build.");
-                return Err(anyhow!("signtool invocation failed!"));
-            }
-        } else {
-            log::warn!(
-                "Skipping appx codesign as \"{}\" does not exist",
-                uwp_project_root
-            );
-        }
-
-        Ok(())
-    }
-
-    fn get_msix_path_for_project(
-        project: &AlephProject,
-        uwp_project_root: &Utf8Path,
-    ) -> anyhow::Result<Utf8PathBuf> {
-        let msix: &str = project.get_project_schema()?.game.crate_name.as_ref();
-        let msix = format!("{msix}.msix");
-        let msix = uwp_project_root.parent().unwrap().join(msix);
-        Ok(msix)
     }
 
     fn copy_artifacts_from_target_to_project(

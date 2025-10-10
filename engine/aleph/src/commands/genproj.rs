@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_target::Architecture;
 use anyhow::anyhow;
 use camino::Utf8Path;
 use clap::{ArgMatches, Command};
@@ -35,12 +34,9 @@ use tera::{Context, Tera};
 
 use crate::commands::{ISubcommand, arch_arg, platform_arg};
 use crate::project::AlephProject;
-use crate::project_schema::{
-    AndroidBrandingSchema, AndroidSchema, GameSchema, UwpBrandingSchema, UwpSchema,
-};
+use crate::project_schema::{AndroidBrandingSchema, AndroidSchema, GameSchema};
 use crate::templates::{
     ANDROID_ACTIVITY_SOURCE_TEMPLATE, LOCAL_PROPERTIES_TEMPLATE, android_project_bundle,
-    uwp_project_bundle,
 };
 use crate::utils::{
     BuildPlatform, Target, architecture_from_arg, extract_zip,
@@ -84,7 +80,6 @@ impl ISubcommand for GenProj {
         let root = project.ensure_target_project_root(&target)?;
 
         match target.platform {
-            BuildPlatform::Uwp => self.uwp(project, root, &target),
             BuildPlatform::Android => self.android(project, root, &target),
             _ => Err(anyhow!("Unsupported genproj platform '{platform_arg}'")),
         }
@@ -92,50 +87,6 @@ impl ISubcommand for GenProj {
 }
 
 impl GenProj {
-    fn uwp(&self, project: &AlephProject, root: &Utf8Path, target: &Target) -> anyhow::Result<()> {
-        let project_schema = project.get_project_schema()?;
-
-        let context = build_uwp_template_context(project, target)?;
-
-        // Extract the .zip file onto our target directory
-        let mut bundle = uwp_project_bundle();
-        extract_zip(&mut bundle, Some(root))?;
-
-        let manifest_path = root.join("AppxManifest.xml");
-        let template_files = [manifest_path.as_path()];
-        apply_template_context_to_files(&context, &template_files)?;
-
-        let uwp = project_schema.uwp.as_ref().unwrap();
-        if let Some(branding) = uwp.branding.as_ref() {
-            let UwpBrandingSchema {
-                lock_screen_logo,
-                splash_screen,
-                square_44_x_44_logo,
-                square_150_x_150_logo,
-                store_logo,
-                wide_310_x_150_logo,
-            } = branding;
-
-            let project_root = project.project_root();
-
-            // Ensure the 'Assets' directory exists within the UWP project folder
-            let asset_dir = root.join("Assets");
-            std::fs::create_dir_all(&asset_dir)?;
-
-            let copy_branding_files = make_branding_file_copier(project_root, &asset_dir);
-            copy_branding_files(&[
-                (lock_screen_logo.as_ref(), "LockScreenLogo.png"),
-                (splash_screen.as_ref(), "SplashScreen.png"),
-                (square_44_x_44_logo.as_ref(), "Square44x44Logo.png"),
-                (square_150_x_150_logo.as_ref(), "Square150x150Logo.png"),
-                (store_logo.as_ref(), "StoreLogo.png"),
-                (wide_310_x_150_logo.as_ref(), "Wide310x150Logo.png"),
-            ])?;
-        }
-
-        Ok(())
-    }
-
     fn android(
         &self,
         project: &AlephProject,
@@ -268,62 +219,6 @@ fn make_branding_file_copier<'a>(
         }
         Ok(())
     }
-}
-
-fn build_uwp_template_context(project: &AlephProject, target: &Target) -> anyhow::Result<Context> {
-    let project_schema = project.get_project_schema()?;
-
-    // Grab needed info from the project schema
-    let UwpSchema {
-        identity_name,
-        identity_publisher,
-        ..
-    } = project_schema.uwp.as_ref().ok_or(anyhow!(
-        "Trying to generate a uwp project with missing uwp table in project.toml"
-    ))?;
-    let GameSchema {
-        name,
-        crate_name,
-        author,
-        ..
-    } = &project_schema.game;
-
-    // Fetch the cargo metadata from the current cargo workspace
-    let (package, _) = project.get_game_crate_and_target()?;
-
-    // Produce the uwp version string, leaving the last item as 0. We could in the future make
-    // the last value a build number
-    let uwp_version = format!(
-        "{}.{}.{}.{}",
-        package.version.major, package.version.minor, package.version.patch, 0
-    );
-
-    // UWP has its own naming for architectures (because of course it does).
-    let uwp_arch = match target.arch {
-        Architecture::X8664 => "x64",
-        Architecture::AARCH64 => "arm64",
-        Architecture::Unknown => panic!("Unknown architecture"),
-    };
-
-    // Grab the description from the cargo package, or use the default of "No Description" if
-    // the crate lacks a description
-    let uwp_description = package.description.as_deref().unwrap_or("No Description");
-
-    // Prepare our template context with information from the schema
-    let mut context = Context::new();
-    let mut set_var = context_var_logger(&mut context);
-    log::info!("Project Template Variable Settings");
-    set_var("UWP_GAME_IDENTITY_NAME", identity_name);
-    set_var("UWP_GAME_IDENTITY_PUBLISHER", identity_publisher);
-    set_var("UWP_GAME_VERSION", &uwp_version);
-    set_var("UWP_GAME_ARCH", uwp_arch);
-    set_var("UWP_GAME_EXECUTABLE", &format!("{crate_name}.exe"));
-    set_var("UWP_GAME_DISPLAY_NAME", name);
-    set_var("UWP_GAME_PUBLISHER_DISPLAY_NAME", author);
-    set_var("UWP_GAME_DESCRIPTION", uwp_description);
-
-    drop(set_var);
-    Ok(context)
 }
 
 fn build_android_template_context(project: &AlephProject) -> anyhow::Result<Context> {

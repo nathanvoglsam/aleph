@@ -170,7 +170,7 @@ impl ISubcommand for SubcommandSet {
 fn platform_arg() -> Arg {
     Arg::new("platform")
         .help("The platform to build shaders for.")
-        .long_help("The platform to build shaders for. Supported values: native, uwp, android, ios, windows, macos, linux.")
+        .long_help("The platform to build shaders for. Supported values: native, android, ios, windows, macos, linux.")
         .default_value("native")
         .required(false)
 }

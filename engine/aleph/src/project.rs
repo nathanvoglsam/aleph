@@ -77,12 +77,6 @@ pub struct AlephProject<'a> {
     /// Path to the android project in the '.aleph/proj' directory
     android_proj_path: Utf8PathBuf,
 
-    /// Path to the uwp x86_64 project in the '.aleph/proj' directory
-    uwp_x86_64_proj_path: Utf8PathBuf,
-
-    /// Path to the uwp aarch64 project in the '.aleph/proj' directory
-    uwp_aarch64_proj_path: Utf8PathBuf,
-
     // /// The path to the '.aleph/sdk/{platform}/{arch}' folder appropriate for the host system,
     // sdk_path: Utf8PathBuf,
     /// The path to the '.aleph/sdk/**/ndk' folder for this project
@@ -143,10 +137,6 @@ impl<'a> AlephProject<'a> {
 
         let target = Target::new(Architecture::Unknown, BuildPlatform::Android);
         let android_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
-        let target = Target::new(Architecture::X8664, BuildPlatform::Uwp);
-        let uwp_x86_64_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
-        let target = Target::new(Architecture::AARCH64, BuildPlatform::Uwp);
-        let uwp_aarch64_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
 
         let shader_build_path = dot_aleph_path.join("shaders");
         // let assets_build_path = dot_aleph_path.join("data").join("assets");
@@ -209,8 +199,6 @@ impl<'a> AlephProject<'a> {
             // assets_build_path,
             configs_build_path,
             android_proj_path,
-            uwp_x86_64_proj_path,
-            uwp_aarch64_proj_path,
             // sdk_path,
             ndk_path,
             dxc_path,
@@ -281,20 +269,10 @@ impl<'a> AlephProject<'a> {
     /// This will only return a result for platforms that have a bundling project. Those platforms
     /// are:
     /// - Android (all architectures in one project)
-    /// - UWP x86_64
-    /// - UWP aarch64
     ///
     /// All other targets will return Err()
     pub fn target_project_root(&self, target: &Target) -> anyhow::Result<&Utf8Path> {
         match target.platform {
-            BuildPlatform::Uwp => {
-                assert_ne!(target.arch, Architecture::Unknown);
-                match target.arch {
-                    Architecture::X8664 => Ok(&self.uwp_x86_64_proj_path),
-                    Architecture::AARCH64 => Ok(&self.uwp_aarch64_proj_path),
-                    Architecture::Unknown => unreachable!(),
-                }
-            }
             BuildPlatform::Android => Ok(&self.android_proj_path),
             _ => Err(anyhow!(
                 "Platform \"{}\" does not have a target specific sub-project.",
@@ -361,12 +339,6 @@ impl<'a> AlephProject<'a> {
         assert_ne!(target.arch, Architecture::Unknown);
 
         match target.platform {
-            BuildPlatform::Uwp => {
-                let mut target_dir = self.cargo_target_dir().to_path_buf();
-                target_dir.push(format!("{}-uwp-windows-msvc", target.arch.name()));
-                target_dir.push(profile.name());
-                Ok(target_dir)
-            }
             BuildPlatform::Android => {
                 let mut target_dir = self.cargo_target_dir().to_path_buf();
                 target_dir.push(format!("{}-linux-android", target.arch.name()));
@@ -684,14 +656,6 @@ impl<'a> AlephProject<'a> {
         target: &Target,
     ) -> anyhow::Result<Utf8PathBuf> {
         match target.platform {
-            BuildPlatform::Uwp => {
-                assert_ne!(target.arch, Architecture::Unknown);
-                let mut root = root.to_path_buf();
-                root.push("proj");
-                root.push("uwp");
-                root.push(target.arch.name());
-                Ok(root)
-            }
             BuildPlatform::Android => {
                 let mut root = root.to_path_buf();
                 root.push("proj");
@@ -717,8 +681,6 @@ pub enum SearchMode {
 
 fn sdk_platform_name() -> &'static str {
     match target_platform() {
-        Platform::UniversalWindowsGNU => panic!("How???"),
-        Platform::UniversalWindowsMSVC => panic!("How???"),
         Platform::WindowsGNU => "windows",
         Platform::WindowsMSVC => "windows",
         Platform::Linux => "linux",

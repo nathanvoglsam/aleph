@@ -524,8 +524,6 @@ fn write_imports(output: &mut impl std::fmt::Write, indent: &str) -> std::fmt::R
 
 fn dxcompiler_library() -> &'static Utf8Path {
     match target_platform() {
-        Platform::UniversalWindowsGNU => panic!("No, you've made a mistake"),
-        Platform::UniversalWindowsMSVC => panic!("No, you've made a mistake"),
         Platform::WindowsGNU => Utf8Path::new("dxcompiler.dll"),
         Platform::WindowsMSVC => Utf8Path::new("dxcompiler.dll"),
         Platform::Linux => Utf8Path::new("libdxcompiler.so"),
@@ -538,8 +536,6 @@ fn dxcompiler_library() -> &'static Utf8Path {
 
 fn slang_executable() -> &'static Utf8Path {
     match target_platform() {
-        Platform::UniversalWindowsGNU => panic!("No, you've made a mistake"),
-        Platform::UniversalWindowsMSVC => panic!("No, you've made a mistake"),
         Platform::WindowsGNU => Utf8Path::new("slangc.exe"),
         Platform::WindowsMSVC => Utf8Path::new("slangc.exe"),
         Platform::Linux => Utf8Path::new("slangc"),

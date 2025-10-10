@@ -37,7 +37,6 @@ use once_cell::sync::Lazy;
 #[allow(clippy::identity_op)]
 pub static SYSTEM_MEMORY: Lazy<Option<NonZeroU64>> = Lazy::new(get_memory);
 
-#[cfg(target_vendor = "pc")]
 fn get_memory() -> Option<NonZeroU64> {
     use aleph_windows::Win32::System::SystemInformation::GetPhysicallyInstalledSystemMemory;
 
@@ -46,23 +45,5 @@ fn get_memory() -> Option<NonZeroU64> {
         GetPhysicallyInstalledSystemMemory(&mut memory)
             .ok()
             .and_then(|_| NonZeroU64::new(memory * 1024))
-    }
-}
-
-#[cfg(target_vendor = "uwp")]
-fn get_memory() -> Option<NonZeroU64> {
-    use aleph_windows::Win32::System::SystemInformation::GetPhysicallyInstalledSystemMemory;
-
-    unsafe {
-        let mut memory = 0;
-        if GetPhysicallyInstalledSystemMemory(&mut memory) != false {
-            NonZeroU64::new(memory * 1024)
-        } else {
-            use aleph_windows::System::MemoryManager;
-            MemoryManager::AppMemoryUsageLimit()
-                .ok()
-                .map(NonZeroU64::new)
-                .flatten()
-        }
     }
 }

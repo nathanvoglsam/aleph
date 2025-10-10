@@ -69,24 +69,14 @@ fn main() {
             Architecture::Unknown => panic!("Unknown architecture"),
         };
         let win32_dll = format!("./WinPixEventRuntime/bin/{arch}/WinPixEventRuntime.dll");
-        let winrt_dll = format!("./WinPixEventRuntime/bin/{arch}/WinPixEventRuntime_UAP.dll");
         let link_path = format!("./WinPixEventRuntime/bin/{arch}");
         let link_path = Path::new(&link_path).canonicalize().unwrap();
         let link_path_full = link_path.display();
 
-        // Which DLL we link to depends on if we're targeting UWP or not
-        if target_platform().is_uwp() {
-            let src = Path::new(&winrt_dll);
-            aleph_compile::copy_file_to_artifacts_dir(src).unwrap();
-            aleph_compile::copy_file_to_target_dir(src).unwrap();
-            println!("cargo:rustc-link-search=dylib={link_path_full}");
-            println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime_UAP");
-        } else {
-            let src = Path::new(&win32_dll);
-            aleph_compile::copy_file_to_artifacts_dir(src).unwrap();
-            aleph_compile::copy_file_to_target_dir(src).unwrap();
-            println!("cargo:rustc-link-search=dylib={link_path_full}");
-            println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime");
-        }
+        let src = Path::new(&win32_dll);
+        aleph_compile::copy_file_to_artifacts_dir(src).unwrap();
+        aleph_compile::copy_file_to_target_dir(src).unwrap();
+        println!("cargo:rustc-link-search=dylib={link_path_full}");
+        println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime");
     }
 }

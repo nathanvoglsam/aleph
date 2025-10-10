@@ -32,16 +32,9 @@ use std::io::Cursor;
 use zip::ZipArchive;
 
 pub const ANDROID_PROJECT: &[u8] = include_bytes!("../templates/android.zip");
-pub const UWP_PROJECT: &[u8] = include_bytes!("../templates/uwp.zip");
 
 pub fn android_project_bundle() -> ZipArchive<Cursor<&'static [u8]>> {
     let reader = Cursor::new(ANDROID_PROJECT);
-    ZipArchive::new(reader)
-        .expect("Failed to open internal zip archive for bundled project template")
-}
-
-pub fn uwp_project_bundle() -> ZipArchive<Cursor<&'static [u8]>> {
-    let reader = Cursor::new(UWP_PROJECT);
     ZipArchive::new(reader)
         .expect("Failed to open internal zip archive for bundled project template")
 }
