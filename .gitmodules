@@ -1,9 +1,3 @@
-[submodule "engine/aleph-vulkan-alloc/Vulkan-Headers"]
-	path = engine/aleph-vulkan-alloc/Vulkan-Headers
-	url = https://github.com/KhronosGroup/Vulkan-Headers.git
-[submodule "engine/aleph-vulkan-alloc/VulkanMemoryAllocator"]
-	path = engine/aleph-vulkan-alloc/VulkanMemoryAllocator
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
 [submodule "engine/aleph-pix-raw/WinPixEventRuntime"]
 	path = engine/aleph-pix-raw/WinPixEventRuntime
 	url = https://gitlab.com/MindSpunk/WinPixEventRuntime.git

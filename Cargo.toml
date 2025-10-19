@@ -85,7 +85,6 @@ members = [
     "engine/aleph-typed-table",
     "engine/aleph-vk-format",
     "engine/aleph-vk2dfd",
-    "engine/aleph-vulkan-alloc",
     "engine/aleph-windows",
     "game/aleph-test",
 ]
@@ -234,7 +233,6 @@ aleph-target-build = { path = "./engine/aleph-target-build", version = "2" }
 aleph-typed-table = { path = "./engine/aleph-typed-table", version = "0.1" }
 aleph-vk-format = { path = "./engine/aleph-vk-format", version = "1" }
 aleph-vk2dfd = { path = "./engine/aleph-vk2dfd", version = "0.1" }
-aleph-vulkan-alloc = { path = "./engine/aleph-vulkan-alloc", version = "0.1" }
 aleph-windows = { path = "./engine/aleph-windows", version = "0.1" }
 
 # Aleph Plugins
