@@ -34,12 +34,12 @@ use std::mem::ManuallyDrop;
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::arc::new_rhi_object;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::{Rhi, RhiSystem, try_clone_value_into_slot};
 use ash::vk;
-use vulkan_alloc::vma;
 
 use crate::context::Context;
 use crate::device::{CommandListPool, Device};
@@ -229,17 +229,6 @@ impl Adapter {
             None
         };
 
-        let allocator = vma::Allocator::builder()
-            .vulkan_api_version(vk::API_VERSION_1_1)
-            .allocator_callbacks(&GLOBAL_CALLBACKS)
-            .build(
-                &self.context.entry_loader,
-                &self.context.instance,
-                &device,
-                self.physical_device,
-            )
-            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-
         Ok(new_rhi_object(move |v| {
             let found_families = found_families;
             let mut device = Device {
@@ -250,7 +239,7 @@ impl Adapter {
                 push_descriptor,
                 swapchain,
                 debug_loader,
-                allocator: ManuallyDrop::new(allocator),
+                allocator: None,
                 general_queue: None,
                 compute_queue: None,
                 transfer_queue: None,
@@ -258,6 +247,9 @@ impl Adapter {
                 object_counter: ObjectCounter::new(),
                 swap_semaphore_pool: SemaphorePool::new(),
             };
+
+            let allocator = ManuallyDrop::new(GpuAllocator::new(&device));
+            device.allocator = Some(allocator);
 
             unsafe { found_families.build_queue_objects(&mut device) };
 

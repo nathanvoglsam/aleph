@@ -31,13 +31,13 @@ use std::num::NonZeroU64;
 
 use aleph_alloc::BHashMap;
 use aleph_any::AnyArc;
+use aleph_gpu_allocator::GpuAllocation;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use ash::vk;
 use parking_lot::Mutex;
-use vulkan_alloc::vma;
 
 use crate::device::Device;
 use crate::internal::allocation_callbacks::GLOBAL;
@@ -49,7 +49,7 @@ pub struct Texture {
     pub(crate) image: vk::Image,
     // pub(crate) creation_flags: vk::ImageCreateFlags,
     // pub(crate) created_usage: vk::ImageUsageFlags,
-    pub(crate) allocation: Option<vma::Allocation>,
+    pub(crate) allocation: Option<GpuAllocation>,
     pub(crate) is_owned: bool,
     pub(crate) views: Mutex<BHashMap<ImageViewDesc, vk::ImageView, RhiSystem>>,
     pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, vk::ImageView, RhiSystem>>,
@@ -174,9 +174,14 @@ impl Drop for Texture {
 
             // Some images we don't own, like swap chain images, so we shouldn't destroy them
             if self.is_owned
-                && let Some(allocation) = self.allocation
+                && let Some(allocation) = self.allocation.take()
             {
-                self._device.allocator.destroy_image(self.image, allocation);
+                self._device.device.destroy_image(self.image, GLOBAL);
+                self._device
+                    .allocator
+                    .as_ref()
+                    .unwrap_unchecked()
+                    .free_allocation(self._device.as_ref(), allocation);
             }
         }
     }

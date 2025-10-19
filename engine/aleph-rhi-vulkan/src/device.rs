@@ -34,6 +34,7 @@ use aleph_alloc::BVec;
 use aleph_alloc::alloc::Allocator;
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use aleph_gpu_allocator::{AllocationDesc, GpuAllocator, MemoryLocation};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::arc::new_rhi_object;
@@ -47,17 +48,17 @@ use ash::vk;
 use byteorder::{ByteOrder, NativeEndian};
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
-use vulkan_alloc::vma;
 
 use crate::adapter::Adapter;
 use crate::binding_signature::BindingSignature;
-use crate::buffer::Buffer;
+use crate::buffer::{Buffer, MapState};
 use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::descriptor_arena::DescriptorArena;
 use crate::descriptor_pool::DescriptorPool;
 use crate::fence::Fence;
 use crate::internal::allocation_callbacks::{GLOBAL, callbacks_from_rust_allocator};
+use crate::internal::allocator_bridge::VulkanAllocatorBridge;
 use crate::internal::conv::*;
 use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::set_name::set_name;
@@ -78,7 +79,7 @@ pub struct Device {
     pub(crate) push_descriptor: ash::khr::push_descriptor::Device,
     pub(crate) swapchain: Option<ash::khr::swapchain::Device>,
     pub(crate) debug_loader: Option<ash::ext::debug_utils::Device>,
-    pub(crate) allocator: ManuallyDrop<vma::Allocator>,
+    pub(crate) allocator: Option<ManuallyDrop<GpuAllocator<VulkanAllocatorBridge>>>,
     pub(crate) general_queue: Option<AnyArc<Queue>>,
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
@@ -626,27 +627,34 @@ impl IDevice for Device {
             .usage(usage)
             .sharing_mode(vk::SharingMode::EXCLUSIVE);
 
-        let usage = match desc.cpu_access {
-            CpuAccessMode::None => vma::MemoryUsage::GpuOnly,
-            CpuAccessMode::Read => vma::MemoryUsage::GpuToCpu,
-            CpuAccessMode::Write => vma::MemoryUsage::CpuToGpu,
+        let memory_location = match desc.cpu_access {
+            CpuAccessMode::None => MemoryLocation::GpuLocal,
+            CpuAccessMode::Read => MemoryLocation::GpuToCpu,
+            CpuAccessMode::Write => MemoryLocation::CpuToGpu,
         };
-        let alloc_info = vma::AllocationCreateInfo::builder()
-            .flags(vma::AllocationCreateFlags::empty())
-            .usage(usage);
+        let alloc_info = AllocationDesc {
+            location: memory_location,
+            strategy: Default::default(),
+            desc: create_info,
+        };
 
-        let (buffer, allocation, _) = unsafe {
+        let (allocation, metadata, buffer) = unsafe {
             self.allocator
-                .create_buffer(&create_info, &alloc_info)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                .as_ref()
+                .unwrap_unchecked()
+                .allocate_buffer(self, &alloc_info)
+                .ok_or(BufferCreateError::OutOfMemory)?
         };
 
         let out = Buffer {
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_buffer(),
             buffer,
-            allocation,
-            map_state: Mutex::new(Default::default()),
+            allocation: Some(allocation),
+            map_state: Mutex::new(MapState {
+                count: 0,
+                ptr: metadata.mapped_address,
+            }),
             desc: OwnedBufferDesc::new(desc.clone()),
         };
         let out = Rhi::with(|| Object::new_arc_opaque(out));
@@ -740,14 +748,18 @@ impl IDevice for Device {
                 .initial_layout(vk::ImageLayout::UNDEFINED);
             let create_info = create_info.push_next(&mut format_list);
 
-            let alloc_info = vma::AllocationCreateInfo::builder()
-                .flags(vma::AllocationCreateFlags::empty())
-                .usage(vma::MemoryUsage::GpuOnly);
+            let alloc_info = AllocationDesc {
+                location: MemoryLocation::GpuLocal,
+                strategy: Default::default(),
+                desc: create_info,
+            };
 
-            let (image, allocation, _) = unsafe {
+            let (allocation, _, image) = unsafe {
                 self.allocator
-                    .create_image(&create_info, &alloc_info)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                    .as_ref()
+                    .unwrap_unchecked()
+                    .allocate_texture(self, &alloc_info)
+                    .ok_or(TextureCreateError::OutOfMemory)?
             };
 
             let out = Texture {
@@ -1431,7 +1443,9 @@ impl Drop for Device {
 
             self.command_list_pool.collect(self);
 
-            ManuallyDrop::drop(&mut self.allocator);
+            let mut allocator = self.allocator.take().unwrap();
+            allocator.destroy(self);
+            ManuallyDrop::drop(&mut allocator);
 
             self.device.destroy_device(GLOBAL);
             ManuallyDrop::drop(&mut self.device);

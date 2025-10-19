@@ -28,6 +28,7 @@
 //
 
 pub mod allocation_callbacks;
+pub mod allocator_bridge;
 pub mod conv;
 pub mod device_info;
 pub mod features;

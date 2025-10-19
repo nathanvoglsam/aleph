@@ -391,6 +391,9 @@ pub enum TextureCreateError {
     #[error("Requested optimal clear value '{0}' is invalid")]
     InvalidOptimalClearValue(OptimalClearValue),
 
+    #[error("There was not enough memory available to serve the requested texture.")]
+    OutOfMemory,
+
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }

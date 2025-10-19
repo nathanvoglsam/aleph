@@ -29,14 +29,14 @@
 
 
 [package]
-name = "aleph-rhi-vulkan"
+name = "aleph-gpu-allocator"
 version = "0.1.0"
 authors.workspace = true
-description = "The aleph-engine Vulkan RHI backend"
+description = "A GPU memory allocator for Vulkan, D3D12, and Metal"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-rhi-vulkan/"
-keywords = ["engine", "graphics", "vulkan", "game"]
+documentation = "https://docs.rs/aleph-gpu-allocator/"
+keywords = ["engine", "graphics", "game"]
 categories = ["game-engines"]
 edition.workspace = true
 
@@ -45,26 +45,4 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-alloc = { workspace = true }
-aleph-gpu-allocator = { workspace = true }
-aleph-object-system = { workspace = true }
-aleph-rhi-impl-utils = { workspace = true }
-aleph-any = { workspace = true }
-aleph-rhi-api = { workspace = true }
-aleph-profile = { workspace = true }
-aleph-nstr = { workspace = true }
-
-log = { workspace = true }
-bitflags = { workspace = true }
-crossbeam = { workspace = true }
-ash = { workspace = true }
 parking_lot = { workspace = true }
-raw-window-handle = { workspace = true }
-libloading = { workspace = true }
-console = { workspace = true }
-byteorder = { workspace = true }
-
-[target.'cfg(windows)'.dependencies]
-aleph-windows = { workspace = true }
-
-[build-dependencies]
-aleph-target-build = { workspace = true }

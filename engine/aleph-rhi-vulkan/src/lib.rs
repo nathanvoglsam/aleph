@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_vulkan_alloc as vulkan_alloc;
-
 mod adapter;
 mod binding_signature;
 mod buffer;
