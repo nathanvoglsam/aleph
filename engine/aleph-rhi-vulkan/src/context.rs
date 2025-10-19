@@ -50,7 +50,7 @@ use crate::surface::Surface;
 
 pub struct Context {
     pub _this: AnyWeak<Self>,
-    pub config: VulkanConfig,
+    pub _config: VulkanConfig,
     pub library: ManuallyDrop<LibraryType>,
     pub entry_loader: ManuallyDrop<ash::Entry>,
     pub instance: ManuallyDrop<ash::Instance>,
@@ -91,8 +91,8 @@ impl Context {
                 continue;
             }
 
-            if vk::api_version_minor(device_info.properties_10.api_version) < 1 {
-                log::debug!("Device does not support Vulkan 1.1");
+            if vk::api_version_minor(device_info.properties_10.api_version) < 3 {
+                log::debug!("Device does not support Vulkan 1.3");
             }
 
             // Check if the physical device supports the requested surface
@@ -145,19 +145,13 @@ impl Context {
             log::info!("Vendor         : {vendor}");
             log::info!("Name           : {name}");
 
-            // Log additional driver information if available
-            let v = device_info.properties_10.api_version;
-            if vk::api_version_major(v) >= 1 && vk::api_version_minor(v) >= 2 {
-                let driver_name =
-                    &*str_from_ptr(device_info.driver_properties.driver_name.as_ptr());
-                let driver_info =
-                    &*str_from_ptr(device_info.driver_properties.driver_info.as_ptr());
-                let driver_id = device_info.driver_properties.driver_id;
-
-                log::info!("Driver         : {driver_name}");
-                log::info!("Driver ID      : {driver_id:?}");
-                log::info!("Driver Info    : {driver_info}");
-            }
+            // Log additional driver information
+            let driver_name = &*str_from_ptr(device_info.properties_12.driver_name.as_ptr());
+            let driver_info = &*str_from_ptr(device_info.properties_12.driver_info.as_ptr());
+            let driver_id = device_info.properties_12.driver_id;
+            log::info!("Driver         : {driver_name}");
+            log::info!("Driver ID      : {driver_id:?}");
+            log::info!("Driver Info    : {driver_info}");
 
             // The VERSION_x functions are deprecated but we're supposed to use them here as this
             // is a driver version not an API version. We don't have any 'variant' shenanigans to

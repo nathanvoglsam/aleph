@@ -43,7 +43,7 @@ use vulkan_alloc::vma;
 
 use crate::context::Context;
 use crate::device::{CommandListPool, Device};
-use crate::internal::allocation_callbacks::{GLOBAL, GLOBAL_CALLBACKS};
+use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::device_info::DeviceInfo;
 use crate::internal::semaphore_pool::SemaphorePool;
 use crate::queue::{Queue, QueueInfo};
@@ -166,17 +166,8 @@ impl Adapter {
             }
         };
 
-        enable_if_supported(ash::khr::vulkan_memory_model::NAME);
-        enable_if_supported(ash::ext::shader_viewport_index_layer::NAME);
-        enable_if_supported(ash::khr::_8bit_storage::NAME);
-        enable_if_supported(ash::khr::shader_float16_int8::NAME);
-        enable_if_supported(ash::khr::shader_atomic_int64::NAME);
         enable_if_supported(ash::khr::swapchain::NAME);
         enable_if_supported(ash::khr::portability_subset::NAME);
-
-        if !self.context.config.deny_sync_2 {
-            enable_if_supported(ash::khr::synchronization2::NAME);
-        }
 
         // Find our general, async compute and transfer queue families
         let queue_families = unsafe {
@@ -189,67 +180,25 @@ impl Adapter {
 
         let DeviceInfo {
             features_10,
-            mut t_16bit_storage_features,
-            mut multiview_features,
-            mut variable_pointers_features,
-            mut protected_memory_features,
-            mut sampler_ycbcr_conversion_features,
-            mut shader_draw_parameters_features,
-            mut descriptor_indexing_features,
-            mut imageless_framebuffer_features,
-            mut scalar_block_layout_features,
-            mut timeline_semaphore_features,
-            mut buffer_device_address_features,
-            mut uniform_buffer_standard_layout_features,
-            mut host_query_reset_features,
-            mut dynamic_rendering_features,
+            mut features_11,
+            mut features_12,
+            mut features_13,
             ..
         } = DeviceInfo::minimum();
         let mut device_create_info = vk::DeviceCreateInfo::default()
-            .push_next(&mut t_16bit_storage_features)
-            .push_next(&mut multiview_features)
-            .push_next(&mut variable_pointers_features)
-            .push_next(&mut protected_memory_features)
-            .push_next(&mut sampler_ycbcr_conversion_features)
-            .push_next(&mut shader_draw_parameters_features)
-            .push_next(&mut descriptor_indexing_features)
-            .push_next(&mut imageless_framebuffer_features)
-            .push_next(&mut scalar_block_layout_features)
-            .push_next(&mut timeline_semaphore_features)
-            .push_next(&mut buffer_device_address_features)
-            .push_next(&mut uniform_buffer_standard_layout_features)
-            .push_next(&mut host_query_reset_features)
-            .push_next(&mut dynamic_rendering_features)
+            .push_next(&mut features_11)
+            .push_next(&mut features_12)
+            .push_next(&mut features_13)
             .enabled_features(&features_10)
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
 
         let DeviceInfo {
-            mut vulkan_memory_model_features,
-            mut t_8bit_storage_features,
-            mut shader_float16int8features,
-            mut shader_atomic_int_64_features,
             mut portability_features,
-            mut synchronization_2_features,
             ..
         } = self.device_info.clone();
-        if is_supported(ash::khr::vulkan_memory_model::NAME) {
-            device_create_info = device_create_info.push_next(&mut vulkan_memory_model_features)
-        }
-        if is_supported(ash::khr::_8bit_storage::NAME) {
-            device_create_info = device_create_info.push_next(&mut t_8bit_storage_features)
-        }
-        if is_supported(ash::khr::shader_float16_int8::NAME) {
-            device_create_info = device_create_info.push_next(&mut shader_float16int8features)
-        }
-        if is_supported(ash::khr::shader_atomic_int64::NAME) {
-            device_create_info = device_create_info.push_next(&mut shader_atomic_int_64_features)
-        }
         if is_supported(ash::khr::portability_subset::NAME) {
             device_create_info = device_create_info.push_next(&mut portability_features)
-        }
-        if is_supported(ash::khr::synchronization2::NAME) {
-            device_create_info = device_create_info.push_next(&mut synchronization_2_features)
         }
 
         let device = unsafe {
@@ -261,12 +210,6 @@ impl Adapter {
 
         let push_descriptor =
             ash::khr::push_descriptor::Device::new(&self.context.instance, &device);
-        let timeline_semaphore =
-            ash::khr::timeline_semaphore::Device::new(&self.context.instance, &device);
-        let create_renderpass_2 =
-            ash::khr::create_renderpass2::Device::new(&self.context.instance, &device);
-        let dynamic_rendering =
-            ash::khr::dynamic_rendering::Device::new(&self.context.instance, &device);
 
         let swapchain = if is_supported(ash::khr::swapchain::NAME) {
             Some(ash::khr::swapchain::Device::new(
@@ -277,17 +220,6 @@ impl Adapter {
             None
         };
 
-        let deny_sync_2 = self.context.config.deny_sync_2;
-        let have_sync_2 = synchronization_2_features.synchronization2 != 0;
-        let load_sync_2 = have_sync_2 && !deny_sync_2;
-        let synchronization_2 = if load_sync_2 {
-            Some(ash::khr::synchronization2::Device::new(
-                &self.context.instance,
-                &device,
-            ))
-        } else {
-            None
-        };
         let debug_loader = if self.context.debug_loader.is_some() {
             Some(ash::ext::debug_utils::Device::new(
                 &self.context.instance,
@@ -316,11 +248,7 @@ impl Adapter {
                 context: self.context.clone(),
                 device: ManuallyDrop::new(device),
                 push_descriptor,
-                timeline_semaphore,
-                _create_renderpass_2: create_renderpass_2,
-                dynamic_rendering,
                 swapchain,
-                synchronization_2,
                 debug_loader,
                 allocator: ManuallyDrop::new(allocator),
                 general_queue: None,

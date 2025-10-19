@@ -78,19 +78,12 @@ pub struct ContextOptions {
 }
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug, Default, Deserialize)]
-pub struct VulkanConfig {
-    /// Force disable the VK_KHR_synchronization2 path. Intended for testing the fallback path on
-    /// platforms that support sync2.
-    #[serde(rename = "denySync2")]
-    pub deny_sync_2: bool,
-}
+pub struct VulkanConfig {}
 
 #[cfg(any(windows, target_os = "macos", target_os = "ios", target_os = "linux",))]
 impl Into<aleph_rhi_vulkan::VulkanConfig> for VulkanConfig {
     fn into(self) -> aleph_rhi_vulkan::VulkanConfig {
-        aleph_rhi_vulkan::VulkanConfig {
-            deny_sync_2: self.deny_sync_2,
-        }
+        aleph_rhi_vulkan::VulkanConfig {}
     }
 }
 

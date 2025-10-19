@@ -608,81 +608,6 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceIDProperties<'a> {
     }
 }
 
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceSubgroupProperties<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        lmin!(self, v, subgroup_size);
-        feat_mask!(self, v, supported_stages);
-        feat_mask!(self, v, supported_operations);
-        feat!(self, v, quad_operations_in_all_stages);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_lmin!(self, v, subgroup_size);
-        merge_feat_mask!(self, v, supported_stages);
-        merge_feat_mask!(self, v, supported_operations);
-        merge_feat!(self, v, quad_operations_in_all_stages);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDevicePointClippingProperties<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        delegate!(self, v, point_clipping_behavior);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_delegate!(self, v, point_clipping_behavior);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceMultiviewProperties<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        lmin!(self, v, max_multiview_view_count);
-        lmin!(self, v, max_multiview_instance_index);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_lmin!(self, v, max_multiview_view_count);
-        merge_lmin!(self, v, max_multiview_instance_index);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceProtectedMemoryProperties<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, protected_no_fault);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, protected_no_fault);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceMaintenance3Properties<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        lmin!(self, v, max_per_set_descriptors);
-        lmin!(self, v, max_memory_allocation_size);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_lmin!(self, v, max_per_set_descriptors);
-        merge_lmin!(self, v, max_memory_allocation_size);
-    }
-}
-
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan12Properties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
@@ -789,6 +714,107 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan12Properties<'a> {
         merge_feat!(self, v, filter_minmax_image_component_mapping);
         merge_lmin!(self, v, max_timeline_semaphore_value_difference);
         merge_feat_mask!(self, v, framebuffer_integer_color_sample_counts);
+    }
+}
+
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan13Properties<'a> {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        lmax!(self, v, min_subgroup_size);
+        lmin!(self, v, max_subgroup_size);
+        lmin!(self, v, max_compute_workgroup_subgroups);
+        feat_mask!(self, v, required_subgroup_size_stages);
+        lmin!(self, v, max_inline_uniform_block_size);
+        lmin!(self, v, max_per_stage_descriptor_inline_uniform_blocks);
+        lmin!(self, v, max_per_stage_descriptor_update_after_bind_inline_uniform_blocks);
+        lmin!(self, v, max_descriptor_set_inline_uniform_blocks);
+        lmin!(self, v, max_descriptor_set_update_after_bind_inline_uniform_blocks);
+        lmin!(self, v, max_inline_uniform_total_size);
+        feat!(self, v, integer_dot_product8_bit_unsigned_accelerated);
+        feat!(self, v, integer_dot_product8_bit_signed_accelerated);
+        feat!(self, v, integer_dot_product8_bit_mixed_signedness_accelerated);
+        feat!(self, v, integer_dot_product4x8_bit_packed_unsigned_accelerated);
+        feat!(self, v, integer_dot_product4x8_bit_packed_signed_accelerated);
+        feat!(self, v, integer_dot_product4x8_bit_packed_mixed_signedness_accelerated);
+        feat!(self, v, integer_dot_product16_bit_unsigned_accelerated);
+        feat!(self, v, integer_dot_product16_bit_signed_accelerated);
+        feat!(self, v, integer_dot_product16_bit_mixed_signedness_accelerated);
+        feat!(self, v, integer_dot_product32_bit_unsigned_accelerated);
+        feat!(self, v, integer_dot_product32_bit_signed_accelerated);
+        feat!(self, v, integer_dot_product32_bit_mixed_signedness_accelerated);
+        feat!(self, v, integer_dot_product64_bit_unsigned_accelerated);
+        feat!(self, v, integer_dot_product64_bit_signed_accelerated);
+        feat!(self, v, integer_dot_product64_bit_mixed_signedness_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating8_bit_unsigned_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating8_bit_signed_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating8_bit_mixed_signedness_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating4x8_bit_packed_unsigned_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating4x8_bit_packed_signed_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating4x8_bit_packed_mixed_signedness_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating16_bit_unsigned_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating16_bit_signed_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating16_bit_mixed_signedness_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating32_bit_unsigned_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating32_bit_signed_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating32_bit_mixed_signedness_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating64_bit_unsigned_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating64_bit_signed_accelerated);
+        feat!(self, v, integer_dot_product_accumulating_saturating64_bit_mixed_signedness_accelerated);
+        lmax!(self, v, storage_texel_buffer_offset_alignment_bytes);
+        feat!(self, v, storage_texel_buffer_offset_single_texel_alignment);
+        lmax!(self, v, uniform_texel_buffer_offset_alignment_bytes);
+        feat!(self, v, uniform_texel_buffer_offset_single_texel_alignment);
+        lmin!(self, v, max_buffer_size);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_lmax!(self, v, min_subgroup_size);
+        merge_lmin!(self, v, max_subgroup_size);
+        merge_lmin!(self, v, max_compute_workgroup_subgroups);
+        merge_feat_mask!(self, v, required_subgroup_size_stages);
+        merge_lmin!(self, v, max_inline_uniform_block_size);
+        merge_lmin!(self, v, max_per_stage_descriptor_inline_uniform_blocks);
+        merge_lmin!(self, v, max_per_stage_descriptor_update_after_bind_inline_uniform_blocks);
+        merge_lmin!(self, v, max_descriptor_set_inline_uniform_blocks);
+        merge_lmin!(self, v, max_descriptor_set_update_after_bind_inline_uniform_blocks);
+        merge_lmin!(self, v, max_inline_uniform_total_size);
+        merge_feat!(self, v, integer_dot_product8_bit_unsigned_accelerated);
+        merge_feat!(self, v, integer_dot_product8_bit_signed_accelerated);
+        merge_feat!(self, v, integer_dot_product8_bit_mixed_signedness_accelerated);
+        merge_feat!(self, v, integer_dot_product4x8_bit_packed_unsigned_accelerated);
+        merge_feat!(self, v, integer_dot_product4x8_bit_packed_signed_accelerated);
+        merge_feat!(self, v, integer_dot_product4x8_bit_packed_mixed_signedness_accelerated);
+        merge_feat!(self, v, integer_dot_product16_bit_unsigned_accelerated);
+        merge_feat!(self, v, integer_dot_product16_bit_signed_accelerated);
+        merge_feat!(self, v, integer_dot_product16_bit_mixed_signedness_accelerated);
+        merge_feat!(self, v, integer_dot_product32_bit_unsigned_accelerated);
+        merge_feat!(self, v, integer_dot_product32_bit_signed_accelerated);
+        merge_feat!(self, v, integer_dot_product32_bit_mixed_signedness_accelerated);
+        merge_feat!(self, v, integer_dot_product64_bit_unsigned_accelerated);
+        merge_feat!(self, v, integer_dot_product64_bit_signed_accelerated);
+        merge_feat!(self, v, integer_dot_product64_bit_mixed_signedness_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating8_bit_unsigned_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating8_bit_signed_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating8_bit_mixed_signedness_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating4x8_bit_packed_unsigned_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating4x8_bit_packed_signed_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating4x8_bit_packed_mixed_signedness_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating16_bit_unsigned_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating16_bit_signed_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating16_bit_mixed_signedness_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating32_bit_unsigned_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating32_bit_signed_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating32_bit_mixed_signedness_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating64_bit_unsigned_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating64_bit_signed_accelerated);
+        merge_feat!(self, v, integer_dot_product_accumulating_saturating64_bit_mixed_signedness_accelerated);
+        merge_lmax!(self, v, storage_texel_buffer_offset_alignment_bytes);
+        merge_feat!(self, v, storage_texel_buffer_offset_single_texel_alignment);
+        merge_lmax!(self, v, uniform_texel_buffer_offset_alignment_bytes);
+        merge_feat!(self, v, uniform_texel_buffer_offset_single_texel_alignment);
+        merge_lmin!(self, v, max_buffer_size);
     }
 }
 
@@ -1143,168 +1169,44 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan12Features<'a> {
     }
 }
 
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceImagelessFramebufferFeatures<'a> {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan13Features<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, imageless_framebuffer);
+        feat!(self, v, robust_image_access);
+        feat!(self, v, inline_uniform_block);
+        feat!(self, v, descriptor_binding_inline_uniform_block_update_after_bind);
+        feat!(self, v, pipeline_creation_cache_control);
+        feat!(self, v, private_data);
+        feat!(self, v, shader_demote_to_helper_invocation);
+        feat!(self, v, shader_terminate_invocation);
+        feat!(self, v, subgroup_size_control);
+        feat!(self, v, compute_full_subgroups);
+        feat!(self, v, synchronization2);
+        feat!(self, v, texture_compression_astc_hdr);
+        feat!(self, v, shader_zero_initialize_workgroup_memory);
+        feat!(self, v, dynamic_rendering);
+        feat!(self, v, shader_integer_dot_product);
+        feat!(self, v, maintenance4);
         Some(())
     }
 
     #[rustfmt::skip]
     fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, imageless_framebuffer);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceDescriptorIndexingFeatures<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, shader_input_attachment_array_dynamic_indexing);
-        feat!(self, v, shader_uniform_texel_buffer_array_dynamic_indexing);
-        feat!(self, v, shader_storage_texel_buffer_array_dynamic_indexing);
-        feat!(self, v, shader_uniform_buffer_array_non_uniform_indexing);
-        feat!(self, v, shader_sampled_image_array_non_uniform_indexing);
-        feat!(self, v, shader_storage_buffer_array_non_uniform_indexing);
-        feat!(self, v, shader_storage_image_array_non_uniform_indexing);
-        feat!(self, v, shader_input_attachment_array_non_uniform_indexing);
-        feat!(self, v, shader_uniform_texel_buffer_array_non_uniform_indexing);
-        feat!(self, v, shader_storage_texel_buffer_array_non_uniform_indexing);
-        feat!(self, v, descriptor_binding_uniform_buffer_update_after_bind);
-        feat!(self, v, descriptor_binding_sampled_image_update_after_bind);
-        feat!(self, v, descriptor_binding_storage_image_update_after_bind);
-        feat!(self, v, descriptor_binding_storage_buffer_update_after_bind);
-        feat!(self, v, descriptor_binding_uniform_texel_buffer_update_after_bind);
-        feat!(self, v, descriptor_binding_storage_texel_buffer_update_after_bind);
-        feat!(self, v, descriptor_binding_update_unused_while_pending);
-        feat!(self, v, descriptor_binding_partially_bound);
-        feat!(self, v, descriptor_binding_variable_descriptor_count);
-        feat!(self, v, runtime_descriptor_array);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, shader_input_attachment_array_dynamic_indexing);
-        merge_feat!(self, v, shader_uniform_texel_buffer_array_dynamic_indexing);
-        merge_feat!(self, v, shader_storage_texel_buffer_array_dynamic_indexing);
-        merge_feat!(self, v, shader_uniform_buffer_array_non_uniform_indexing);
-        merge_feat!(self, v, shader_sampled_image_array_non_uniform_indexing);
-        merge_feat!(self, v, shader_storage_buffer_array_non_uniform_indexing);
-        merge_feat!(self, v, shader_storage_image_array_non_uniform_indexing);
-        merge_feat!(self, v, shader_input_attachment_array_non_uniform_indexing);
-        merge_feat!(self, v, shader_uniform_texel_buffer_array_non_uniform_indexing);
-        merge_feat!(self, v, shader_storage_texel_buffer_array_non_uniform_indexing);
-        merge_feat!(self, v, descriptor_binding_uniform_buffer_update_after_bind);
-        merge_feat!(self, v, descriptor_binding_sampled_image_update_after_bind);
-        merge_feat!(self, v, descriptor_binding_storage_image_update_after_bind);
-        merge_feat!(self, v, descriptor_binding_storage_buffer_update_after_bind);
-        merge_feat!(self, v, descriptor_binding_uniform_texel_buffer_update_after_bind);
-        merge_feat!(self, v, descriptor_binding_storage_texel_buffer_update_after_bind);
-        merge_feat!(self, v, descriptor_binding_update_unused_while_pending);
-        merge_feat!(self, v, descriptor_binding_partially_bound);
-        merge_feat!(self, v, descriptor_binding_variable_descriptor_count);
-        merge_feat!(self, v, runtime_descriptor_array);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceScalarBlockLayoutFeatures<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, scalar_block_layout);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, scalar_block_layout);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceTimelineSemaphoreFeatures<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, timeline_semaphore);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, timeline_semaphore);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceBufferDeviceAddressFeatures<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, buffer_device_address);
-        feat!(self, v, buffer_device_address_capture_replay);
-        feat!(self, v, buffer_device_address_multi_device);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, buffer_device_address);
-        merge_feat!(self, v, buffer_device_address_capture_replay);
-        merge_feat!(self, v, buffer_device_address_multi_device);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceUniformBufferStandardLayoutFeatures<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, uniform_buffer_standard_layout);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, uniform_buffer_standard_layout);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDevice8BitStorageFeatures<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, storage_buffer8_bit_access);
-        feat!(self, v, uniform_and_storage_buffer8_bit_access);
-        feat!(self, v, storage_push_constant8);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, storage_buffer8_bit_access);
-        merge_feat!(self, v, uniform_and_storage_buffer8_bit_access);
-        merge_feat!(self, v, storage_push_constant8);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceShaderFloat16Int8Features<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, shader_float16);
-        feat!(self, v, shader_int8);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, shader_float16);
-        merge_feat!(self, v, shader_int8);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceHostQueryResetFeatures<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, host_query_reset);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, host_query_reset);
+        merge_feat!(self, v, robust_image_access);
+        merge_feat!(self, v, inline_uniform_block);
+        merge_feat!(self, v, descriptor_binding_inline_uniform_block_update_after_bind);
+        merge_feat!(self, v, pipeline_creation_cache_control);
+        merge_feat!(self, v, private_data);
+        merge_feat!(self, v, shader_demote_to_helper_invocation);
+        merge_feat!(self, v, shader_terminate_invocation);
+        merge_feat!(self, v, subgroup_size_control);
+        merge_feat!(self, v, compute_full_subgroups);
+        merge_feat!(self, v, synchronization2);
+        merge_feat!(self, v, texture_compression_astc_hdr);
+        merge_feat!(self, v, shader_zero_initialize_workgroup_memory);
+        merge_feat!(self, v, dynamic_rendering);
+        merge_feat!(self, v, shader_integer_dot_product);
+        merge_feat!(self, v, maintenance4);
     }
 }
 
@@ -1362,169 +1264,6 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceDescriptorIndexingProperties<'a
         merge_lmin!(self, v, max_descriptor_set_update_after_bind_sampled_images);
         merge_lmin!(self, v, max_descriptor_set_update_after_bind_storage_images);
         merge_lmin!(self, v, max_descriptor_set_update_after_bind_input_attachments);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceFloatControlsProperties<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        delegate!(self, v, denorm_behavior_independence);
-        delegate!(self, v, rounding_mode_independence);
-        feat!(self, v, shader_signed_zero_inf_nan_preserve_float16);
-        feat!(self, v, shader_signed_zero_inf_nan_preserve_float32);
-        feat!(self, v, shader_signed_zero_inf_nan_preserve_float64);
-        feat!(self, v, shader_denorm_preserve_float16);
-        feat!(self, v, shader_denorm_preserve_float32);
-        feat!(self, v, shader_denorm_preserve_float64);
-        feat!(self, v, shader_denorm_flush_to_zero_float16);
-        feat!(self, v, shader_denorm_flush_to_zero_float32);
-        feat!(self, v, shader_denorm_flush_to_zero_float64);
-        feat!(self, v, shader_rounding_mode_rte_float16);
-        feat!(self, v, shader_rounding_mode_rte_float32);
-        feat!(self, v, shader_rounding_mode_rte_float64);
-        feat!(self, v, shader_rounding_mode_rtz_float16);
-        feat!(self, v, shader_rounding_mode_rtz_float32);
-        feat!(self, v, shader_rounding_mode_rtz_float64);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_delegate!(self, v, denorm_behavior_independence);
-        merge_delegate!(self, v, rounding_mode_independence);
-        merge_feat!(self, v, shader_signed_zero_inf_nan_preserve_float16);
-        merge_feat!(self, v, shader_signed_zero_inf_nan_preserve_float32);
-        merge_feat!(self, v, shader_signed_zero_inf_nan_preserve_float64);
-        merge_feat!(self, v, shader_denorm_preserve_float16);
-        merge_feat!(self, v, shader_denorm_preserve_float32);
-        merge_feat!(self, v, shader_denorm_preserve_float64);
-        merge_feat!(self, v, shader_denorm_flush_to_zero_float16);
-        merge_feat!(self, v, shader_denorm_flush_to_zero_float32);
-        merge_feat!(self, v, shader_denorm_flush_to_zero_float64);
-        merge_feat!(self, v, shader_rounding_mode_rte_float16);
-        merge_feat!(self, v, shader_rounding_mode_rte_float32);
-        merge_feat!(self, v, shader_rounding_mode_rte_float64);
-        merge_feat!(self, v, shader_rounding_mode_rtz_float16);
-        merge_feat!(self, v, shader_rounding_mode_rtz_float32);
-        merge_feat!(self, v, shader_rounding_mode_rtz_float64);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceDepthStencilResolveProperties<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat_mask!(self, v, supported_depth_resolve_modes);
-        feat_mask!(self, v, supported_stencil_resolve_modes);
-        feat!(self, v, independent_resolve_none);
-        feat!(self, v, independent_resolve);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat_mask!(self, v, supported_depth_resolve_modes);
-        merge_feat_mask!(self, v, supported_stencil_resolve_modes);
-        merge_feat!(self, v, independent_resolve_none);
-        merge_feat!(self, v, independent_resolve);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceTimelineSemaphoreProperties<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        lmin!(self, v, max_timeline_semaphore_value_difference);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_lmin!(self, v, max_timeline_semaphore_value_difference);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceSamplerFilterMinmaxProperties<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, filter_minmax_single_component_formats);
-        feat!(self, v, filter_minmax_image_component_mapping);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, filter_minmax_single_component_formats);
-        merge_feat!(self, v, filter_minmax_image_component_mapping);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceDriverProperties<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        delegate!(self, v, conformance_version);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_delegate!(self, v, conformance_version);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceDynamicRenderingFeatures<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, dynamic_rendering);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, dynamic_rendering);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceSynchronization2Features<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, synchronization2);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, synchronization2);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceShaderAtomicInt64Features<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, shader_buffer_int64_atomics);
-        feat!(self, v, shader_shared_int64_atomics);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, shader_buffer_int64_atomics);
-        merge_feat!(self, v, shader_shared_int64_atomics);
-    }
-}
-
-impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkanMemoryModelFeatures<'a> {
-    #[rustfmt::skip]
-    fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, vulkan_memory_model);
-        feat!(self, v, vulkan_memory_model_device_scope);
-        feat!(self, v, vulkan_memory_model_availability_visibility_chains);
-        Some(())
-    }
-
-    #[rustfmt::skip]
-    fn merge(&mut self, v: &Self) {
-        merge_feat!(self, v, vulkan_memory_model);
-        merge_feat!(self, v, vulkan_memory_model_device_scope);
-        merge_feat!(self, v, vulkan_memory_model_availability_visibility_chains);
     }
 }
 

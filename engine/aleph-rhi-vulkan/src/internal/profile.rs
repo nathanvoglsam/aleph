@@ -178,7 +178,7 @@ impl CreateProfile for vk::PhysicalDeviceSparseProperties {
 impl CreateProfile for vk::PhysicalDeviceProperties {
     fn baseline() -> Self {
         Self {
-            api_version: vk::API_VERSION_1_1,
+            api_version: vk::API_VERSION_1_3,
             limits: CreateProfile::baseline(),
             sparse_properties: CreateProfile::baseline(),
             ..Default::default()
@@ -207,6 +207,147 @@ impl<'a> CreateProfile for vk::PhysicalDeviceVulkan11Properties<'a> {
             protected_no_fault: vk::FALSE,
             max_per_set_descriptors: u32::MIN,
             max_memory_allocation_size: vk::DeviceSize::MIN,
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl<'a> CreateProfile for vk::PhysicalDeviceVulkan12Properties<'a> {
+    fn baseline() -> Self {
+        Self {
+            conformance_version: Default::default(),
+            denorm_behavior_independence: vk::ShaderFloatControlsIndependence::NONE,
+            rounding_mode_independence: vk::ShaderFloatControlsIndependence::NONE,
+            shader_signed_zero_inf_nan_preserve_float16: vk::FALSE,
+            shader_signed_zero_inf_nan_preserve_float32: vk::FALSE,
+            shader_signed_zero_inf_nan_preserve_float64: vk::FALSE,
+            shader_denorm_preserve_float16: vk::FALSE,
+            shader_denorm_preserve_float32: vk::FALSE,
+            shader_denorm_preserve_float64: vk::FALSE,
+            shader_denorm_flush_to_zero_float16: vk::FALSE,
+            shader_denorm_flush_to_zero_float32: vk::FALSE,
+            shader_denorm_flush_to_zero_float64: vk::FALSE,
+            shader_rounding_mode_rte_float16: vk::FALSE,
+            shader_rounding_mode_rte_float32: vk::FALSE,
+            shader_rounding_mode_rte_float64: vk::FALSE,
+            shader_rounding_mode_rtz_float16: vk::FALSE,
+            shader_rounding_mode_rtz_float32: vk::FALSE,
+            shader_rounding_mode_rtz_float64: vk::FALSE,
+            max_update_after_bind_descriptors_in_all_pools: u32::MIN,
+            shader_uniform_buffer_array_non_uniform_indexing_native: vk::FALSE,
+            shader_sampled_image_array_non_uniform_indexing_native: vk::FALSE,
+            shader_storage_buffer_array_non_uniform_indexing_native: vk::FALSE,
+            shader_storage_image_array_non_uniform_indexing_native: vk::FALSE,
+            shader_input_attachment_array_non_uniform_indexing_native: vk::FALSE,
+            robust_buffer_access_update_after_bind: vk::FALSE,
+            quad_divergent_implicit_lod: vk::FALSE,
+            max_per_stage_descriptor_update_after_bind_samplers: u32::MIN,
+            max_per_stage_descriptor_update_after_bind_uniform_buffers: u32::MIN,
+            max_per_stage_descriptor_update_after_bind_storage_buffers: u32::MIN,
+            max_per_stage_descriptor_update_after_bind_sampled_images: u32::MIN,
+            max_per_stage_descriptor_update_after_bind_storage_images: u32::MIN,
+            max_per_stage_descriptor_update_after_bind_input_attachments: u32::MIN,
+            max_per_stage_update_after_bind_resources: u32::MIN,
+            max_descriptor_set_update_after_bind_samplers: u32::MIN,
+            max_descriptor_set_update_after_bind_uniform_buffers: u32::MIN,
+            max_descriptor_set_update_after_bind_uniform_buffers_dynamic: u32::MIN,
+            max_descriptor_set_update_after_bind_storage_buffers: u32::MIN,
+            max_descriptor_set_update_after_bind_storage_buffers_dynamic: u32::MIN,
+            max_descriptor_set_update_after_bind_sampled_images: u32::MIN,
+            max_descriptor_set_update_after_bind_storage_images: u32::MIN,
+            max_descriptor_set_update_after_bind_input_attachments: u32::MIN,
+            supported_depth_resolve_modes: Default::default(),
+            supported_stencil_resolve_modes: Default::default(),
+            independent_resolve_none: vk::FALSE,
+            independent_resolve: vk::FALSE,
+            filter_minmax_single_component_formats: vk::FALSE,
+            filter_minmax_image_component_mapping: vk::FALSE,
+            max_timeline_semaphore_value_difference: u64::MIN,
+            framebuffer_integer_color_sample_counts: Default::default(),
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            supported_depth_resolve_modes: vk::ResolveModeFlags::SAMPLE_ZERO,
+            supported_stencil_resolve_modes: vk::ResolveModeFlags::SAMPLE_ZERO,
+            independent_resolve_none: vk::TRUE,
+            independent_resolve: vk::TRUE,
+            max_per_stage_descriptor_update_after_bind_samplers: 1024,
+            max_per_stage_descriptor_update_after_bind_uniform_buffers: 12,
+            max_per_stage_descriptor_update_after_bind_storage_buffers: 500_000,
+            max_per_stage_descriptor_update_after_bind_sampled_images: 500_000,
+            max_per_stage_descriptor_update_after_bind_storage_images: 500_000,
+            max_per_stage_descriptor_update_after_bind_input_attachments: 7,
+            max_per_stage_update_after_bind_resources: 500_000,
+            max_descriptor_set_update_after_bind_samplers: 1024,
+            max_descriptor_set_update_after_bind_uniform_buffers: 72,
+            max_descriptor_set_update_after_bind_uniform_buffers_dynamic: 8,
+            max_descriptor_set_update_after_bind_storage_buffers: 500_000,
+            max_descriptor_set_update_after_bind_storage_buffers_dynamic: 4,
+            max_descriptor_set_update_after_bind_sampled_images: 500_000,
+            max_descriptor_set_update_after_bind_storage_images: 500_000,
+            max_descriptor_set_update_after_bind_input_attachments: 7,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl<'a> CreateProfile for vk::PhysicalDeviceVulkan13Properties<'a> {
+    fn baseline() -> Self {
+        Self {
+            min_subgroup_size: u32::MAX,
+            max_subgroup_size: u32::MIN,
+            max_compute_workgroup_subgroups: u32::MIN,
+            required_subgroup_size_stages: Default::default(),
+            max_inline_uniform_block_size: u32::MIN,
+            max_per_stage_descriptor_inline_uniform_blocks: u32::MIN,
+            max_per_stage_descriptor_update_after_bind_inline_uniform_blocks: u32::MIN,
+            max_descriptor_set_inline_uniform_blocks: u32::MIN,
+            max_descriptor_set_update_after_bind_inline_uniform_blocks: u32::MIN,
+            max_inline_uniform_total_size: u32::MIN,
+            integer_dot_product8_bit_unsigned_accelerated: vk::FALSE,
+            integer_dot_product8_bit_signed_accelerated: vk::FALSE,
+            integer_dot_product8_bit_mixed_signedness_accelerated: vk::FALSE,
+            integer_dot_product4x8_bit_packed_unsigned_accelerated: vk::FALSE,
+            integer_dot_product4x8_bit_packed_signed_accelerated: vk::FALSE,
+            integer_dot_product4x8_bit_packed_mixed_signedness_accelerated: vk::FALSE,
+            integer_dot_product16_bit_unsigned_accelerated: vk::FALSE,
+            integer_dot_product16_bit_signed_accelerated: vk::FALSE,
+            integer_dot_product16_bit_mixed_signedness_accelerated: vk::FALSE,
+            integer_dot_product32_bit_unsigned_accelerated: vk::FALSE,
+            integer_dot_product32_bit_signed_accelerated: vk::FALSE,
+            integer_dot_product32_bit_mixed_signedness_accelerated: vk::FALSE,
+            integer_dot_product64_bit_unsigned_accelerated: vk::FALSE,
+            integer_dot_product64_bit_signed_accelerated: vk::FALSE,
+            integer_dot_product64_bit_mixed_signedness_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating8_bit_unsigned_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating8_bit_signed_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating8_bit_mixed_signedness_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating4x8_bit_packed_unsigned_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating4x8_bit_packed_signed_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating4x8_bit_packed_mixed_signedness_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating16_bit_unsigned_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating16_bit_signed_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating16_bit_mixed_signedness_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating32_bit_unsigned_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating32_bit_signed_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating32_bit_mixed_signedness_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating64_bit_unsigned_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating64_bit_signed_accelerated: vk::FALSE,
+            integer_dot_product_accumulating_saturating64_bit_mixed_signedness_accelerated: vk::FALSE,
+            storage_texel_buffer_offset_alignment_bytes: u64::MAX,
+            storage_texel_buffer_offset_single_texel_alignment: vk::FALSE,
+            uniform_texel_buffer_offset_alignment_bytes: u64::MAX,
+            uniform_texel_buffer_offset_single_texel_alignment: vk::FALSE,
+            max_buffer_size: u64::MIN,
             ..Default::default()
         }
     }
@@ -312,88 +453,6 @@ impl<'a> CreateProfile for vk::PhysicalDeviceMaintenance3Properties<'a> {
     }
 }
 
-impl<'a> CreateProfile for vk::PhysicalDeviceVulkan12Properties<'a> {
-    fn baseline() -> Self {
-        Self {
-            conformance_version: Default::default(),
-            denorm_behavior_independence: vk::ShaderFloatControlsIndependence::NONE,
-            rounding_mode_independence: vk::ShaderFloatControlsIndependence::NONE,
-            shader_signed_zero_inf_nan_preserve_float16: vk::FALSE,
-            shader_signed_zero_inf_nan_preserve_float32: vk::FALSE,
-            shader_signed_zero_inf_nan_preserve_float64: vk::FALSE,
-            shader_denorm_preserve_float16: vk::FALSE,
-            shader_denorm_preserve_float32: vk::FALSE,
-            shader_denorm_preserve_float64: vk::FALSE,
-            shader_denorm_flush_to_zero_float16: vk::FALSE,
-            shader_denorm_flush_to_zero_float32: vk::FALSE,
-            shader_denorm_flush_to_zero_float64: vk::FALSE,
-            shader_rounding_mode_rte_float16: vk::FALSE,
-            shader_rounding_mode_rte_float32: vk::FALSE,
-            shader_rounding_mode_rte_float64: vk::FALSE,
-            shader_rounding_mode_rtz_float16: vk::FALSE,
-            shader_rounding_mode_rtz_float32: vk::FALSE,
-            shader_rounding_mode_rtz_float64: vk::FALSE,
-            max_update_after_bind_descriptors_in_all_pools: u32::MIN,
-            shader_uniform_buffer_array_non_uniform_indexing_native: vk::FALSE,
-            shader_sampled_image_array_non_uniform_indexing_native: vk::FALSE,
-            shader_storage_buffer_array_non_uniform_indexing_native: vk::FALSE,
-            shader_storage_image_array_non_uniform_indexing_native: vk::FALSE,
-            shader_input_attachment_array_non_uniform_indexing_native: vk::FALSE,
-            robust_buffer_access_update_after_bind: vk::FALSE,
-            quad_divergent_implicit_lod: vk::FALSE,
-            max_per_stage_descriptor_update_after_bind_samplers: u32::MIN,
-            max_per_stage_descriptor_update_after_bind_uniform_buffers: u32::MIN,
-            max_per_stage_descriptor_update_after_bind_storage_buffers: u32::MIN,
-            max_per_stage_descriptor_update_after_bind_sampled_images: u32::MIN,
-            max_per_stage_descriptor_update_after_bind_storage_images: u32::MIN,
-            max_per_stage_descriptor_update_after_bind_input_attachments: u32::MIN,
-            max_per_stage_update_after_bind_resources: u32::MIN,
-            max_descriptor_set_update_after_bind_samplers: u32::MIN,
-            max_descriptor_set_update_after_bind_uniform_buffers: u32::MIN,
-            max_descriptor_set_update_after_bind_uniform_buffers_dynamic: u32::MIN,
-            max_descriptor_set_update_after_bind_storage_buffers: u32::MIN,
-            max_descriptor_set_update_after_bind_storage_buffers_dynamic: u32::MIN,
-            max_descriptor_set_update_after_bind_sampled_images: u32::MIN,
-            max_descriptor_set_update_after_bind_storage_images: u32::MIN,
-            max_descriptor_set_update_after_bind_input_attachments: u32::MIN,
-            supported_depth_resolve_modes: Default::default(),
-            supported_stencil_resolve_modes: Default::default(),
-            independent_resolve_none: vk::FALSE,
-            independent_resolve: vk::FALSE,
-            filter_minmax_single_component_formats: vk::FALSE,
-            filter_minmax_image_component_mapping: vk::FALSE,
-            max_timeline_semaphore_value_difference: u64::MIN,
-            framebuffer_integer_color_sample_counts: Default::default(),
-            ..Default::default()
-        }
-    }
-
-    fn minimum() -> Self {
-        Self {
-            supported_depth_resolve_modes: vk::ResolveModeFlags::SAMPLE_ZERO,
-            supported_stencil_resolve_modes: vk::ResolveModeFlags::SAMPLE_ZERO,
-            independent_resolve_none: vk::TRUE,
-            independent_resolve: vk::TRUE,
-            max_per_stage_descriptor_update_after_bind_samplers: 1024,
-            max_per_stage_descriptor_update_after_bind_uniform_buffers: 12,
-            max_per_stage_descriptor_update_after_bind_storage_buffers: 500_000,
-            max_per_stage_descriptor_update_after_bind_sampled_images: 500_000,
-            max_per_stage_descriptor_update_after_bind_storage_images: 500_000,
-            max_per_stage_descriptor_update_after_bind_input_attachments: 7,
-            max_per_stage_update_after_bind_resources: 500_000,
-            max_descriptor_set_update_after_bind_samplers: 1024,
-            max_descriptor_set_update_after_bind_uniform_buffers: 72,
-            max_descriptor_set_update_after_bind_uniform_buffers_dynamic: 8,
-            max_descriptor_set_update_after_bind_storage_buffers: 500_000,
-            max_descriptor_set_update_after_bind_storage_buffers_dynamic: 4,
-            max_descriptor_set_update_after_bind_sampled_images: 500_000,
-            max_descriptor_set_update_after_bind_storage_images: 500_000,
-            max_descriptor_set_update_after_bind_input_attachments: 7,
-            ..CreateProfile::baseline()
-        }
-    }
-}
-
 impl CreateProfile for vk::PhysicalDeviceFeatures {
     fn baseline() -> Self {
         Self::default()
@@ -454,6 +513,87 @@ impl<'a> CreateProfile for vk::PhysicalDeviceVulkan11Features<'a> {
             // protected_memory: vk::TRUE,
             // sampler_ycbcr_conversion: vk::TRUE,
             shader_draw_parameters: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl<'a> CreateProfile for vk::PhysicalDeviceVulkan12Features<'a> {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            sampler_mirror_clamp_to_edge: vk::TRUE,
+            buffer_device_address: vk::TRUE,
+            // buffer_device_address_capture_replay: vk::TRUE,
+            // buffer_device_address_multi_device: vk::TRUE,
+            // vulkan_memory_model: vk::TRUE,
+            // vulkan_memory_model_device_scope: vk::TRUE,
+            // vulkan_memory_model_availability_visibility_chains: vk::TRUE,
+            timeline_semaphore: vk::TRUE,
+            descriptor_indexing: vk::TRUE,
+            descriptor_binding_partially_bound: vk::TRUE,
+            descriptor_binding_update_unused_while_pending: vk::TRUE,
+            descriptor_binding_variable_descriptor_count: vk::TRUE,
+            runtime_descriptor_array: vk::TRUE,
+            descriptor_binding_sampled_image_update_after_bind: vk::TRUE,
+            descriptor_binding_storage_image_update_after_bind: vk::TRUE,
+            // descriptor_binding_uniform_buffer_update_after_bind: vk::TRUE,
+            descriptor_binding_storage_buffer_update_after_bind: vk::TRUE,
+            descriptor_binding_uniform_texel_buffer_update_after_bind: vk::TRUE,
+            descriptor_binding_storage_texel_buffer_update_after_bind: vk::TRUE,
+            shader_sampled_image_array_non_uniform_indexing: vk::TRUE,
+            // shader_uniform_buffer_array_non_uniform_indexing: vk::TRUE,
+            // shader_storage_buffer_array_non_uniform_indexing: vk::TRUE,
+            shader_storage_image_array_non_uniform_indexing: vk::TRUE,
+            // shader_input_attachment_array_dynamic_indexing: vk::TRUE,
+            // shader_input_attachment_array_non_uniform_indexing: vk::TRUE,
+            shader_storage_texel_buffer_array_dynamic_indexing: vk::TRUE,
+            shader_uniform_texel_buffer_array_dynamic_indexing: vk::TRUE,
+            shader_uniform_texel_buffer_array_non_uniform_indexing: vk::TRUE,
+            shader_storage_texel_buffer_array_non_uniform_indexing: vk::TRUE,
+            scalar_block_layout: vk::TRUE,
+            shader_int8: vk::TRUE,
+            storage_buffer8_bit_access: vk::TRUE,
+            uniform_and_storage_buffer8_bit_access: vk::TRUE,
+            // shader_buffer_int64_atomics: vk::TRUE,
+            // shader_shared_int64_atomics: vk::TRUE,
+            uniform_buffer_standard_layout: vk::TRUE,
+            // draw_indirect_count: vk::TRUE,
+            // shader_float16: vk::TRUE,
+            imageless_framebuffer: vk::TRUE,
+            host_query_reset: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl<'a> CreateProfile for vk::PhysicalDeviceVulkan13Features<'a> {
+    fn baseline() -> Self {
+        Self {
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            // robust_image_access: vk::FALSE,
+            // inline_uniform_block: vk::FALSE,
+            // descriptor_binding_inline_uniform_block_update_after_bind: vk::FALSE,
+            // pipeline_creation_cache_control: vk::FALSE,
+            // private_data: vk::FALSE,
+            // shader_demote_to_helper_invocation: vk::FALSE,
+            // shader_terminate_invocation: vk::FALSE,
+            // subgroup_size_control: vk::FALSE,
+            // compute_full_subgroups: vk::FALSE,
+            synchronization2: vk::TRUE,
+            // texture_compression_astc_hdr: vk::FALSE,
+            // shader_zero_initialize_workgroup_memory: vk::FALSE,
+            dynamic_rendering: vk::TRUE,
+            // shader_integer_dot_product: vk::FALSE,
+            maintenance4: vk::TRUE,
             ..CreateProfile::baseline()
         }
     }
@@ -538,54 +678,6 @@ impl<'a> CreateProfile for vk::PhysicalDeviceShaderDrawParametersFeatures<'a> {
     fn minimum() -> Self {
         Self {
             shader_draw_parameters: vk::TRUE,
-            ..CreateProfile::baseline()
-        }
-    }
-}
-
-impl<'a> CreateProfile for vk::PhysicalDeviceVulkan12Features<'a> {
-    fn baseline() -> Self {
-        Self::default()
-    }
-
-    fn minimum() -> Self {
-        Self {
-            sampler_mirror_clamp_to_edge: vk::TRUE,
-            buffer_device_address: vk::TRUE,
-            // buffer_device_address_capture_replay: vk::TRUE,
-            timeline_semaphore: vk::TRUE,
-            descriptor_indexing: vk::TRUE,
-            descriptor_binding_partially_bound: vk::TRUE,
-            descriptor_binding_update_unused_while_pending: vk::TRUE,
-            descriptor_binding_variable_descriptor_count: vk::TRUE,
-            runtime_descriptor_array: vk::TRUE,
-            descriptor_binding_sampled_image_update_after_bind: vk::TRUE,
-            descriptor_binding_storage_image_update_after_bind: vk::TRUE,
-            // descriptor_binding_uniform_buffer_update_after_bind: vk::TRUE,
-            descriptor_binding_storage_buffer_update_after_bind: vk::TRUE,
-            descriptor_binding_uniform_texel_buffer_update_after_bind: vk::TRUE,
-            descriptor_binding_storage_texel_buffer_update_after_bind: vk::TRUE,
-            shader_sampled_image_array_non_uniform_indexing: vk::TRUE,
-            // shader_uniform_buffer_array_non_uniform_indexing: vk::TRUE,
-            // shader_storage_buffer_array_non_uniform_indexing: vk::TRUE,
-            shader_storage_image_array_non_uniform_indexing: vk::TRUE,
-            // shader_input_attachment_array_dynamic_indexing: vk::TRUE,
-            // shader_input_attachment_array_non_uniform_indexing: vk::TRUE,
-            shader_storage_texel_buffer_array_dynamic_indexing: vk::TRUE,
-            shader_uniform_texel_buffer_array_dynamic_indexing: vk::TRUE,
-            shader_uniform_texel_buffer_array_non_uniform_indexing: vk::TRUE,
-            shader_storage_texel_buffer_array_non_uniform_indexing: vk::TRUE,
-            scalar_block_layout: vk::TRUE,
-            shader_int8: vk::TRUE,
-            storage_buffer8_bit_access: vk::TRUE,
-            uniform_and_storage_buffer8_bit_access: vk::TRUE,
-            // shader_buffer_int64_atomics: vk::TRUE,
-            // shader_shared_int64_atomics: vk::TRUE,
-            uniform_buffer_standard_layout: vk::TRUE,
-            // draw_indirect_count: vk::TRUE,
-            // shader_float16: vk::TRUE,
-            imageless_framebuffer: vk::TRUE,
-            host_query_reset: vk::TRUE,
             ..CreateProfile::baseline()
         }
     }

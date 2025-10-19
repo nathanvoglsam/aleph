@@ -173,9 +173,7 @@ impl Config {
     pub fn log(&self) {
         log::info!("rhi.api = {:?}", self.api);
 
-        self.vulkan.as_ref().inspect(|v| {
-            log::info!("rhi.vulkan.deny_sync_2 = {}", v.deny_sync_2);
-        });
+        // self.vulkan.as_ref().inspect(|v| {});
         // self.d3d12.as_ref().inspect(|v| {});
 
         log::info!("rhi.validation = {}", self.validation);

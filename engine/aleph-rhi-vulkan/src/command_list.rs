@@ -38,7 +38,6 @@ use ash::vk;
 use crate::device::Device;
 use crate::encoder::Encoder;
 use crate::internal::allocation_callbacks::GLOBAL;
-use crate::internal::conv::SyncShaderFeatures;
 
 pub struct CommandList {
     pub(crate) _device: AnyArc<Device>,
@@ -91,13 +90,6 @@ impl ICommandList for CommandList {
 
                     self.state = ListState::Open;
 
-                    let features_10 = &self._device.adapter.device_info.features_10;
-                    let enabled_shader_features = SyncShaderFeatures {
-                        tessellation: features_10.tessellation_shader == vk::TRUE,
-                        geometry: features_10.geometry_shader == vk::TRUE,
-                        mesh: false,
-                        task: false,
-                    };
                     let _buffer = self.buffer;
                     let _context = self._device.context.clone();
                     let _device = self._device.clone();
@@ -109,7 +101,6 @@ impl ICommandList for CommandList {
                         bound_graphics_pipeline: None,
                         bound_compute_pipeline: None,
                         arena: Blink::new_in(BlinkAlloc::new_in(RhiSystem::default())),
-                        enabled_shader_features,
                     };
                     Ok(Box::new(encoder))
                 }

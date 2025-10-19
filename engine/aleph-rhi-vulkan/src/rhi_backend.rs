@@ -21,11 +21,7 @@ pub static RHI_BACKEND_OBJECT: VulkanLoader = VulkanLoader {
 };
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
-pub struct VulkanConfig {
-    /// Force disable the VK_KHR_synchronization2 path. Intended for testing the fallback path on
-    /// platforms that support sync2.
-    pub deny_sync_2: bool,
-}
+pub struct VulkanConfig {}
 
 pub struct VulkanLoader {
     /// Flags whether a context has already been created
@@ -100,7 +96,7 @@ impl VulkanLoader {
 
                 Ok(new_rhi_object(move |v| Context {
                     _this: v.clone(),
-                    config: config.clone(),
+                    _config: config.clone(),
                     library: ManuallyDrop::new(library),
                     entry_loader: ManuallyDrop::new(entry),
                     instance: ManuallyDrop::new(instance),
@@ -521,7 +517,7 @@ fn app_and_engine_info<'a>() -> vk::ApplicationInfo<'a> {
             env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
             env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
         ))
-        .api_version(vk::API_VERSION_1_1)
+        .api_version(vk::API_VERSION_1_3)
 }
 
 fn install_debug_messenger(

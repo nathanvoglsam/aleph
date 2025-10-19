@@ -55,7 +55,6 @@ pub struct Encoder<'a> {
     pub(crate) bound_graphics_pipeline: Option<Arc<Object<GraphicsPipeline>>>,
     pub(crate) bound_compute_pipeline: Option<Arc<Object<ComputePipeline>>>,
     pub(crate) arena: Blink<BlinkAlloc<RhiSystem>>,
-    pub(crate) enabled_shader_features: SyncShaderFeatures,
 }
 
 impl<'a> IGetPlatformInterface for Encoder<'a> {
@@ -206,9 +205,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
     unsafe fn end_rendering(&mut self) {
         unsafe {
-            self._device
-                .dynamic_rendering
-                .cmd_end_rendering(self._buffer);
+            self._device.device.cmd_end_rendering(self._buffer);
         }
     }
 
@@ -349,18 +346,87 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         buffer_barriers: &[BufferBarrier],
         texture_barriers: &[TextureBarrier],
     ) {
-        unsafe {
-            if let Some(loader) = self._device.synchronization_2.clone() {
-                self.resource_barrier_sync2(
-                    &loader,
-                    global_barriers,
-                    buffer_barriers,
-                    texture_barriers,
-                )
+        #![allow(non_snake_case)]
+
+        let mut translated_global_barriers =
+            BVec::with_capacity_in(global_barriers.len(), self.arena.allocator());
+        let mut translated_buffer_barriers =
+            BVec::with_capacity_in(buffer_barriers.len(), self.arena.allocator());
+        let mut translated_texture_barriers =
+            BVec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
+
+        for barrier in global_barriers {
+            translated_global_barriers.push(
+                vk::MemoryBarrier2::default()
+                    .src_stage_mask(barrier_sync_to_vk(barrier.before_sync))
+                    .dst_stage_mask(barrier_sync_to_vk(barrier.after_sync))
+                    .src_access_mask(barrier_access_to_vk(barrier.before_access))
+                    .dst_access_mask(barrier_access_to_vk(barrier.after_access)),
+            );
+        }
+
+        for barrier in buffer_barriers {
+            let buffer = barrier.buffer.unwrap();
+            let buffer = Buffer::get(buffer);
+
+            let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
+                let src_family = self._device.get_queue_family_index(transition.before_queue);
+                let dst_family = self._device.get_queue_family_index(transition.after_queue);
+                (src_family, dst_family)
             } else {
-                self.resource_barrier_fallback(global_barriers, buffer_barriers, texture_barriers)
-            }
-            self.arena.reset();
+                (0, 0)
+            };
+
+            translated_buffer_barriers.push(
+                vk::BufferMemoryBarrier2::default()
+                    .src_stage_mask(barrier_sync_to_vk(barrier.before_sync))
+                    .dst_stage_mask(barrier_sync_to_vk(barrier.after_sync))
+                    .src_access_mask(barrier_access_to_vk(barrier.before_access))
+                    .dst_access_mask(barrier_access_to_vk(barrier.after_access))
+                    .buffer(buffer.buffer)
+                    .offset(barrier.offset)
+                    .size(barrier.size)
+                    .src_queue_family_index(src_family)
+                    .dst_queue_family_index(dst_family),
+            );
+        }
+
+        for barrier in texture_barriers {
+            // Grab the d3d12 resource handle from our texture impls
+            let texture = Texture::get(barrier.texture.unwrap());
+
+            let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
+                let src_family = self._device.get_queue_family_index(transition.before_queue);
+                let dst_family = self._device.get_queue_family_index(transition.after_queue);
+                (src_family, dst_family)
+            } else {
+                (0, 0)
+            };
+
+            translated_texture_barriers.push(
+                vk::ImageMemoryBarrier2::default()
+                    .src_stage_mask(barrier_sync_to_vk(barrier.before_sync))
+                    .dst_stage_mask(barrier_sync_to_vk(barrier.after_sync))
+                    .src_access_mask(barrier_access_to_vk(barrier.before_access))
+                    .dst_access_mask(barrier_access_to_vk(barrier.after_access))
+                    .old_layout(image_layout_to_vk(barrier.before_layout))
+                    .new_layout(image_layout_to_vk(barrier.after_layout))
+                    .image(texture.image)
+                    .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
+                    .src_queue_family_index(src_family)
+                    .dst_queue_family_index(dst_family),
+            );
+        }
+
+        let info = vk::DependencyInfo::default()
+            .memory_barriers(&translated_global_barriers)
+            .buffer_memory_barriers(&translated_buffer_barriers)
+            .image_memory_barriers(&translated_texture_barriers);
+
+        unsafe {
+            self._device
+                .device
+                .cmd_pipeline_barrier2(self._buffer, &info);
         }
     }
 
@@ -651,200 +717,7 @@ impl<'a> Encoder<'a> {
         }
 
         unsafe {
-            self._device
-                .dynamic_rendering
-                .cmd_begin_rendering(self._buffer, &info);
-        }
-    }
-
-    unsafe fn resource_barrier_fallback(
-        &mut self,
-        global_barriers: &[GlobalBarrier],
-        buffer_barriers: &[BufferBarrier],
-        texture_barriers: &[TextureBarrier],
-    ) {
-        #![allow(non_snake_case)]
-
-        let mut translated_global_barriers =
-            BVec::with_capacity_in(global_barriers.len(), self.arena.allocator());
-        let mut translated_buffer_barriers =
-            BVec::with_capacity_in(buffer_barriers.len(), self.arena.allocator());
-        let mut translated_texture_barriers =
-            BVec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
-        let mut src_stage_mask = vk::PipelineStageFlags::default();
-        let mut dst_stage_mask = vk::PipelineStageFlags::default();
-
-        for barrier in global_barriers {
-            src_stage_mask |=
-                barrier_sync_to_vk(barrier.before_sync, &self.enabled_shader_features);
-            dst_stage_mask |= barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
-            translated_global_barriers.push(
-                vk::MemoryBarrier::default()
-                    .src_access_mask(barrier_access_to_vk(barrier.before_access))
-                    .dst_access_mask(barrier_access_to_vk(barrier.after_access)),
-            );
-        }
-
-        for barrier in buffer_barriers {
-            let buffer = barrier.buffer.unwrap();
-            let buffer = Buffer::get(buffer);
-
-            let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
-                let src_family = self._device.get_queue_family_index(transition.before_queue);
-                let dst_family = self._device.get_queue_family_index(transition.after_queue);
-                (src_family, dst_family)
-            } else {
-                (0, 0)
-            };
-
-            src_stage_mask |=
-                barrier_sync_to_vk(barrier.before_sync, &self.enabled_shader_features);
-            dst_stage_mask |= barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
-            translated_buffer_barriers.push(
-                vk::BufferMemoryBarrier::default()
-                    .src_access_mask(barrier_access_to_vk(barrier.before_access))
-                    .dst_access_mask(barrier_access_to_vk(barrier.after_access))
-                    .buffer(buffer.buffer)
-                    .offset(barrier.offset)
-                    .size(barrier.size)
-                    .src_queue_family_index(src_family)
-                    .dst_queue_family_index(dst_family),
-            );
-        }
-
-        for barrier in texture_barriers {
-            // Grab the d3d12 resource handle from our texture impls
-            let texture = Texture::get(barrier.texture.unwrap());
-
-            let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
-                let src_family = self._device.get_queue_family_index(transition.before_queue);
-                let dst_family = self._device.get_queue_family_index(transition.after_queue);
-                (src_family, dst_family)
-            } else {
-                (0, 0)
-            };
-
-            src_stage_mask |=
-                barrier_sync_to_vk(barrier.before_sync, &self.enabled_shader_features);
-            if src_stage_mask.is_empty() {
-                src_stage_mask = vk::PipelineStageFlags::BOTTOM_OF_PIPE;
-            }
-            dst_stage_mask |= barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
-            if dst_stage_mask.is_empty() {
-                dst_stage_mask = vk::PipelineStageFlags::TOP_OF_PIPE;
-            }
-            translated_texture_barriers.push(
-                vk::ImageMemoryBarrier::default()
-                    .src_access_mask(barrier_access_to_vk(barrier.before_access))
-                    .dst_access_mask(barrier_access_to_vk(barrier.after_access))
-                    .old_layout(image_layout_to_vk(barrier.before_layout))
-                    .new_layout(image_layout_to_vk(barrier.after_layout))
-                    .image(texture.image)
-                    .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
-                    .src_queue_family_index(src_family)
-                    .dst_queue_family_index(dst_family),
-            );
-        }
-
-        unsafe {
-            self._device.device.cmd_pipeline_barrier(
-                self._buffer,
-                src_stage_mask,
-                dst_stage_mask,
-                vk::DependencyFlags::default(),
-                &translated_global_barriers,
-                &translated_buffer_barriers,
-                &translated_texture_barriers,
-            );
-        }
-    }
-
-    unsafe fn resource_barrier_sync2(
-        &mut self,
-        loader: &ash::khr::synchronization2::Device,
-        global_barriers: &[GlobalBarrier],
-        buffer_barriers: &[BufferBarrier],
-        texture_barriers: &[TextureBarrier],
-    ) {
-        #![allow(non_snake_case)]
-
-        let mut translated_global_barriers =
-            BVec::with_capacity_in(global_barriers.len(), self.arena.allocator());
-        let mut translated_buffer_barriers =
-            BVec::with_capacity_in(buffer_barriers.len(), self.arena.allocator());
-        let mut translated_texture_barriers =
-            BVec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
-
-        for barrier in global_barriers {
-            translated_global_barriers.push(
-                vk::MemoryBarrier2::default()
-                    .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
-                    .dst_stage_mask(barrier_sync_to_vk2(barrier.after_sync))
-                    .src_access_mask(barrier_access_to_vk2(barrier.before_access))
-                    .dst_access_mask(barrier_access_to_vk2(barrier.after_access)),
-            );
-        }
-
-        for barrier in buffer_barriers {
-            let buffer = barrier.buffer.unwrap();
-            let buffer = Buffer::get(buffer);
-
-            let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
-                let src_family = self._device.get_queue_family_index(transition.before_queue);
-                let dst_family = self._device.get_queue_family_index(transition.after_queue);
-                (src_family, dst_family)
-            } else {
-                (0, 0)
-            };
-
-            translated_buffer_barriers.push(
-                vk::BufferMemoryBarrier2::default()
-                    .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
-                    .dst_stage_mask(barrier_sync_to_vk2(barrier.after_sync))
-                    .src_access_mask(barrier_access_to_vk2(barrier.before_access))
-                    .dst_access_mask(barrier_access_to_vk2(barrier.after_access))
-                    .buffer(buffer.buffer)
-                    .offset(barrier.offset)
-                    .size(barrier.size)
-                    .src_queue_family_index(src_family)
-                    .dst_queue_family_index(dst_family),
-            );
-        }
-
-        for barrier in texture_barriers {
-            // Grab the d3d12 resource handle from our texture impls
-            let texture = Texture::get(barrier.texture.unwrap());
-
-            let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
-                let src_family = self._device.get_queue_family_index(transition.before_queue);
-                let dst_family = self._device.get_queue_family_index(transition.after_queue);
-                (src_family, dst_family)
-            } else {
-                (0, 0)
-            };
-
-            translated_texture_barriers.push(
-                vk::ImageMemoryBarrier2::default()
-                    .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
-                    .dst_stage_mask(barrier_sync_to_vk2(barrier.after_sync))
-                    .src_access_mask(barrier_access_to_vk2(barrier.before_access))
-                    .dst_access_mask(barrier_access_to_vk2(barrier.after_access))
-                    .old_layout(image_layout_to_vk(barrier.before_layout))
-                    .new_layout(image_layout_to_vk(barrier.after_layout))
-                    .image(texture.image)
-                    .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
-                    .src_queue_family_index(src_family)
-                    .dst_queue_family_index(dst_family),
-            );
-        }
-
-        let info = vk::DependencyInfo::default()
-            .memory_barriers(&translated_global_barriers)
-            .buffer_memory_barriers(&translated_buffer_barriers)
-            .image_memory_barriers(&translated_texture_barriers);
-
-        unsafe {
-            loader.cmd_pipeline_barrier2(self._buffer, &info);
+            self._device.device.cmd_begin_rendering(self._buffer, &info);
         }
     }
 }
