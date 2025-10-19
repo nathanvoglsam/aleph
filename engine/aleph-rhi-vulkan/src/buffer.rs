@@ -47,6 +47,7 @@ pub struct Buffer {
     pub(crate) buffer: vk::Buffer,
     pub(crate) allocation: Option<GpuAllocation>,
     pub(crate) map_state: Mutex<MapState>,
+    pub(crate) memory: vk::DeviceMemory,
     pub(crate) desc: OwnedBufferDesc,
 }
 
@@ -122,21 +123,35 @@ impl Buffer {
     }
 
     pub(crate) fn flush_buffer_range(&self, device: &Device, offset: u64, len: u64) {
-        // unsafe {
-        //     device
-        //         .allocator
-        //         .flush_allocation(self.allocation, offset, len)
-        //         .unwrap();
-        // }
+        unsafe {
+            let memory_offset = self.allocation.as_ref().map(|v| v.block_offset() as u64).unwrap_or(0);
+            let offset = memory_offset + offset;
+            let size = len.min(self.desc().size);
+            let ranges = [vk::MappedMemoryRange {
+                memory: self.memory,
+                offset,
+                size,
+                ..Default::default()
+            }];
+            device
+                .device.flush_mapped_memory_ranges(&ranges).unwrap();
+        }
     }
 
     pub(crate) fn invalidate_buffer_range(&self, device: &Device, offset: u64, len: u64) {
-        // unsafe {
-        //     device
-        //         .allocator
-        //         .invalidate_allocation(self.allocation, offset, len)
-        //         .unwrap();
-        // }
+        unsafe {
+            let memory_offset = self.allocation.as_ref().map(|v| v.block_offset() as u64).unwrap_or(0);
+            let offset = memory_offset + offset;
+            let size = len.min(self.desc().size);
+            let ranges = [vk::MappedMemoryRange {
+                memory: self.memory,
+                offset,
+                size,
+                ..Default::default()
+            }];
+            device
+                .device.invalidate_mapped_memory_ranges(&ranges).unwrap();
+        }
     }
 }
 

@@ -651,6 +651,7 @@ impl IDevice for Device {
             id: self.object_counter.next_buffer(),
             buffer,
             allocation: Some(allocation),
+            memory: metadata.memory,
             map_state: Mutex::new(MapState {
                 count: 0,
                 ptr: metadata.mapped_address,

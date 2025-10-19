@@ -326,6 +326,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
             let base = base.map(|v| v.add(allocation.block_offset() as usize));
 
             VulkanAllocationMetadata {
+                memory: block_info.memory,
                 mapped_address: base,
             }
         }
@@ -446,5 +447,6 @@ pub struct VulkanBlockInfo {
 unsafe impl Send for VulkanBlockInfo {}
 
 pub struct VulkanAllocationMetadata {
+    pub memory: vk::DeviceMemory,
     pub mapped_address: Option<NonNull<u8>>,
 }
