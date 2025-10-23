@@ -31,7 +31,7 @@ use std::ptr::NonNull;
 
 use aleph_gpu_allocator::{
     AllocationDesc, AllocatorConfig, GpuAllocation, GpuLayout, IApiBridge, MemoryLocation,
-    MemoryPool, MemoryRequirements,
+    MemoryPool, MemoryRequirements, PoolConfig,
 };
 use ash::vk;
 
@@ -69,11 +69,12 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
         ) -> u32 {
             let mut bitset = 0;
             for memory_type in types {
+                bitset <<= 1; // does nothing on first iteration, post shift would over-shift
+
                 let type_is_superset = (memory_type.property_flags & wanted_mask) == wanted_mask;
                 if type_is_superset {
                     bitset |= 1;
                 }
-                bitset <<= 1;
             }
             bitset
         }
@@ -141,14 +142,20 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     ) -> Vec<MemoryPool<Self>> {
         let mut pools = Vec::new();
         for (i, memory_type) in info.memory_props.memory_types_as_slice().iter().enumerate() {
+            let mappable = memory_type
+                .property_flags
+                .contains(vk::MemoryPropertyFlags::HOST_VISIBLE);
+
+            let config = PoolConfig {
+                is_mappable: mappable,
+            };
+
             let info = VulkanPoolInfo {
                 memory_type_index: i as u32,
-                mappable: memory_type
-                    .property_flags
-                    .contains(vk::MemoryPropertyFlags::HOST_VISIBLE),
+                mappable,
                 is_buffer_pool: false,
             };
-            let pool = MemoryPool::<Self>::new(info);
+            let pool = MemoryPool::<Self>::new(config.clone(), info);
             pools.push(pool);
 
             let info = VulkanPoolInfo {
@@ -158,7 +165,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
                     .contains(vk::MemoryPropertyFlags::HOST_VISIBLE),
                 is_buffer_pool: true,
             };
-            let pool = MemoryPool::<Self>::new(info);
+            let pool = MemoryPool::<Self>::new(config, info);
             pools.push(pool);
         }
         pools

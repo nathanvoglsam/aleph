@@ -124,7 +124,11 @@ impl Buffer {
 
     pub(crate) fn flush_buffer_range(&self, device: &Device, offset: u64, len: u64) {
         unsafe {
-            let memory_offset = self.allocation.as_ref().map(|v| v.block_offset() as u64).unwrap_or(0);
+            let memory_offset = self
+                .allocation
+                .as_ref()
+                .map(|v| v.block_offset() as u64)
+                .unwrap_or(0);
             let offset = memory_offset + offset;
             let size = len.min(self.desc().size);
             let ranges = [vk::MappedMemoryRange {
@@ -133,14 +137,17 @@ impl Buffer {
                 size,
                 ..Default::default()
             }];
-            device
-                .device.flush_mapped_memory_ranges(&ranges).unwrap();
+            device.device.flush_mapped_memory_ranges(&ranges).unwrap();
         }
     }
 
     pub(crate) fn invalidate_buffer_range(&self, device: &Device, offset: u64, len: u64) {
         unsafe {
-            let memory_offset = self.allocation.as_ref().map(|v| v.block_offset() as u64).unwrap_or(0);
+            let memory_offset = self
+                .allocation
+                .as_ref()
+                .map(|v| v.block_offset() as u64)
+                .unwrap_or(0);
             let offset = memory_offset + offset;
             let size = len.min(self.desc().size);
             let ranges = [vk::MappedMemoryRange {
@@ -150,7 +157,9 @@ impl Buffer {
                 ..Default::default()
             }];
             device
-                .device.invalidate_mapped_memory_ranges(&ranges).unwrap();
+                .device
+                .invalidate_mapped_memory_ranges(&ranges)
+                .unwrap();
         }
     }
 }

@@ -27,7 +27,10 @@
 // SOFTWARE.
 //
 
-use aleph_alloc::offset_allocator;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+
+use aleph_alloc::instrumentation::{IAllocationCategory, Instrumented, system};
+use aleph_alloc::{BVec, offset_allocator};
 use parking_lot::Mutex;
 
 use crate::{
@@ -35,7 +38,7 @@ use crate::{
 };
 
 pub struct GpuAllocator<T: IApiBridge> {
-    memory_pools: Vec<MemoryPool<T>>,
+    memory_pools: BVec<MemoryPool<T>, GpuAllocatorHostSystem>,
     info: T::AllocatorInfo,
 }
 
@@ -43,10 +46,16 @@ impl<T: IApiBridge> GpuAllocator<T> {
     pub fn new(bridge: &T::BridgeHandle<'_>) -> Self {
         let config = AllocatorConfig::default();
         let info = T::get_allocator_info(bridge);
-        let mut memory_pools = T::get_memory_pools(bridge, &info, &AllocatorConfig::default());
-        for (pool_index, memory_pool) in memory_pools.iter_mut().enumerate() {
+        let in_memory_pools = T::get_memory_pools(bridge, &info, &AllocatorConfig::default());
+        let mut memory_pools = BVec::with_capacity_in(in_memory_pools.len(), system());
+        for (pool_index, mut memory_pool) in in_memory_pools.into_iter().enumerate() {
             memory_pool.pool_index = pool_index as u16;
-            memory_pool.config = config.clone();
+            if memory_pool.pool_config.is_mappable {
+                memory_pool.default_block_size = config.default_host_block_size;
+            } else {
+                memory_pool.default_block_size = config.default_block_size;
+            }
+            memory_pools.push(memory_pool);
         }
         Self { memory_pools, info }
     }
@@ -150,33 +159,89 @@ impl<T: IApiBridge> GpuAllocator<T> {
             });
         });
     }
+
+    /// Take a coarse snapshot of various allocator statistics and return them too the caller.
+    ///
+    /// This is only a _snapshot_ and may not represent the true state of the allocator at _any_
+    /// point in time. These statistics may be tracked and tallied atomically, _and individually_.
+    /// Each value is captured at a different time and so the relationships between values in this
+    /// struct may not be fully coherent. These statistics should be tracked over time and not
+    /// interpreted in isolation.
+    ///
+    /// If memory instrumentation is disabled these statistics are not tracked, and this will return
+    /// zero values.
+    pub fn get_stats_summary(&self) -> AllocatorStatsSummary {
+        let mut out = AllocatorStatsSummary::default();
+        for pool in self.memory_pools.iter() {
+            out.tally_pool_stats(&pool.stats);
+        }
+        out
+    }
+}
+
+/// Coarse summary of various internally tracked statistics from all pools managed by the allocator.
+#[derive(Default, Clone)]
+pub struct AllocatorStatsSummary {
+    /// Tracks the total number of live allocations that have been created from the allocator. This
+    /// is a total of both dedicated and sub-allocated allocations.
+    num_allocations: usize,
+
+    /// Tracks the total number of live _dedicated_ allocations that have been created in the
+    /// allocator. This totals only dedicated allocations.
+    num_dedicated_allocations: usize,
+
+    /// Tracks the total number of bytes used by allocations across all blocks in all pools. This
+    /// does not track fragmentation, and is simply a total of memory consumed by all live
+    /// allocations.
+    used_bytes: u64,
+
+    /// Tracks the number of bytes reserved for all live blocks allocated in all pools.
+    reserved_bytes: u64,
+}
+
+impl AllocatorStatsSummary {
+    fn tally_pool_stats(&mut self, stats: &InternalPoolStats) {
+        self.num_allocations += stats.num_allocations.load(Ordering::Relaxed);
+        self.num_dedicated_allocations += stats.num_dedicated_allocations.load(Ordering::Relaxed);
+        self.used_bytes += stats.used_bytes.load(Ordering::Relaxed);
+        self.reserved_bytes += stats.reserved_bytes.load(Ordering::Relaxed);
+    }
 }
 
 pub struct MemoryPool<T: IApiBridge + ?Sized> {
     /// The index of this memory pool in the pool list of the owning [`GpuAllocator`].
     pool_index: u16,
 
-    /// Allocator configuration. Given from the owning [`GpuAllocator`].
-    config: AllocatorConfig,
+    /// The configured default block size for this pool. This may vary based on the type of memory
+    /// the pool sub-allocates from.
+    default_block_size: u32,
+
+    /// Pool specific configuration, given from the [`IApiBridge`] constructing each pool.
+    pool_config: PoolConfig,
 
     /// The set of memory blocks currently managed by the pool. This is managed separately to the
     /// set of dedicated blocks
     pool_blocks: Mutex<PoolBlocks<T>>,
 
-    /// The set of blocks that back allocations using a dedicated blockl
+    /// The set of blocks that back allocations using a dedicated block.
     dedicated_blocks: Mutex<DedicatedBlocks<T>>,
+
+    /// Allocation statistics.
+    stats: InternalPoolStats,
 
     /// Backend specific information that should be attached to memory pools.
     info: T::PoolInfo,
 }
 
 impl<T: IApiBridge + ?Sized> MemoryPool<T> {
-    pub fn new(info: T::PoolInfo) -> Self {
+    pub fn new(config: PoolConfig, info: T::PoolInfo) -> Self {
         Self {
-            pool_index: 0,              // will be patched by the gpu allocator
-            config: Default::default(), // will be patched by the gpu allocator
+            pool_index: 0,         // will be patched by the gpu allocator
+            default_block_size: 0, // will be patched by the gpu allocator
+            pool_config: config,
             pool_blocks: Default::default(),
             dedicated_blocks: Default::default(),
+            stats: Default::default(),
             info,
         }
     }
@@ -193,7 +258,7 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
         // If the requested allocation size is greater than half the default block size then we
         // opt to force a dedicated allocation for this allocation instead. This is a heuristic
         // to avoid long searches for blocks with enough space.
-        if layout.size() > self.config.default_block_size as u64 / 2 {
+        let out = if layout.size() > self.default_block_size as u64 / 2 {
             self.allocate_dedicated_block(
                 bridge,
                 info,
@@ -224,7 +289,12 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
             pool_blocks.incrementally_sort_blocks_by_free_size();
 
             Some((allocation, metadata, buffer))
-        }
+        };
+
+        out.inspect(|(allocation, _, _)| {
+            self.stats.add_tracked_allocation();
+            self.stats.track_layout_allocation(&allocation.layout);
+        })
     }
 
     pub(crate) unsafe fn allocate_texture(
@@ -239,7 +309,7 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
         // If the requested allocation size is greater than half the default block size then we
         // opt to force a dedicated allocation for this allocation instead. This is a heuristic
         // to avoid long searches for blocks with enough space.
-        if layout.size() > self.config.default_block_size as u64 / 2 {
+        let out = if layout.size() > self.default_block_size as u64 / 2 {
             self.allocate_dedicated_block(
                 bridge,
                 info,
@@ -270,7 +340,12 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
             pool_blocks.incrementally_sort_blocks_by_free_size();
 
             Some((allocation, metadata, texture))
-        }
+        };
+
+        out.inspect(|(allocation, _, _)| {
+            self.stats.add_tracked_allocation();
+            self.stats.track_layout_allocation(&allocation.layout);
+        })
     }
 
     unsafe fn allocate_block(
@@ -341,12 +416,14 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
 
         // Create a new block to satisfy the allocation, as we've failed to find space in an
         // existing memory block.
-        let block_size = self.config.default_block_size;
+        let block_size = self.default_block_size;
         let block = unsafe { T::create_block(bridge, info, &self.info, block_size as u64)? };
 
         // Insert a new block object into the memory block set.
+        let sub_allocator =
+            GpuAllocatorHost::with(|| offset_allocator::OffsetAllocator::new(block_size, 4096));
         let block = MemoryBlock::<T> {
-            sub_allocator: offset_allocator::OffsetAllocator::new(block_size, 65535),
+            sub_allocator,
             pool_index: self.pool_index,
             block_index,
             block_size,
@@ -355,6 +432,7 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
         };
         pool_blocks.memory_blocks.push(block);
         pool_blocks.sorted_blocks.push(block_index as usize);
+        self.stats.track_block_allocation(block_size as u64);
 
         // Query the block we just inserted back and serve the allocation from that new block.
         //
@@ -365,7 +443,10 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
         // If we didn't do it this way we'd have to either free the block, or ensure we insert
         // the block into the set in both the fail and success code paths.
         let block = &mut pool_blocks.memory_blocks[block_index as usize];
-        block.allocate(layout)
+        match block.allocate(layout) {
+            None => None,
+            Some(v) => Some(v),
+        }
     }
 
     fn allocate_dedicated_block<DT, HT>(
@@ -441,6 +522,9 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
             }
         }
 
+        self.stats.track_block_allocation(layout.size());
+        self.stats.add_tracked_dedicated_allocation();
+
         Some((allocation, metadata, resource))
     }
 
@@ -452,7 +536,12 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
     ) {
         debug_assert_eq!(self.pool_index, allocation.pool_index);
 
+        self.stats.sub_tracked_allocation();
+        self.stats.track_layout_deallocation(&allocation.layout);
         if allocation.is_dedicated() {
+            self.stats.sub_tracked_dedicated_allocation();
+            self.stats.track_block_deallocation(allocation.layout.size());
+
             let mut dedicated_blocks = self.dedicated_blocks.lock();
             dedicated_blocks.free_blocks.push(allocation.block_index);
 
@@ -470,21 +559,27 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
     }
 }
 
+#[derive(Clone, Default, Debug)]
+pub struct PoolConfig {
+    /// Can this memory be mapped into the host address space?
+    pub is_mappable: bool,
+}
+
 struct PoolBlocks<T: IApiBridge + ?Sized> {
     /// Set of all sub-allocated memory blocks in this pool.
-    memory_blocks: Vec<MemoryBlock<T>>,
+    memory_blocks: BVec<MemoryBlock<T>, GpuAllocatorHostSystem>,
 
     /// Associated table that provides a sorted view of 'memory_blocks'. This table stores indices
     /// into the 'memory_blocks' list and will be incrementally sorted to provide an index of blocks
     /// from least to most free space.
-    sorted_blocks: Vec<usize>,
+    sorted_blocks: BVec<usize, GpuAllocatorHostSystem>,
 }
 
 impl<T: IApiBridge + ?Sized> Default for PoolBlocks<T> {
     fn default() -> Self {
         Self {
-            memory_blocks: Default::default(),
-            sorted_blocks: Default::default(),
+            memory_blocks: BVec::new_in(system()),
+            sorted_blocks: BVec::new_in(system()),
         }
     }
 }
@@ -519,21 +614,21 @@ impl<T: IApiBridge + ?Sized> PoolBlocks<T> {
 struct DedicatedBlocks<T: IApiBridge + ?Sized> {
     /// Backing storage for each dedicated memory block. This will contain a mix of live and dead
     /// memory blocks, which is required to keep indices into this array stable.
-    memory_blocks: Vec<T::BlockInfo>,
+    memory_blocks: BVec<T::BlockInfo, GpuAllocatorHostSystem>,
 
     /// A list of indices into 'memory_blocks' that are free to reuse.
     ///
     /// This _could_ use a union based linked list, stored in the space of free block entries. It
     /// would save memory. However, the memory overhead is small compared to the average size of a
     /// dedicated block. I think the simplicity of two arrays is worth the memory cost.
-    free_blocks: Vec<u16>,
+    free_blocks: BVec<u16, GpuAllocatorHostSystem>,
 }
 
 impl<T: IApiBridge + ?Sized> Default for DedicatedBlocks<T> {
     fn default() -> Self {
         Self {
-            memory_blocks: Default::default(),
-            free_blocks: Default::default(),
+            memory_blocks: BVec::new_in(system()),
+            free_blocks: BVec::new_in(system()),
         }
     }
 }
@@ -558,6 +653,85 @@ impl<T: IApiBridge + ?Sized> DedicatedBlocks<T> {
                 Err(_) => Err(block),
             }
         }
+    }
+}
+
+/// This data is updated atomically, potentially across any number of threads. Any value read
+/// from this is just a snapshot in time, the state can change at any time.
+#[derive(Default)]
+struct InternalPoolStats {
+    /// Tracks the total number of live allocations that have been sub-allocated in the pool. This
+    /// is a total of both dedicated and sub-allocated allocations.
+    num_allocations: AtomicUsize,
+
+    /// Tracks the total number of live _dedicated_ allocations that have been sub-allocated in the
+    /// pool. This totals only dedicated allocations, and should be <= 'num_allocations'.
+    num_dedicated_allocations: AtomicUsize,
+
+    /// Tracks the total number of bytes used by allocations across all blocks in the pool. This
+    /// does not track fragmentation, and is simply a total of memory consumed by all live
+    /// allocations.
+    used_bytes: AtomicU64,
+
+    /// Tracks the number of bytes reserved for all live blocks allocated in the pool.
+    reserved_bytes: AtomicU64,
+}
+
+impl InternalPoolStats {
+    fn add_tracked_allocation(&self) {
+        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+            return;
+        }
+        self.num_allocations.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn sub_tracked_allocation(&self) {
+        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+            return;
+        }
+        self.num_allocations.fetch_sub(1, Ordering::Relaxed);
+    }
+
+    fn add_tracked_dedicated_allocation(&self) {
+        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+            return;
+        }
+        self.num_dedicated_allocations.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn sub_tracked_dedicated_allocation(&self) {
+        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+            return;
+        }
+        self.num_dedicated_allocations.fetch_sub(1, Ordering::Relaxed);
+    }
+
+    fn track_layout_allocation(&self, layout: &GpuLayout) {
+        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+            return;
+        }
+        self.used_bytes.fetch_add(layout.size(), Ordering::Relaxed);
+    }
+
+    fn track_layout_deallocation(&self, layout: &GpuLayout) {
+        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+            return;
+        }
+        self.used_bytes.fetch_sub(layout.size(), Ordering::Relaxed);
+    }
+
+    fn track_block_allocation(&self, size: u64) {
+        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+            return;
+        }
+        self.reserved_bytes.fetch_add(size, Ordering::Relaxed);
+    }
+
+    fn track_block_deallocation(&self, size: u64) {
+        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+            return;
+        }
+        self.reserved_bytes.fetch_sub(size, Ordering::Relaxed);
     }
 }
 
@@ -598,7 +772,7 @@ impl<T: IApiBridge + ?Sized> MemoryBlock<T> {
             return None;
         }
 
-        // Allocte a block, padded out so we can offset within the block to satisfy the requested
+        // Allocate a block, padded out so we can offset within the block to satisfy the requested
         // alignment.
         //
         // We don't deal with buffer/image granularity here, we make the choice to not place images
@@ -679,3 +853,8 @@ impl Default for AllocatorConfig {
         }
     }
 }
+
+pub struct GpuAllocatorHost;
+aleph_alloc::new_alloc_category!(GpuAllocatorHost, "0199fec4-0296-7160-9f21-9e10a6abaeca");
+
+pub type GpuAllocatorHostSystem = Instrumented<GpuAllocatorHost>;

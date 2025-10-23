@@ -32,7 +32,7 @@ mod gpu_allocator;
 mod gpu_layout;
 
 pub use gpu_allocation::GpuAllocation;
-pub use gpu_allocator::{AllocatorConfig, GpuAllocator, MemoryBlock, MemoryPool};
+pub use gpu_allocator::{AllocatorConfig, GpuAllocator, MemoryBlock, MemoryPool, PoolConfig};
 pub use gpu_layout::GpuLayout;
 
 /// Supported set of allocation memory locations. Used when making device allocations to determine
@@ -75,11 +75,11 @@ pub trait IApiBridge {
     type TextureHandle: Sized;
 
     /// The GPU API description of a buffer. This will be passed into the resource create function
-    /// so the bridge can construct an approprite resource and bind the allocated memory to it.
+    /// so the bridge can construct an appropriate resource and bind the allocated memory to it.
     type BufferDesc<'a>: Sized + 'a;
 
     /// The GPU API description of a texture. This will be passed into the resource create function
-    /// so the bridge can construct an approprite resource and bind the allocated memory to it.
+    /// so the bridge can construct an appropriate resource and bind the allocated memory to it.
     type TextureDesc<'a>: Sized + 'a;
 
     /// Cached information associated with a whole allocator. This would typically contain
