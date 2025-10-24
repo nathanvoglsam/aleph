@@ -796,7 +796,8 @@ impl<T: IApiBridge + ?Sized> MemoryBlock<T> {
                 None
             }
             Some(block_start) => {
-                debug_assert!(block_start as u64 + layout.size() < self.block_size as u64);
+                let block_end = block_start as u64 + layout.size();
+                debug_assert!(block_end <= self.block_size as u64);
 
                 // Update the heuristic for number of bytes used from the block
                 self.used_bytes += alloc_size;
