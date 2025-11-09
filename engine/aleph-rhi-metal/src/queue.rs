@@ -222,9 +222,7 @@ impl Queue {
     pub fn wait_idle_internal(&self) {
         while let Some(mut v) = self.in_flight.pop() {
             for list in v.lists.drain(..) {
-                unsafe {
-                    list.objects.list.waitUntilCompleted();
-                }
+                list.objects.list.waitUntilCompleted();
             }
         }
     }

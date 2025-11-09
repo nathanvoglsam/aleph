@@ -54,6 +54,7 @@ aleph-render = { workspace = true }
 aleph-device-allocators = { workspace = true }
 aleph-profile = { workspace = true, features = [] }
 aleph-ktx = { workspace = true }
+aleph-mikktspace = { workspace = true }
 
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -61,8 +62,6 @@ bytemuck = { workspace = true }
 rayon = { workspace = true }
 log = { workspace = true }
 crossbeam = { workspace = true }
-
-mikktspace = "0.3"
 
 [dependencies.gltf]
 version = "1"

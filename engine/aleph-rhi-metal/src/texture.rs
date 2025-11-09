@@ -65,7 +65,7 @@ impl Texture {
         device: &Device,
         desc: &TextureDesc,
     ) -> Result<TextureHandle, TextureCreateError> {
-        let mtl_desc = unsafe { MTLTextureDescriptor::new() };
+        let mtl_desc = MTLTextureDescriptor::new();
         unsafe {
             let (array_len, texture_type) = match (desc.array_size, desc.dimension) {
                 (v, TextureDimension::Texture1D) if v > 1 => (v, MTLTextureType::Type1DArray),

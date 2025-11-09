@@ -226,7 +226,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
         autoreleasepool(|_| {
-            let mtl_desc = unsafe { MTLRenderPassDescriptor::new() };
+            let mtl_desc = MTLRenderPassDescriptor::new();
 
             let mtl_color_attachments = mtl_desc.colorAttachments();
             for (i, color_attachment) in info.color_attachments.iter().enumerate() {
@@ -270,7 +270,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 let texture = view.texture.as_ref();
 
                 if let Some(ops) = &attachment.depth {
-                    let mtl_attachment = unsafe { MTLRenderPassDepthAttachmentDescriptor::new() };
+                    let mtl_attachment = MTLRenderPassDepthAttachmentDescriptor::new();
                     mtl_attachment.setTexture(Some(texture));
                     mtl_attachment.setLevel(0);
                     mtl_attachment.setSlice(0);
@@ -294,7 +294,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 }
 
                 if let Some(ops) = &attachment.stencil {
-                    let mtl_attachment = unsafe { MTLRenderPassStencilAttachmentDescriptor::new() };
+                    let mtl_attachment = MTLRenderPassStencilAttachmentDescriptor::new();
 
                     // We use the same attachment here intentionally
                     mtl_attachment.setTexture(Some(texture));
@@ -572,7 +572,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                 match write {
                     ParameterWrite::Sampler(v) => {
                         let sampler = Sampler::get(v.sampler);
-                        let id = unsafe { sampler.objects.sampler.gpuResourceID() };
+                        let id = sampler.objects.sampler.gpuResourceID();
                         let id = id.to_raw();
                         push_params[i] = id;
                     }
@@ -628,9 +628,9 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         // TODO: actually do real barriers for real...
         match &self.active {
             ActiveEncoder::Graphics(_) => {}
-            ActiveEncoder::Compute(v) => unsafe {
+            ActiveEncoder::Compute(v) => {
                 v.memoryBarrierWithScope(MTLBarrierScope::Buffers | MTLBarrierScope::Textures);
-            },
+            }
             ActiveEncoder::Copy(_) => {}
             ActiveEncoder::None => {}
         }

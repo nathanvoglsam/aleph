@@ -75,62 +75,60 @@ impl ISurface for Surface {
         autoreleasepool(|_| {
             let device = unwrap::device(device);
 
-            unsafe {
-                let size = self.objects.layer.drawableSize();
-                let width = size.width as u32;
-                let height = size.height as u32;
+            let size = self.objects.layer.drawableSize();
+            let width = size.width as u32;
+            let height = size.height as u32;
 
-                if width != config.width || height != config.height {
-                    log::debug!(
-                        "CAMetalLayer size was ({}, {}). Setting to ({}, {})",
-                        width,
-                        height,
-                        config.width,
-                        config.height
-                    );
+            if width != config.width || height != config.height {
+                log::debug!(
+                    "CAMetalLayer size was ({}, {}). Setting to ({}, {})",
+                    width,
+                    height,
+                    config.width,
+                    config.height
+                );
 
-                    self.objects.layer.setDrawableSize(CGSize {
-                        width: config.width as f64,
-                        height: config.height as f64,
-                    });
-                } else {
-                    log::debug!("CAMetalLayer size is already ({}, {})", width, height);
-                }
+                self.objects.layer.setDrawableSize(CGSize {
+                    width: config.width as f64,
+                    height: config.height as f64,
+                });
+            } else {
+                log::debug!("CAMetalLayer size is already ({}, {})", width, height);
+            }
 
-                let format = conv::pixel_mtl_to_format(self.objects.layer.pixelFormat());
-                if format != config.format {
-                    log::debug!(
-                        "CAMetalLayer format was {}. Setting to {}",
-                        format,
-                        config.format
-                    );
+            let format = conv::pixel_mtl_to_format(self.objects.layer.pixelFormat());
+            if format != config.format {
+                log::debug!(
+                    "CAMetalLayer format was {}. Setting to {}",
+                    format,
+                    config.format
+                );
 
-                    let mtl_format = conv::format_to_pixel_mtl(config.format);
-                    self.objects.layer.setPixelFormat(mtl_format);
-                } else {
-                    log::debug!(
-                        "CAMetalLayer format is already {}. Doing nothing",
-                        config.format
-                    );
-                }
+                let mtl_format = conv::format_to_pixel_mtl(config.format);
+                self.objects.layer.setPixelFormat(mtl_format);
+            } else {
+                log::debug!(
+                    "CAMetalLayer format is already {}. Doing nothing",
+                    config.format
+                );
+            }
 
-                let image_count = self.objects.layer.maximumDrawableCount();
-                if image_count != config.buffer_count as usize {
-                    log::debug!(
-                        "CAMetalLayer maximumDrawableCount was '{}'. Setting to '{}'",
-                        image_count,
-                        config.buffer_count
-                    );
+            let image_count = self.objects.layer.maximumDrawableCount();
+            if image_count != config.buffer_count as usize {
+                log::debug!(
+                    "CAMetalLayer maximumDrawableCount was '{}'. Setting to '{}'",
+                    image_count,
+                    config.buffer_count
+                );
 
-                    self.objects
-                        .layer
-                        .setMaximumDrawableCount(config.buffer_count as usize);
-                } else {
-                    log::debug!(
-                        "CAMetalLayer maximumDrawableCount is already '{}'",
-                        image_count
-                    );
-                }
+                self.objects
+                    .layer
+                    .setMaximumDrawableCount(config.buffer_count as usize);
+            } else {
+                log::debug!(
+                    "CAMetalLayer maximumDrawableCount is already '{}'",
+                    image_count
+                );
             }
 
             let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {

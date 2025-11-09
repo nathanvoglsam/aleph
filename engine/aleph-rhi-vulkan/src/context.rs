@@ -44,14 +44,12 @@ use crate::VulkanConfig;
 use crate::adapter::Adapter;
 use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::device_info::DeviceInfo;
-use crate::internal::loader::LibraryType;
 use crate::internal::unwrap;
 use crate::surface::Surface;
 
 pub struct Context {
     pub _this: AnyWeak<Self>,
     pub _config: VulkanConfig,
-    pub library: ManuallyDrop<LibraryType>,
     pub entry_loader: ManuallyDrop<ash::Entry>,
     pub instance: ManuallyDrop<ash::Instance>,
     pub surface_loaders: SurfaceLoaders,
@@ -573,7 +571,6 @@ impl Drop for Context {
             self.instance.destroy_instance(GLOBAL);
             ManuallyDrop::drop(&mut self.instance);
             ManuallyDrop::drop(&mut self.entry_loader);
-            ManuallyDrop::drop(&mut self.library);
         }
     }
 }

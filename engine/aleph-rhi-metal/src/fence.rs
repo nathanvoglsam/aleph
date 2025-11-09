@@ -63,10 +63,8 @@ impl Fence {
             None => return Err(FenceCreateError::Platform),
         };
 
-        unsafe {
-            if signalled {
-                event.setSignaledValue(1);
-            }
+        if signalled {
+            event.setSignaledValue(1);
         }
 
         let fence = Fence {
@@ -121,10 +119,8 @@ impl Fence {
 
     /// Returns if the fence has been signalled
     pub fn poll_signalled(&self) -> bool {
-        unsafe {
-            let value = self.get_wait_value();
-            self.objects.event.signaledValue() >= value
-        }
+        let value = self.get_wait_value();
+        self.objects.event.signaledValue() >= value
     }
 }
 

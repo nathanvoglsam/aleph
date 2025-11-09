@@ -29,53 +29,17 @@
 
 
 [package]
-name = "aleph-engine"
+name = "aleph-mikktspace"
 version = "0.1.0"
 authors.workspace = true
-description = "A Rust and Vulkan powered 3D game engine"
+description = "Mikktspace Tangent Space"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-engine/"
-keywords = ["engine", "graphics", "vulkan", "game"]
-categories = ["game-engines"]
+documentation = "https://docs.rs/aleph-mikktspace/"
 edition.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[package.metadata.aleph]
-configs = ["core", "rhi"]
-
 [dependencies]
-aleph-alloc = { workspace = true }
-aleph-object-system = { workspace = true }
-aleph-interfaces = { workspace = true }
-aleph-target = { workspace = true }
-aleph-sys-info = { workspace = true }
-aleph-profile = { workspace = true }
-aleph-config = { workspace = true }
-aleph-identity-hasher = { workspace = true }
-aleph-rhi-loader = { workspace = true }
-aleph-rhi-api = { workspace = true }
-aleph-objc = { workspace = true }
-
-log = { workspace = true }
-utf16_lit = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-rayon = { workspace = true }
-sdl3 = { workspace = true }
-parking_lot = { workspace = true }
-raw-window-handle = { workspace = true }
-smallbox = { workspace = true }
-env_logger = { workspace = true }
-
-[build-dependencies]
-aleph-compile = { workspace = true }
-aleph-target-build = { workspace = true }
-
-[target.'cfg(windows)'.dependencies]
-aleph-windows = { workspace = true }
-
-[target.'cfg(target_os = "linux")'.dependencies]
-libc = { workspace = true }
+ultraviolet = { workspace = true }

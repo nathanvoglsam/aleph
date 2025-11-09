@@ -47,18 +47,6 @@ fn message_severity_log_level(severity: vk::DebugUtilsMessageSeverityFlagsEXT) -
     }
 }
 
-fn message_type_colour(mtype: vk::DebugUtilsMessageTypeFlagsEXT) -> console::Color {
-    if mtype == vk::DebugUtilsMessageTypeFlagsEXT::GENERAL {
-        console::Color::Green
-    } else if mtype == vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION {
-        console::Color::Red
-    } else if mtype == vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE {
-        console::Color::Yellow
-    } else {
-        console::Color::Black
-    }
-}
-
 fn message_type_string(mtype: vk::DebugUtilsMessageTypeFlagsEXT) -> &'static str {
     if mtype == vk::DebugUtilsMessageTypeFlagsEXT::GENERAL {
         "GENERAL"
@@ -74,10 +62,7 @@ fn message_type_string(mtype: vk::DebugUtilsMessageTypeFlagsEXT) -> &'static str
 unsafe fn print_message(callback_data: &vk::DebugUtilsMessengerCallbackDataEXT, level: Level) {
     unsafe {
         let message = CStr::from_ptr(callback_data.p_message).to_str().unwrap();
-        let message = console::style(message).italic();
-
-        let message_header = console::style("Message").cyan().bold();
-        log!(level, "================{}=================", message_header);
+        log!(level, "================Message=================");
         log!(level, "{}", message);
     }
 }
@@ -143,8 +128,7 @@ unsafe fn print_call_stack(callback_data: &vk::DebugUtilsMessengerCallbackDataEX
                 indent += 2;
             }
 
-            let labels_header = console::style("Call Stack").cyan().bold();
-            log!(level, "==============={}===============", labels_header);
+            log!(level, "===============Call Stack===============");
             log!(level, "{}", label_stack);
         }
     }
@@ -159,17 +143,11 @@ pub unsafe extern "system" fn vulkan_debug_messenger(
     unsafe {
         let severity_level = message_severity_log_level(message_severity);
 
-        let mtype_colour = message_type_colour(message_types);
         let mtype_string = message_type_string(message_types);
-
-        let mtype = console::style(mtype_string).fg(mtype_colour).bold();
-
         let callback_data = p_callback_data.as_ref().expect("Nullptr for callback data");
 
-        let main_header = console::style("Vulkan Debug Message").cyan().bold();
-
-        log!(severity_level, "=========={}==========", main_header);
-        log!(severity_level, "Type     : {}", mtype);
+        log!(severity_level, "==========Vulkan Debug Message==========");
+        log!(severity_level, "Type     : {}", mtype_string);
         print_message(callback_data, severity_level);
         print_call_stack(callback_data, severity_level);
         log!(severity_level, "========================================");

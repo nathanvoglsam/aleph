@@ -350,12 +350,10 @@ impl IDevice for Device {
             // The single fence case can just call a wait function directly.
             [fence] => {
                 let fence = Fence::get(fence);
-                let result = unsafe {
-                    fence
-                        .objects
-                        .event
-                        .waitUntilSignaledValue_timeoutMS(fence.get_wait_value(), timeout as u64)
-                };
+                let result = fence
+                    .objects
+                    .event
+                    .waitUntilSignaledValue_timeoutMS(fence.get_wait_value(), timeout as u64);
                 if result {
                     FenceWaitResult::Complete
                 } else {

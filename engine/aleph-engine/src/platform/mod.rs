@@ -113,13 +113,6 @@ impl PlatformSDL3 {
 
 impl PlatformSDL3 {
     pub(crate) fn on_init(&mut self, registry: &mut RegistryAccessor) {
-        let quit_handle = registry.quit_handle.clone();
-        ctrlc::set_handler(move || {
-            println!();
-            quit_handle.quit()
-        })
-        .expect("Failed to registr ctrl+c handler");
-
         log::info!("Initializing SDL3 Library");
         let sdl = sdl3::init().expect("Failed to initialize SDL3");
 

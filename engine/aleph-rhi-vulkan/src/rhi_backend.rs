@@ -9,7 +9,6 @@ use aleph_rhi_api::{ContextCreateError, IContext};
 use aleph_rhi_impl_utils::Rhi;
 use aleph_rhi_impl_utils::arc::new_rhi_object;
 use ash::vk;
-use libloading::Library;
 
 use crate::context::{Context, SurfaceLoaders};
 use crate::internal::allocation_callbacks::GLOBAL;
@@ -35,15 +34,7 @@ impl VulkanLoader {
             true
         } else {
             // Safety: We assume that loading the vulkan dll does not have any unsafe side effects
-            unsafe {
-                for lib in loader::platform_library_search_stack() {
-                    let result = Library::new(lib);
-                    if result.is_ok() {
-                        return true;
-                    }
-                }
-                false
-            }
+            loader::VULKAN_LIBRARY.is_some()
         }
     }
 
@@ -58,7 +49,7 @@ impl VulkanLoader {
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
         {
             Ok(_) => {
-                let (library, entry) = unsafe {
+                let entry = unsafe {
                     match loader::load() {
                         None => {
                             log::error!("Failed to load Vulkan library");
@@ -97,7 +88,6 @@ impl VulkanLoader {
                 Ok(new_rhi_object(move |v| Context {
                     _this: v.clone(),
                     _config: config.clone(),
-                    library: ManuallyDrop::new(library),
                     entry_loader: ManuallyDrop::new(entry),
                     instance: ManuallyDrop::new(instance),
                     surface_loaders: extensions.surface_loaders(),
@@ -334,19 +324,24 @@ impl VulkanLoader {
         #[cfg(not(target_os = "ios"))]
         {
             unsafe {
-                let library = libloading::Library::new("libMoltenVK.dylib").ok()?;
+                let library = loader::MVK_LIBRARY.as_ref();
+                let library = library?;
 
-                let name = "vkGetMoltenVKConfigurationMVK\0".as_bytes();
-                let get_fn = library
-                    .get::<mvk::PFN_vkGetMoltenVKConfigurationMVK>(name)
-                    .ok()?;
+                let get_fn = sdl3_sys::loadso::SDL_LoadFunction(
+                    library.0.as_ptr(),
+                    c"vkGetMoltenVKConfigurationMVK".as_ptr(),
+                )?;
+                let get_fn =
+                    std::mem::transmute::<_, mvk::PFN_vkGetMoltenVKConfigurationMVK>(get_fn);
 
-                let name = "vkSetMoltenVKConfigurationMVK\0".as_bytes();
-                let set_fn = library
-                    .get::<mvk::PFN_vkSetMoltenVKConfigurationMVK>(name)
-                    .ok()?;
+                let set_fn = sdl3_sys::loadso::SDL_LoadFunction(
+                    library.0.as_ptr(),
+                    c"vkSetMoltenVKConfigurationMVK".as_ptr(),
+                )?;
+                let set_fn =
+                    std::mem::transmute::<_, mvk::PFN_vkSetMoltenVKConfigurationMVK>(set_fn);
 
-                cont(*get_fn, *set_fn)
+                cont(get_fn, set_fn)
             }
         }
     }

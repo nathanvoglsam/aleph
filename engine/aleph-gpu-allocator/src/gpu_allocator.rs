@@ -540,7 +540,8 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
         self.stats.track_layout_deallocation(&allocation.layout);
         if allocation.is_dedicated() {
             self.stats.sub_tracked_dedicated_allocation();
-            self.stats.track_block_deallocation(allocation.layout.size());
+            self.stats
+                .track_block_deallocation(allocation.layout.size());
 
             let mut dedicated_blocks = self.dedicated_blocks.lock();
             dedicated_blocks.free_blocks.push(allocation.block_index);
@@ -696,14 +697,16 @@ impl InternalPoolStats {
         if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
             return;
         }
-        self.num_dedicated_allocations.fetch_add(1, Ordering::Relaxed);
+        self.num_dedicated_allocations
+            .fetch_add(1, Ordering::Relaxed);
     }
 
     fn sub_tracked_dedicated_allocation(&self) {
         if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
             return;
         }
-        self.num_dedicated_allocations.fetch_sub(1, Ordering::Relaxed);
+        self.num_dedicated_allocations
+            .fetch_sub(1, Ordering::Relaxed);
     }
 
     fn track_layout_allocation(&self, layout: &GpuLayout) {

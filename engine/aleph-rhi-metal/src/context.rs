@@ -90,7 +90,7 @@ impl IContext for Context {
             let mut scores: Vec<_> = (0..devices.len()).map(|i| (i, 0isize)).collect();
             for (device, (_, score)) in devices.iter().zip(scores.iter_mut()) {
                 let name = device.name().to_string();
-                let architecture = unsafe { device.architecture().name().to_string() };
+                let architecture = device.architecture().name().to_string();
                 log::info!("=====================");
                 log::info!("Considering Device: ");
                 log::info!("Architecture   : {architecture}");
@@ -109,7 +109,7 @@ impl IContext for Context {
                 }
 
                 if let Some(surface) = surface {
-                    let preferred = unsafe { surface.objects.layer.preferredDevice() };
+                    let preferred = surface.objects.layer.preferredDevice();
                     if let Some(preferred) = preferred {
                         if preferred == device {
                             *score += 5_000

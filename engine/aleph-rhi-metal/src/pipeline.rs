@@ -82,7 +82,7 @@ impl GraphicsPipeline {
         if !desc.vertex_layout.input_bindings.is_empty()
             || desc.vertex_layout.input_attributes.is_empty()
         {
-            let v_desc = unsafe { MTLVertexDescriptor::new() };
+            let v_desc = MTLVertexDescriptor::new();
             let v_attrs = v_desc.attributes();
             for attribute in desc.vertex_layout.input_attributes.iter() {
                 unsafe {
@@ -125,7 +125,7 @@ impl GraphicsPipeline {
         let depth_bias_slope_factor = desc.rasterizer_state.depth_bias_slope_factor;
 
         // TODO depth bounds
-        let mtl_depth_desc = unsafe { MTLDepthStencilDescriptor::new() };
+        let mtl_depth_desc = MTLDepthStencilDescriptor::new();
 
         // 'depth_test = false' just decays to 'always'
         let compare_fn = match (
@@ -145,13 +145,13 @@ impl GraphicsPipeline {
             to.setStencilCompareFunction(conv::compare_op_to_mtl(v.compare_op));
         }
         if desc.depth_stencil_state.stencil_test {
-            let front = unsafe { MTLStencilDescriptor::new() };
+            let front = MTLStencilDescriptor::new();
             front.setReadMask(desc.depth_stencil_state.stencil_read_mask as u32);
             front.setWriteMask(desc.depth_stencil_state.stencil_write_mask as u32);
             apply_stencil_op_state(&front, &desc.depth_stencil_state.stencil_front);
             mtl_depth_desc.setFrontFaceStencil(Some(&front));
 
-            let back = unsafe { MTLStencilDescriptor::new() };
+            let back = MTLStencilDescriptor::new();
             back.setReadMask(desc.depth_stencil_state.stencil_read_mask as u32);
             back.setWriteMask(desc.depth_stencil_state.stencil_write_mask as u32);
             apply_stencil_op_state(&back, &desc.depth_stencil_state.stencil_back);
@@ -179,7 +179,7 @@ impl GraphicsPipeline {
             .zip(desc.blend_state.attachments)
             .enumerate()
         {
-            let mtl_attachment = unsafe { MTLRenderPipelineColorAttachmentDescriptor::new() };
+            let mtl_attachment = MTLRenderPipelineColorAttachmentDescriptor::new();
 
             mtl_attachment.setPixelFormat(conv::format_to_pixel_mtl(*format));
             mtl_attachment.setWriteMask(conv::write_mask_to_mtl(blend.color_write_mask));
@@ -228,9 +228,7 @@ impl GraphicsPipeline {
         }
 
         if device.context.validation {
-            unsafe {
-                mtl_desc.setShaderValidation(MTLShaderValidation::Enabled);
-            }
+            mtl_desc.setShaderValidation(MTLShaderValidation::Enabled);
         }
 
         let pipeline = device
@@ -238,11 +236,8 @@ impl GraphicsPipeline {
             .newRenderPipelineStateWithDescriptor_error(&mtl_desc);
         let pipeline = match pipeline {
             Ok(v) => v,
-            Err(_err) => {
-                log::error!(
-                    "Failed to create render pipeline state! Reason: {}",
-                    "unknown"
-                );
+            Err(err) => {
+                log::error!("Failed to create render pipeline state! Reason: {}", err);
                 return Err(PipelineCreateError::Platform);
             }
         };
@@ -343,28 +338,21 @@ impl ComputePipeline {
         }
 
         if device.context.validation {
-            unsafe {
-                mtl_desc.setShaderValidation(MTLShaderValidation::Enabled);
-            }
+            mtl_desc.setShaderValidation(MTLShaderValidation::Enabled);
         }
 
-        let pipeline = unsafe {
-            device
-                .device
-                .newComputePipelineStateWithDescriptor_options_reflection_error(
-                    &mtl_desc,
-                    MTLPipelineOption::empty(),
-                    None,
-                )
-        };
+        let pipeline = device
+            .device
+            .newComputePipelineStateWithDescriptor_options_reflection_error(
+                &mtl_desc,
+                MTLPipelineOption::empty(),
+                None,
+            );
 
         let pipeline = match pipeline {
             Ok(v) => v,
-            Err(_err) => {
-                log::error!(
-                    "Failed to create render pipeline state! Reason: {}",
-                    "unknown"
-                );
+            Err(err) => {
+                log::error!("Failed to create render pipeline state! Reason: {}", err,);
                 return Err(PipelineCreateError::Platform);
             }
         };
@@ -413,14 +401,13 @@ pub unsafe fn compile_function(
     let source = NSString::from_str(source);
 
     let mtl_options = MTLCompileOptions::new();
-    unsafe {
-        mtl_options.setEnableLogging(false);
-        mtl_options.setMathMode(MTLMathMode::Safe);
-        mtl_options.setMathFloatingPointFunctions(MTLMathFloatingPointFunctions::Precise);
-        mtl_options.setPreserveInvariance(true);
-        mtl_options.setLanguageVersion(MTLLanguageVersion::Version3_2);
-        mtl_options.setOptimizationLevel(MTLLibraryOptimizationLevel::Default);
-    }
+
+    mtl_options.setEnableLogging(false);
+    mtl_options.setMathMode(MTLMathMode::Safe);
+    mtl_options.setMathFloatingPointFunctions(MTLMathFloatingPointFunctions::Precise);
+    mtl_options.setPreserveInvariance(true);
+    mtl_options.setLanguageVersion(MTLLanguageVersion::Version3_2);
+    mtl_options.setOptimizationLevel(MTLLibraryOptimizationLevel::Default);
 
     let library = device
         .device

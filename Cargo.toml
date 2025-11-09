@@ -55,6 +55,7 @@ members = [
     "engine/aleph-label",
     "engine/aleph-malloc-info",
     "engine/aleph-math",
+    "engine/aleph-mikktspace",
     "engine/aleph-nstr",
     "engine/aleph-objc",
     "engine/aleph-object-system",
@@ -97,68 +98,91 @@ license = "MIT"
 
 [workspace.dependencies]
 
-# Third Party Crates
-allocator-api2 = "0.2"
-anyhow = "1"
-ash = { version = "0.38", default-features = false, features = ["debug"] }
+## Third Party Crates
+clap = "4"
+egui = { version = "0.33", features = ["bytemuck"] }
+egui_plot = "0.34"
+ignore = "0.4"
+rayon = "1"
+
+## Path Handling
+camino = "1"
+dunce = "1"
+
+## Basic Types
+half = { version = "2", features = ["alloc", "bytemuck", "num-traits"] }
+ultraviolet = { version = "0.10", features = ["f64", "int"] }
+uuid = { version = "1", features = ["v7"] }
+
+## Build System Integration
+cargo_metadata = "0.23"
+cc = "1"
+
+## Logging and Profiling
+log = { version = "0.4", features = ["release_max_level_debug"] }
+env_logger = "0.11.0"
+
+## Macros and Utilities
 bitflags = "2"
-blink-alloc = { version = "0.3" }
-block2 = { version = "0.6" }
+utf16_lit = "2"
+phf = { version = "0.13", features = ["macros"] }
+const_format = { version = "0.2", features = ["fmt"] }
 bytemuck = { version = "1", features = ["derive"] }
 byteorder = "1"
-cargo_metadata = "0.23"
-camino = "1"
-cc = "1"
-clap = "4"
-console = "0.16"
-const_format = { version = "0.2", features = ["fmt"] }
-crossbeam = "0.8"
-ctor = "0.6"
-ctrlc = "3"
-dunce = "1"
-egui = { version = "0.32", features = ["bytemuck"] }
-egui_plot = "0.33"
-embed-resource = "3"
-env_logger = "0.11.0"
-half = { version = "2", features = ["alloc", "bytemuck", "num-traits"] }
-hashbrown = { version = "0.16", features = ["allocator-api2"] }
-ignore = "0.4"
-image = {version = "0.25", default-features = false, features = ["default-formats"] }
-libc = "0.2"
-libloading = "0.8"
-log = { version = "0.4", features = ["release_max_level_debug"] }
-num_cpus = "1"
-once_cell = "1"
-parking_lot = "0.12"
-phf = { version = "0.13", features = ["macros"] }
-quote = { version = "1.0", default-features = false }
-raw-cpuid = "11"
-raw-window-handle = "0.6"
-rayon = "1"
-rkyv = "0.8"
-sdl3 = { version = "0.15", features = ["raw-window-handle"] }
-sdl3-sys = { version = "^0.5", features = ["no-link"] }
+num-integer = "0.1"
+
+## Serialization and Formats
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-smallbox = "0.8"
-syn = { version = "2.0", features = ["full"] }
-sysinfo = "0.37"
-tera = "1"
-thiserror = "2"
 toml = "0.9"
+rkyv = "0.8"
+image = {version = "0.25", default-features = false, features = ["default-formats"] }
+
+## Proc Macro
+syn = { version = "2.0", features = ["full"] }
+quote = { version = "1.0", default-features = false }
+
+## Sync Primitives
+crossbeam = "0.8"
+once_cell = "1"
+parking_lot = "0.12"
+
+## Error Handling
+anyhow = "1"
+thiserror = "2"
+
+## API Bindings
+ash = { version = "0.38", default-features = false, features = ["debug"] }
+sdl3 = { version = "0.16", features = ["raw-window-handle"] }
+sdl3-sys = { version = "^0.5", features = ["no-link"] }
 tracy-client = "0.18"
-ultraviolet = { version = "0.10", features = ["f64", "int"] }
-utf16_lit = "2"
-uuid = { version = "1", features = ["v7"] }
-num-integer = "0.1"
-arrayvec = "0.7"
+
+## Common Platform
+libc = "0.2"
+num_cpus = "1"
+raw-cpuid = "11"
+raw-window-handle = "0.6"
+sysinfo = "0.37"
 memmap2 = "0.9"
+ctor = "0.6"
+
+## Memory Alloc and Containers
+allocator-api2 = "0.2"
+blink-alloc = { version = "0.3" }
+hashbrown = { version = "0.16", features = ["allocator-api2"] }
+arrayvec = "0.7"
+smallbox = "0.8"
+
+## Macos Platform
+block2 = { version = "0.6" }
 objc2 = "0.6"
 objc2-metal = "0.3"
 objc2-quartz-core = "0.3"
 objc2-core-foundation = "0.3"
 objc2-foundation = "0.3"
 
+## Windows Platform
+embed-resource = "3"
 windows-interface = "0.59.0"
 windows.version = "0.61.0"
 windows.features = [
@@ -204,6 +228,7 @@ aleph-ktx = { path = "./engine/aleph-ktx", version = "0.1" }
 aleph-label = { path = "./engine/aleph-label", version = "1" }
 aleph-malloc-info = { path = "./engine/aleph-malloc-info", version = "0.1" }
 aleph-math = { path = "./engine/aleph-math", version = "0.1" }
+aleph-mikktspace = { path = "./engine/aleph-mikktspace", version = "0.1" }
 aleph-nstr = { path = "./engine/aleph-nstr", version = "0.1" }
 aleph-objc = { path = "./engine/aleph-objc", version = "0.1" }
 aleph-object-system = { path = "./engine/aleph-object-system", version = "0.1" }

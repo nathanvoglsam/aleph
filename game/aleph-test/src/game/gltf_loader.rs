@@ -569,7 +569,7 @@ fn copy_vertex_data_into_upload(buffers: &[Data], prim: &Primitive, upload: &mut
             indices,
             dst: bytemuck::cast_slice_mut(upload.data.buffer.bytes_mut()),
         };
-        let success = mikktspace::generate_tangents(&mut geom);
+        let success = aleph_mikktspace::generate_tangents(&mut geom);
         assert!(success);
     }
 }
@@ -705,7 +705,7 @@ impl<'a> Geom<'a> {
     }
 }
 
-impl<'a> mikktspace::Geometry for Geom<'a> {
+impl<'a> aleph_mikktspace::Geometry for Geom<'a> {
     fn num_faces(&self) -> usize {
         self.indices.len() / 3
     }

@@ -81,11 +81,9 @@ impl IAdapter for Adapter {
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
         autoreleasepool(|_| {
             if let Some(surface) = self.surface.as_ref() {
-                unsafe {
-                    surface.objects.layer.setDevice(Some(&self.objects.device));
-                }
+                surface.objects.layer.setDevice(Some(&self.objects.device));
 
-                let preferred = unsafe { surface.objects.layer.preferredDevice() };
+                let preferred = surface.objects.layer.preferredDevice();
                 if let Some(preferred) = preferred {
                     if preferred != self.objects.device {
                         log::warn!("Selected Device is not Preferred by CAMetalLayer");

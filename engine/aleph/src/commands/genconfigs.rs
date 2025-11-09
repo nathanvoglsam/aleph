@@ -32,7 +32,6 @@ use std::collections::HashSet;
 use aleph_alloc::Blink;
 use anyhow::anyhow;
 use clap::ArgMatches;
-use tera::{Context, Tera};
 
 use crate::commands::ISubcommand;
 use crate::config_subproject::ConfigSubproject;
@@ -122,12 +121,7 @@ impl ISubcommand for GenConfigs {
             }
         }
 
-        let mut context = Context::new();
-        context.insert("ALEPH_INCLUDES", &includes);
-
-        let mut tera = Tera::default();
-        tera.add_raw_template("a", JS_CONFIG_TEMPLATE)?;
-        let rendered = tera.render("a", &context)?;
+        let rendered = JS_CONFIG_TEMPLATE.replace("{{ALEPH_INCLUDES}}", &includes);
 
         log::info!("Outputting 'jsconfig.json'");
         std::fs::write(project.project_root().join("jsconfig.json"), rendered)?;

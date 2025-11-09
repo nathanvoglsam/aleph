@@ -99,7 +99,7 @@ impl ISwapChain for SwapChain {
                 self.natural_drawable_size()
             };
 
-            let out_config = unsafe {
+            let out_config = {
                 let mut state = self.inner.lock();
 
                 log::debug!(
@@ -125,9 +125,9 @@ impl ISwapChain for SwapChain {
         autoreleasepool(|_| {
             let inner = self.inner.lock();
 
-            let drawable = unsafe { self.objects.layer.nextDrawable().unwrap() };
+            let drawable = self.objects.layer.nextDrawable().unwrap();
 
-            let texture = unsafe { drawable.texture() };
+            let texture = drawable.texture();
 
             if self.device.context.debug {
                 texture.setLabel(Some(ns_string!("Swap Image")));
