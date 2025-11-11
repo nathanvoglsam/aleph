@@ -57,5 +57,4 @@ aleph-alloc = { workspace = true }
 serde_json = { workspace = true }
 camino = { workspace = true }
 thiserror = { workspace = true }
-clap = { workspace = true }
 log = { workspace = true }
