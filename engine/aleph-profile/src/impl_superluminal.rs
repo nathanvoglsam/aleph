@@ -88,6 +88,16 @@ macro_rules! finish_frame {
 }
 
 #[inline]
+pub fn message(_message: &str) {
+    // Intentional no-op
+}
+
+#[inline]
+pub fn color_message(_message: &str, _rgba: u32) {
+    // Intentional no-op
+}
+
+#[inline]
 pub unsafe fn emit_alloc(_ptr: *mut u8, _size: usize) {
     // Intentional no-op
 }

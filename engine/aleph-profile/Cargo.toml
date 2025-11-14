@@ -30,5 +30,8 @@ profile-with-pix = [
     "aleph-pix",
     "aleph-profile-procmacros?/profile-with-pix",
 ]
-memory-callstacks = []
+memory-callsites = []
+memory-callstacks = ["memory-callsites"]
+message-callsites = []
+message-callstacks = ["message-callsites"]
 procmacros = ["aleph-profile-procmacros"]

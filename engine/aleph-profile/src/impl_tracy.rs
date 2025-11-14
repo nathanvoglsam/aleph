@@ -51,6 +51,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use tracy_client::sys;
+
 #[macro_export]
 macro_rules! scope {
     ($name:expr) => {
@@ -86,13 +88,23 @@ macro_rules! finish_frame {
 }
 
 #[inline]
+pub fn message(message: &str) {
+    tracy_client::Client::start().message(message, CALLSTACK_DEPTH_MSG);
+}
+
+#[inline]
+pub fn color_message(message: &str, rgba: u32) {
+    tracy_client::Client::start().color_message(message, rgba, CALLSTACK_DEPTH_MSG);
+}
+
+#[inline]
 pub unsafe fn emit_alloc(ptr: *mut u8, size: usize) {
     tracy_client::Client::start();
 
     let ptr = ptr as *const u8 as *const std::os::raw::c_void;
-    if CALLSTACK_DEPTH != 0 {
+    if CALLSTACK_DEPTH_MEM != 0 {
         unsafe {
-            tracy_client::sys::___tracy_emit_memory_alloc_callstack(ptr, size, CALLSTACK_DEPTH, 1)
+            tracy_client::sys::___tracy_emit_memory_alloc_callstack(ptr, size, CALLSTACK_DEPTH_MEM, 1)
         }
     } else {
         unsafe { tracy_client::sys::___tracy_emit_memory_alloc(ptr, size, 1) }
@@ -104,8 +116,8 @@ pub unsafe fn emit_free(ptr: *mut u8) {
     tracy_client::Client::start();
 
     let ptr = ptr as *const u8 as *const std::os::raw::c_void;
-    if CALLSTACK_DEPTH != 0 {
-        unsafe { tracy_client::sys::___tracy_emit_memory_free_callstack(ptr, CALLSTACK_DEPTH, 1) }
+    if CALLSTACK_DEPTH_MEM != 0 {
+        unsafe { tracy_client::sys::___tracy_emit_memory_free_callstack(ptr, CALLSTACK_DEPTH_MEM, 1) }
     } else {
         unsafe { tracy_client::sys::___tracy_emit_memory_free(ptr, 1) }
     }
@@ -116,12 +128,12 @@ pub unsafe fn emit_alloc_n(ptr: *mut u8, size: usize, name: &'static std::ffi::C
     tracy_client::Client::start();
 
     let ptr = ptr as *const u8 as *const std::os::raw::c_void;
-    if CALLSTACK_DEPTH != 0 {
+    if CALLSTACK_DEPTH_MEM != 0 {
         unsafe {
             tracy_client::sys::___tracy_emit_memory_alloc_callstack_named(
                 ptr,
                 size,
-                CALLSTACK_DEPTH,
+                CALLSTACK_DEPTH_MEM,
                 1,
                 name.as_ptr(),
             )
@@ -136,11 +148,11 @@ pub unsafe fn emit_free_n(ptr: *mut u8, name: &'static std::ffi::CStr) {
     tracy_client::Client::start();
 
     let ptr = ptr as *const u8 as *const std::os::raw::c_void;
-    if CALLSTACK_DEPTH != 0 {
+    if CALLSTACK_DEPTH_MEM != 0 {
         unsafe {
             tracy_client::sys::___tracy_emit_memory_free_callstack_named(
                 ptr,
-                CALLSTACK_DEPTH,
+                CALLSTACK_DEPTH_MEM,
                 1,
                 name.as_ptr(),
             )
@@ -150,18 +162,42 @@ pub unsafe fn emit_free_n(ptr: *mut u8, name: &'static std::ffi::CStr) {
     }
 }
 
-const CALLSTACK_DEPTH: i32 = clamp_depth(62);
+const CALLSTACK_DEPTH_MEM: i32 = clamp_depth_mem(62);
 
-const fn clamp_depth(v: i32) -> i32 {
-    if !cfg!(feature = "memory-callstacks") {
-        0
-    } else if cfg!(windows) {
-        match v {
-            v if v < 0 => 0,
-            v if v > 62 => 62,
-            v => v,
+const fn clamp_depth_mem(v: i32) -> i32 {
+    if cfg!(feature = "memory-callstacks") {
+        if cfg!(windows) {
+            match v {
+                v if v < 0 => 0,
+                v if v > 62 => 62,
+                v => v,
+            }
+        } else {
+            v
         }
+    } else if cfg!(feature = "memory-callsites") {
+        1
     } else {
-        v
+        0
+    }
+}
+
+const CALLSTACK_DEPTH_MSG: i32 = clamp_depth_msg(62);
+
+const fn clamp_depth_msg(v: i32) -> i32 {
+    if cfg!(feature = "message-callstacks") {
+        if cfg!(windows) {
+            match v {
+                v if v < 0 => 0,
+                v if v > 62 => 62,
+                v => v,
+            }
+        } else {
+            v
+        }
+    } else if cfg!(feature = "message-callsites") {
+        1
+    } else {
+        0
     }
 }
