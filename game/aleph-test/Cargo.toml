@@ -40,11 +40,6 @@ publish = false
 [package.metadata.aleph]
 configs = ["aleph-test", "@game"]
 
-[lib]
-crate-type = ["cdylib"]
-name = "aleph_test_lib"
-path = "./src/lib.rs"
-
 [dependencies]
 aleph-alloc = { workspace = true, features = ["instrumentation-enabled"] }
 aleph-engine = { workspace = true }
@@ -63,7 +58,7 @@ rayon = { workspace = true }
 log = { workspace = true }
 crossbeam = { workspace = true }
 
-[dependencies.gltf]
+[dependencies.gltf] ## Heavy
 version = "1"
 features = [
     "KHR_lights_punctual",
