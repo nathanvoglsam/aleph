@@ -40,7 +40,6 @@ members = [
     "engine/aleph-config",
     "engine/aleph-device-allocators",
     "engine/aleph-dx12-agility-sdk",
-    "engine/aleph-dx12-alloc",
     "engine/aleph-ecs",
     "engine/aleph-egui",
     "engine/aleph-engine",
@@ -214,7 +213,6 @@ aleph-compile = { path = "./engine/aleph-compile", version = "1" }
 aleph-config = { path = "./engine/aleph-config", version = "0.1" }
 aleph-device-allocators = { path = "./engine/aleph-device-allocators", version = "0.1" }
 aleph-dx12-agility-sdk = { path = "./engine/aleph-dx12-agility-sdk", version = "1.711.3" }
-aleph-dx12-alloc = { path = "./engine/aleph-dx12-alloc", version = "0.1" }
 aleph-ecs = { path = "./engine/aleph-ecs", version = "0.1" }
 aleph-engine = { path = "./engine/aleph-engine", version = "0.1" }
 aleph-engine-build = { path = "./engine/aleph-engine-build", version = "0.1" }

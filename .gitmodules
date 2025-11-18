@@ -4,12 +4,6 @@
 [submodule "engine/aleph-dx12-agility-sdk/DirectX12AgilitySDK"]
 	path = engine/aleph-dx12-agility-sdk/DirectX12AgilitySDK
 	url = https://gitlab.com/MindSpunk/DirectX12AgilitySDK.git
-[submodule "engine/aleph-dx12-alloc/D3D12MemoryAllocator"]
-	path = engine/aleph-dx12-alloc/D3D12MemoryAllocator
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator.git
-[submodule "engine/aleph-dx12-alloc/DirectX-Headers"]
-	path = engine/aleph-dx12-alloc/DirectX-Headers
-	url = https://github.com/microsoft/DirectX-Headers.git
 [submodule "engine/aleph-quickjs-sys/QuickJSNG-builds"]
 	path = engine/aleph-quickjs-sys/QuickJSNG-builds
 	url = https://gitlab.com/MindSpunk/QuickJSNG-builds.git

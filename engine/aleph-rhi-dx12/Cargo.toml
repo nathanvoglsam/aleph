@@ -62,6 +62,5 @@ blink-alloc = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }
-aleph-dx12-alloc = { workspace = true }
 aleph-pix = { workspace = true }
 libc = { workspace = true }
