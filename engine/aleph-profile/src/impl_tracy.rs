@@ -104,7 +104,12 @@ pub unsafe fn emit_alloc(ptr: *mut u8, size: usize) {
     let ptr = ptr as *const u8 as *const std::os::raw::c_void;
     if CALLSTACK_DEPTH_MEM != 0 {
         unsafe {
-            tracy_client::sys::___tracy_emit_memory_alloc_callstack(ptr, size, CALLSTACK_DEPTH_MEM, 1)
+            tracy_client::sys::___tracy_emit_memory_alloc_callstack(
+                ptr,
+                size,
+                CALLSTACK_DEPTH_MEM,
+                1,
+            )
         }
     } else {
         unsafe { tracy_client::sys::___tracy_emit_memory_alloc(ptr, size, 1) }
@@ -117,7 +122,9 @@ pub unsafe fn emit_free(ptr: *mut u8) {
 
     let ptr = ptr as *const u8 as *const std::os::raw::c_void;
     if CALLSTACK_DEPTH_MEM != 0 {
-        unsafe { tracy_client::sys::___tracy_emit_memory_free_callstack(ptr, CALLSTACK_DEPTH_MEM, 1) }
+        unsafe {
+            tracy_client::sys::___tracy_emit_memory_free_callstack(ptr, CALLSTACK_DEPTH_MEM, 1)
+        }
     } else {
         unsafe { tracy_client::sys::___tracy_emit_memory_free(ptr, 1) }
     }
