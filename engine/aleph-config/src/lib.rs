@@ -202,8 +202,16 @@ impl ConfigRunner {
 
         let mut args = std::env::args().skip(1);
         loop {
-            let cfg = if let Some(v) = args.next() { v } else { break; };
-            let val = if let Some(v) = args.next() { v } else { break; };
+            let cfg = if let Some(v) = args.next() {
+                v
+            } else {
+                break;
+            };
+            let val = if let Some(v) = args.next() {
+                v
+            } else {
+                break;
+            };
 
             if !cfg.starts_with("-") {
                 break;
@@ -223,8 +231,7 @@ impl ConfigRunner {
             // user will almost certainly provide unquoted strings.
             //
             // Anything that fails to parse directly gets coerced to a string.
-            let value = Value::from_str(&val)
-                .unwrap_or_else(|_| Value::String(val.clone()));
+            let value = Value::from_str(&val).unwrap_or_else(|_| Value::String(val.clone()));
 
             // Split the config name path into the invividual segmants
             let segments: Vec<&str> = cfg.split('.').collect();
@@ -246,11 +253,9 @@ impl ConfigRunner {
 
                 fn trace_err(cfg: &str, trace: &str, got: &str) -> ! {
                     log::error!(
-                            "Bad config arg '{cfg}': Expected 'object' at '{trace}', got '{got}'"
-                        );
-                    panic!(
                         "Bad config arg '{cfg}': Expected 'object' at '{trace}', got '{got}'"
                     );
+                    panic!("Bad config arg '{cfg}': Expected 'object' at '{trace}', got '{got}'");
                 }
 
                 let prop = current
