@@ -142,17 +142,18 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     ) -> Vec<MemoryPool<Self>> {
         let mut pools = Vec::new();
         for (i, memory_type) in info.memory_props.memory_types_as_slice().iter().enumerate() {
-            let mappable = memory_type
-                .property_flags
-                .contains(vk::MemoryPropertyFlags::HOST_VISIBLE);
-
             let config = PoolConfig {
-                is_mappable: mappable,
+                is_mappable: memory_type
+                    .property_flags
+                    .contains(vk::MemoryPropertyFlags::HOST_VISIBLE),
+                is_device_local: memory_type
+                    .property_flags
+                    .contains(vk::MemoryPropertyFlags::DEVICE_LOCAL),
             };
 
             let info = VulkanPoolInfo {
                 memory_type_index: i as u32,
-                mappable,
+                mappable: config.is_mappable,
                 is_buffer_pool: false,
             };
             let pool = MemoryPool::<Self>::new(config.clone(), info);
@@ -160,9 +161,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
 
             let info = VulkanPoolInfo {
                 memory_type_index: i as u32,
-                mappable: memory_type
-                    .property_flags
-                    .contains(vk::MemoryPropertyFlags::HOST_VISIBLE),
+                mappable: config.is_mappable,
                 is_buffer_pool: true,
             };
             let pool = MemoryPool::<Self>::new(config, info);
