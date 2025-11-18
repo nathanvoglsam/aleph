@@ -32,6 +32,7 @@ use std::num::NonZeroU64;
 use std::ptr::NonNull;
 
 use aleph_any::AnyArc;
+use aleph_gpu_allocator::GpuAllocation;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
@@ -44,7 +45,7 @@ use crate::device::Device;
 pub struct Buffer {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
-    pub(crate) allocation: ManuallyDrop<d3d12ma::Allocation>,
+    pub(crate) allocation: Option<GpuAllocation>,
     pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) base_address: GPUDescriptorHandle,
     pub(crate) map_state: Mutex<MapState>,
@@ -62,7 +63,12 @@ impl Drop for Buffer {
             }
 
             ManuallyDrop::drop(&mut self.resource);
-            ManuallyDrop::drop(&mut self.allocation);
+
+            self._device
+                .allocator
+                .as_ref()
+                .unwrap_unchecked()
+                .free_allocation(self._device.as_ref(), self.allocation.take().unwrap());
         }
     }
 }

@@ -27,6 +27,9 @@
 // SOFTWARE.
 //
 
+//! TODO: Proper dedicated block support using Vulkan's dedicated allocation APIs.
+//! TODO: Defragmentation support?
+
 mod gpu_allocation;
 mod gpu_allocator;
 mod gpu_layout;

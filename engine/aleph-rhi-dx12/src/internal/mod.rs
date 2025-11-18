@@ -37,6 +37,7 @@ use windows::Win32::Graphics::Dxgi::*;
 use windows::core::{GUID, IInspectable, IUnknown, Interface, PCWSTR, Ref};
 use windows::utils::DynamicLoadCell;
 
+pub mod allocator_bridge;
 pub mod conv;
 pub mod debug_interface;
 pub mod descriptor_allocator_cpu;

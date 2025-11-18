@@ -35,6 +35,7 @@ use std::sync::atomic::AtomicU64;
 
 use aleph_alloc::offset_allocator::OffsetAllocator;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use aleph_gpu_allocator::{AllocationDesc, GpuAllocator, MemoryLocation};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
@@ -66,6 +67,7 @@ use crate::context::Context;
 use crate::descriptor_arena::{DescriptorArenaHeap, DescriptorArenaLinear};
 use crate::descriptor_pool::DescriptorPool;
 use crate::fence::Fence;
+use crate::internal::allocator_bridge::{D3D12AllocatorBridge, ExtendedResourceDesc};
 use crate::internal::conv::{
     blend_factor_to_dx12, blend_op_to_dx12, compare_op_to_dx12, cull_mode_to_dx12,
     front_face_order_to_dx12, polygon_mode_to_dx12, primitive_topology_to_dx12, queue_type_to_dx12,
@@ -93,7 +95,7 @@ pub struct Device {
     pub(crate) _context: AnyArc<Context>,
     pub(crate) _adapter: AnyArc<Adapter>,
     pub(crate) device: ID3D12Device10,
-    pub(crate) allocator: d3d12ma::Allocator,
+    pub(crate) allocator: Option<ManuallyDrop<GpuAllocator<D3D12AllocatorBridge>>>,
     pub(crate) debug_message_cookie: Option<u32>,
     pub(crate) descriptor_heaps: DescriptorHeaps,
     pub(crate) general_queue: Option<AnyArc<Queue>>,
@@ -483,29 +485,26 @@ impl IDevice for Device {
             resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         }
 
-        let heap_type = match desc.cpu_access {
-            CpuAccessMode::None => D3D12_HEAP_TYPE_DEFAULT,
-            CpuAccessMode::Read => D3D12_HEAP_TYPE_READBACK,
-            CpuAccessMode::Write => D3D12_HEAP_TYPE_UPLOAD,
+        let location = match desc.cpu_access {
+            CpuAccessMode::None => MemoryLocation::GpuLocal,
+            CpuAccessMode::Read => MemoryLocation::GpuToCpu,
+            CpuAccessMode::Write => MemoryLocation::CpuToGpu,
         };
-
-        let allocation_desc = d3d12ma::ALLOCATION_DESC {
-            Flags: d3d12ma::ALLOCATION_FLAGS::empty(),
-            HeapType: heap_type,
-            ExtraHeapFlags: Default::default(),
-            Pool: std::ptr::null_mut(),
-            pPrivateData: std::ptr::null_mut(),
+        let allocation_desc = AllocationDesc {
+            location,
+            strategy: Default::default(),
+            desc: ExtendedResourceDesc {
+                desc: resource_desc,
+                initial_layout: D3D12_BARRIER_LAYOUT_UNDEFINED,
+                optimized_clear_value: None,
+                pcastableformats: None,
+            },
         };
-        let (allocation, resource) = unsafe {
-            self.allocator
-                .CreateResource3::<ID3D12Resource>(
-                    &allocation_desc,
-                    &resource_desc,
-                    D3D12_BARRIER_LAYOUT_UNDEFINED,
-                    None,
-                    &[],
-                )
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+        let (allocation, _metadata, resource) = unsafe {
+            let allocator = self.allocator.as_ref().unwrap();
+            allocator
+                .allocate_buffer(self, &allocation_desc)
+                .ok_or(())?
         };
         let base_address =
             unsafe { GPUDescriptorHandle::try_from(resource.GetGPUVirtualAddress()).unwrap() };
@@ -517,7 +516,7 @@ impl IDevice for Device {
         let out = Buffer {
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_buffer(),
-            allocation: ManuallyDrop::new(allocation),
+            allocation: Some(allocation),
             resource: ManuallyDrop::new(resource),
             base_address,
             map_state: Mutex::new(Default::default()),
@@ -531,26 +530,24 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError> {
-        let alloc_desc = d3d12ma::ALLOCATION_DESC {
-            Flags: d3d12ma::ALLOCATION_FLAGS::empty(),
-            HeapType: D3D12_HEAP_TYPE_DEFAULT,
-            ExtraHeapFlags: Default::default(),
-            Pool: std::ptr::null_mut(),
-            pPrivateData: std::ptr::null_mut(),
-        };
         let resource_desc = texture_create_desc_to_dx12(desc)?;
         let optimized_clear_value = texture_create_clear_value_to_dx12(desc, resource_desc.Format)?;
 
-        let (allocation, resource) = unsafe {
-            self.allocator
-                .CreateResource3::<ID3D12Resource>(
-                    &alloc_desc,
-                    &resource_desc,
-                    D3D12_BARRIER_LAYOUT_UNDEFINED,
-                    optimized_clear_value.as_ref(),
-                    &[],
-                )
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+        let allocation_desc = AllocationDesc {
+            location: MemoryLocation::GpuLocal,
+            strategy: Default::default(),
+            desc: ExtendedResourceDesc {
+                desc: resource_desc,
+                initial_layout: D3D12_BARRIER_LAYOUT_UNDEFINED,
+                optimized_clear_value: optimized_clear_value.as_ref(),
+                pcastableformats: None,
+            },
+        };
+        let (allocation, _metadata, resource) = unsafe {
+            let allocator = self.allocator.as_ref().unwrap();
+            allocator
+                .allocate_texture(self, &allocation_desc)
+                .ok_or(())?
         };
 
         if let Some(name) = desc.name {
@@ -560,7 +557,7 @@ impl IDevice for Device {
         let out = Texture {
             device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_texture(),
-            allocation: Some(ManuallyDrop::new(allocation)),
+            allocation: Some(allocation),
             resource: ManuallyDrop::new(resource),
             desc: OwnedTextureDesc::new(desc.clone()),
             dxgi_format: resource_desc.Format,

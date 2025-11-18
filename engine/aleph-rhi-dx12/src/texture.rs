@@ -35,6 +35,7 @@ use std::ptr::NonNull;
 
 use aleph_alloc::BHashMap;
 use aleph_any::AnyArc;
+use aleph_gpu_allocator::GpuAllocation;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
@@ -54,7 +55,7 @@ use crate::internal::{
 pub struct Texture {
     pub(crate) device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
-    pub(crate) allocation: Option<ManuallyDrop<d3d12ma::Allocation>>,
+    pub(crate) allocation: Option<GpuAllocation>,
     pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) desc: OwnedTextureDesc,
     pub(crate) dxgi_format: DXGI_FORMAT,
@@ -577,8 +578,12 @@ impl Drop for Texture {
 
         unsafe {
             ManuallyDrop::drop(&mut self.resource);
-            if let Some(v) = &mut self.allocation {
-                ManuallyDrop::drop(v)
+            if let Some(v) = self.allocation.take() {
+                self.device
+                    .allocator
+                    .as_ref()
+                    .unwrap_unchecked()
+                    .free_allocation(self.device.as_ref(), v);
             }
         }
     }

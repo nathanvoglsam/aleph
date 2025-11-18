@@ -28,9 +28,11 @@
 //
 
 use std::any::TypeId;
+use std::mem::ManuallyDrop;
 use std::ops::Deref;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
@@ -117,17 +119,6 @@ impl IAdapter for Adapter {
         let device = create_device(adapter.deref(), D3D_FEATURE_LEVEL_11_0)
             .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
-        let allocator = d3d12ma::Allocator::new(&d3d12ma::ALLOCATOR_DESC {
-            Flags: d3d12ma::ALLOCATOR_FLAGS::MSAA_TEXTURES_ALWAYS_COMMITTED
-                | d3d12ma::ALLOCATOR_FLAGS::DEFAULT_POOLS_NOT_ZEROED
-                | d3d12ma::ALLOCATOR_FLAGS::DONT_PREFER_SMALL_BUFFERS_COMMITTED,
-            pDevice: Some(device.clone().into()),
-            PreferredBlockSize: 0,
-            pAllocationCallbacks: std::ptr::null(),
-            pAdapter: Some(adapter.clone().into()),
-        })
-        .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
-
         fn create_queues(v: &mut Device) {
             // Load our 3 queues
             v.general_queue = Adapter::create_queue(v, QueueType::General);
@@ -176,13 +167,17 @@ impl IAdapter for Adapter {
                 debug_message_cookie,
                 descriptor_heaps,
                 device,
-                allocator,
+                allocator: None,
                 general_queue: None,
                 compute_queue: None,
                 transfer_queue: None,
                 command_list_pool: CommandListPool::new(),
                 object_counter: ObjectCounter::new(),
             };
+
+            let allocator = ManuallyDrop::new(GpuAllocator::new(&v));
+            v.allocator = Some(allocator);
+
             create_queues(&mut v);
             v
         });

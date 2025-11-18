@@ -563,7 +563,19 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
 #[derive(Clone, Default, Debug)]
 pub struct PoolConfig {
     /// Can this memory be mapped into the host address space?
+    ///
+    /// The value of this flag determines some allocator behavior:
+    /// - The default block size.
+    ///     - true: uses 'host' default block size
+    ///     - false: uses default block size
     pub is_mappable: bool,
+
+    /// Is this memory local to the GPU device. (i.e.) is this VRAM?
+    ///
+    /// The meaning of this is a bit vague, as on UMA 'device local' memory is also host memory.
+    ///
+    /// This value is purely used for instrumentation and does not affect allocator behavior.
+    pub is_device_local: bool,
 }
 
 struct PoolBlocks<T: IApiBridge + ?Sized> {
