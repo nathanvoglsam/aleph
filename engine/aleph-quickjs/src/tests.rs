@@ -50,7 +50,7 @@ pub fn eval_script_int_add() {
 
     let filename = nstr!("script.js");
     let script = nstr!("2 + 2");
-    let result = context.eval(script, filename, JSEvalOptions::STRICT);
+    let result = context.eval(script, filename, JSEvalFlags::STRICT);
     let result = check_exception(&context, result);
 
     assert_eq!(result.get_tag(), JSTag::INT);
@@ -64,7 +64,7 @@ pub fn eval_script_float_add() {
 
     let filename = nstr!("script.js");
     let script = nstr!("2.2 + 2.4");
-    let result = context.eval(script, filename, JSEvalOptions::STRICT);
+    let result = context.eval(script, filename, JSEvalFlags::STRICT);
     let result = check_exception(&context, result);
 
     assert_eq!(result.get_tag(), JSTag::FLOAT64);
@@ -115,7 +115,7 @@ pub fn eval_script_call_c_func() {
 
     let filename = nstr!("script.js");
     let script = nstr!("call_me_maybe(56);");
-    let result = context.eval(script, filename, JSEvalOptions::STRICT);
+    let result = context.eval(script, filename, JSEvalFlags::STRICT);
     let result = check_exception(&context, result);
 
     assert!(CALLED.load(Ordering::SeqCst));
@@ -146,7 +146,7 @@ pub fn eval_script_get_property_names() {
     let context = runtime.new_context().unwrap();
 
     let filename = nstr!("script.js");
-    let result = context.eval(SCRIPT, filename, JSEvalOptions::STRICT);
+    let result = context.eval(SCRIPT, filename, JSEvalFlags::STRICT);
     let result = check_exception(&context, result);
     assert!(
         result.is_undefined(),
@@ -208,7 +208,7 @@ pub fn eval_script_to_serde() {
 
     //unsafe {
     let filename = nstr!("script.js");
-    let result = context.eval(SCRIPT, filename, JSEvalOptions::STRICT);
+    let result = context.eval(SCRIPT, filename, JSEvalFlags::STRICT);
     let result = check_exception(&context, result);
     assert!(
         result.is_undefined(),

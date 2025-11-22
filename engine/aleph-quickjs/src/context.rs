@@ -34,6 +34,7 @@ use std::ptr::NonNull;
 use std::rc::Rc;
 
 use aleph_nstr::NStr;
+use raw::JSEvalOptions;
 
 use crate::opaque_box::{OpaqueBox, UntypedOpaqueBox};
 use crate::{Atom, Object, RefValue, Runtime};
@@ -67,15 +68,15 @@ impl Context {
 
     /// Direct wrapper over 'JS_Eval'.
     #[inline]
-    pub fn eval(&self, script: &NStr, filename: &NStr, opts: raw::JSEvalOptions) -> RefValue {
+    pub fn eval(&self, script: &NStr, filename: &NStr, opts: raw::JSEvalFlags) -> RefValue {
         unsafe {
-            let v = raw::JS_Eval(
-                self.0.ctx,
-                script.to_cstr_ptr(),
-                script.len(),
-                filename.to_cstr_ptr(),
-                opts,
-            );
+            let options = JSEvalOptions {
+                eval_flags: opts,
+                filename: filename.to_cstr_ptr(),
+                line_num: 0,
+                ..Default::default()
+            };
+            let v = raw::JS_Eval2(self.0.ctx, script.to_cstr_ptr(), script.len(), &options);
             RefValue::from_raw(self, v)
         }
     }

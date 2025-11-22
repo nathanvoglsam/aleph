@@ -51,7 +51,7 @@ impl OwnPropertyNames {
     pub fn iter<'a>(&'a self) -> impl ExactSizeIterator<Item = PropertyEnum> + 'a {
         unsafe {
             self.props.as_ref().iter().map(|v| PropertyEnum {
-                is_enumerable: v.is_enumerable.to_bool(),
+                is_enumerable: v.is_enumerable,
                 atom: v.atom.map(|v| {
                     let v = raw::JS_DupAtom(self.ctx.0.ctx, v).unwrap();
                     Atom {

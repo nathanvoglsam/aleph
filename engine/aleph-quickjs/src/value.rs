@@ -307,7 +307,7 @@ impl Value {
     pub fn to_c_str(&self, ctx: &Context) -> Option<CtxString> {
         unsafe {
             let mut len = 0;
-            let cstr = raw::JS_ToCStringLen2(ctx.0.ctx, &mut len, self.0, raw::JSBool::FALSE);
+            let cstr = raw::JS_ToCStringLen2(ctx.0.ctx, &mut len, self.0, false);
 
             if len == 0 || cstr.is_null() {
                 None
@@ -378,7 +378,7 @@ impl RefValue {
     /// Returns whether 'self' is an array
     pub fn is_array(&self) -> bool {
         // Safety: This wrapper type is guaranteed to contain a live JS object
-        unsafe { raw::JS_IsArray(self.c.0.ctx, self.v) != 0 }
+        unsafe { raw::JS_IsArray(self.v) }
     }
 
     #[inline(always)]
@@ -399,7 +399,7 @@ impl RefValue {
     pub fn to_c_str(&self) -> Option<CtxString> {
         unsafe {
             let mut len = 0;
-            let cstr = raw::JS_ToCStringLen2(self.c.0.ctx, &mut len, self.v, raw::JSBool::FALSE);
+            let cstr = raw::JS_ToCStringLen2(self.c.0.ctx, &mut len, self.v, false);
 
             if len == 0 || cstr.is_null() {
                 None
@@ -704,7 +704,7 @@ impl Object {
     #[inline]
     pub fn is_array(&self) -> bool {
         // Safety: This wrapper type is guaranteed to contain a live JS object
-        unsafe { raw::JS_IsArray(self.0.c.0.ctx, self.0.v) != 0 }
+        unsafe { raw::JS_IsArray(self.0.v) }
     }
 
     #[inline]

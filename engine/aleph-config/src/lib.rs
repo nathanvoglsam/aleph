@@ -131,7 +131,7 @@ impl ConfigRunner {
             let result = context.eval(
                 SETUP_SCRIPT,
                 nstr!("aleph-config.js"),
-                qjs::raw::JSEvalOptions::STRICT,
+                qjs::raw::JSEvalFlags::STRICT,
             );
             let _ = check_exception(&context, result)?;
 
@@ -139,7 +139,7 @@ impl ConfigRunner {
             // code into the context. We have to fetch the entry point and execute the entry point
             // separately...
             log::trace!("Running {filename}");
-            let result = context.eval(script_nstr, filename, qjs::raw::JSEvalOptions::STRICT);
+            let result = context.eval(script_nstr, filename, qjs::raw::JSEvalFlags::STRICT);
             let _ = check_exception(&context, result)?;
 
             Ok(())
@@ -171,7 +171,7 @@ impl ConfigRunner {
             // Load the script module itself. This won't run the config script, just load all the code
             // into the context. We have to fetch the entry point and execute the entry point
             // separately...
-            let result = context.eval(script_nstr, filename, qjs::raw::JSEvalOptions::STRICT);
+            let result = context.eval(script_nstr, filename, qjs::raw::JSEvalFlags::STRICT);
             let _ = check_exception(&context, result)?;
 
             Ok(())

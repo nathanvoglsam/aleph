@@ -57,47 +57,44 @@ impl Runtime {
     #[inline]
     pub fn new_in<Alloc: Allocator + Sized>(a: &'static Alloc) -> Option<Self> {
         unsafe {
-            extern "C" fn js_malloc<A: Allocator + Sized>(
-                s: *mut raw::JSMallocState,
+            extern "C" fn js_calloc<A: Allocator + Sized>(
+                s: *mut c_void,
+                count: usize,
                 size: usize,
             ) -> *mut c_void {
                 unsafe {
-                    let s = s.as_ref().unwrap_unchecked();
-                    let a = NonNull::new(s.opaque)
-                        .unwrap_unchecked()
-                        .cast::<A>()
-                        .as_ref();
+                    let a = NonNull::new(s).unwrap_unchecked().cast::<A>().as_ref();
+                    let a = Mallocator::new(a);
+                    a.calloc(count, size)
+                }
+            }
+
+            extern "C" fn js_malloc<A: Allocator + Sized>(
+                s: *mut c_void,
+                size: usize,
+            ) -> *mut c_void {
+                unsafe {
+                    let a = NonNull::new(s).unwrap_unchecked().cast::<A>().as_ref();
                     let a = Mallocator::new(a);
                     a.malloc(size)
                 }
             }
 
-            extern "C" fn js_free<A: Allocator + Sized>(
-                s: *mut raw::JSMallocState,
-                ptr: *mut c_void,
-            ) {
+            extern "C" fn js_free<A: Allocator + Sized>(s: *mut c_void, ptr: *mut c_void) {
                 unsafe {
-                    let s = s.as_ref().unwrap_unchecked();
-                    let a = NonNull::new(s.opaque)
-                        .unwrap_unchecked()
-                        .cast::<A>()
-                        .as_ref();
+                    let a = NonNull::new(s).unwrap_unchecked().cast::<A>().as_ref();
                     let a = Mallocator::new(a);
                     a.free(ptr)
                 }
             }
 
             extern "C" fn js_realloc<A: Allocator + Sized>(
-                s: *mut raw::JSMallocState,
+                s: *mut c_void,
                 ptr: *mut c_void,
                 size: usize,
             ) -> *mut c_void {
                 unsafe {
-                    let s = s.as_ref().unwrap_unchecked();
-                    let a = NonNull::new(s.opaque)
-                        .unwrap_unchecked()
-                        .cast::<A>()
-                        .as_ref();
+                    let a = NonNull::new(s).unwrap_unchecked().cast::<A>().as_ref();
                     let a = Mallocator::new(a);
                     a.realloc(ptr, size)
                 }
@@ -111,6 +108,7 @@ impl Runtime {
             }
 
             let functions = raw::JSMallocFunctions {
+                js_calloc: Some(js_calloc::<Alloc>),
                 js_malloc: Some(js_malloc::<Alloc>),
                 js_free: Some(js_free::<Alloc>),
                 js_realloc: Some(js_realloc::<Alloc>),
