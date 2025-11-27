@@ -155,7 +155,7 @@ impl<T: IApiBridge> GpuAllocator<T> {
 
             let blocks = &mut pool.dedicated_blocks.get_mut().memory_blocks;
             blocks.iter_mut().for_each(|block| unsafe {
-                T::destroy_block(bridge, &self.info, block);
+                T::destroy_dedicated_block(bridge, &self.info, block);
             });
         });
     }
@@ -258,15 +258,66 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
         // If the requested allocation size is greater than half the default block size then we
         // opt to force a dedicated allocation for this allocation instead. This is a heuristic
         // to avoid long searches for blocks with enough space.
-        let out = if layout.size() > self.default_block_size as u64 / 2 {
-            self.allocate_dedicated_block(
+        let too_big_for_block = layout.size() > self.default_block_size as u64 / 2;
+        let api_wants_dedicated =
+            requirements.dedicated_block_preferred || requirements.dedicated_block_required;
+        let use_dedicated = too_big_for_block || api_wants_dedicated;
+        let out = if use_dedicated {
+            // 'allocation.is_fail()' is our niche for a dedicated block, hence Default::default()
+            // for 'allocation'.
+            //
+            // Partially init the allocation so we can create the resource. We patch the block index
+            // after we take the lock on 'dedicated_blocks' and get the final block index.
+            let mut allocation = GpuAllocation {
+                allocation: Default::default(),
+                layout: layout.clone(),
+                block_offset: 0,
+                pool_index: self.pool_index,
+                block_index: 0,
+            };
+            let (block, resource) = unsafe {
+                T::create_dedicated_buffer_object(
+                    bridge,
+                    desc,
+                    requirements,
+                    &allocation,
+                    info,
+                    &self.info,
+                )
+                .ok()?
+            };
+
+            // Query any extra, API specific metadata we should return to the caller describing the
+            // allocation.
+            let metadata = T::get_metadata_for_dedicated_allocation(
                 bridge,
                 info,
-                requirements,
-                desc,
-                T::create_buffer_object,
-                T::destroy_buffer_object,
-            )
+                &self.info,
+                &block,
+                &allocation,
+            );
+
+            // Finally we insert the new block into the 'dedicated_blocks' set. Again handling the
+            // case we fail here by freeing both the resource _and_ the block.
+            let mut dedicated_blocks = self.dedicated_blocks.lock();
+            match dedicated_blocks.insert_new_block(block) {
+                Ok(index) => {
+                    allocation.block_index = index;
+                }
+                Err(mut block) => {
+                    // Unlock the mutex as we don't need to hold it while we do cleanup on allocation
+                    // failure
+                    drop(dedicated_blocks);
+                    unsafe { T::destroy_buffer_object(bridge, info, resource) };
+                    unsafe { T::destroy_dedicated_block(bridge, info, &mut block) };
+                    return None;
+                }
+            }
+
+            self.stats.track_block_allocation(layout.size());
+            self.stats.add_tracked_dedicated_allocation();
+
+            Some((allocation, metadata, resource))
         } else {
             let mut pool_blocks = self.pool_blocks.lock();
             let allocation = unsafe {
@@ -309,15 +360,66 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
         // If the requested allocation size is greater than half the default block size then we
         // opt to force a dedicated allocation for this allocation instead. This is a heuristic
         // to avoid long searches for blocks with enough space.
-        let out = if layout.size() > self.default_block_size as u64 / 2 {
-            self.allocate_dedicated_block(
+        let too_big_for_block = layout.size() > self.default_block_size as u64 / 2;
+        let api_wants_dedicated =
+            requirements.dedicated_block_preferred || requirements.dedicated_block_required;
+        let use_dedicated = too_big_for_block || api_wants_dedicated;
+        let out = if use_dedicated {
+            // 'allocation.is_fail()' is our niche for a dedicated block, hence Default::default()
+            // for 'allocation'.
+            //
+            // Partially init the allocation so we can create the resource. We patch the block index
+            // after we take the lock on 'dedicated_blocks' and get the final block index.
+            let mut allocation = GpuAllocation {
+                allocation: Default::default(),
+                layout: layout.clone(),
+                block_offset: 0,
+                pool_index: self.pool_index,
+                block_index: 0,
+            };
+            let (block, resource) = unsafe {
+                T::create_dedicated_texture_object(
+                    bridge,
+                    desc,
+                    requirements,
+                    &allocation,
+                    info,
+                    &self.info,
+                )
+                .ok()?
+            };
+
+            // Query any extra, API specific metadata we should return to the caller describing the
+            // allocation.
+            let metadata = T::get_metadata_for_dedicated_allocation(
                 bridge,
                 info,
-                requirements,
-                desc,
-                T::create_texture_object,
-                T::destroy_texture_object,
-            )
+                &self.info,
+                &block,
+                &allocation,
+            );
+
+            // Finally we insert the new block into the 'dedicated_blocks' set. Again handling the
+            // case we fail here by freeing both the resource _and_ the block.
+            let mut dedicated_blocks = self.dedicated_blocks.lock();
+            match dedicated_blocks.insert_new_block(block) {
+                Ok(index) => {
+                    allocation.block_index = index;
+                }
+                Err(mut block) => {
+                    // Unlock the mutex as we don't need to hold it while we do cleanup on allocation
+                    // failure
+                    drop(dedicated_blocks);
+                    unsafe { T::destroy_texture_object(bridge, info, resource) };
+                    unsafe { T::destroy_dedicated_block(bridge, info, &mut block) };
+                    return None;
+                }
+            }
+
+            self.stats.track_block_allocation(layout.size());
+            self.stats.add_tracked_dedicated_allocation();
+
+            Some((allocation, metadata, resource))
         } else {
             let mut pool_blocks = self.pool_blocks.lock();
             let allocation = unsafe {
@@ -449,85 +551,6 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
         }
     }
 
-    fn allocate_dedicated_block<DT, HT>(
-        &self,
-        bridge: &T::BridgeHandle<'_>,
-        info: &T::AllocatorInfo,
-        requirements: &MemoryRequirements,
-        desc: &DT,
-        init_r: unsafe fn(
-            &T::BridgeHandle<'_>,
-            &DT,
-            &GpuAllocation,
-            &T::AllocatorInfo,
-            &T::PoolInfo,
-            &T::BlockInfo,
-        ) -> Result<HT, ()>,
-        free_r: unsafe fn(&T::BridgeHandle<'_>, &T::AllocatorInfo, HT),
-    ) -> Option<(GpuAllocation, T::AllocationMetadata, HT)> {
-        let layout = &requirements.layout;
-
-        // We do the create_block -> create_resource dance without taking the lock so we don't
-        // block other threads while negotiating with the GPU API. This should mean the time we
-        // spent locked is tiny.
-        //
-        // Create a fresh block to serve the allocation. May fail!
-        let mut block = unsafe { T::create_block(bridge, info, &self.info, layout.size())? };
-
-        // 'allocation.is_fail()' is our niche for a dedicated block, hence Default::default()
-        // for 'allocation'.
-        //
-        // Partially init the allocation so we can create the resource. We patch the block index
-        // after we take the lock on 'dedicated_blocks' and get the final block index.
-        let mut allocation = GpuAllocation {
-            allocation: Default::default(),
-            layout: layout.clone(),
-            block_offset: 0,
-            pool_index: self.pool_index,
-            block_index: 0,
-        };
-
-        // Try to create the resource before taking 'dedicated_blocks' lock. Make sure we destroy
-        // the block if this fails. Otherwise, we'd leak the block.
-        let resource = unsafe {
-            let result = init_r(bridge, desc, &allocation, info, &self.info, &block).ok();
-            match result {
-                None => {
-                    T::destroy_block(bridge, info, &mut block);
-                    return None;
-                }
-                Some(v) => v,
-            }
-        };
-
-        // Query any extra, API specific metadata we should return to the caller describing the
-        // allocation.
-        let metadata =
-            T::get_metadata_for_allocation(bridge, info, &self.info, &block, &allocation);
-
-        // Finally we insert the new block into the 'dedicated_blocks' set. Again handling the
-        // case we fail here by freeing both the resource _and_ the block.
-        let mut dedicated_blocks = self.dedicated_blocks.lock();
-        match dedicated_blocks.insert_new_block(block) {
-            Ok(index) => {
-                allocation.block_index = index;
-            }
-            Err(mut block) => {
-                // Unlock the mutex as we don't need to hold it while we do cleanup on allocation
-                // failure
-                drop(dedicated_blocks);
-                unsafe { free_r(bridge, info, resource) };
-                unsafe { T::destroy_block(bridge, info, &mut block) };
-                return None;
-            }
-        }
-
-        self.stats.track_block_allocation(layout.size());
-        self.stats.add_tracked_dedicated_allocation();
-
-        Some((allocation, metadata, resource))
-    }
-
     pub(crate) fn free_allocation(
         &self,
         bridge: &T::BridgeHandle<'_>,
@@ -548,7 +571,7 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
 
             let block = &mut dedicated_blocks.memory_blocks[allocation.block_index as usize];
             unsafe {
-                T::destroy_block(bridge, info, block);
+                T::destroy_dedicated_block(bridge, info, block);
             }
         } else {
             let pool_blocks = &mut self.pool_blocks.lock();
@@ -627,7 +650,7 @@ impl<T: IApiBridge + ?Sized> PoolBlocks<T> {
 struct DedicatedBlocks<T: IApiBridge + ?Sized> {
     /// Backing storage for each dedicated memory block. This will contain a mix of live and dead
     /// memory blocks, which is required to keep indices into this array stable.
-    memory_blocks: BVec<T::BlockInfo, GpuAllocatorHostSystem>,
+    memory_blocks: BVec<T::DedicatedBlockInfo, GpuAllocatorHostSystem>,
 
     /// A list of indices into 'memory_blocks' that are free to reuse.
     ///
@@ -647,7 +670,10 @@ impl<T: IApiBridge + ?Sized> Default for DedicatedBlocks<T> {
 }
 
 impl<T: IApiBridge + ?Sized> DedicatedBlocks<T> {
-    fn insert_new_block(&mut self, block: T::BlockInfo) -> Result<u16, T::BlockInfo> {
+    fn insert_new_block(
+        &mut self,
+        block: T::DedicatedBlockInfo,
+    ) -> Result<u16, T::DedicatedBlockInfo> {
         if let Some(index) = self.free_blocks.pop() {
             self.memory_blocks[index as usize] = block;
             Ok(index)

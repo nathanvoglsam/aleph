@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-//! TODO: Proper dedicated block support using Vulkan's dedicated allocation APIs.
 //! TODO: Defragmentation support?
 
 mod gpu_allocation;
@@ -105,6 +104,10 @@ pub trait IApiBridge {
     /// needed to bind resources to that memory block.
     type BlockInfo: Sized;
 
+    /// Similar to [`IApiBridge::BlockInfo`] but specialized for dedicated block allocations. Some
+    /// backends may treat dedicated allocations specially and need a different type.
+    type DedicatedBlockInfo: Sized;
+
     /// API specific metadata generated for an allocation. This may contain platform specific data
     /// on what type of memory backed the allocation, or pointers to mapped addresses.
     type AllocationMetadata: Sized;
@@ -144,6 +147,14 @@ pub trait IApiBridge {
         allocator_info: &Self::AllocatorInfo,
         buffer: Self::BufferHandle,
     );
+    unsafe fn create_dedicated_buffer_object(
+        bridge: &Self::BridgeHandle<'_>,
+        desc: &AllocationDesc<Self::BufferDesc<'_>>,
+        memory_requirements: &MemoryRequirements,
+        allocation: &GpuAllocation,
+        allocator_info: &Self::AllocatorInfo,
+        pool_info: &Self::PoolInfo,
+    ) -> Result<(Self::DedicatedBlockInfo, Self::BufferHandle), ()>;
 
     unsafe fn create_texture_object(
         bridge: &Self::BridgeHandle<'_>,
@@ -158,6 +169,14 @@ pub trait IApiBridge {
         allocator_info: &Self::AllocatorInfo,
         texture: Self::TextureHandle,
     );
+    unsafe fn create_dedicated_texture_object(
+        bridge: &Self::BridgeHandle<'_>,
+        desc: &AllocationDesc<Self::TextureDesc<'_>>,
+        memory_requirements: &MemoryRequirements,
+        allocation: &GpuAllocation,
+        allocator_info: &Self::AllocatorInfo,
+        pool_info: &Self::PoolInfo,
+    ) -> Result<(Self::DedicatedBlockInfo, Self::TextureHandle), ()>;
 
     unsafe fn create_block(
         bridge: &Self::BridgeHandle<'_>,
@@ -169,6 +188,11 @@ pub trait IApiBridge {
         bridge: &Self::BridgeHandle<'_>,
         allocator_info: &Self::AllocatorInfo,
         block: &mut Self::BlockInfo,
+    );
+    unsafe fn destroy_dedicated_block(
+        bridge: &Self::BridgeHandle<'_>,
+        allocator_info: &Self::AllocatorInfo,
+        block: &mut Self::DedicatedBlockInfo,
     );
 
     fn get_requirements_for_buffer(
@@ -187,6 +211,14 @@ pub trait IApiBridge {
         info: &Self::AllocatorInfo,
         pool_info: &Self::PoolInfo,
         block_info: &Self::BlockInfo,
+        allocation: &GpuAllocation,
+    ) -> Self::AllocationMetadata;
+
+    fn get_metadata_for_dedicated_allocation(
+        bridge: &Self::BridgeHandle<'_>,
+        info: &Self::AllocatorInfo,
+        pool_info: &Self::PoolInfo,
+        block_info: &Self::DedicatedBlockInfo,
         allocation: &GpuAllocation,
     ) -> Self::AllocationMetadata;
 }
@@ -238,4 +270,12 @@ pub struct MemoryRequirements {
     /// runtime can tell as the values for this. For buffers size is obvious, but alignment is often
     /// platform dependent.
     pub layout: GpuLayout,
+
+    /// A hint that can be provided by a platform API. If this flag is true the resource may be more
+    /// efficient to access if allocated into a dedicated block.
+    pub dedicated_block_preferred: bool,
+
+    /// A flag that can be provided by a platform API. If this flag is true then the resource _must_
+    /// be placed in a dedicated block.
+    pub dedicated_block_required: bool,
 }

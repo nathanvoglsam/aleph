@@ -49,6 +49,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     type AllocatorInfo = VulkanAllocatorInfo;
     type PoolInfo = VulkanPoolInfo;
     type BlockInfo = VulkanBlockInfo;
+    type DedicatedBlockInfo = VulkanBlockInfo;
     type AllocationMetadata = VulkanAllocationMetadata;
 
     fn get_allocator_info(bridge: &Self::BridgeHandle<'_>) -> Self::AllocatorInfo {
@@ -207,6 +208,55 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
         }
     }
 
+    unsafe fn create_dedicated_buffer_object(
+        bridge: &Self::BridgeHandle<'_>,
+        desc: &AllocationDesc<Self::BufferDesc<'_>>,
+        memory_requirements: &MemoryRequirements,
+        allocation: &GpuAllocation,
+        allocator_info: &Self::AllocatorInfo,
+        pool_info: &Self::PoolInfo,
+    ) -> Result<(Self::DedicatedBlockInfo, Self::BufferHandle), ()> {
+        debug_assert!(pool_info.is_buffer_pool);
+        unsafe {
+            let buffer = bridge
+                .device
+                .create_buffer(&desc.desc, Some(&allocator_info.alloc_callbacks))
+                .map_err(|_| ())?;
+
+            let mut dedicated = vk::MemoryDedicatedAllocateInfo::default().buffer(buffer);
+            let info = vk::MemoryAllocateInfo::default()
+                .allocation_size(memory_requirements.layout.size())
+                .memory_type_index(pool_info.memory_type_index)
+                .push_next(&mut dedicated);
+            let memory = bridge
+                .device
+                .allocate_memory(&info, Some(&allocator_info.alloc_callbacks))
+                .map_err(|_| ())?;
+
+            let mapped_address = if pool_info.mappable {
+                let result = bridge
+                    .device
+                    .map_memory(memory, 0, vk::WHOLE_SIZE, vk::MemoryMapFlags::empty())
+                    .map_err(|_| ())?;
+                NonNull::new(result.cast::<u8>())
+            } else {
+                None
+            };
+            let block_info = VulkanBlockInfo {
+                memory,
+                mapped_address,
+            };
+
+            let offset = allocation.block_offset();
+            bridge
+                .device
+                .bind_buffer_memory(buffer, memory, offset.into())
+                .map_err(|_| ())?;
+
+            Ok((block_info, buffer))
+        }
+    }
+
     unsafe fn create_texture_object(
         bridge: &Self::BridgeHandle<'_>,
         desc: &AllocationDesc<Self::TextureDesc<'_>>,
@@ -241,6 +291,55 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
             bridge
                 .device
                 .destroy_image(texture, Some(&allocator_info.alloc_callbacks));
+        }
+    }
+
+    unsafe fn create_dedicated_texture_object(
+        bridge: &Self::BridgeHandle<'_>,
+        desc: &AllocationDesc<Self::TextureDesc<'_>>,
+        memory_requirements: &MemoryRequirements,
+        allocation: &GpuAllocation,
+        allocator_info: &Self::AllocatorInfo,
+        pool_info: &Self::PoolInfo,
+    ) -> Result<(Self::DedicatedBlockInfo, Self::TextureHandle), ()> {
+        debug_assert!(!pool_info.is_buffer_pool);
+        unsafe {
+            let image = bridge
+                .device
+                .create_image(&desc.desc, Some(&allocator_info.alloc_callbacks))
+                .map_err(|_| ())?;
+
+            let mut dedicated = vk::MemoryDedicatedAllocateInfo::default().image(image);
+            let info = vk::MemoryAllocateInfo::default()
+                .allocation_size(memory_requirements.layout.size())
+                .memory_type_index(pool_info.memory_type_index)
+                .push_next(&mut dedicated);
+            let memory = bridge
+                .device
+                .allocate_memory(&info, Some(&allocator_info.alloc_callbacks))
+                .map_err(|_| ())?;
+
+            let mapped_address = if pool_info.mappable {
+                let result = bridge
+                    .device
+                    .map_memory(memory, 0, vk::WHOLE_SIZE, vk::MemoryMapFlags::empty())
+                    .map_err(|_| ())?;
+                NonNull::new(result.cast::<u8>())
+            } else {
+                None
+            };
+            let block_info = VulkanBlockInfo {
+                memory,
+                mapped_address,
+            };
+
+            let offset = allocation.block_offset();
+            bridge
+                .device
+                .bind_image_memory(image, memory, offset.into())
+                .map_err(|_| ())?;
+
+            Ok((block_info, image))
         }
     }
 
@@ -288,6 +387,14 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
         };
     }
 
+    unsafe fn destroy_dedicated_block(
+        bridge: &Self::BridgeHandle<'_>,
+        allocator_info: &Self::AllocatorInfo,
+        block: &mut Self::DedicatedBlockInfo,
+    ) {
+        unsafe { Self::destroy_block(bridge, allocator_info, block) }
+    }
+
     fn get_requirements_for_buffer(
         bridge: &Self::BridgeHandle<'_>,
         info: &Self::AllocatorInfo,
@@ -295,12 +402,21 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     ) -> Option<MemoryRequirements> {
         unsafe {
             let vk_desc = vk::DeviceBufferMemoryRequirements::default().create_info(&desc.desc);
-            let mut requirements = vk::MemoryRequirements2::default();
+
+            let mut dedicated = vk::MemoryDedicatedRequirements::default();
+            let mut requirements = vk::MemoryRequirements2::default().push_next(&mut dedicated);
             bridge
                 .device
                 .get_device_buffer_memory_requirements(&vk_desc, &mut requirements);
 
-            Self::get_requirements_for_resource(info, desc, &requirements, true)
+            // This is to remove 'dedicated' from the p_next chain and release the mutable borrow
+            // so we can pass both requirements and dedicated into the next call
+            let requirements = vk::MemoryRequirements2 {
+                memory_requirements: requirements.memory_requirements,
+                ..Default::default()
+            };
+
+            Self::get_requirements_for_resource(info, desc, &requirements, &dedicated, true)
         }
     }
 
@@ -311,12 +427,21 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     ) -> Option<MemoryRequirements> {
         unsafe {
             let vk_desc = vk::DeviceImageMemoryRequirements::default().create_info(&desc.desc);
-            let mut requirements = vk::MemoryRequirements2::default();
+
+            let mut dedicated = vk::MemoryDedicatedRequirements::default();
+            let mut requirements = vk::MemoryRequirements2::default().push_next(&mut dedicated);
             bridge
                 .device
                 .get_device_image_memory_requirements(&vk_desc, &mut requirements);
 
-            Self::get_requirements_for_resource(info, desc, &requirements, false)
+            // This is to remove 'dedicated' from the p_next chain and release the mutable borrow
+            // so we can pass both requirements and dedicated into the next call
+            let requirements = vk::MemoryRequirements2 {
+                memory_requirements: requirements.memory_requirements,
+                ..Default::default()
+            };
+
+            Self::get_requirements_for_resource(info, desc, &requirements, &dedicated, false)
         }
     }
 
@@ -337,6 +462,16 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
             }
         }
     }
+
+    fn get_metadata_for_dedicated_allocation(
+        bridge: &Self::BridgeHandle<'_>,
+        info: &Self::AllocatorInfo,
+        pool_info: &Self::PoolInfo,
+        block_info: &Self::BlockInfo,
+        allocation: &GpuAllocation,
+    ) -> Self::AllocationMetadata {
+        Self::get_metadata_for_allocation(bridge, info, pool_info, block_info, allocation)
+    }
 }
 
 impl VulkanAllocatorBridge {
@@ -344,6 +479,7 @@ impl VulkanAllocatorBridge {
         info: &VulkanAllocatorInfo,
         desc: &AllocationDesc<T>,
         requirements: &vk::MemoryRequirements2,
+        dedicated: &vk::MemoryDedicatedRequirements,
         is_buffer: bool,
     ) -> Option<MemoryRequirements> {
         let requirements = requirements.memory_requirements;
@@ -401,7 +537,12 @@ impl VulkanAllocatorBridge {
         // Shouldn't ever fail, but I really want to make this code panic proof.
         let pool_index = u16::try_from(found_type).ok()?;
 
-        Some(MemoryRequirements { pool_index, layout })
+        Some(MemoryRequirements {
+            pool_index,
+            layout,
+            dedicated_block_preferred: dedicated.prefers_dedicated_allocation != 0,
+            dedicated_block_required: dedicated.requires_dedicated_allocation != 0,
+        })
     }
 }
 

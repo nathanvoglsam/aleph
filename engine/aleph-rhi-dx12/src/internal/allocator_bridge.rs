@@ -58,6 +58,7 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
     type AllocatorInfo = ();
     type PoolInfo = D3D12PoolInfo;
     type BlockInfo = D3D12BlockInfo;
+    type DedicatedBlockInfo = ();
     type AllocationMetadata = ();
 
     fn get_allocator_info(_bridge: &Self::BridgeHandle<'_>) -> Self::AllocatorInfo {
@@ -136,6 +137,41 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
         drop(buffer);
     }
 
+    unsafe fn create_dedicated_buffer_object(
+        bridge: &Self::BridgeHandle<'_>,
+        desc: &AllocationDesc<Self::BufferDesc<'_>>,
+        _memory_requirements: &MemoryRequirements,
+        _allocation: &GpuAllocation,
+        _allocator_info: &Self::AllocatorInfo,
+        _pool_info: &Self::PoolInfo,
+    ) -> Result<(Self::DedicatedBlockInfo, Self::BufferHandle), ()> {
+        unsafe {
+            let heap_properties = D3D12_HEAP_PROPERTIES {
+                Type: memory_location_to_heap_type(desc.location),
+                ..Default::default()
+            };
+
+            let mut out_resource: Option<ID3D12Resource> = None;
+            bridge
+                .device
+                .CreateCommittedResource3(
+                    &heap_properties,
+                    Default::default(),
+                    &desc.desc.desc,
+                    desc.desc.initial_layout,
+                    desc.desc
+                        .optimized_clear_value
+                        .map(|v| v as *const D3D12_CLEAR_VALUE),
+                    desc.desc.pcastableformats,
+                    &mut out_resource,
+                )
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+            let resource = out_resource.ok_or(())?;
+
+            Ok(((), resource))
+        }
+    }
+
     unsafe fn create_texture_object(
         bridge: &Self::BridgeHandle<'_>,
         desc: &AllocationDesc<Self::TextureDesc<'_>>,
@@ -173,6 +209,41 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
         texture: Self::TextureHandle,
     ) {
         drop(texture);
+    }
+
+    unsafe fn create_dedicated_texture_object(
+        bridge: &Self::BridgeHandle<'_>,
+        desc: &AllocationDesc<Self::TextureDesc<'_>>,
+        _memory_requirements: &MemoryRequirements,
+        _allocation: &GpuAllocation,
+        _allocator_info: &Self::AllocatorInfo,
+        _pool_info: &Self::PoolInfo,
+    ) -> Result<(Self::DedicatedBlockInfo, Self::TextureHandle), ()> {
+        unsafe {
+            let heap_properties = D3D12_HEAP_PROPERTIES {
+                Type: memory_location_to_heap_type(desc.location),
+                ..Default::default()
+            };
+
+            let mut out_resource: Option<ID3D12Resource> = None;
+            bridge
+                .device
+                .CreateCommittedResource3(
+                    &heap_properties,
+                    Default::default(),
+                    &desc.desc.desc,
+                    desc.desc.initial_layout,
+                    desc.desc
+                        .optimized_clear_value
+                        .map(|v| v as *const D3D12_CLEAR_VALUE),
+                    desc.desc.pcastableformats,
+                    &mut out_resource,
+                )
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+            let resource = out_resource.ok_or(())?;
+
+            Ok(((), resource))
+        }
     }
 
     unsafe fn create_block(
@@ -216,6 +287,14 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
         let _sink = block.heap.take();
     }
 
+    unsafe fn destroy_dedicated_block(
+        _bridge: &Self::BridgeHandle<'_>,
+        _allocator_info: &Self::AllocatorInfo,
+        _block: &mut Self::DedicatedBlockInfo,
+    ) {
+        // Intentional no-op
+    }
+
     fn get_requirements_for_buffer(
         bridge: &Self::BridgeHandle<'_>,
         _info: &Self::AllocatorInfo,
@@ -238,6 +317,8 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
         Some(MemoryRequirements {
             pool_index,
             layout: GpuLayout::new(info.SizeInBytes, info.Alignment)?,
+            dedicated_block_preferred: false,
+            dedicated_block_required: false,
         })
     }
 
@@ -278,6 +359,8 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
         Some(MemoryRequirements {
             pool_index,
             layout: GpuLayout::new(info.SizeInBytes, info.Alignment)?,
+            dedicated_block_preferred: false,
+            dedicated_block_required: false,
         })
     }
 
@@ -308,6 +391,14 @@ const fn memory_location_and_resource_type_to_pool_index(
         MemoryLocation::GpuToCpu => 2,
     };
     (HEAP_TYPES.len() * heap_idx) + resource_idx
+}
+
+const fn memory_location_to_heap_type(memory_location: MemoryLocation) -> D3D12_HEAP_TYPE {
+    match memory_location {
+        MemoryLocation::GpuLocal => D3D12_HEAP_TYPE_DEFAULT,
+        MemoryLocation::CpuToGpu => D3D12_HEAP_TYPE_UPLOAD,
+        MemoryLocation::GpuToCpu => D3D12_HEAP_TYPE_READBACK,
+    }
 }
 
 pub struct ExtendedResourceDesc<'a> {
