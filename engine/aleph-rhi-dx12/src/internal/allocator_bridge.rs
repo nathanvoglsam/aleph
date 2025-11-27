@@ -162,6 +162,7 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
                     desc.desc
                         .optimized_clear_value
                         .map(|v| v as *const D3D12_CLEAR_VALUE),
+                    None,
                     desc.desc.pcastableformats,
                     &mut out_resource,
                 )
@@ -236,6 +237,7 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
                     desc.desc
                         .optimized_clear_value
                         .map(|v| v as *const D3D12_CLEAR_VALUE),
+                    None,
                     desc.desc.pcastableformats,
                     &mut out_resource,
                 )
@@ -369,6 +371,16 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
         _info: &Self::AllocatorInfo,
         _pool_info: &Self::PoolInfo,
         _block_info: &Self::BlockInfo,
+        _allocation: &GpuAllocation,
+    ) -> Self::AllocationMetadata {
+        ()
+    }
+
+    fn get_metadata_for_dedicated_allocation(
+        _bridge: &Self::BridgeHandle<'_>,
+        _info: &Self::AllocatorInfo,
+        _pool_info: &Self::PoolInfo,
+        _block_info: &Self::DedicatedBlockInfo,
         _allocation: &GpuAllocation,
     ) -> Self::AllocationMetadata {
         ()
