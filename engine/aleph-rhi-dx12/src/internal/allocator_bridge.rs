@@ -143,11 +143,11 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
         _memory_requirements: &MemoryRequirements,
         _allocation: &GpuAllocation,
         _allocator_info: &Self::AllocatorInfo,
-        _pool_info: &Self::PoolInfo,
+        pool_info: &Self::PoolInfo,
     ) -> Result<(Self::DedicatedBlockInfo, Self::BufferHandle), ()> {
         unsafe {
             let heap_properties = D3D12_HEAP_PROPERTIES {
-                Type: memory_location_to_heap_type(desc.location),
+                Type: pool_info.heap_type,
                 ..Default::default()
             };
 
@@ -218,11 +218,11 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
         _memory_requirements: &MemoryRequirements,
         _allocation: &GpuAllocation,
         _allocator_info: &Self::AllocatorInfo,
-        _pool_info: &Self::PoolInfo,
+        pool_info: &Self::PoolInfo,
     ) -> Result<(Self::DedicatedBlockInfo, Self::TextureHandle), ()> {
         unsafe {
             let heap_properties = D3D12_HEAP_PROPERTIES {
-                Type: memory_location_to_heap_type(desc.location),
+                Type: pool_info.heap_type,
                 ..Default::default()
             };
 
@@ -403,14 +403,6 @@ const fn memory_location_and_resource_type_to_pool_index(
         MemoryLocation::GpuToCpu => 2,
     };
     (HEAP_TYPES.len() * heap_idx) + resource_idx
-}
-
-const fn memory_location_to_heap_type(memory_location: MemoryLocation) -> D3D12_HEAP_TYPE {
-    match memory_location {
-        MemoryLocation::GpuLocal => D3D12_HEAP_TYPE_DEFAULT,
-        MemoryLocation::CpuToGpu => D3D12_HEAP_TYPE_UPLOAD,
-        MemoryLocation::GpuToCpu => D3D12_HEAP_TYPE_READBACK,
-    }
 }
 
 pub struct ExtendedResourceDesc<'a> {
