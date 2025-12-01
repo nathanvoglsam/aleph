@@ -389,7 +389,7 @@ impl Context {
     }
 }
 
-pub struct InnerContext {
+pub(crate) struct InnerContext {
     pub(crate) ctx: NonNull<raw::JSContext>,
 }
 

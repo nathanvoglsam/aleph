@@ -43,6 +43,149 @@ use raw::{JSTag, JSValue};
 #[derive(Copy, Clone)]
 pub struct Value(pub(crate) JSValue);
 
+impl Value {
+    /// Represents a null reference JS value. In some sense this is a 'pointer' value, but it never
+    /// actually points to anything (it's a null reference) so we can treat it like a pure value
+    /// type.
+    pub const NULL: Self = Self(JSValue::NULL);
+
+    /// Represents an 'undefined' JS value.
+    pub const UNDEFINED: Self = Self(JSValue::UNDEFINED);
+
+    /// The false 'boolean' JS value.
+    pub const FALSE: Self = Self(JSValue::FALSE);
+
+    /// The true 'boolean' JS value.
+    pub const TRUE: Self = Self(JSValue::TRUE);
+
+    /// A special value that signals an exception has been thrown. This may be returned by QuickJS
+    /// functions that yield JS values to signify an error has occured (i.e, an exception) and that
+    /// we don't have a valid result.
+    ///
+    /// This does not contain the actual exception value. The exception object must be fetched
+    /// from the context with [`Context::get_exception`]. Because this contains nothing but
+    /// a tag signalling an exception being thrown, this is a pure value type too.
+    pub const EXCEPTION: Self = Self(JSValue::EXCEPTION);
+
+    /// A special QuickJS value for 'uninitialized'. I don't actually know what this is for.
+    pub const UNINITIALIZED: Self = Self(JSValue::UNINITIALIZED);
+
+    /// A JS 'number' value that contains a NaN.
+    ///
+    /// This is guaranteed to be a JS 'number' containing some NaN bit pattern. This is needed as
+    /// NaN-boxing means that not all float NaN bit patterns will be treated as 'number' by the
+    /// JS runtime.
+    pub const NAN: Self = Self(JSValue::NAN);
+
+    /// Converts a raw [`JSValue`] to a wrapped value type [`Value`]. Will return [`None`] for any
+    /// JS value that isn't:
+    /// - INT
+    /// - BOOL
+    /// - NULL
+    /// - UNDEFINED
+    /// - UNINITIALIZED
+    /// - EXCEPTION
+    /// - FLOAT64
+    ///
+    /// # Info
+    ///
+    /// Strictly speaking 'CATCH_OFFSET' is also a value type, but seems to be a value type used
+    /// internally by the runtime that we shouldn't use. We make the choice to not map that to our
+    /// [`Value`] wrapper.
+    ///
+    /// # Safety
+    ///
+    /// This is safe, while the [`RefValue::from_raw`] function is not. Why?
+    ///
+    /// [`RefValue`] may contain pointer based JS values, like 'object' or 'string'. These are heap
+    /// allocated and reference counted. It would be possible to construct and wrap a JSValue that
+    /// holds an invalid pointer. There's no way to check at runtime and so the call must be unsafe.
+    ///
+    /// The [`Value::from_raw`] function on the other hand will only yield a value for pure value
+    /// JS types like number, checked at runtime These do not contain pointers and so as long as you
+    /// check the tag they are valid to use. If you want an unchecked conversion just use
+    /// [`Option::unwrap_unchecked`].
+    pub const fn from_raw(v: JSValue) -> Option<Self> {
+        match v.get_norm_tag() {
+            JSTag::BIG_INT
+            | JSTag::SYMBOL
+            | JSTag::STRING
+            | JSTag::MODULE
+            | JSTag::FUNCTION_BYTECODE
+            | JSTag::OBJECT
+            | JSTag::CATCH_OFFSET => None,
+            JSTag::INT
+            | JSTag::BOOL
+            | JSTag::NULL
+            | JSTag::UNDEFINED
+            | JSTag::UNINITIALIZED
+            | JSTag::EXCEPTION
+            | JSTag::FLOAT64 => Some(Self(v)),
+            _ => unreachable!(),
+        }
+    }
+
+    /// Creates a new JS 'boolean' from the given bool.
+    pub const fn new_bool(val: bool) -> Self {
+        Self(JSValue::new_bool(val))
+    }
+
+    /// Creates a new JS 'number' from the given f64.
+    pub const fn new_f64(d: f64) -> Self {
+        Self(JSValue::new_f64(d))
+    }
+
+    /// Creates a new JS 'number' from the given i32.
+    ///
+    /// # Info
+    ///
+    /// Strictly speaking JS only has a single 'number' type, but internally QuickJS has two. Int
+    /// and Double. These are distinct 'JSTag' cases. The only difference is storage. Int stores an
+    /// integer value as an i32 rather than a f64.
+    ///
+    /// This function creates an Int number.
+    pub const fn new_i32(val: i32) -> Self {
+        Self(JSValue::new_i32(val))
+    }
+
+    /// Creates a new JS 'number' from the given i64.
+    ///
+    /// This will attempt to pack an i64 into a JS 'number' value using the most compact
+    /// representation possible. Values that fit into an i32 will be stored in an INT JSValue while
+    /// any other value will be stored as a double.
+    ///
+    /// This, of course, means that in reality we can only store integer values within the
+    /// safe integer range of a double (`2^53 - 1`) rather than the full range if an i64. It is the
+    /// callers responsibility to check this range if it's important the exact value is retained.
+    pub const fn new_i64(val: i64) -> Self {
+        let min = i32::MIN as i64;
+        let max = i32::MAX as i64;
+        if val < min || val > max {
+            Self::new_f64(val as f64)
+        } else {
+            Self::new_i32(val as i32)
+        }
+    }
+
+    /// Creates a new JS 'number' from the given u32.
+    ///
+    /// # Info
+    ///
+    /// This function is similar to [`Self::new_i64`] but takes a u32. A u32 is guaranteed to fit
+    /// inside the safe integer range of a double so this won't have the same pitfalls as the i64
+    /// conversion.
+    pub const fn new_u32(val: u32) -> Self {
+        let vi64 = val as i64;
+        let min = i32::MIN as i64;
+        let max = i32::MAX as i64;
+        if vi64 < min || vi64 > max {
+            Self::new_f64(val as f64)
+        } else {
+            Self::new_i32(val as i32)
+        }
+    }
+}
+
 impl Deref for Value {
     type Target = WeakValue;
 
@@ -51,6 +194,12 @@ impl Deref for Value {
         //         transparent attribute. WeakValue becomes a borrowed view over the RefValue.
         //         borrow rules remain respected.
         unsafe { std::mem::transmute::<&Value, &WeakValue>(self) }
+    }
+}
+
+impl Into<RefValue> for Value {
+    fn into(self) -> RefValue {
+        RefValue(self.0)
     }
 }
 
@@ -133,87 +282,6 @@ impl WeakValue {
         }
     }
 
-    /// Represents a null reference JS value. In some sense this is a 'pointer' value, but it never
-    /// actually points to anything (it's a null reference) so we can treat it like a pure value
-    /// type.
-    pub const NULL: Self = Self(JSValue::NULL);
-
-    /// Represents an 'undefined' JS value.
-    pub const UNDEFINED: Self = Self(JSValue::UNDEFINED);
-
-    /// The false 'boolean' JS value.
-    pub const FALSE: Self = Self(JSValue::FALSE);
-
-    /// The true 'boolean' JS value.
-    pub const TRUE: Self = Self(JSValue::TRUE);
-
-    /// A special value that signals an exception has been thrown. This may be returned by QuickJS
-    /// functions that yield JS values to signify an error has occured (i.e, an exception) and that
-    /// we don't have a valid result.
-    ///
-    /// This does not contain the actual exception value. The exception object must be fetched
-    /// from the context with [`Context::get_exception`]. Because this contains nothing but
-    /// a tag signalling an exception being thrown, this is a pure value type too.
-    pub const EXCEPTION: Self = Self(JSValue::EXCEPTION);
-
-    /// A special QuickJS value for 'uninitialized'. I don't actually know what this is for.
-    pub const UNINITIALIZED: Self = Self(JSValue::UNINITIALIZED);
-
-    /// A JS 'number' value that contains a NaN.
-    ///
-    /// This is guaranteed to be a JS 'number' containing some NaN bit pattern. This is needed as
-    /// NaN-boxing means that not all float NaN bit patterns will be treated as 'number' by the
-    /// JS runtime.
-    pub const NAN: Self = Self(JSValue::NAN);
-
-    /// Converts a raw [`JSValue`] to a wrapped value type [`Value`]. Will return [`None`] for any
-    /// JS value that isn't:
-    /// - INT
-    /// - BOOL
-    /// - NULL
-    /// - UNDEFINED
-    /// - UNINITIALIZED
-    /// - EXCEPTION
-    /// - FLOAT64
-    ///
-    /// # Info
-    ///
-    /// Strictly speaking 'CATCH_OFFSET' is also a value type, but seems to be a value type used
-    /// internally by the runtime that we shouldn't use. We make the choice to not map that to our
-    /// [`Value`] wrapper.
-    ///
-    /// # Safety
-    ///
-    /// This is safe, while the [`RefValue::from_raw`] function is not. Why?
-    ///
-    /// [`RefValue`] may contain pointer based JS values, like 'object' or 'string'. These are heap
-    /// allocated and reference counted. It would be possible to construct and wrap a JSValue that
-    /// holds an invalid pointer. There's no way to check at runtime and so the call must be unsafe.
-    ///
-    /// The [`Value::from_raw`] function on the other hand will only yield a value for pure value
-    /// JS types like number, checked at runtime These do not contain pointers and so as long as you
-    /// check the tag they are valid to use. If you want an unchecked conversion just use
-    /// [`Option::unwrap_unchecked`].
-    pub const fn from_raw(v: JSValue) -> Option<Self> {
-        match v.get_norm_tag() {
-            JSTag::BIG_INT
-            | JSTag::SYMBOL
-            | JSTag::STRING
-            | JSTag::MODULE
-            | JSTag::FUNCTION_BYTECODE
-            | JSTag::OBJECT
-            | JSTag::CATCH_OFFSET => None,
-            JSTag::INT
-            | JSTag::BOOL
-            | JSTag::NULL
-            | JSTag::UNDEFINED
-            | JSTag::UNINITIALIZED
-            | JSTag::EXCEPTION
-            | JSTag::FLOAT64 => Some(Self(v)),
-            _ => unreachable!(),
-        }
-    }
-
     /// Get the inner [`JSValue`] for raw access to the QuickJS API.
     pub const fn to_raw(&self) -> JSValue {
         self.0
@@ -225,66 +293,6 @@ impl WeakValue {
         ArgValue {
             v: self.0,
             phantom: PhantomData::default(),
-        }
-    }
-
-    /// Creates a new JS 'boolean' from the given bool.
-    pub const fn new_bool(val: bool) -> Self {
-        Self(JSValue::new_bool(val))
-    }
-
-    /// Creates a new JS 'number' from the given f64.
-    pub const fn new_f64(d: f64) -> Self {
-        Self(JSValue::new_f64(d))
-    }
-
-    /// Creates a new JS 'number' from the given i32.
-    ///
-    /// # Info
-    ///
-    /// Strictly speaking JS only has a single 'number' type, but internally QuickJS has two. Int
-    /// and Double. These are distinct 'JSTag' cases. The only difference is storage. Int stores an
-    /// integer value as an i32 rather than a f64.
-    ///
-    /// This function creates an Int number.
-    pub const fn new_i32(val: i32) -> Self {
-        Self(JSValue::new_i32(val))
-    }
-
-    /// Creates a new JS 'number' from the given i64.
-    ///
-    /// This will attempt to pack an i64 into a JS 'number' value using the most compact
-    /// representation possible. Values that fit into an i32 will be stored in an INT JSValue while
-    /// any other value will be stored as a double.
-    ///
-    /// This, of course, means that in reality we can only store integer values within the
-    /// safe integer range of a double (`2^53 - 1`) rather than the full range if an i64. It is the
-    /// callers responsibility to check this range if it's important the exact value is retained.
-    pub const fn new_i64(val: i64) -> Self {
-        let min = i32::MIN as i64;
-        let max = i32::MAX as i64;
-        if val < min || val > max {
-            Self::new_f64(val as f64)
-        } else {
-            Self::new_i32(val as i32)
-        }
-    }
-
-    /// Creates a new JS 'number' from the given u32.
-    ///
-    /// # Info
-    ///
-    /// This function is similar to [`Self::new_i64`] but takes a u32. A u32 is guaranteed to fit
-    /// inside the safe integer range of a double so this won't have the same pitfalls as the i64
-    /// conversion.
-    pub const fn new_u32(val: u32) -> Self {
-        let vi64 = val as i64;
-        let min = i32::MIN as i64;
-        let max = i32::MAX as i64;
-        if vi64 < min || vi64 > max {
-            Self::new_f64(val as f64)
-        } else {
-            Self::new_i32(val as i32)
         }
     }
 
