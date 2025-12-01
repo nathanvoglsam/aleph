@@ -34,10 +34,11 @@ use std::ptr::NonNull;
 use std::rc::Rc;
 
 use aleph_nstr::NStr;
-use raw::JSEvalOptions;
+use raw::{JSEvalOptions, JSTag, JSValue};
 
 use crate::opaque_box::{OpaqueBox, UntypedOpaqueBox};
-use crate::{Atom, Object, RefValue, Runtime};
+use crate::runtime::ThreadLocalRuntime;
+use crate::{ArgValue, Atom, CtxString, OwnPropertyNames, RefValue, WeakValue};
 
 #[derive(Clone)]
 pub struct Context(pub(crate) Rc<InnerContext>);
@@ -57,13 +58,13 @@ impl Context {
     /// memory for objects from other contexts too. The allocator is shared to contexts from the
     /// runtime.
     pub fn gc(&self) {
-        self.get_rt().gc();
+        ThreadLocalRuntime::gc();
     }
 
     /// Query the memory usage from the runtime the context was created from.
     #[inline]
     pub fn compute_memory_usage(&self) -> raw::JSMemoryUsage {
-        self.get_rt().compute_memory_usage()
+        ThreadLocalRuntime::compute_memory_usage()
     }
 
     /// Direct wrapper over 'JS_Eval'.
@@ -77,16 +78,16 @@ impl Context {
                 ..Default::default()
             };
             let v = raw::JS_Eval2(self.0.ctx, script.to_cstr_ptr(), script.len(), &options);
-            RefValue::from_raw(self, v)
+            RefValue(v)
         }
     }
 
     /// Returns the global object [`Object`] for this context.
     #[inline]
-    pub fn get_global_object(&self) -> Object {
+    pub fn get_global_object(&self) -> RefValue {
         unsafe {
             let v = raw::JS_GetGlobalObject(self.0.ctx);
-            Object::from_raw(self, v).unwrap_unchecked()
+            RefValue(v)
         }
     }
 
@@ -102,7 +103,7 @@ impl Context {
     pub fn get_exception(&self) -> RefValue {
         unsafe {
             let v = raw::JS_GetException(self.0.ctx);
-            RefValue::from_raw(self, v)
+            RefValue(v)
         }
     }
 
@@ -122,15 +123,15 @@ impl Context {
     pub fn new_string(&self, v: &str) -> RefValue {
         unsafe {
             let v = raw::JS_NewStringLen(self.0.ctx, v.as_ptr() as *const c_char, v.len());
-            RefValue::from_raw(self, v)
+            RefValue(v)
         }
     }
 
     #[inline]
-    pub fn new_object(&self) -> Object {
+    pub fn new_object(&self) -> RefValue {
         unsafe {
             let v = raw::JS_NewObject(self.0.ctx);
-            Object::from_raw(self, v).unwrap_unchecked()
+            RefValue(v)
         }
     }
 
@@ -143,7 +144,7 @@ impl Context {
     ) -> RefValue {
         unsafe {
             let v = raw::JS_NewCFunction(self.0.ctx, func, name.to_cstr_ptr(), num_params);
-            RefValue::from_raw(self, v)
+            RefValue(v)
         }
     }
 
@@ -184,26 +185,212 @@ impl Context {
             raw::JS_SetContextOpaque(self.0.ctx, std::ptr::null_mut());
         }
     }
-}
 
-impl Context {
-    /// Internal function used for getting the runtime the context was allocated from. The object
-    /// should not be dropped.
-    ///
-    /// This is expected to be used to allow access to various functions on `Runtime` directly from
-    /// the context object. Mainly to avoid code duplication.
-    pub(crate) fn get_rt(&self) -> Runtime {
-        self.0.rt.clone()
+    #[inline]
+    pub fn to_string(&self, v: &WeakValue) -> RefValue {
+        unsafe {
+            let string = raw::JS_ToString(self.0.ctx, v.0);
+            RefValue(string)
+        }
     }
 
-    pub(crate) fn same_rt(&self, other: &Self) -> bool {
-        self.0.rt.0.0 == other.0.rt.0.0
+    #[inline]
+    pub fn to_c_str(&self, v: &WeakValue) -> Option<CtxString> {
+        unsafe {
+            let mut len = 0;
+            let cstr = raw::JS_ToCStringLen2(self.0.ctx, &mut len, v.0, false);
+
+            if len == 0 || cstr.is_null() {
+                None
+            } else {
+                let bytes = std::slice::from_raw_parts(cstr as *const u8, len);
+                let string = str::from_utf8(bytes).unwrap_unchecked();
+                Some(CtxString::from_ctx_and_str(self.clone(), string))
+            }
+        }
+    }
+
+    #[inline]
+    pub fn get_property_str(&self, v: &WeakValue, prop: &str) -> RefValue {
+        match self.new_atom(prop) {
+            Some(a) => self.get_property(v, &a),
+            _ => {
+                panic!()
+            }
+        }
+    }
+
+    #[inline]
+    pub fn get_property(&self, v: &WeakValue, prop: &Atom) -> RefValue {
+        unsafe {
+            let v = raw::JS_GetProperty(self.0.ctx, v.0, prop.v);
+            RefValue(v)
+        }
+    }
+
+    #[inline]
+    pub fn set_property_str(&self, v: &WeakValue, prop: &str, set: RefValue) -> c_int {
+        match self.new_atom(prop) {
+            Some(a) => self.set_property(v, &a, set),
+            _ => {
+                panic!()
+            }
+        }
+    }
+
+    #[inline]
+    pub fn set_property(&self, v: &WeakValue, prop: &Atom, set: RefValue) -> c_int {
+        unsafe {
+            let set = set.detatch();
+            raw::JS_SetProperty(self.0.ctx, v.0, prop.v, set)
+        }
+    }
+
+    #[inline]
+    pub fn delete_property_str(&self, v: &WeakValue, prop: &str) -> c_int {
+        match self.new_atom(prop) {
+            Some(a) => self.delete_property(v, &a),
+            _ => {
+                panic!()
+            }
+        }
+    }
+
+    #[inline]
+    pub fn delete_property(&self, v: &WeakValue, prop: &Atom) -> c_int {
+        unsafe {
+            raw::JS_DeleteProperty(self.0.ctx, v.0, prop.v, 0) // TODO: flags
+        }
+    }
+
+    #[inline]
+    pub fn call(&self, f: &WeakValue, this: &WeakValue, args: &[ArgValue]) -> RefValue {
+        use std::mem::{align_of, size_of};
+        unsafe {
+            assert_eq!(size_of::<ArgValue>(), size_of::<JSValue>());
+            assert_eq!(align_of::<JSValue>(), align_of::<JSValue>());
+
+            let argc: c_int = args.len().try_into().unwrap();
+            let argv: *mut JSValue = if !args.is_empty() {
+                NonNull::from(args).cast().as_ptr()
+            } else {
+                std::ptr::null_mut()
+            };
+
+            let v = raw::JS_Call(self.0.ctx, f.0, this.0, argc, argv);
+            RefValue(v)
+        }
+    }
+
+    #[inline]
+    pub fn get_own_property_names(
+        &self,
+        v: &WeakValue,
+        opts: raw::JSGetPropertyNameOption,
+    ) -> OwnPropertyNames {
+        unsafe {
+            let mut tab = std::ptr::null_mut();
+            let mut len = 0;
+            let result = raw::JS_GetOwnPropertyNames(self.0.ctx, &mut tab, &mut len, v.0, opts);
+            if result < 0 {
+                panic!("Don't know how to handle exceptions yet");
+            }
+
+            let slice = if len > 0 {
+                let tab = NonNull::new(tab).unwrap();
+                NonNull::slice_from_raw_parts(tab, len as usize)
+            } else {
+                NonNull::slice_from_raw_parts(NonNull::dangling(), 0)
+            };
+
+            OwnPropertyNames {
+                ctx: self.clone(),
+                props: slice,
+            }
+        }
+    }
+
+    pub fn to_json(&self, v: &WeakValue) -> Option<serde_json::Value> {
+        let v = match v.get_tag() {
+            JSTag::BIG_INT => unimplemented!(),
+            JSTag::SYMBOL => unimplemented!(),
+            JSTag::STRING => {
+                let string = self.to_c_str(v)?;
+                let string = string.to_owned();
+                serde_json::Value::String(string)
+            }
+            JSTag::MODULE => unimplemented!(),
+            JSTag::FUNCTION_BYTECODE => unimplemented!(),
+            JSTag::OBJECT => {
+                if v.is_array() {
+                    let opts = raw::JSGetPropertyNameOption::STRING_MASK
+                        | raw::JSGetPropertyNameOption::ENUM_ONLY;
+                    let props = self.get_own_property_names(v, opts);
+
+                    let mut array = Vec::new();
+                    for prop in props.iter() {
+                        let atom = prop.atom.as_ref()?;
+                        let value = self.get_property(v, atom);
+                        if let Some(value) = self.to_json(&value) {
+                            // let name = atom.to_c_str()?;
+                            array.push(value);
+                        }
+                    }
+
+                    serde_json::Value::Array(array)
+                } else {
+                    let opts = raw::JSGetPropertyNameOption::STRING_MASK
+                        | raw::JSGetPropertyNameOption::ENUM_ONLY;
+                    let props = self.get_own_property_names(v, opts);
+
+                    let mut object = serde_json::Map::new();
+                    for prop in props.iter() {
+                        let atom = prop.atom.as_ref()?;
+                        let value = self.get_property(v, atom);
+                        if let Some(value) = self.to_json(&value) {
+                            let name = atom.to_c_str()?;
+                            object.insert(name.to_string(), value);
+                        }
+                    }
+
+                    serde_json::Value::Object(object)
+                }
+            }
+            JSTag::BOOL => unsafe {
+                let boolean = v.get_bool().unwrap_unchecked();
+                serde_json::Value::Bool(boolean)
+            },
+            JSTag::NULL => serde_json::Value::Null,
+            JSTag::UNDEFINED => return None,
+            JSTag::UNINITIALIZED => unimplemented!(),
+            JSTag::CATCH_OFFSET => unimplemented!(),
+            JSTag::EXCEPTION => return None,
+            JSTag::INT => unsafe {
+                let number = v
+                    .get_number()
+                    .unwrap_unchecked()
+                    .get_int()
+                    .unwrap_unchecked();
+                let number = serde_json::to_value(number).unwrap();
+                assert!(number.is_i64() || number.is_u64());
+                number
+            },
+            JSTag::FLOAT64 => unsafe {
+                let number = v
+                    .get_number()
+                    .unwrap_unchecked()
+                    .get_double()
+                    .unwrap_unchecked();
+                serde_json::to_value(number).unwrap()
+            },
+            _ => unimplemented!(),
+        };
+        Some(v)
     }
 }
 
 pub struct InnerContext {
     pub(crate) ctx: NonNull<raw::JSContext>,
-    pub(crate) rt: Runtime,
 }
 
 impl Drop for InnerContext {

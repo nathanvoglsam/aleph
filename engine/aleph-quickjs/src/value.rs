@@ -27,56 +27,11 @@
 // SOFTWARE.
 //
 
-use core::str;
 use std::ffi::c_int;
-use std::ptr::NonNull;
+use std::marker::PhantomData;
+use std::ops::Deref;
 
 use raw::{JSTag, JSValue};
-
-use crate::{Atom, Context, CtxString, OwnPropertyNames};
-
-/// Enumeration of the internal number representations of QuickJS.
-///
-/// # Background
-///
-/// QuickJS stores 'number' values as either an integer (i32) or double (f64) as distinct JSTag
-/// types as an optimization. Only one of the two values is active at once. We provide this wrapper
-/// to expose this to users. Retaining pure integer semantics can be useful.
-///
-/// If your specific case doesn't care then call [`NumberVariant::normalize`] to cast away the info
-/// and get a plain f64.
-#[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
-pub enum NumberVariant {
-    Double(f64),
-    Integer(c_int),
-}
-
-impl NumberVariant {
-    /// Collapse both [`NumberVariant::Integer`] and [`NumberVariant::Double`] paths to f64.
-    ///
-    /// An i32 is guaranteed to fit in an f64 so this won't destroy information. If you don't care
-    /// about integer semantics then you can use this function to simplify handling number values.
-    pub const fn normalize(self) -> f64 {
-        match self {
-            NumberVariant::Double(v) => v,
-            NumberVariant::Integer(v) => v as f64,
-        }
-    }
-
-    pub const fn get_double(self) -> Option<f64> {
-        match self {
-            NumberVariant::Double(v) => Some(v),
-            NumberVariant::Integer(_) => None,
-        }
-    }
-
-    pub const fn get_int(self) -> Option<c_int> {
-        match self {
-            NumberVariant::Double(_) => None,
-            NumberVariant::Integer(v) => Some(v),
-        }
-    }
-}
 
 /// Represents a wrapper of [`JSValue`] that represents only the pure value type variants of
 /// a JS value.
@@ -86,9 +41,98 @@ impl NumberVariant {
 /// ref-count semantics.
 #[repr(transparent)]
 #[derive(Copy, Clone)]
-pub struct Value(JSValue);
+pub struct Value(pub(crate) JSValue);
 
-impl Value {
+impl Deref for Value {
+    type Target = WeakValue;
+
+    fn deref(&self) -> &Self::Target {
+        // Safety: We guarantee the layout of RefValue and WeakValue are the same via a repr
+        //         transparent attribute. WeakValue becomes a borrowed view over the RefValue.
+        //         borrow rules remain respected.
+        unsafe { std::mem::transmute::<&Value, &WeakValue>(self) }
+    }
+}
+
+/// A wrapper over [`JSValue`] that can contain reference JS values like 'object' or 'string'. This
+/// may also contain pure reference types too.
+///
+/// [`RefValue`] is an _owned_ JS value, with a retained reference count. When an instance of this
+/// type is destroyed the value's reference count will be decremented.
+#[repr(transparent)]
+pub struct RefValue(pub(crate) JSValue);
+
+impl RefValue {
+    /// Destroys the [`RefValue`], without decrementing the JSValue's ref-count.
+    ///
+    /// # Warning
+    ///
+    /// This will cause a memory leak as the refcount will never reach zero under normal
+    /// circumstances. There are valid uses for this function when calling the qjs C API directly,
+    /// but outside of those cases this should not be used.
+    #[inline]
+    pub fn detatch(self) -> JSValue {
+        let v = self.0;
+        std::mem::forget(self);
+        v
+    }
+}
+
+impl Clone for RefValue {
+    #[inline]
+    fn clone(&self) -> Self {
+        self.upgrade()
+    }
+}
+
+impl Deref for RefValue {
+    type Target = WeakValue;
+
+    fn deref(&self) -> &Self::Target {
+        // Safety: We guarantee the layout of RefValue and WeakValue are the same via a repr
+        //         transparent attribute. WeakValue becomes a borrowed view over the RefValue.
+        //         borrow rules remain respected.
+        unsafe { std::mem::transmute::<&RefValue, &WeakValue>(self) }
+    }
+}
+
+impl Drop for RefValue {
+    #[inline]
+    fn drop(&mut self) {
+        unsafe {
+            self.0.decrement_ref_count();
+        }
+    }
+}
+
+/// A wrapper over [`JSValue`] that is used for arguments when calling into the JS runtime. This
+/// is like [`WeakValue`] but can be stored by value, intended for constructing argument arrays that
+/// get passed to JS call functions.
+#[repr(transparent)]
+pub struct ArgValue<'a> {
+    pub(crate) v: JSValue,
+    pub(crate) phantom: PhantomData<&'a ()>,
+}
+
+/// A 'view' like object derived from a [`RefValue`] or some other owning context. A weak value
+/// allows sharing access to a JS value without incrementing the reference counter.
+///
+/// A weak value is only accessible by reference, with the lifetime tying the value to some other
+/// container or context that pins the lifetime of some JS value. In most cases this will be a
+/// [`RefValue`] which represents a (shared) owned reference to a JS value.
+#[repr(transparent)]
+pub struct WeakValue(pub(crate) JSValue);
+
+impl WeakValue {
+    /// Upgrades the value to an owned [`RefValue`].
+    #[inline]
+    pub fn upgrade(&self) -> RefValue {
+        unsafe {
+            let _ignore = self.0.increment_ref_count();
+            RefValue(self.0)
+        }
+    }
+
     /// Represents a null reference JS value. In some sense this is a 'pointer' value, but it never
     /// actually points to anything (it's a null reference) so we can treat it like a pure value
     /// type.
@@ -173,6 +217,15 @@ impl Value {
     /// Get the inner [`JSValue`] for raw access to the QuickJS API.
     pub const fn to_raw(&self) -> JSValue {
         self.0
+    }
+
+    /// Convert to [`ArgValue`]
+    #[inline]
+    pub fn as_arg(&self) -> ArgValue<'_> {
+        ArgValue {
+            v: self.0,
+            phantom: PhantomData::default(),
+        }
     }
 
     /// Creates a new JS 'boolean' from the given bool.
@@ -295,645 +348,74 @@ impl Value {
         self.0.is_uninitialized()
     }
 
-    #[inline]
-    pub fn to_string(&self, ctx: &Context) -> RefValue {
-        unsafe {
-            let string = raw::JS_ToString(ctx.0.ctx, self.0);
-            RefValue::from_raw(ctx, string)
-        }
+    pub const fn is_big_int(&self) -> bool {
+        self.0.is_big_int()
     }
 
-    #[inline]
-    pub fn to_c_str(&self, ctx: &Context) -> Option<CtxString> {
-        unsafe {
-            let mut len = 0;
-            let cstr = raw::JS_ToCStringLen2(ctx.0.ctx, &mut len, self.0, false);
-
-            if len == 0 || cstr.is_null() {
-                None
-            } else {
-                let bytes = std::slice::from_raw_parts(cstr as *const u8, len);
-                let string = str::from_utf8(bytes).unwrap_unchecked();
-                Some(CtxString::from_ctx_and_str(ctx.clone(), string))
-            }
-        }
-    }
-}
-
-/// A wrapper over [`JSValue`] that can contain reference JS values like 'object' or 'string'. This
-/// may also contain pure reference types too.
-pub struct RefValue {
-    /// The wrapped JS value
-    v: JSValue,
-
-    /// Attach this value to the context it was acquired from.
-    c: Context,
-}
-
-impl RefValue {
-    /// Destroys the [`RefValue`], without decrementing the JSValue's ref-count but while still
-    /// decrementing the internal [`Context`] ref count.
-    #[inline]
-    pub fn detatch(self) -> JSValue {
-        let v = self.v;
-        unsafe { drop(std::ptr::read(&self.c)) };
-        std::mem::forget(self);
-        v
+    pub const fn is_string(&self) -> bool {
+        self.0.is_string()
     }
 
-    /// An explicit destructor for JS value wrappers. This is similar to the [`Drop`]
-    /// implementations on our wrapper functions but will _immediately_ free the value if the ref
-    /// count reaches zero. This will not trigger a GC cycle, rather the individual value will be
-    /// explicitly freed.
-    ///
-    /// This isn't _required_ to be called. The [`Drop`] implementation will still decrement the
-    /// reference count and the object will eventually be freed if you manually run a GC cycle or
-    /// wait for the runtime to do it internally. This simply performs the free immediately if that
-    /// is important to your use case.
-    #[inline]
-    pub fn free_value(self) {
-        unsafe {
-            // Performs the actual ref-count decrement and free call
-            self.v.free_value(self.c.0.ctx);
-        }
-        // Avoid decrementing the refcount a second time by calling detach
-        self.detatch();
+    pub const fn is_symbol(&self) -> bool {
+        self.0.is_symbol()
     }
 
-    /// Get the inner [`JSValue`] for raw access to the QuickJS API.
-    pub const fn to_raw(&self) -> JSValue {
-        self.v
-    }
-
-    /// Get a [`Value`] wrapper over this JS value, if this value contains a pure value type.
-    pub const fn to_value(&self) -> Option<Value> {
-        Value::from_raw(self.v)
-    }
-
-    /// Convert the [`RefValue`] into an [`Object`] if this value contains a JS 'object' value.
-    pub const fn to_object(self) -> Result<Object, Self> {
-        Object::from_value(self)
+    pub const fn is_object(&self) -> bool {
+        self.0.is_object()
     }
 
     /// Returns whether 'self' is an array
     pub fn is_array(&self) -> bool {
         // Safety: This wrapper type is guaranteed to contain a live JS object
-        unsafe { raw::JS_IsArray(self.v) }
+        unsafe { raw::JS_IsArray(self.0) }
     }
 
     #[inline(always)]
     pub fn get_ref_count(&self) -> Option<c_int> {
         // Safety: This wrapper type is guaranteed to contain a live JS object
-        unsafe { self.v.get_ref_count() }
-    }
-
-    #[inline]
-    pub fn to_string(&self) -> RefValue {
-        unsafe {
-            let string = raw::JS_ToString(self.c.0.ctx, self.v);
-            RefValue::from_raw(&self.c, string)
-        }
-    }
-
-    #[inline]
-    pub fn to_c_str(&self) -> Option<CtxString> {
-        unsafe {
-            let mut len = 0;
-            let cstr = raw::JS_ToCStringLen2(self.c.0.ctx, &mut len, self.v, false);
-
-            if len == 0 || cstr.is_null() {
-                None
-            } else {
-                let bytes = std::slice::from_raw_parts(cstr as *const u8, len);
-                let string = str::from_utf8(bytes).unwrap_unchecked();
-                Some(CtxString::from_ctx_and_str(self.c.clone(), string))
-            }
-        }
-    }
-
-    #[inline]
-    pub fn get_property_str(&self, prop: &str) -> RefValue {
-        match self.c.new_atom(prop) {
-            Some(a) => self.get_property(&a),
-            _ => {
-                panic!()
-            }
-        }
-    }
-
-    #[inline]
-    pub fn get_property(&self, prop: &Atom) -> RefValue {
-        unsafe {
-            assert!(self.c.same_rt(&prop.c));
-            let v = raw::JS_GetProperty(self.c.0.ctx, self.v, prop.v);
-            RefValue::from_raw(&self.c, v)
-        }
-    }
-
-    #[inline]
-    pub fn set_property_str(&self, prop: &str, v: &impl DupRawValue) -> c_int {
-        match self.c.new_atom(prop) {
-            Some(a) => self.set_property(&a, v),
-            _ => {
-                panic!()
-            }
-        }
-    }
-
-    #[inline]
-    pub fn set_property(&self, prop: &Atom, v: &impl DupRawValue) -> c_int {
-        unsafe {
-            assert!(self.c.same_rt(&prop.c));
-            if let Some(c) = v.ctx() {
-                assert!(self.c.same_rt(c));
-            }
-
-            let v = v.dup_raw_value();
-            raw::JS_SetProperty(self.c.0.ctx, self.v, prop.v, v)
-        }
-    }
-
-    #[inline]
-    pub fn delete_property_str(&self, prop: &str) -> c_int {
-        match self.c.new_atom(prop) {
-            Some(a) => self.delete_property(&a),
-            _ => {
-                panic!()
-            }
-        }
-    }
-
-    #[inline]
-    pub fn delete_property(&self, prop: &Atom) -> c_int {
-        unsafe {
-            assert!(self.c.same_rt(&prop.c));
-            raw::JS_DeleteProperty(self.c.0.ctx, self.v, prop.v, 0) // TODO: flags
-        }
-    }
-
-    #[inline]
-    pub fn call(&self, this: &impl GetRawValue, args: &[&RefValue]) -> RefValue {
-        unsafe {
-            if let Some(c) = this.ctx() {
-                assert!(self.c.same_rt(c));
-            }
-            for arg in args {
-                assert!(self.c.same_rt(&arg.c));
-            }
-
-            let args = Vec::from_iter(args.iter().map(|v| v.v));
-
-            let argc: c_int = args.len().try_into().unwrap();
-            let argv = if !args.is_empty() {
-                args.as_ptr() as *mut RefValue as *mut JSValue
-            } else {
-                std::ptr::null_mut()
-            };
-
-            let v = raw::JS_Call(self.c.0.ctx, self.v, this.get_raw_value(), argc, argv);
-            RefValue::from_raw(&self.c, v)
-        }
-    }
-
-    #[inline]
-    pub fn get_own_property_names(&self, opts: raw::JSGetPropertyNameOption) -> OwnPropertyNames {
-        unsafe {
-            let mut tab = std::ptr::null_mut();
-            let mut len = 0;
-            let result =
-                raw::JS_GetOwnPropertyNames(self.c.0.ctx, &mut tab, &mut len, self.v, opts);
-            if result < 0 {
-                panic!("Don't know how to handle exceptions yet");
-            }
-
-            let slice = if len > 0 {
-                let tab = NonNull::new(tab).unwrap();
-                NonNull::slice_from_raw_parts(tab, len as usize)
-            } else {
-                NonNull::slice_from_raw_parts(NonNull::dangling(), 0)
-            };
-
-            OwnPropertyNames {
-                ctx: self.c.clone(),
-                props: slice,
-            }
-        }
-    }
-
-    pub fn to_json(&self) -> Option<serde_json::Value> {
-        let v = match self.get_tag() {
-            JSTag::BIG_INT => unimplemented!(),
-            JSTag::SYMBOL => unimplemented!(),
-            JSTag::STRING => {
-                let string = self.to_c_str()?;
-                let string = string.to_owned();
-                serde_json::Value::String(string)
-            }
-            JSTag::MODULE => unimplemented!(),
-            JSTag::FUNCTION_BYTECODE => unimplemented!(),
-            JSTag::OBJECT => unsafe {
-                let v = self.clone().to_object().ok().unwrap_unchecked();
-                v.to_json()?
-            },
-            JSTag::BOOL => unsafe {
-                let boolean = self.get_bool().unwrap_unchecked();
-                serde_json::Value::Bool(boolean)
-            },
-            JSTag::NULL => serde_json::Value::Null,
-            JSTag::UNDEFINED => return None,
-            JSTag::UNINITIALIZED => unimplemented!(),
-            JSTag::CATCH_OFFSET => unimplemented!(),
-            JSTag::EXCEPTION => return None,
-            JSTag::INT => unsafe {
-                let number = self
-                    .get_number()
-                    .unwrap_unchecked()
-                    .get_int()
-                    .unwrap_unchecked();
-                let number = serde_json::to_value(number).unwrap();
-                assert!(number.is_i64() || number.is_u64());
-                number
-            },
-            JSTag::FLOAT64 => unsafe {
-                let number = self
-                    .get_number()
-                    .unwrap_unchecked()
-                    .get_double()
-                    .unwrap_unchecked();
-                serde_json::to_value(number).unwrap()
-            },
-            _ => unimplemented!(),
-        };
-        Some(v)
-    }
-
-    /// Returns the [`JSTag`] that identifies the type of this value.
-    ///
-    /// # Info
-    ///
-    /// This uses what QuickJS calls the 'normalized' tag. A NaN-boxed value stores the tag as
-    /// different NaN bit patterns. If we have a NaN value that stores something that isn't a JSTag
-    /// then it's just treted as 'number'. The problem is if we try and match on our enumerated tag
-    /// values then we may get values that mean 'number' that we can't match on.
-    ///
-    /// QuickJS provides the 'normalized tag' function that normalizes NaN-boxed tags into the
-    /// enumerated JSTag values.
-    pub const fn get_tag(&self) -> JSTag {
-        // Only get the normalized tag as without normalized tags we may get JSTag values outside
-        // the enumerated range. Principle of least surprise, give out the normalized tag here.
-        self.v.get_norm_tag()
-    }
-
-    /// Returns the number value for this value, if it is a JS 'number' value.
-    pub const fn get_number(&self) -> Option<NumberVariant> {
-        let v = match self.v.get_norm_tag() {
-            JSTag::INT => NumberVariant::Integer(self.v.get_int()),
-            JSTag::FLOAT64 => NumberVariant::Double(self.v.get_float64()),
-            _ => return None,
-        };
-        Some(v)
-    }
-
-    /// Returns the bool value for this value, if it is a JS 'boolean' value.
-    pub const fn get_bool(&self) -> Option<bool> {
-        if self.is_bool() {
-            Some(self.v.get_bool())
-        } else {
-            None
-        }
-    }
-
-    pub const fn is_number(&self) -> bool {
-        self.v.is_number()
-    }
-
-    pub const fn is_bool(&self) -> bool {
-        self.v.is_bool()
-    }
-
-    pub const fn is_null(&self) -> bool {
-        self.v.is_null()
-    }
-
-    pub const fn is_undefined(&self) -> bool {
-        self.v.is_undefined()
-    }
-
-    pub const fn is_exception(&self) -> bool {
-        self.v.is_exception()
-    }
-
-    pub const fn is_uninitialized(&self) -> bool {
-        self.v.is_uninitialized()
-    }
-
-    pub const fn is_big_int(&self) -> bool {
-        self.v.is_big_int()
-    }
-
-    pub const fn is_string(&self) -> bool {
-        self.v.is_string()
-    }
-
-    pub const fn is_symbol(&self) -> bool {
-        self.v.is_symbol()
-    }
-
-    pub const fn is_object(&self) -> bool {
-        self.v.is_object()
+        unsafe { self.0.get_ref_count() }
     }
 }
 
-impl RefValue {
-    pub(crate) unsafe fn from_raw(c: &Context, v: JSValue) -> Self {
-        Self { v, c: c.clone() }
-    }
-}
-
-impl Clone for RefValue {
-    #[inline]
-    fn clone(&self) -> Self {
-        unsafe {
-            let _ = self.v.increment_ref_count();
-            Self {
-                v: self.v,
-                c: self.c.clone(),
-            }
-        }
-    }
-}
-
-impl Drop for RefValue {
-    #[inline]
-    fn drop(&mut self) {
-        unsafe {
-            self.v.decrement_ref_count();
-        }
-    }
-}
-
-/// A wrapper over [`JSValue`] that can contain a JS 'object'.
-#[derive(Clone)]
-pub struct Object(pub(crate) RefValue);
-
-impl Object {
-    /// Destroys the [`Object`], without decrementing the JSValue's ref-count but while still
-    /// decrementing the internal [`Context`] ref count.
-    #[inline]
-    pub fn detatch(self) -> JSValue {
-        self.0.detatch()
-    }
-
-    /// Convert the [`RefValue`] into an [`Object`] if this value contains a JS 'object' value.
-    pub const fn from_value(v: RefValue) -> Result<Self, RefValue> {
-        if v.is_object() { Ok(Self(v)) } else { Err(v) }
-    }
-
-    /// Get the inner [`RefValue`].
-    #[inline(always)]
-    pub fn to_value(self) -> RefValue {
-        self.0
-    }
-
-    /// Get the inner [`JSValue`] for raw access to the QuickJS API.
-    pub const fn to_raw(&self) -> JSValue {
-        self.0.to_raw()
-    }
-
-    /// Returns whether 'self' is an array
-    #[inline]
-    pub fn is_array(&self) -> bool {
-        // Safety: This wrapper type is guaranteed to contain a live JS object
-        unsafe { raw::JS_IsArray(self.0.v) }
-    }
-
-    #[inline]
-    pub fn get_ref_count(&self) -> c_int {
-        // Safety: This wrapper type is guaranteed to contain a live ref-counted JS object
-        unsafe { self.0.get_ref_count().unwrap_unchecked() }
-    }
-
-    #[inline]
-    pub fn to_string(&self) -> RefValue {
-        self.0.to_string()
-    }
-
-    #[inline]
-    pub fn to_c_str(&self) -> Option<CtxString> {
-        self.0.to_c_str()
-    }
-
-    #[inline]
-    pub fn get_property_str(&self, prop: &str) -> RefValue {
-        self.0.get_property_str(prop)
-    }
-
-    #[inline]
-    pub fn get_property(&self, prop: &Atom) -> RefValue {
-        self.0.get_property(prop)
-    }
-
-    #[inline]
-    pub fn set_property_str(&self, prop: &str, v: &impl DupRawValue) -> c_int {
-        self.0.set_property_str(prop, v)
-    }
-
-    #[inline]
-    pub fn set_property(&self, prop: &Atom, v: &impl DupRawValue) -> c_int {
-        self.0.set_property(prop, v)
-    }
-
-    #[inline]
-    pub fn delete_property_str(&self, prop: &str) -> c_int {
-        self.0.delete_property_str(prop)
-    }
-
-    #[inline]
-    pub fn delete_property(&self, prop: &Atom) -> c_int {
-        self.0.delete_property(prop)
-    }
-
-    #[inline]
-    pub fn call(&self, this: &impl GetRawValue, args: &[&RefValue]) -> RefValue {
-        self.0.call(this, args)
-    }
-
-    #[inline]
-    pub fn get_own_property_names(&self, opts: raw::JSGetPropertyNameOption) -> OwnPropertyNames {
-        self.0.get_own_property_names(opts)
-    }
-
-    #[inline]
-    pub fn to_json(&self) -> Option<serde_json::Value> {
-        if self.is_array() {
-            let opts =
-                raw::JSGetPropertyNameOption::STRING_MASK | raw::JSGetPropertyNameOption::ENUM_ONLY;
-            let props = self.get_own_property_names(opts);
-
-            let mut array = Vec::new();
-            for prop in props.iter() {
-                let atom = prop.atom.as_ref()?;
-                let value = self.get_property(atom);
-                if let Some(value) = value.to_json() {
-                    // let name = atom.to_c_str()?;
-                    array.push(value);
-                }
-            }
-
-            Some(serde_json::Value::Array(array))
-        } else {
-            let opts =
-                raw::JSGetPropertyNameOption::STRING_MASK | raw::JSGetPropertyNameOption::ENUM_ONLY;
-            let props = self.get_own_property_names(opts);
-
-            let mut object = serde_json::Map::new();
-            for prop in props.iter() {
-                let atom = prop.atom.as_ref()?;
-                let value = self.get_property(atom);
-                if let Some(value) = value.to_json() {
-                    let name = atom.to_c_str()?;
-                    object.insert(name.to_string(), value);
-                }
-            }
-
-            Some(serde_json::Value::Object(object))
-        }
-    }
-}
-
-impl Object {
-    pub(crate) unsafe fn from_raw(c: &Context, v: JSValue) -> Option<Self> {
-        unsafe {
-            if v.is_object() {
-                Some(Self(RefValue::from_raw(c, v)))
-            } else {
-                None
-            }
-        }
-    }
-}
-
-impl From<Object> for RefValue {
-    #[inline]
-    fn from(val: Object) -> Self {
-        val.to_value()
-    }
-}
-
-/// Trait that abstracts over the various [`JSValue`] wrappers. This is generally intended to be used
-/// as a generic parameter.
+/// Enumeration of the internal number representations of QuickJS.
 ///
-/// Very similar to [`GetRawValue`]. This trait will 'dup' the raw value instead of simply get it.
-/// This is to say that the function on this trait will take an owned copy of the [`JSValue`] by
-/// incrementing the reference count (if it has one)
-pub trait DupRawValue {
-    fn ctx(&self) -> Option<&Context>;
-    fn dup_raw_value(&self) -> JSValue;
-}
-
-impl DupRawValue for Value {
-    #[inline]
-    fn ctx(&self) -> Option<&Context> {
-        None
-    }
-
-    #[inline]
-    fn dup_raw_value(&self) -> JSValue {
-        self.0
-    }
-}
-
-impl DupRawValue for RefValue {
-    #[inline]
-    fn ctx(&self) -> Option<&Context> {
-        Some(&self.c)
-    }
-
-    #[inline]
-    fn dup_raw_value(&self) -> JSValue {
-        unsafe {
-            self.v.increment_ref_count();
-        }
-        self.v
-    }
-}
-
-impl DupRawValue for Object {
-    #[inline]
-    fn ctx(&self) -> Option<&Context> {
-        DupRawValue::ctx(&self.0)
-    }
-
-    #[inline]
-    fn dup_raw_value(&self) -> JSValue {
-        DupRawValue::dup_raw_value(&self.0)
-    }
-}
-
-/// Trait that abstracts over the various [`JSValue`] wrappers. This is generally intended to be used
-/// as a generic parameter.
-pub trait GetRawValue {
-    fn ctx(&self) -> Option<&Context>;
-    fn get_raw_value(&self) -> JSValue;
-}
-
-impl GetRawValue for Value {
-    #[inline]
-    fn ctx(&self) -> Option<&Context> {
-        None
-    }
-
-    #[inline]
-    fn get_raw_value(&self) -> JSValue {
-        self.0
-    }
-}
-
-impl GetRawValue for RefValue {
-    #[inline]
-    fn ctx(&self) -> Option<&Context> {
-        Some(&self.c)
-    }
-
-    #[inline]
-    fn get_raw_value(&self) -> JSValue {
-        self.v
-    }
-}
-
-impl GetRawValue for Object {
-    #[inline]
-    fn ctx(&self) -> Option<&Context> {
-        GetRawValue::ctx(&self.0)
-    }
-
-    #[inline]
-    fn get_raw_value(&self) -> JSValue {
-        GetRawValue::get_raw_value(&self.0)
-    }
-}
-
-/// Trait that abstracts over [`RefValue`] and [`RefValue`] accessories. Intended to be used as a
-/// generic function parameter so you can pass a [`RefValue`], [`Object`] or other wrapper in the
-/// same position.
+/// # Background
 ///
-/// This _should not_ be implemented for types that are known to be pure value types. While it's not
-/// an error to do this it is still wrong to imply rc semantics for pure value types that _do not_
-/// contain pointers.
-pub trait ToRefValue {
-    fn to_ref_value(self) -> RefValue;
+/// QuickJS stores 'number' values as either an integer (i32) or double (f64) as distinct JSTag
+/// types as an optimization. Only one of the two values is active at once. We provide this wrapper
+/// to expose this to users. Retaining pure integer semantics can be useful.
+///
+/// If your specific case doesn't care then call [`NumberVariant::normalize`] to cast away the info
+/// and get a plain f64.
+#[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
+pub enum NumberVariant {
+    Double(f64),
+    Integer(c_int),
 }
 
-impl ToRefValue for RefValue {
-    #[inline]
-    fn to_ref_value(self) -> RefValue {
-        self
+impl NumberVariant {
+    /// Collapse both [`NumberVariant::Integer`] and [`NumberVariant::Double`] paths to f64.
+    ///
+    /// An i32 is guaranteed to fit in an f64 so this won't destroy information. If you don't care
+    /// about integer semantics then you can use this function to simplify handling number values.
+    pub const fn normalize(self) -> f64 {
+        match self {
+            NumberVariant::Double(v) => v,
+            NumberVariant::Integer(v) => v as f64,
+        }
     }
-}
 
-impl ToRefValue for Object {
-    #[inline]
-    fn to_ref_value(self) -> RefValue {
-        self.to_value()
+    pub const fn get_double(self) -> Option<f64> {
+        match self {
+            NumberVariant::Double(v) => Some(v),
+            NumberVariant::Integer(_) => None,
+        }
+    }
+
+    pub const fn get_int(self) -> Option<c_int> {
+        match self {
+            NumberVariant::Double(_) => None,
+            NumberVariant::Integer(v) => Some(v),
+        }
     }
 }

@@ -39,35 +39,33 @@ use aleph_alloc::instrumentation::{
 use aleph_nstr::{NStr, nstr};
 use aleph_target::build::{target_architecture, target_build_type, target_platform};
 use camino::{Utf8Path, Utf8PathBuf};
-use qjs::ToRefValue;
 use thiserror::Error;
 
 pub struct ConfigRunner {
-    /// The QJS runtime that all the script context we run will be spawned inside of
-    runtime: qjs::Runtime,
+    context: qjs::Context,
 
     /// The directory we will load config scripts from
     config_dir: Utf8PathBuf,
 
     /// A reference to the quickjs object that stores the config
-    config_object: qjs::Object,
+    config_object: qjs::RefValue,
 }
 
 impl ConfigRunner {
     pub fn new() -> io::Result<Self> {
         Config::with(|| {
-            let runtime = if is_instrumentation_enabled() {
+            if is_instrumentation_enabled() {
                 static ALLOC: Instrumented<JavaScript> = system();
-                qjs::Runtime::new_in(&ALLOC).unwrap()
+                qjs::init_thread_runtime_in(&ALLOC);
             } else {
-                qjs::Runtime::new().unwrap()
+                qjs::init_thread_runtime();
             };
-            let context = runtime.new_context().unwrap();
+            let context = qjs::ThreadLocalRuntime::new_context().unwrap();
             let config_object = context.new_object();
             let config_dir = find_folder_in_search_path("configs")?;
 
             let out = Self {
-                runtime,
+                context,
                 config_dir,
                 config_object,
             };
@@ -114,13 +112,13 @@ impl ConfigRunner {
             //
             // Objects are free to be shared between contexts within the same runtime so we hold on
             // to the config object though
-            let context = self.runtime.new_context().unwrap();
+            let context = qjs::ThreadLocalRuntime::new_context().unwrap();
 
             // Provide the 'Configs' object which is where the scripts are expected to write their
             // config into.
 
             let global = context.get_global_object();
-            if 0 > global.set_property_str("Configs", &self.config_object) {
+            if 0 > context.set_property_str(&global, "Configs", self.config_object.clone()) {
                 return Err(js_exception_to_err(&context));
             }
 
@@ -157,12 +155,12 @@ impl ConfigRunner {
             //
             // Objects are free to be shared between contexts within the same runtime so we hold on to
             // the config object though
-            let context = self.runtime.new_context().unwrap();
+            let context = qjs::ThreadLocalRuntime::new_context().unwrap();
 
             // Provide the 'Configs' object which is where the scripts are expected to write their
             // config into.
             let global = context.get_global_object();
-            if 0 > global.set_property_str("Configs", &self.config_object) {
+            if 0 > context.set_property_str(&global, "Configs", self.config_object.clone()) {
                 return Err(js_exception_to_err(&context));
             }
 
@@ -180,7 +178,7 @@ impl ConfigRunner {
 
     pub fn finalize(self) -> serde_json::Map<String, serde_json::Value> {
         Config::with(|| {
-            let json = self.config_object.to_json().unwrap();
+            let json = self.context.to_json(&self.config_object).unwrap();
             let mut json = match json {
                 serde_json::Value::Null
                 | serde_json::Value::Bool(_)
@@ -288,31 +286,31 @@ impl ConfigRunner {
         let a_string = context.new_string(target_architecture().name());
         let b_string = context.new_string(target_build_type().name());
 
-        if 0 > global.set_property_str("THIS_PLATFORM", &p_string) {
+        if 0 > context.set_property_str(&global, "THIS_PLATFORM", p_string) {
             return Err(js_exception_to_err(context));
         }
-        if 0 > global.set_property_str("THIS_ARCHITECTURE", &a_string) {
+        if 0 > context.set_property_str(&global, "THIS_ARCHITECTURE", a_string) {
             return Err(js_exception_to_err(context));
         }
-        if 0 > global.set_property_str("THIS_BUILD_TYPE", &b_string) {
+        if 0 > context.set_property_str(&global, "THIS_BUILD_TYPE", b_string) {
             return Err(js_exception_to_err(context));
         }
 
-        let p = context.new_object().to_ref_value();
-        let a = context.new_object().to_ref_value();
-        let b = context.new_object().to_ref_value();
-        let e = context.new_object().to_ref_value();
+        let p = context.new_object();
+        let a = context.new_object();
+        let b = context.new_object();
+        let e = context.new_object();
 
-        if 0 > global.set_property_str("Platform", &p) {
+        if 0 > context.set_property_str(&global, "Platform", p) {
             return Err(js_exception_to_err(context));
         }
-        if 0 > global.set_property_str("Architecture", &a) {
+        if 0 > context.set_property_str(&global, "Architecture", a) {
             return Err(js_exception_to_err(context));
         }
-        if 0 > global.set_property_str("BuildType", &b) {
+        if 0 > context.set_property_str(&global, "BuildType", b) {
             return Err(js_exception_to_err(context));
         }
-        if 0 > global.set_property_str("Environment", &e) {
+        if 0 > context.set_property_str(&global, "Environment", e) {
             return Err(js_exception_to_err(context));
         }
 
@@ -406,8 +404,8 @@ fn check_exception(
 fn js_exception_to_err(context: &qjs::Context) -> RunConfigError {
     let exception = context.get_exception();
     assert!(!exception.is_undefined());
-    let message = exception
-        .to_c_str()
+    let message = context
+        .to_c_str(&exception)
         .expect("Failed to get exception message");
     RunConfigError::Js(message.to_string())
 }

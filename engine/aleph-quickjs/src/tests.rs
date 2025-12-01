@@ -35,43 +35,52 @@ use std::rc::Rc;
 use aleph_nstr::{NStr, nstr};
 use raw::*;
 
-use crate::{Context, NumberVariant, RefValue, Runtime};
+use crate::{Context, NumberVariant, RefValue, ThreadLocalRuntime};
 
 #[test]
 pub fn create_and_destroy_runtime_plus_context() {
-    let runtime = Runtime::new().unwrap();
-    let _context = runtime.new_context().unwrap();
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let _context = ThreadLocalRuntime::new_context().unwrap();
+        });
+    });
 }
 
 #[test]
 pub fn eval_script_int_add() {
-    let runtime = Runtime::new().unwrap();
-    let context = runtime.new_context().unwrap();
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let context = ThreadLocalRuntime::new_context().unwrap();
 
-    let filename = nstr!("script.js");
-    let script = nstr!("2 + 2");
-    let result = context.eval(script, filename, JSEvalFlags::STRICT);
-    let result = check_exception(&context, result);
+            let filename = nstr!("script.js");
+            let script = nstr!("2 + 2");
+            let result = context.eval(script, filename, JSEvalFlags::STRICT);
+            let result = check_exception(&context, result);
 
-    assert_eq!(result.get_tag(), JSTag::INT);
-    assert_eq!(result.get_number(), Some(NumberVariant::Integer(4)));
+            assert_eq!(result.get_tag(), JSTag::INT);
+            assert_eq!(result.get_number(), Some(NumberVariant::Integer(4)));
+        });
+    });
 }
 
 #[test]
 pub fn eval_script_float_add() {
-    let runtime = Runtime::new().unwrap();
-    let context = runtime.new_context().unwrap();
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let context = ThreadLocalRuntime::new_context().unwrap();
 
-    let filename = nstr!("script.js");
-    let script = nstr!("2.2 + 2.4");
-    let result = context.eval(script, filename, JSEvalFlags::STRICT);
-    let result = check_exception(&context, result);
+            let filename = nstr!("script.js");
+            let script = nstr!("2.2 + 2.4");
+            let result = context.eval(script, filename, JSEvalFlags::STRICT);
+            let result = check_exception(&context, result);
 
-    assert_eq!(result.get_tag(), JSTag::FLOAT64);
-    assert_eq!(
-        result.get_number(),
-        Some(NumberVariant::Double(2.2f64 + 2.4f64))
-    );
+            assert_eq!(result.get_tag(), JSTag::FLOAT64);
+            assert_eq!(
+                result.get_number(),
+                Some(NumberVariant::Double(2.2f64 + 2.4f64))
+            );
+        });
+    });
 }
 
 #[test]
@@ -101,26 +110,29 @@ pub fn eval_script_call_c_func() {
         }
     }
 
-    let runtime = Runtime::new().unwrap();
-    let context = runtime.new_context().unwrap();
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let context = ThreadLocalRuntime::new_context().unwrap();
 
-    let global = context.get_global_object();
+            let global = context.get_global_object();
 
-    let func_name = nstr!("call_me_maybe");
-    let func_v = context.new_c_function(func, func_name, 1);
-    assert!(func_v.is_object());
+            let func_name = nstr!("call_me_maybe");
+            let func_v = context.new_c_function(func, func_name, 1);
+            assert!(func_v.is_object());
 
-    let result = global.set_property_str(func_name.to_str(), &func_v);
-    assert_ne!(result, -1);
+            let result = context.set_property_str(&global, func_name.to_str(), func_v.clone());
+            assert_ne!(result, -1);
 
-    let filename = nstr!("script.js");
-    let script = nstr!("call_me_maybe(56);");
-    let result = context.eval(script, filename, JSEvalFlags::STRICT);
-    let result = check_exception(&context, result);
+            let filename = nstr!("script.js");
+            let script = nstr!("call_me_maybe(56);");
+            let result = context.eval(script, filename, JSEvalFlags::STRICT);
+            let result = check_exception(&context, result);
 
-    assert!(CALLED.load(Ordering::SeqCst));
-    assert_eq!(result.get_tag(), JSTag::INT);
-    assert_eq!(result.get_number(), Some(NumberVariant::Integer(21)));
+            assert!(CALLED.load(Ordering::SeqCst));
+            assert_eq!(result.get_tag(), JSTag::INT);
+            assert_eq!(result.get_number(), Some(NumberVariant::Integer(21)));
+        });
+    });
 }
 
 #[test]
@@ -142,41 +154,44 @@ pub fn eval_script_get_property_names() {
     expected_names.insert("thingB");
     expected_names.insert("thingC");
 
-    let runtime = Runtime::new().unwrap();
-    let context = runtime.new_context().unwrap();
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let context = ThreadLocalRuntime::new_context().unwrap();
 
-    let filename = nstr!("script.js");
-    let result = context.eval(SCRIPT, filename, JSEvalFlags::STRICT);
-    let result = check_exception(&context, result);
-    assert!(
-        result.is_undefined(),
-        "Expected 'undefined' got '{:?}'",
-        result.get_tag()
-    );
+            let filename = nstr!("script.js");
+            let result = context.eval(SCRIPT, filename, JSEvalFlags::STRICT);
+            let result = check_exception(&context, result);
+            assert!(
+                result.is_undefined(),
+                "Expected 'undefined' got '{:?}'",
+                result.get_tag()
+            );
 
-    let global = context.get_global_object();
+            let global = context.get_global_object();
 
-    let result = global.get_property_str("OUTPUT");
+            let result = context.get_property_str(&global, "OUTPUT");
 
-    assert!(
-        result.is_object(),
-        "Expected 'object' got '{:?}'",
-        result.get_tag()
-    );
-    let result = result.to_object().ok().unwrap();
+            assert!(
+                result.is_object(),
+                "Expected 'object' got '{:?}'",
+                result.get_tag()
+            );
 
-    let props = result.get_own_property_names(
-        JSGetPropertyNameOption::STRING_MASK | JSGetPropertyNameOption::ENUM_ONLY,
-    );
+            let props = context.get_own_property_names(
+                &result,
+                JSGetPropertyNameOption::STRING_MASK | JSGetPropertyNameOption::ENUM_ONLY,
+            );
 
-    let props = props.iter();
+            let props = props.iter();
 
-    assert_eq!(props.len(), 3);
-    for prop in props {
-        let atom = prop.atom.as_ref().unwrap();
-        let prop_name = atom.to_c_str().unwrap();
-        assert!(expected_names.remove(prop_name.as_ref()));
-    }
+            assert_eq!(props.len(), 3);
+            for prop in props {
+                let atom = prop.atom.as_ref().unwrap();
+                let prop_name = atom.to_c_str().unwrap();
+                assert!(expected_names.remove(prop_name.as_ref()));
+            }
+        });
+    });
 }
 
 #[test]
@@ -203,35 +218,37 @@ pub fn eval_script_to_serde() {
             }
         }"#;
 
-    let runtime = Runtime::new().unwrap();
-    let context = runtime.new_context().unwrap();
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let context = ThreadLocalRuntime::new_context().unwrap();
 
-    //unsafe {
-    let filename = nstr!("script.js");
-    let result = context.eval(SCRIPT, filename, JSEvalFlags::STRICT);
-    let result = check_exception(&context, result);
-    assert!(
-        result.is_undefined(),
-        "Expected 'undefined' got '{:?}'",
-        result.get_tag()
-    );
+            //unsafe {
+            let filename = nstr!("script.js");
+            let result = context.eval(SCRIPT, filename, JSEvalFlags::STRICT);
+            let result = check_exception(&context, result);
+            assert!(
+                result.is_undefined(),
+                "Expected 'undefined' got '{:?}'",
+                result.get_tag()
+            );
 
-    let global = context.get_global_object();
+            let global = context.get_global_object();
 
-    let result = global.get_property_str("OUTPUT");
+            let result = context.get_property_str(&global, "OUTPUT");
 
-    assert!(
-        result.is_object(),
-        "Expected 'object' got '{:?}'",
-        result.get_tag()
-    );
-    let result = result.to_object().ok().unwrap();
+            assert!(
+                result.is_object(),
+                "Expected 'object' got '{:?}'",
+                result.get_tag()
+            );
 
-    let result_json = result.to_json().unwrap();
-    let expected_json: serde_json::Value = serde_json::from_str(JSON_EXPECTED).unwrap();
+            let result_json = context.to_json(&result).unwrap();
+            let expected_json: serde_json::Value = serde_json::from_str(JSON_EXPECTED).unwrap();
 
-    assert_eq!(result_json, expected_json);
-    //}
+            assert_eq!(result_json, expected_json);
+            //}
+        });
+    });
 }
 
 #[test]
@@ -251,217 +268,180 @@ pub fn runtime_deferred_gc_free() {
     //! will be __much__ nicer to use. If performance is important enough then explicit freeing APIs
     //! are also available but the API is unsafe and a bit harder to use.
     //!
-    let runtime = Runtime::new().unwrap();
-    let context = runtime.new_context().unwrap();
 
-    unsafe {
-        // Capture the baseline allocation stats so we know how many objects are live before we
-        // do anything.
-        let baseline = context.compute_memory_usage();
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let context = ThreadLocalRuntime::new_context().unwrap();
 
-        // Create an object and assert we have exclusive ownership of it
-        let obj1 = context.new_object();
-        assert_eq!(obj1.get_ref_count(), 1);
+            unsafe {
+                // Capture the baseline allocation stats so we know how many objects are live before we
+                // do anything.
+                let baseline = context.compute_memory_usage();
 
-        // Capture the allocation stats after we've created a single object. We should have exactly
-        // one more object and the stats should reflect this
-        let created = context.compute_memory_usage();
-        assert_eq!(baseline.obj_count + 1, created.obj_count);
+                // Create an object and assert we have exclusive ownership of it
+                let obj1 = context.new_object();
+                assert_eq!(obj1.get_ref_count(), Some(1));
 
-        // Increment the refcount and assert we have 2 ref counts now and that both objects have
-        // the same ref count.
-        let obj2 = obj1.clone();
-        assert_eq!(obj1.get_ref_count(), 2);
-        assert_eq!(obj2.get_ref_count(), 2);
+                // Capture the allocation stats after we've created a single object. We should have exactly
+                // one more object and the stats should reflect this
+                let created = context.compute_memory_usage();
+                assert_eq!(baseline.obj_count + 1, created.obj_count);
 
-        // Incrementing should never make more objects so make sure.
-        let increment = context.compute_memory_usage();
-        assert_eq!(created.obj_count, increment.obj_count);
+                // Increment the refcount and assert we have 2 ref counts now and that both objects have
+                // the same ref count.
+                let obj2 = obj1.clone();
+                assert_eq!(obj1.get_ref_count(), Some(2));
+                assert_eq!(obj2.get_ref_count(), Some(2));
 
-        // Manually decrement the reference count for each object
-        let raw1 = obj1.to_raw();
-        let raw2 = obj2.to_raw();
-        drop(obj1);
-        drop(obj2);
+                // Incrementing should never make more objects so make sure.
+                let increment = context.compute_memory_usage();
+                assert_eq!(created.obj_count, increment.obj_count);
 
-        // Both should now have a reference count of zero
-        assert_eq!(raw1.get_ref_count(), Some(0));
-        assert_eq!(raw2.get_ref_count(), Some(0));
+                // Manually decrement the reference count for each object
+                let raw1 = obj1.to_raw();
+                let raw2 = obj2.to_raw();
+                drop(obj1);
+                drop(obj2);
 
-        // We've manually decremented the ref-count without freeing. It should now be zero but the
-        // object is still alive as a zombie until the GC runs when it will actually be freed.
-        let decrement = context.compute_memory_usage();
-        assert_eq!(created.obj_count, decrement.obj_count);
+                // Both should now have a reference count of zero
+                assert_eq!(raw1.get_ref_count(), Some(0));
+                assert_eq!(raw2.get_ref_count(), Some(0));
 
-        // Trigger a manual GC and hope for the best?
-        //
-        // What we want to know is if it's valid for us to decrement the refcount from zero from
-        // outside of the runtime with out actually freeing the object and then let the GC clean
-        // the dead objects up later.
-        //
-        // This would make lifetime management for our safe wrappers significantly easier as we
-        // could just treat values like rust's Rc types.
-        runtime.gc();
+                // We've manually decremented the ref-count without freeing. It should now be zero but the
+                // object is still alive as a zombie until the GC runs when it will actually be freed.
+                let decrement = context.compute_memory_usage();
+                assert_eq!(created.obj_count, decrement.obj_count);
 
-        // Our object should have been collected now. It had already hit a ref-count of zero before
-        // but we opted not to free it then and instead defer it to the garbage collector to find
-        // and free.
-        let collected = context.compute_memory_usage();
-        assert_eq!(baseline.obj_count, collected.obj_count);
-    }
+                // Trigger a manual GC and hope for the best?
+                //
+                // What we want to know is if it's valid for us to decrement the refcount from zero from
+                // outside of the runtime with out actually freeing the object and then let the GC clean
+                // the dead objects up later.
+                //
+                // This would make lifetime management for our safe wrappers significantly easier as we
+                // could just treat values like rust's Rc types.
+                ThreadLocalRuntime::gc();
+
+                // Our object should have been collected now. It had already hit a ref-count of zero before
+                // but we opted not to free it then and instead defer it to the garbage collector to find
+                // and free.
+                let collected = context.compute_memory_usage();
+                assert_eq!(baseline.obj_count, collected.obj_count);
+            }
+        });
+    });
 }
 
 #[test]
 pub fn set_object_property_ref_count_behavior() {
-    let runtime = Runtime::new().unwrap();
-    let context = runtime.new_context().unwrap();
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let context = ThreadLocalRuntime::new_context().unwrap();
 
-    let root = context.new_object();
-    let leaf = context.new_object();
+            let root = context.new_object();
+            let leaf = context.new_object();
 
-    assert_eq!(root.get_ref_count(), 1);
-    assert_eq!(leaf.get_ref_count(), 1);
+            assert_eq!(root.get_ref_count(), Some(1));
+            assert_eq!(leaf.get_ref_count(), Some(1));
 
-    let result = root.set_property_str("leaf", &leaf);
-    assert!(result >= 0);
+            let result = context.set_property_str(&root, "leaf", leaf.clone());
+            assert!(result >= 0);
 
-    assert_eq!(root.get_ref_count(), 1);
-    assert_eq!(leaf.get_ref_count(), 2);
+            assert_eq!(root.get_ref_count(), Some(1));
+            assert_eq!(leaf.get_ref_count(), Some(2));
 
-    let result = root.delete_property_str("leaf");
-    assert!(result >= 0);
+            let result = context.delete_property_str(&root, "leaf");
+            assert!(result >= 0);
 
-    assert_eq!(root.get_ref_count(), 1);
-    assert_eq!(leaf.get_ref_count(), 1);
+            assert_eq!(root.get_ref_count(), Some(1));
+            assert_eq!(leaf.get_ref_count(), Some(1));
+        });
+    });
 }
 
 #[test]
 pub fn string_with_internal_null_character() {
-    let runtime = Runtime::new().unwrap();
-    let context = runtime.new_context().unwrap();
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let context = ThreadLocalRuntime::new_context().unwrap();
 
-    let string = "String with a \0 character in the middle";
+            let string = "String with a \0 character in the middle";
 
-    let v = context.new_string(string);
-    assert!(v.is_string());
+            let v = context.new_string(string);
+            assert!(v.is_string());
 
-    let got_string = v.to_c_str().unwrap();
-    assert_eq!(string, got_string.as_ref());
-}
-
-#[test]
-pub fn runtime_opaque_test() {
-    let runtime = Runtime::new().unwrap();
-
-    let o1 = Rc::new(123i32);
-    let o2 = Rc::new(456u64);
-
-    assert_eq!(Rc::strong_count(&o1), 1);
-    assert_eq!(Rc::strong_count(&o2), 1);
-    assert!(runtime.get_opaque::<Rc<i32>>().is_none());
-    assert!(runtime.get_opaque::<Rc<u64>>().is_none());
-
-    runtime.set_opaque(o1.clone());
-
-    assert_eq!(Rc::strong_count(&o1), 2);
-    assert_eq!(Rc::strong_count(&o2), 1);
-    assert!(runtime.get_opaque::<Rc<i32>>().is_some());
-    assert!(runtime.get_opaque::<Rc<u64>>().is_none());
-
-    runtime.set_opaque(o2.clone());
-
-    assert_eq!(Rc::strong_count(&o1), 1);
-    assert_eq!(Rc::strong_count(&o2), 2);
-    assert!(runtime.get_opaque::<Rc<i32>>().is_none());
-    assert!(runtime.get_opaque::<Rc<u64>>().is_some());
-
-    runtime.remove_opaque();
-
-    assert_eq!(Rc::strong_count(&o1), 1);
-    assert_eq!(Rc::strong_count(&o2), 1);
-    assert!(runtime.get_opaque::<Rc<i32>>().is_none());
-    assert!(runtime.get_opaque::<Rc<u64>>().is_none());
-}
-
-#[test]
-pub fn runtime_opaque_drop_test() {
-    let runtime = Runtime::new().unwrap();
-
-    let o1 = Rc::new(420i32);
-
-    assert_eq!(Rc::strong_count(&o1), 1);
-    assert!(runtime.get_opaque::<Rc<i32>>().is_none());
-
-    runtime.set_opaque(o1.clone());
-
-    assert_eq!(Rc::strong_count(&o1), 2);
-    assert!(runtime.get_opaque::<Rc<i32>>().is_some());
-
-    drop(runtime);
-
-    assert_eq!(Rc::strong_count(&o1), 1);
+            let got_string = context.to_c_str(&v).unwrap();
+            assert_eq!(string, got_string.as_ref());
+        });
+    });
 }
 
 #[test]
 pub fn context_opaque_test() {
-    let runtime = Runtime::new().unwrap();
-    let context = runtime.new_context().unwrap();
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let context = ThreadLocalRuntime::new_context().unwrap();
 
-    let o1 = Rc::new(123i32);
-    let o2 = Rc::new(456u64);
+            let o1 = Rc::new(123i32);
+            let o2 = Rc::new(456u64);
 
-    assert_eq!(Rc::strong_count(&o1), 1);
-    assert_eq!(Rc::strong_count(&o2), 1);
-    assert!(context.get_opaque::<Rc<i32>>().is_none());
-    assert!(context.get_opaque::<Rc<u64>>().is_none());
+            assert_eq!(Rc::strong_count(&o1), 1);
+            assert_eq!(Rc::strong_count(&o2), 1);
+            assert!(context.get_opaque::<Rc<i32>>().is_none());
+            assert!(context.get_opaque::<Rc<u64>>().is_none());
 
-    context.set_opaque(o1.clone());
+            context.set_opaque(o1.clone());
 
-    assert_eq!(Rc::strong_count(&o1), 2);
-    assert_eq!(Rc::strong_count(&o2), 1);
-    assert!(context.get_opaque::<Rc<i32>>().is_some());
-    assert!(context.get_opaque::<Rc<u64>>().is_none());
+            assert_eq!(Rc::strong_count(&o1), 2);
+            assert_eq!(Rc::strong_count(&o2), 1);
+            assert!(context.get_opaque::<Rc<i32>>().is_some());
+            assert!(context.get_opaque::<Rc<u64>>().is_none());
 
-    context.set_opaque(o2.clone());
+            context.set_opaque(o2.clone());
 
-    assert_eq!(Rc::strong_count(&o1), 1);
-    assert_eq!(Rc::strong_count(&o2), 2);
-    assert!(context.get_opaque::<Rc<i32>>().is_none());
-    assert!(context.get_opaque::<Rc<u64>>().is_some());
+            assert_eq!(Rc::strong_count(&o1), 1);
+            assert_eq!(Rc::strong_count(&o2), 2);
+            assert!(context.get_opaque::<Rc<i32>>().is_none());
+            assert!(context.get_opaque::<Rc<u64>>().is_some());
 
-    context.remove_opaque();
+            context.remove_opaque();
 
-    assert_eq!(Rc::strong_count(&o1), 1);
-    assert_eq!(Rc::strong_count(&o2), 1);
-    assert!(context.get_opaque::<Rc<i32>>().is_none());
-    assert!(context.get_opaque::<Rc<u64>>().is_none());
+            assert_eq!(Rc::strong_count(&o1), 1);
+            assert_eq!(Rc::strong_count(&o2), 1);
+            assert!(context.get_opaque::<Rc<i32>>().is_none());
+            assert!(context.get_opaque::<Rc<u64>>().is_none());
+        });
+    });
 }
 
 #[test]
 pub fn context_opaque_drop_test() {
-    let runtime = Runtime::new().unwrap();
-    let context = runtime.new_context().unwrap();
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let context = ThreadLocalRuntime::new_context().unwrap();
 
-    let o1 = Rc::new(420i32);
+            let o1 = Rc::new(420i32);
 
-    assert_eq!(Rc::strong_count(&o1), 1);
-    assert!(context.get_opaque::<Rc<i32>>().is_none());
+            assert_eq!(Rc::strong_count(&o1), 1);
+            assert!(context.get_opaque::<Rc<i32>>().is_none());
 
-    context.set_opaque(o1.clone());
+            context.set_opaque(o1.clone());
 
-    assert_eq!(Rc::strong_count(&o1), 2);
-    assert!(context.get_opaque::<Rc<i32>>().is_some());
+            assert_eq!(Rc::strong_count(&o1), 2);
+            assert!(context.get_opaque::<Rc<i32>>().is_some());
 
-    drop(context);
+            drop(context);
 
-    assert_eq!(Rc::strong_count(&o1), 1);
+            assert_eq!(Rc::strong_count(&o1), 1);
+        });
+    });
 }
 
 fn check_exception<'a>(ctx: &'a Context, v: RefValue) -> RefValue {
     if v.is_exception() {
         let exception = ctx.get_exception();
-        let message = exception
-            .to_c_str()
+        let message = ctx
+            .to_c_str(&exception)
             .expect("Failed to get exception message");
         let message_str = message.as_ref();
         panic!("Unhandled JS Exception: {}", message_str);

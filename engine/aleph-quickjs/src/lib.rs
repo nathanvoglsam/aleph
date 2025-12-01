@@ -41,8 +41,8 @@ pub use atom::Atom;
 pub use context::Context;
 pub use ctx_string::CtxString;
 pub use own_property_names::{OwnPropertyNames, PropertyEnum};
-pub use runtime::Runtime;
-pub use value::{DupRawValue, GetRawValue, NumberVariant, Object, RefValue, ToRefValue, Value};
+pub use runtime::{ThreadLocalRuntime, init_thread_runtime, init_thread_runtime_in};
+pub use value::{ArgValue, NumberVariant, RefValue, Value, WeakValue};
 
 #[cfg(test)]
 mod tests;

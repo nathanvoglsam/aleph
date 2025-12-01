@@ -43,7 +43,7 @@ impl Atom {
     pub fn to_value(&self) -> RefValue {
         unsafe {
             let string = raw::JS_AtomToValue(self.c.0.ctx, self.v);
-            RefValue::from_raw(&self.c, string)
+            RefValue(string)
         }
     }
 
@@ -51,7 +51,7 @@ impl Atom {
     pub fn to_string(&self) -> RefValue {
         unsafe {
             let string = raw::JS_AtomToString(self.c.0.ctx, self.v);
-            RefValue::from_raw(&self.c, string)
+            RefValue(string)
         }
     }
 
@@ -59,7 +59,7 @@ impl Atom {
     pub fn to_c_str(&self) -> Option<CtxString> {
         let string = self.to_string();
         if !string.is_exception() {
-            string.to_c_str()
+            self.c.to_c_str(&string)
         } else {
             None
         }
