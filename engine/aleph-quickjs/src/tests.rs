@@ -28,13 +28,14 @@
 //
 
 use std::collections::HashSet;
-use std::ffi::*;
-use std::ptr::NonNull;
 
 use aleph_nstr::{NStr, nstr};
 use raw::*;
 
-use crate::{Context, NumberVariant, RefValue, Runtime};
+use crate::{
+    ArgValue, Context, NumberVariant, RefValue, Runtime, Value, WeakContext, WeakValue,
+    make_generic_host_fn,
+};
 
 #[test]
 pub fn create_and_destroy_runtime_plus_context() {
@@ -91,25 +92,16 @@ pub fn eval_script_call_c_func() {
 
     static CALLED: AtomicBool = AtomicBool::new(false);
 
-    extern "C" fn func(
-        _ctx: NonNull<JSContext>,
-        this_val: JSValue,
-        argc: c_int,
-        argv: *mut JSValue,
-    ) -> JSValue {
-        unsafe {
-            CALLED.store(true, Ordering::SeqCst);
+    fn func(_ctx: &WeakContext, this: &WeakValue, args: &[WeakValue]) -> RefValue {
+        CALLED.store(true, Ordering::SeqCst);
 
-            assert!(this_val.is_undefined());
+        assert!(this.is_undefined());
+        assert_eq!(args.len(), 1);
 
-            assert_eq!(argc, 1);
+        let v = &args[0];
+        assert_eq!(v.get_number(), Some(NumberVariant::Integer(56)));
 
-            let v = *argv;
-            assert_eq!(v.get_tag(), JSTag::INT);
-            assert_eq!(v.get_int(), 56);
-
-            JSValue::new_i32(21)
-        }
+        Value::new_i32(21).upgrade()
     }
 
     std::thread::scope(|scope| {
@@ -120,7 +112,7 @@ pub fn eval_script_call_c_func() {
             let global = context.get_global_object();
 
             let func_name = nstr!("call_me_maybe");
-            let func_v = context.new_c_function(func, func_name, 1);
+            let func_v = context.new_host_function(make_generic_host_fn!(func), func_name, 1);
             assert!(func_v.is_object());
 
             let result = context.set_property_str(&global, func_name.to_str(), func_v.clone());
@@ -134,6 +126,53 @@ pub fn eval_script_call_c_func() {
             assert!(CALLED.load(Ordering::SeqCst));
             assert_eq!(result.get_tag(), JSTag::INT);
             assert_eq!(result.get_number(), Some(NumberVariant::Integer(21)));
+        });
+    });
+}
+
+#[test]
+pub fn eval_script_call_c_func_recursive() {
+    fn func(ctx: &WeakContext, this: &WeakValue, args: &[WeakValue]) -> RefValue {
+        assert!(this.is_undefined());
+        assert_eq!(args.len(), 2);
+
+        let f = &args[0];
+        let depth = args[1].get_number().unwrap().normalize();
+
+        if depth >= 5.0 {
+            Value::new_f64(depth * depth).upgrade()
+        } else {
+            let new_depth = Value::new_f64(depth + 1.0);
+            let args: [ArgValue; 2] = [f.as_arg(), new_depth.as_arg()];
+            ctx.call(f, &Value::UNDEFINED, &args)
+        }
+    }
+
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
+
+            let global = context.get_global_object();
+
+            let func_name = nstr!("call_me_maybe");
+            let func_v = context.new_host_function(make_generic_host_fn!(func), func_name, 1);
+            assert!(func_v.is_object());
+
+            let result = context.set_property_str(&global, func_name.to_str(), func_v.clone());
+            assert_ne!(result, -1);
+
+            let filename = nstr!("script.js");
+            let script = nstr!("function main() { return call_me_maybe(call_me_maybe, 0); }");
+            let result = context.eval(script, filename, JSEvalFlags::STRICT);
+            let _result = check_exception(&context, result);
+
+            let global = context.get_global_object();
+            let js_func = context.get_property_str(&global, "main");
+            let result = context.call(&js_func, &Value::UNDEFINED, &[]);
+            let result = check_exception(&context, result);
+
+            assert_eq!(result.get_number(), Some(NumberVariant::Double(25.0)));
         });
     });
 }

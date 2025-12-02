@@ -126,7 +126,10 @@ impl Runtime {
     pub fn new_context(&self) -> Option<Context> {
         unsafe {
             let ctx = raw::JS_NewContext(self.0.0)?;
-            let ctx = InnerContext { ctx };
+            let ctx = InnerContext {
+                ctx,
+                _r: self.clone(),
+            };
             let ctx = Rc::new(ctx);
 
             let opaque = ContextOpaque {
@@ -136,10 +139,7 @@ impl Runtime {
             let opaque = Box::into_raw(opaque);
             raw::JS_SetContextOpaque(ctx.ctx, opaque.cast());
 
-            Some(Context {
-                c: ctx,
-                r: self.clone(),
-            })
+            Some(Context { c: ctx })
         }
     }
 

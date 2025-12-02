@@ -29,6 +29,7 @@
 
 use core::str;
 use std::ffi::{c_char, c_int};
+use std::ops::Deref;
 use std::ptr::NonNull;
 use std::rc::{Rc, Weak};
 
@@ -36,21 +37,27 @@ use aleph_nstr::NStr;
 use raw::{JSEvalOptions, JSTag, JSValue};
 
 use crate::runtime::Runtime;
-use crate::{ArgValue, Atom, CtxString, OwnPropertyNames, RefValue, WeakValue};
+use crate::{ArgValue, Atom, CtxString, GenericHostFn, OwnPropertyNames, RefValue, WeakValue};
 
 #[derive(Clone)]
 pub struct Context {
     pub(crate) c: Rc<InnerContext>,
-    pub(crate) r: Runtime,
 }
 
-impl Context {
-    /// Returns the inner [`raw::JSContext`].
-    #[inline]
-    pub fn to_raw(&self) -> NonNull<raw::JSContext> {
-        self.c.ctx
-    }
+impl Deref for Context {
+    type Target = WeakContext;
 
+    fn deref(&self) -> &Self::Target {
+        unsafe { std::mem::transmute::<&NonNull<raw::JSContext>, &WeakContext>(&self.c.ctx) }
+    }
+}
+
+#[repr(transparent)]
+pub struct WeakContext {
+    pub(crate) c: NonNull<raw::JSContext>,
+}
+
+impl WeakContext {
     /// Trigger a manual garbage collection cycle.
     ///
     /// # Details
@@ -59,13 +66,27 @@ impl Context {
     /// memory for objects from other contexts too. The allocator is shared to contexts from the
     /// runtime.
     pub fn gc(&self) {
-        self.r.gc()
+        unsafe {
+            let rt = raw::JS_GetRuntime(self.c).unwrap_unchecked();
+            raw::JS_RunGC(rt);
+        }
     }
 
     /// Query the memory usage from the runtime the context was created from.
     #[inline]
     pub fn compute_memory_usage(&self) -> raw::JSMemoryUsage {
-        self.r.compute_memory_usage()
+        unsafe {
+            let rt = raw::JS_GetRuntime(self.c).unwrap_unchecked();
+            let mut usage = raw::JSMemoryUsage::default();
+            raw::JS_ComputeMemoryUsage(rt, &mut usage);
+            usage
+        }
+    }
+
+    /// Returns the inner [`raw::JSContext`].
+    #[inline]
+    pub fn to_raw(&self) -> NonNull<raw::JSContext> {
+        self.c
     }
 
     /// Direct wrapper over 'JS_Eval'.
@@ -78,7 +99,7 @@ impl Context {
                 line_num: 0,
                 ..Default::default()
             };
-            let v = raw::JS_Eval2(self.c.ctx, script.to_cstr_ptr(), script.len(), &options);
+            let v = raw::JS_Eval2(self.c, script.to_cstr_ptr(), script.len(), &options);
             RefValue(v)
         }
     }
@@ -87,7 +108,7 @@ impl Context {
     #[inline]
     pub fn get_global_object(&self) -> RefValue {
         unsafe {
-            let v = raw::JS_GetGlobalObject(self.c.ctx);
+            let v = raw::JS_GetGlobalObject(self.c);
             RefValue(v)
         }
     }
@@ -103,7 +124,7 @@ impl Context {
     #[inline]
     pub fn get_exception(&self) -> RefValue {
         unsafe {
-            let v = raw::JS_GetException(self.c.ctx);
+            let v = raw::JS_GetException(self.c);
             RefValue(v)
         }
     }
@@ -112,7 +133,7 @@ impl Context {
     pub fn new_atom(&self, s: &str) -> Option<Atom> {
         unsafe {
             assert!(s.is_ascii());
-            let atom = raw::JS_NewAtomLen(self.c.ctx, s.as_ptr() as *const _, s.len())?;
+            let atom = raw::JS_NewAtomLen(self.c, s.as_ptr() as *const _, s.len())?;
             Some(Atom { v: atom })
         }
     }
@@ -120,7 +141,7 @@ impl Context {
     #[inline]
     pub fn new_string(&self, v: &str) -> RefValue {
         unsafe {
-            let v = raw::JS_NewStringLen(self.c.ctx, v.as_ptr() as *const c_char, v.len());
+            let v = raw::JS_NewStringLen(self.c, v.as_ptr() as *const c_char, v.len());
             RefValue(v)
         }
     }
@@ -128,20 +149,20 @@ impl Context {
     #[inline]
     pub fn new_object(&self) -> RefValue {
         unsafe {
-            let v = raw::JS_NewObject(self.c.ctx);
+            let v = raw::JS_NewObject(self.c);
             RefValue(v)
         }
     }
 
     #[inline]
-    pub fn new_c_function(
+    pub fn new_host_function(
         &self,
-        func: raw::JSCFunctionFn,
+        func: GenericHostFn,
         name: &NStr,
         num_params: c_int,
     ) -> RefValue {
         unsafe {
-            let v = raw::JS_NewCFunction(self.c.ctx, func, name.to_cstr_ptr(), num_params);
+            let v = raw::JS_NewCFunction(self.c, func.0, name.to_cstr_ptr(), num_params);
             RefValue(v)
         }
     }
@@ -149,7 +170,7 @@ impl Context {
     #[inline]
     pub fn to_string(&self, v: &WeakValue) -> RefValue {
         unsafe {
-            let string = raw::JS_ToString(self.c.ctx, v.0);
+            let string = raw::JS_ToString(self.c, v.0);
             RefValue(string)
         }
     }
@@ -158,14 +179,14 @@ impl Context {
     pub fn to_c_str(&self, v: &WeakValue) -> Option<CtxString> {
         unsafe {
             let mut len = 0;
-            let cstr = raw::JS_ToCStringLen2(self.c.ctx, &mut len, v.0, false);
+            let cstr = raw::JS_ToCStringLen2(self.c, &mut len, v.0, false);
 
             if len == 0 || cstr.is_null() {
                 None
             } else {
                 let bytes = std::slice::from_raw_parts(cstr as *const u8, len);
                 let string = str::from_utf8(bytes).unwrap_unchecked();
-                Some(CtxString::from_ctx_and_str(self.clone(), string))
+                Some(CtxString::from_ctx_and_str(self.upgrade(), string))
             }
         }
     }
@@ -183,7 +204,7 @@ impl Context {
     #[inline]
     pub fn get_property(&self, v: &WeakValue, prop: &Atom) -> RefValue {
         unsafe {
-            let v = raw::JS_GetProperty(self.c.ctx, v.0, prop.v);
+            let v = raw::JS_GetProperty(self.c, v.0, prop.v);
             RefValue(v)
         }
     }
@@ -202,7 +223,7 @@ impl Context {
     pub fn set_property(&self, v: &WeakValue, prop: &Atom, set: RefValue) -> c_int {
         unsafe {
             let set = set.detatch();
-            raw::JS_SetProperty(self.c.ctx, v.0, prop.v, set)
+            raw::JS_SetProperty(self.c, v.0, prop.v, set)
         }
     }
 
@@ -219,7 +240,7 @@ impl Context {
     #[inline]
     pub fn delete_property(&self, v: &WeakValue, prop: &Atom) -> c_int {
         unsafe {
-            raw::JS_DeleteProperty(self.c.ctx, v.0, prop.v, 0) // TODO: flags
+            raw::JS_DeleteProperty(self.c, v.0, prop.v, 0) // TODO: flags
         }
     }
 
@@ -237,7 +258,7 @@ impl Context {
                 std::ptr::null_mut()
             };
 
-            let v = raw::JS_Call(self.c.ctx, f.0, this.0, argc, argv);
+            let v = raw::JS_Call(self.c, f.0, this.0, argc, argv);
             RefValue(v)
         }
     }
@@ -251,7 +272,7 @@ impl Context {
         unsafe {
             let mut tab = std::ptr::null_mut();
             let mut len = 0;
-            let result = raw::JS_GetOwnPropertyNames(self.c.ctx, &mut tab, &mut len, v.0, opts);
+            let result = raw::JS_GetOwnPropertyNames(self.c, &mut tab, &mut len, v.0, opts);
             if result < 0 {
                 panic!("Don't know how to handle exceptions yet");
             }
@@ -264,7 +285,7 @@ impl Context {
             };
 
             OwnPropertyNames {
-                ctx: self.clone(),
+                ctx: self.upgrade(),
                 props: slice,
             }
         }
@@ -351,7 +372,7 @@ impl Context {
     #[inline]
     pub fn atom_to_value(&self, atom: &Atom) -> RefValue {
         unsafe {
-            let string = raw::JS_AtomToValue(self.c.ctx, atom.v);
+            let string = raw::JS_AtomToValue(self.c, atom.v);
             RefValue(string)
         }
     }
@@ -359,7 +380,7 @@ impl Context {
     #[inline]
     pub fn atom_to_string(&self, atom: &Atom) -> RefValue {
         unsafe {
-            let string = raw::JS_AtomToString(self.c.ctx, atom.v);
+            let string = raw::JS_AtomToString(self.c, atom.v);
             RefValue(string)
         }
     }
@@ -373,10 +394,23 @@ impl Context {
             None
         }
     }
+
+    #[inline]
+    pub fn upgrade(&self) -> Context {
+        unsafe {
+            let opaque = raw::JS_GetContextOpaque(self.c);
+            let opaque = NonNull::new(opaque).unwrap();
+            let opaque = opaque.cast::<ContextOpaque>();
+            Context {
+                c: opaque.as_ref()._this.upgrade().unwrap(),
+            }
+        }
+    }
 }
 
 pub(crate) struct InnerContext {
     pub(crate) ctx: NonNull<raw::JSContext>,
+    pub(crate) _r: Runtime,
 }
 
 impl Drop for InnerContext {
