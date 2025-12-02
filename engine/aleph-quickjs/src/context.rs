@@ -28,26 +28,27 @@
 //
 
 use core::str;
-use std::any::Any;
-use std::ffi::{c_char, c_int, c_void};
+use std::ffi::{c_char, c_int};
 use std::ptr::NonNull;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 use aleph_nstr::NStr;
 use raw::{JSEvalOptions, JSTag, JSValue};
 
-use crate::opaque_box::{OpaqueBox, UntypedOpaqueBox};
-use crate::runtime::ThreadLocalRuntime;
+use crate::runtime::Runtime;
 use crate::{ArgValue, Atom, CtxString, OwnPropertyNames, RefValue, WeakValue};
 
 #[derive(Clone)]
-pub struct Context(pub(crate) Rc<InnerContext>);
+pub struct Context {
+    pub(crate) c: Rc<InnerContext>,
+    pub(crate) r: Runtime,
+}
 
 impl Context {
     /// Returns the inner [`raw::JSContext`].
     #[inline]
     pub fn to_raw(&self) -> NonNull<raw::JSContext> {
-        self.0.ctx
+        self.c.ctx
     }
 
     /// Trigger a manual garbage collection cycle.
@@ -58,13 +59,13 @@ impl Context {
     /// memory for objects from other contexts too. The allocator is shared to contexts from the
     /// runtime.
     pub fn gc(&self) {
-        ThreadLocalRuntime::gc();
+        self.r.gc()
     }
 
     /// Query the memory usage from the runtime the context was created from.
     #[inline]
     pub fn compute_memory_usage(&self) -> raw::JSMemoryUsage {
-        ThreadLocalRuntime::compute_memory_usage()
+        self.r.compute_memory_usage()
     }
 
     /// Direct wrapper over 'JS_Eval'.
@@ -77,7 +78,7 @@ impl Context {
                 line_num: 0,
                 ..Default::default()
             };
-            let v = raw::JS_Eval2(self.0.ctx, script.to_cstr_ptr(), script.len(), &options);
+            let v = raw::JS_Eval2(self.c.ctx, script.to_cstr_ptr(), script.len(), &options);
             RefValue(v)
         }
     }
@@ -86,7 +87,7 @@ impl Context {
     #[inline]
     pub fn get_global_object(&self) -> RefValue {
         unsafe {
-            let v = raw::JS_GetGlobalObject(self.0.ctx);
+            let v = raw::JS_GetGlobalObject(self.c.ctx);
             RefValue(v)
         }
     }
@@ -102,7 +103,7 @@ impl Context {
     #[inline]
     pub fn get_exception(&self) -> RefValue {
         unsafe {
-            let v = raw::JS_GetException(self.0.ctx);
+            let v = raw::JS_GetException(self.c.ctx);
             RefValue(v)
         }
     }
@@ -111,18 +112,15 @@ impl Context {
     pub fn new_atom(&self, s: &str) -> Option<Atom> {
         unsafe {
             assert!(s.is_ascii());
-            let atom = raw::JS_NewAtomLen(self.0.ctx, s.as_ptr() as *const _, s.len())?;
-            Some(Atom {
-                v: atom,
-                c: self.clone(),
-            })
+            let atom = raw::JS_NewAtomLen(self.c.ctx, s.as_ptr() as *const _, s.len())?;
+            Some(Atom { v: atom })
         }
     }
 
     #[inline]
     pub fn new_string(&self, v: &str) -> RefValue {
         unsafe {
-            let v = raw::JS_NewStringLen(self.0.ctx, v.as_ptr() as *const c_char, v.len());
+            let v = raw::JS_NewStringLen(self.c.ctx, v.as_ptr() as *const c_char, v.len());
             RefValue(v)
         }
     }
@@ -130,7 +128,7 @@ impl Context {
     #[inline]
     pub fn new_object(&self) -> RefValue {
         unsafe {
-            let v = raw::JS_NewObject(self.0.ctx);
+            let v = raw::JS_NewObject(self.c.ctx);
             RefValue(v)
         }
     }
@@ -143,53 +141,15 @@ impl Context {
         num_params: c_int,
     ) -> RefValue {
         unsafe {
-            let v = raw::JS_NewCFunction(self.0.ctx, func, name.to_cstr_ptr(), num_params);
+            let v = raw::JS_NewCFunction(self.c.ctx, func, name.to_cstr_ptr(), num_params);
             RefValue(v)
-        }
-    }
-
-    #[inline]
-    pub fn set_opaque<T: Any + Sized>(&self, v: T) {
-        self.remove_opaque();
-
-        unsafe {
-            let opaque = OpaqueBox::new(v);
-            raw::JS_SetContextOpaque(self.0.ctx, opaque.as_ptr() as *mut c_void);
-        }
-    }
-
-    #[inline]
-    pub fn get_opaque<T: Any + Sized>(&self) -> Option<&T> {
-        unsafe {
-            let old = raw::JS_GetContextOpaque(self.0.ctx);
-            let old = NonNull::new(old);
-            if let Some(old) = old {
-                let old = old.cast::<UntypedOpaqueBox>().as_ref();
-                old.try_to_typed::<T>().map(|v| &v.v)
-            } else {
-                None
-            }
-        }
-    }
-
-    #[inline]
-    pub fn remove_opaque(&self) {
-        unsafe {
-            let old = raw::JS_GetContextOpaque(self.0.ctx);
-            let old = NonNull::new(old);
-            if let Some(old) = old {
-                let old = old.cast::<UntypedOpaqueBox>();
-                UntypedOpaqueBox::drop_inner(old);
-            }
-
-            raw::JS_SetContextOpaque(self.0.ctx, std::ptr::null_mut());
         }
     }
 
     #[inline]
     pub fn to_string(&self, v: &WeakValue) -> RefValue {
         unsafe {
-            let string = raw::JS_ToString(self.0.ctx, v.0);
+            let string = raw::JS_ToString(self.c.ctx, v.0);
             RefValue(string)
         }
     }
@@ -198,7 +158,7 @@ impl Context {
     pub fn to_c_str(&self, v: &WeakValue) -> Option<CtxString> {
         unsafe {
             let mut len = 0;
-            let cstr = raw::JS_ToCStringLen2(self.0.ctx, &mut len, v.0, false);
+            let cstr = raw::JS_ToCStringLen2(self.c.ctx, &mut len, v.0, false);
 
             if len == 0 || cstr.is_null() {
                 None
@@ -223,7 +183,7 @@ impl Context {
     #[inline]
     pub fn get_property(&self, v: &WeakValue, prop: &Atom) -> RefValue {
         unsafe {
-            let v = raw::JS_GetProperty(self.0.ctx, v.0, prop.v);
+            let v = raw::JS_GetProperty(self.c.ctx, v.0, prop.v);
             RefValue(v)
         }
     }
@@ -242,7 +202,7 @@ impl Context {
     pub fn set_property(&self, v: &WeakValue, prop: &Atom, set: RefValue) -> c_int {
         unsafe {
             let set = set.detatch();
-            raw::JS_SetProperty(self.0.ctx, v.0, prop.v, set)
+            raw::JS_SetProperty(self.c.ctx, v.0, prop.v, set)
         }
     }
 
@@ -259,7 +219,7 @@ impl Context {
     #[inline]
     pub fn delete_property(&self, v: &WeakValue, prop: &Atom) -> c_int {
         unsafe {
-            raw::JS_DeleteProperty(self.0.ctx, v.0, prop.v, 0) // TODO: flags
+            raw::JS_DeleteProperty(self.c.ctx, v.0, prop.v, 0) // TODO: flags
         }
     }
 
@@ -277,7 +237,7 @@ impl Context {
                 std::ptr::null_mut()
             };
 
-            let v = raw::JS_Call(self.0.ctx, f.0, this.0, argc, argv);
+            let v = raw::JS_Call(self.c.ctx, f.0, this.0, argc, argv);
             RefValue(v)
         }
     }
@@ -291,7 +251,7 @@ impl Context {
         unsafe {
             let mut tab = std::ptr::null_mut();
             let mut len = 0;
-            let result = raw::JS_GetOwnPropertyNames(self.0.ctx, &mut tab, &mut len, v.0, opts);
+            let result = raw::JS_GetOwnPropertyNames(self.c.ctx, &mut tab, &mut len, v.0, opts);
             if result < 0 {
                 panic!("Don't know how to handle exceptions yet");
             }
@@ -332,7 +292,7 @@ impl Context {
                         let atom = prop.atom.as_ref()?;
                         let value = self.get_property(v, atom);
                         if let Some(value) = self.to_json(&value) {
-                            // let name = atom.to_c_str()?;
+                            // let name = self.atom_to_c_str(atom)?;
                             array.push(value);
                         }
                     }
@@ -348,7 +308,7 @@ impl Context {
                         let atom = prop.atom.as_ref()?;
                         let value = self.get_property(v, atom);
                         if let Some(value) = self.to_json(&value) {
-                            let name = atom.to_c_str()?;
+                            let name = self.atom_to_c_str(atom)?;
                             object.insert(name.to_string(), value);
                         }
                     }
@@ -387,6 +347,32 @@ impl Context {
         };
         Some(v)
     }
+
+    #[inline]
+    pub fn atom_to_value(&self, atom: &Atom) -> RefValue {
+        unsafe {
+            let string = raw::JS_AtomToValue(self.c.ctx, atom.v);
+            RefValue(string)
+        }
+    }
+
+    #[inline]
+    pub fn atom_to_string(&self, atom: &Atom) -> RefValue {
+        unsafe {
+            let string = raw::JS_AtomToString(self.c.ctx, atom.v);
+            RefValue(string)
+        }
+    }
+
+    #[inline]
+    pub fn atom_to_c_str(&self, atom: &Atom) -> Option<CtxString> {
+        let string = self.atom_to_string(atom);
+        if !string.is_exception() {
+            self.to_c_str(&string)
+        } else {
+            None
+        }
+    }
 }
 
 pub(crate) struct InnerContext {
@@ -398,13 +384,19 @@ impl Drop for InnerContext {
     fn drop(&mut self) {
         unsafe {
             let old = raw::JS_GetContextOpaque(self.ctx);
+            raw::JS_SetContextOpaque(self.ctx, std::ptr::null_mut());
+
             let old = NonNull::new(old);
             if let Some(old) = old {
-                let old = old.cast::<UntypedOpaqueBox>();
-                UntypedOpaqueBox::drop_inner(old);
+                let old = old.cast::<ContextOpaque>();
+                drop(Box::from_raw(old.as_ptr()));
             }
 
             raw::JS_FreeContext(self.ctx);
         }
     }
+}
+
+pub(crate) struct ContextOpaque {
+    pub(crate) _this: Weak<InnerContext>,
 }

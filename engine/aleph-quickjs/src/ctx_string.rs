@@ -57,7 +57,7 @@ impl Drop for CtxString {
     fn drop(&mut self) {
         // Safety: It is unsafe to construct a 'CtxString' with the incorrect ctx and dead string
         //         so we can assume this is safe
-        unsafe { raw::JS_FreeCString(self.ctx.0.ctx, (*self.v).as_ptr() as *const c_char) }
+        unsafe { raw::JS_FreeCString(self.ctx.c.ctx, (*self.v).as_ptr() as *const c_char) }
     }
 }
 

@@ -27,42 +27,15 @@
 // SOFTWARE.
 //
 
-use crate::{Context, CtxString, RefValue};
+use crate::runtime::with_runtime;
 
 pub struct Atom {
     pub(crate) v: raw::JSAtom,
-    pub(crate) c: Context,
 }
 
 impl Atom {
     pub const fn to_raw(&self) -> raw::JSAtom {
         self.v
-    }
-
-    #[inline]
-    pub fn to_value(&self) -> RefValue {
-        unsafe {
-            let string = raw::JS_AtomToValue(self.c.0.ctx, self.v);
-            RefValue(string)
-        }
-    }
-
-    #[inline]
-    pub fn to_string(&self) -> RefValue {
-        unsafe {
-            let string = raw::JS_AtomToString(self.c.0.ctx, self.v);
-            RefValue(string)
-        }
-    }
-
-    #[inline]
-    pub fn to_c_str(&self) -> Option<CtxString> {
-        let string = self.to_string();
-        if !string.is_exception() {
-            self.c.to_c_str(&string)
-        } else {
-            None
-        }
     }
 }
 
@@ -70,11 +43,8 @@ impl Clone for Atom {
     #[inline]
     fn clone(&self) -> Self {
         unsafe {
-            let atom = raw::JS_DupAtom(self.c.0.ctx, self.v).unwrap();
-            Self {
-                v: atom,
-                c: self.c.clone(),
-            }
+            let atom = with_runtime(|rt| raw::JS_DupAtomRT(rt.0, self.v)).unwrap();
+            Self { v: atom }
         }
     }
 }
@@ -82,7 +52,9 @@ impl Clone for Atom {
 impl Drop for Atom {
     fn drop(&mut self) {
         unsafe {
-            raw::JS_FreeAtom(self.c.0.ctx, self.v);
+            with_runtime(|rt| {
+                raw::JS_FreeAtomRT(rt.0, self.v);
+            })
         }
     }
 }

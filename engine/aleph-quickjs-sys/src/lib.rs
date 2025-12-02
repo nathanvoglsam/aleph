@@ -283,7 +283,7 @@ pub use non_nan_boxed::*;
 pub type JSValueConst = JSValue;
 
 pub const QJS_VERSION_MAJOR: u32 = 0;
-pub const QJS_VERSION_MINOR: u32 = 5;
+pub const QJS_VERSION_MINOR: u32 = 11;
 pub const QJS_VERSION_PATCH: u32 = 0;
 pub const QJS_VERSION_SUFFIX: &str = "";
 
@@ -1499,6 +1499,7 @@ unsafe extern "C" {
     pub fn JS_NewAtom(ctx: NonNull<JSContext>, str: *const c_char) -> Option<JSAtom>;
     pub fn JS_NewAtomUInt32(ctx: NonNull<JSContext>, n: u32) -> Option<JSAtom>;
     pub fn JS_DupAtom(ctx: NonNull<JSContext>, v: JSAtom) -> Option<JSAtom>;
+    pub fn JS_DupAtomRT(ctx: NonNull<JSRuntime>, v: JSAtom) -> Option<JSAtom>; // not in header
     pub fn JS_FreeAtom(ctx: NonNull<JSContext>, v: JSAtom);
     pub fn JS_FreeAtomRT(rt: NonNull<JSRuntime>, v: JSAtom);
     pub fn JS_AtomToValue(ctx: NonNull<JSContext>, atom: JSAtom) -> JSValue;

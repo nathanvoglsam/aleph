@@ -53,11 +53,8 @@ impl OwnPropertyNames {
             self.props.as_ref().iter().map(|v| PropertyEnum {
                 is_enumerable: v.is_enumerable,
                 atom: v.atom.map(|v| {
-                    let v = raw::JS_DupAtom(self.ctx.0.ctx, v).unwrap();
-                    Atom {
-                        v,
-                        c: self.ctx.clone(),
-                    }
+                    let v = raw::JS_DupAtom(self.ctx.c.ctx, v).unwrap();
+                    Atom { v }
                 }),
             })
         }
@@ -76,7 +73,7 @@ impl Drop for OwnPropertyNames {
                 // 'len' is guaranteed to fit in u32 as we got the length from quickjs in the first
                 // place.
                 raw::JS_FreePropertyEnum(
-                    self.ctx.0.ctx,
+                    self.ctx.c.ctx,
                     props.as_mut_ptr() as *mut _,
                     self.props.len() as u32,
                 );

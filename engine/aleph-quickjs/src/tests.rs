@@ -30,18 +30,18 @@
 use std::collections::HashSet;
 use std::ffi::*;
 use std::ptr::NonNull;
-use std::rc::Rc;
 
 use aleph_nstr::{NStr, nstr};
 use raw::*;
 
-use crate::{Context, NumberVariant, RefValue, ThreadLocalRuntime};
+use crate::{Context, NumberVariant, RefValue, Runtime};
 
 #[test]
 pub fn create_and_destroy_runtime_plus_context() {
     std::thread::scope(|scope| {
         scope.spawn(move || {
-            let _context = ThreadLocalRuntime::new_context().unwrap();
+            let runtime = Runtime::init_thread_runtime();
+            let _context = runtime.new_context().unwrap();
         });
     });
 }
@@ -50,7 +50,8 @@ pub fn create_and_destroy_runtime_plus_context() {
 pub fn eval_script_int_add() {
     std::thread::scope(|scope| {
         scope.spawn(move || {
-            let context = ThreadLocalRuntime::new_context().unwrap();
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
 
             let filename = nstr!("script.js");
             let script = nstr!("2 + 2");
@@ -67,7 +68,8 @@ pub fn eval_script_int_add() {
 pub fn eval_script_float_add() {
     std::thread::scope(|scope| {
         scope.spawn(move || {
-            let context = ThreadLocalRuntime::new_context().unwrap();
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
 
             let filename = nstr!("script.js");
             let script = nstr!("2.2 + 2.4");
@@ -112,7 +114,8 @@ pub fn eval_script_call_c_func() {
 
     std::thread::scope(|scope| {
         scope.spawn(move || {
-            let context = ThreadLocalRuntime::new_context().unwrap();
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
 
             let global = context.get_global_object();
 
@@ -156,7 +159,8 @@ pub fn eval_script_get_property_names() {
 
     std::thread::scope(|scope| {
         scope.spawn(move || {
-            let context = ThreadLocalRuntime::new_context().unwrap();
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
 
             let filename = nstr!("script.js");
             let result = context.eval(SCRIPT, filename, JSEvalFlags::STRICT);
@@ -187,7 +191,7 @@ pub fn eval_script_get_property_names() {
             assert_eq!(props.len(), 3);
             for prop in props {
                 let atom = prop.atom.as_ref().unwrap();
-                let prop_name = atom.to_c_str().unwrap();
+                let prop_name = context.atom_to_c_str(atom).unwrap();
                 assert!(expected_names.remove(prop_name.as_ref()));
             }
         });
@@ -220,7 +224,8 @@ pub fn eval_script_to_serde() {
 
     std::thread::scope(|scope| {
         scope.spawn(move || {
-            let context = ThreadLocalRuntime::new_context().unwrap();
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
 
             //unsafe {
             let filename = nstr!("script.js");
@@ -271,7 +276,8 @@ pub fn runtime_deferred_gc_free() {
 
     std::thread::scope(|scope| {
         scope.spawn(move || {
-            let context = ThreadLocalRuntime::new_context().unwrap();
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
 
             unsafe {
                 // Capture the baseline allocation stats so we know how many objects are live before we
@@ -320,7 +326,7 @@ pub fn runtime_deferred_gc_free() {
                 //
                 // This would make lifetime management for our safe wrappers significantly easier as we
                 // could just treat values like rust's Rc types.
-                ThreadLocalRuntime::gc();
+                runtime.gc();
 
                 // Our object should have been collected now. It had already hit a ref-count of zero before
                 // but we opted not to free it then and instead defer it to the garbage collector to find
@@ -336,7 +342,8 @@ pub fn runtime_deferred_gc_free() {
 pub fn set_object_property_ref_count_behavior() {
     std::thread::scope(|scope| {
         scope.spawn(move || {
-            let context = ThreadLocalRuntime::new_context().unwrap();
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
 
             let root = context.new_object();
             let leaf = context.new_object();
@@ -363,7 +370,8 @@ pub fn set_object_property_ref_count_behavior() {
 pub fn string_with_internal_null_character() {
     std::thread::scope(|scope| {
         scope.spawn(move || {
-            let context = ThreadLocalRuntime::new_context().unwrap();
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
 
             let string = "String with a \0 character in the middle";
 
@@ -372,67 +380,6 @@ pub fn string_with_internal_null_character() {
 
             let got_string = context.to_c_str(&v).unwrap();
             assert_eq!(string, got_string.as_ref());
-        });
-    });
-}
-
-#[test]
-pub fn context_opaque_test() {
-    std::thread::scope(|scope| {
-        scope.spawn(move || {
-            let context = ThreadLocalRuntime::new_context().unwrap();
-
-            let o1 = Rc::new(123i32);
-            let o2 = Rc::new(456u64);
-
-            assert_eq!(Rc::strong_count(&o1), 1);
-            assert_eq!(Rc::strong_count(&o2), 1);
-            assert!(context.get_opaque::<Rc<i32>>().is_none());
-            assert!(context.get_opaque::<Rc<u64>>().is_none());
-
-            context.set_opaque(o1.clone());
-
-            assert_eq!(Rc::strong_count(&o1), 2);
-            assert_eq!(Rc::strong_count(&o2), 1);
-            assert!(context.get_opaque::<Rc<i32>>().is_some());
-            assert!(context.get_opaque::<Rc<u64>>().is_none());
-
-            context.set_opaque(o2.clone());
-
-            assert_eq!(Rc::strong_count(&o1), 1);
-            assert_eq!(Rc::strong_count(&o2), 2);
-            assert!(context.get_opaque::<Rc<i32>>().is_none());
-            assert!(context.get_opaque::<Rc<u64>>().is_some());
-
-            context.remove_opaque();
-
-            assert_eq!(Rc::strong_count(&o1), 1);
-            assert_eq!(Rc::strong_count(&o2), 1);
-            assert!(context.get_opaque::<Rc<i32>>().is_none());
-            assert!(context.get_opaque::<Rc<u64>>().is_none());
-        });
-    });
-}
-
-#[test]
-pub fn context_opaque_drop_test() {
-    std::thread::scope(|scope| {
-        scope.spawn(move || {
-            let context = ThreadLocalRuntime::new_context().unwrap();
-
-            let o1 = Rc::new(420i32);
-
-            assert_eq!(Rc::strong_count(&o1), 1);
-            assert!(context.get_opaque::<Rc<i32>>().is_none());
-
-            context.set_opaque(o1.clone());
-
-            assert_eq!(Rc::strong_count(&o1), 2);
-            assert!(context.get_opaque::<Rc<i32>>().is_some());
-
-            drop(context);
-
-            assert_eq!(Rc::strong_count(&o1), 1);
         });
     });
 }

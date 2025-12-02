@@ -42,6 +42,8 @@ use camino::{Utf8Path, Utf8PathBuf};
 use thiserror::Error;
 
 pub struct ConfigRunner {
+    runtime: qjs::Runtime,
+
     context: qjs::Context,
 
     /// The directory we will load config scripts from
@@ -54,17 +56,18 @@ pub struct ConfigRunner {
 impl ConfigRunner {
     pub fn new() -> io::Result<Self> {
         Config::with(|| {
-            if is_instrumentation_enabled() {
+            let runtime = if is_instrumentation_enabled() {
                 static ALLOC: Instrumented<JavaScript> = system();
-                qjs::init_thread_runtime_in(&ALLOC);
+                qjs::Runtime::init_thread_runtime_in(&ALLOC)
             } else {
-                qjs::init_thread_runtime();
+                qjs::Runtime::init_thread_runtime()
             };
-            let context = qjs::ThreadLocalRuntime::new_context().unwrap();
+            let context = runtime.new_context().unwrap();
             let config_object = context.new_object();
             let config_dir = find_folder_in_search_path("configs")?;
 
             let out = Self {
+                runtime,
                 context,
                 config_dir,
                 config_object,
@@ -112,7 +115,7 @@ impl ConfigRunner {
             //
             // Objects are free to be shared between contexts within the same runtime so we hold on
             // to the config object though
-            let context = qjs::ThreadLocalRuntime::new_context().unwrap();
+            let context = self.runtime.new_context().unwrap();
 
             // Provide the 'Configs' object which is where the scripts are expected to write their
             // config into.
@@ -155,7 +158,7 @@ impl ConfigRunner {
             //
             // Objects are free to be shared between contexts within the same runtime so we hold on to
             // the config object though
-            let context = qjs::ThreadLocalRuntime::new_context().unwrap();
+            let context = self.runtime.new_context().unwrap();
 
             // Provide the 'Configs' object which is where the scripts are expected to write their
             // config into.

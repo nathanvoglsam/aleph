@@ -32,7 +32,6 @@ pub extern crate aleph_quickjs_sys as raw;
 mod atom;
 mod context;
 mod ctx_string;
-mod opaque_box;
 mod own_property_names;
 mod runtime;
 mod value;
@@ -41,7 +40,7 @@ pub use atom::Atom;
 pub use context::Context;
 pub use ctx_string::CtxString;
 pub use own_property_names::{OwnPropertyNames, PropertyEnum};
-pub use runtime::{ThreadLocalRuntime, init_thread_runtime, init_thread_runtime_in};
+pub use runtime::Runtime;
 pub use value::{ArgValue, NumberVariant, RefValue, Value, WeakValue};
 
 #[cfg(test)]

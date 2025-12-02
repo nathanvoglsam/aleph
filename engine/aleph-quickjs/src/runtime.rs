@@ -37,37 +37,141 @@ use aleph_alloc::alloc::Allocator;
 use aleph_alloc::mallocator::Mallocator;
 
 use crate::Context;
-use crate::context::InnerContext;
+use crate::context::{ContextOpaque, InnerContext};
 
-pub struct ThreadLocalRuntime;
+#[derive(Clone)]
+pub struct Runtime(pub(crate) Rc<InnerRuntime>);
 
-impl ThreadLocalRuntime {
+impl Runtime {
     #[inline]
-    pub fn new_context() -> Option<Context> {
-        with_runtime(|rt| unsafe {
-            let ctx = raw::JS_NewContext(rt.0)?;
-            let ctx = InnerContext { ctx };
-            let ctx = Rc::new(ctx);
-            Some(Context(ctx))
-        })
+    pub fn init_thread_runtime() -> Self {
+        let rt = THREAD_RUNTIME.with(|rt| {
+            let rt = rt.get_or_init(|| unsafe {
+                let rt = raw::JS_NewRuntime().unwrap();
+                Rc::new(InnerRuntime(rt))
+            });
+            rt.clone()
+        });
+        Self(rt)
     }
 
     #[inline]
-    pub fn gc() {
-        with_runtime(|rt| unsafe {
-            raw::JS_RunGC(rt.0);
-        })
+    pub fn init_thread_runtime_in<Alloc: Allocator + Sized>(a: &'static Alloc) -> Self {
+        extern "C" fn js_calloc<A: Allocator + Sized>(
+            s: *mut c_void,
+            count: usize,
+            size: usize,
+        ) -> *mut c_void {
+            unsafe {
+                let a = NonNull::new(s).unwrap_unchecked().cast::<A>().as_ref();
+                let a = Mallocator::new(a);
+                a.calloc(count, size)
+            }
+        }
+
+        extern "C" fn js_malloc<A: Allocator + Sized>(s: *mut c_void, size: usize) -> *mut c_void {
+            unsafe {
+                let a = NonNull::new(s).unwrap_unchecked().cast::<A>().as_ref();
+                let a = Mallocator::new(a);
+                a.malloc(size)
+            }
+        }
+
+        extern "C" fn js_free<A: Allocator + Sized>(s: *mut c_void, ptr: *mut c_void) {
+            unsafe {
+                let a = NonNull::new(s).unwrap_unchecked().cast::<A>().as_ref();
+                let a = Mallocator::new(a);
+                a.free(ptr)
+            }
+        }
+
+        extern "C" fn js_realloc<A: Allocator + Sized>(
+            s: *mut c_void,
+            ptr: *mut c_void,
+            size: usize,
+        ) -> *mut c_void {
+            unsafe {
+                let a = NonNull::new(s).unwrap_unchecked().cast::<A>().as_ref();
+                let a = Mallocator::new(a);
+                a.realloc(ptr, size)
+            }
+        }
+
+        extern "C" fn js_malloc_usable_size(ptr: *const c_void) -> usize {
+            unsafe {
+                let caller_layout = ptr.cast::<Layout>().sub(1).read();
+                caller_layout.size()
+            }
+        }
+
+        let rt = THREAD_RUNTIME.with(|rt| {
+            let rt = rt.get_or_init(|| unsafe {
+                let functions = raw::JSMallocFunctions {
+                    js_calloc: Some(js_calloc::<Alloc>),
+                    js_malloc: Some(js_malloc::<Alloc>),
+                    js_free: Some(js_free::<Alloc>),
+                    js_realloc: Some(js_realloc::<Alloc>),
+                    js_malloc_usable_size: Some(js_malloc_usable_size),
+                };
+                let alloc = NonNull::from(a).cast().as_ptr();
+                let rt = raw::JS_NewRuntime2(&functions, alloc).unwrap();
+                Rc::new(InnerRuntime(rt))
+            });
+            rt.clone()
+        });
+        Self(rt)
+    }
+
+    #[inline]
+    pub fn new_context(&self) -> Option<Context> {
+        unsafe {
+            let ctx = raw::JS_NewContext(self.0.0)?;
+            let ctx = InnerContext { ctx };
+            let ctx = Rc::new(ctx);
+
+            let opaque = ContextOpaque {
+                _this: Rc::downgrade(&ctx),
+            };
+            let opaque = Box::new(opaque);
+            let opaque = Box::into_raw(opaque);
+            raw::JS_SetContextOpaque(ctx.ctx, opaque.cast());
+
+            Some(Context {
+                c: ctx,
+                r: self.clone(),
+            })
+        }
+    }
+
+    #[inline]
+    pub fn gc(&self) {
+        unsafe {
+            raw::JS_RunGC(self.0.0);
+        }
     }
 
     /// Query the memory usage from the runtime.
     #[inline]
-    pub fn compute_memory_usage() -> raw::JSMemoryUsage {
-        with_runtime(|rt| unsafe {
+    pub fn compute_memory_usage(&self) -> raw::JSMemoryUsage {
+        unsafe {
             let mut usage = raw::JSMemoryUsage::default();
-            raw::JS_ComputeMemoryUsage(rt.0, &mut usage);
+            raw::JS_ComputeMemoryUsage(self.0.0, &mut usage);
             usage
-        })
+        }
     }
+}
+
+pub(crate) fn with_runtime<F, R>(f: F) -> R
+where
+    F: FnOnce(&InnerRuntime) -> R,
+{
+    THREAD_RUNTIME.with(|rt| {
+        let rt = rt.get_or_init(|| unsafe {
+            let rt = raw::JS_NewRuntime().unwrap();
+            Rc::new(InnerRuntime(rt))
+        });
+        f(&rt)
+    })
 }
 
 pub(crate) struct InnerRuntime(pub(crate) NonNull<raw::JSRuntime>);
@@ -81,89 +185,6 @@ impl Drop for InnerRuntime {
     }
 }
 
-#[inline]
-pub fn init_thread_runtime() {
-    with_runtime(|_| ())
-}
-
-#[inline]
-pub fn init_thread_runtime_in<Alloc: Allocator + Sized>(a: &'static Alloc) {
-    extern "C" fn js_calloc<A: Allocator + Sized>(
-        s: *mut c_void,
-        count: usize,
-        size: usize,
-    ) -> *mut c_void {
-        unsafe {
-            let a = NonNull::new(s).unwrap_unchecked().cast::<A>().as_ref();
-            let a = Mallocator::new(a);
-            a.calloc(count, size)
-        }
-    }
-
-    extern "C" fn js_malloc<A: Allocator + Sized>(s: *mut c_void, size: usize) -> *mut c_void {
-        unsafe {
-            let a = NonNull::new(s).unwrap_unchecked().cast::<A>().as_ref();
-            let a = Mallocator::new(a);
-            a.malloc(size)
-        }
-    }
-
-    extern "C" fn js_free<A: Allocator + Sized>(s: *mut c_void, ptr: *mut c_void) {
-        unsafe {
-            let a = NonNull::new(s).unwrap_unchecked().cast::<A>().as_ref();
-            let a = Mallocator::new(a);
-            a.free(ptr)
-        }
-    }
-
-    extern "C" fn js_realloc<A: Allocator + Sized>(
-        s: *mut c_void,
-        ptr: *mut c_void,
-        size: usize,
-    ) -> *mut c_void {
-        unsafe {
-            let a = NonNull::new(s).unwrap_unchecked().cast::<A>().as_ref();
-            let a = Mallocator::new(a);
-            a.realloc(ptr, size)
-        }
-    }
-
-    extern "C" fn js_malloc_usable_size(ptr: *const c_void) -> usize {
-        unsafe {
-            let caller_layout = ptr.cast::<Layout>().sub(1).read();
-            caller_layout.size()
-        }
-    }
-
-    THREAD_RUNTIME.with(|rt| {
-        rt.get_or_init(|| unsafe {
-            let functions = raw::JSMallocFunctions {
-                js_calloc: Some(js_calloc::<Alloc>),
-                js_malloc: Some(js_malloc::<Alloc>),
-                js_free: Some(js_free::<Alloc>),
-                js_realloc: Some(js_realloc::<Alloc>),
-                js_malloc_usable_size: Some(js_malloc_usable_size),
-            };
-            let alloc = NonNull::from(a).cast().as_ptr();
-            let rt = raw::JS_NewRuntime2(&functions, alloc).unwrap();
-            InnerRuntime(rt)
-        });
-    });
-}
-
-pub(crate) fn with_runtime<F, R>(f: F) -> R
-where
-    F: FnOnce(&InnerRuntime) -> R,
-{
-    THREAD_RUNTIME.with(|rt| {
-        let rt = rt.get_or_init(|| unsafe {
-            let rt = raw::JS_NewRuntime().unwrap();
-            InnerRuntime(rt)
-        });
-        f(rt)
-    })
-}
-
 thread_local! {
-    static THREAD_RUNTIME: OnceCell<InnerRuntime> = OnceCell::new();
+    static THREAD_RUNTIME: OnceCell<Rc<InnerRuntime>> = OnceCell::new();
 }
