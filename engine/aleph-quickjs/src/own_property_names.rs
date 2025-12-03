@@ -31,7 +31,7 @@ use std::ptr::NonNull;
 
 use raw::JSPropertyEnum;
 
-use crate::{Atom, Context};
+use crate::{Atom, WeakContext};
 
 pub struct PropertyEnum {
     pub is_enumerable: bool,
@@ -40,20 +40,20 @@ pub struct PropertyEnum {
 
 /// Wrapper type over the result of [`raw::JS_GetOwnPropertyNames`]. Manages freeing the result
 /// array when the 'Self' is dropped.
-pub struct OwnPropertyNames {
-    pub(crate) ctx: Context,
+pub struct OwnPropertyNames<'a> {
+    pub(crate) ctx: &'a WeakContext,
 
     /// Reference to the context to keep it alive
     pub(crate) props: NonNull<[JSPropertyEnum]>,
 }
 
-impl OwnPropertyNames {
-    pub fn iter<'a>(&'a self) -> impl ExactSizeIterator<Item = PropertyEnum> + 'a {
+impl<'a> OwnPropertyNames<'a> {
+    pub fn iter<'b>(&'b self) -> impl ExactSizeIterator<Item = PropertyEnum> + 'b {
         unsafe {
             self.props.as_ref().iter().map(|v| PropertyEnum {
                 is_enumerable: v.is_enumerable,
                 atom: v.atom.map(|v| {
-                    let v = raw::JS_DupAtom(self.ctx.c.ctx, v).unwrap();
+                    let v = raw::JS_DupAtom(self.ctx.c, v).unwrap();
                     Atom { v }
                 }),
             })
@@ -61,7 +61,7 @@ impl OwnPropertyNames {
     }
 }
 
-impl Drop for OwnPropertyNames {
+impl<'a> Drop for OwnPropertyNames<'a> {
     fn drop(&mut self) {
         if !self.props.is_empty() {
             // Safety: if props is not empty then we're guanteed to have a valid pointer (job of
@@ -73,7 +73,7 @@ impl Drop for OwnPropertyNames {
                 // 'len' is guaranteed to fit in u32 as we got the length from quickjs in the first
                 // place.
                 raw::JS_FreePropertyEnum(
-                    self.ctx.c.ctx,
+                    self.ctx.c,
                     props.as_mut_ptr() as *mut _,
                     self.props.len() as u32,
                 );

@@ -30,14 +30,14 @@
 use std::ffi::c_char;
 use std::ops::Deref;
 
-use crate::Context;
+use crate::WeakContext;
 
-pub struct CtxString {
-    ctx: Context,
+pub struct CtxString<'a> {
+    ctx: &'a WeakContext,
     v: *const str,
 }
 
-impl CtxString {
+impl<'a> CtxString<'a> {
     /// Constructs a new [`CtxString`] from the given context and str.
     ///
     /// # Safety
@@ -45,7 +45,7 @@ impl CtxString {
     /// It is the caller's responsibility to ensure that the given string 'v' is live and was
     /// allocated from the given [`Context`]. [`CtxString`] will take ownership of the string and
     /// the [`Drop`] implementation will free the
-    pub const unsafe fn from_ctx_and_str(ctx: Context, v: &str) -> Self {
+    pub const unsafe fn from_ctx_and_str(ctx: &'a WeakContext, v: &str) -> Self {
         Self {
             ctx,
             v: v as *const str,
@@ -53,15 +53,15 @@ impl CtxString {
     }
 }
 
-impl Drop for CtxString {
+impl<'a> Drop for CtxString<'a> {
     fn drop(&mut self) {
         // Safety: It is unsafe to construct a 'CtxString' with the incorrect ctx and dead string
         //         so we can assume this is safe
-        unsafe { raw::JS_FreeCString(self.ctx.c.ctx, (*self.v).as_ptr() as *const c_char) }
+        unsafe { raw::JS_FreeCString(self.ctx.c, (*self.v).as_ptr() as *const c_char) }
     }
 }
 
-impl AsRef<str> for CtxString {
+impl<'a> AsRef<str> for CtxString<'a> {
     #[inline]
     fn as_ref(&self) -> &str {
         // Safety: It is unsafe for a caller to construct a CtxString where this operation is unsafe
@@ -69,7 +69,7 @@ impl AsRef<str> for CtxString {
     }
 }
 
-impl Deref for CtxString {
+impl<'a> Deref for CtxString<'a> {
     type Target = str;
 
     #[inline]

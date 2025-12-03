@@ -31,24 +31,34 @@ use core::str;
 use std::ffi::{c_char, c_int};
 use std::ops::Deref;
 use std::ptr::NonNull;
-use std::rc::{Rc, Weak};
 
 use aleph_nstr::NStr;
 use raw::{JSEvalOptions, JSTag, JSValue};
 
-use crate::runtime::Runtime;
-use crate::{ArgValue, Atom, CtxString, GenericHostFn, OwnPropertyNames, RefValue, WeakValue};
+use crate::{
+    ArgValue, Atom, CtxString, GenericHostFn, OwnPropertyNames, RefValue, Runtime, WeakValue,
+};
 
 #[derive(Clone)]
 pub struct Context {
-    pub(crate) c: Rc<InnerContext>,
+    pub(crate) ctx: NonNull<raw::JSContext>,
+    pub(crate) _r: Runtime,
 }
 
 impl Deref for Context {
     type Target = WeakContext;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { std::mem::transmute::<&NonNull<raw::JSContext>, &WeakContext>(&self.c.ctx) }
+        unsafe { std::mem::transmute::<&NonNull<raw::JSContext>, &WeakContext>(&self.ctx) }
+    }
+}
+
+impl Drop for Context {
+    #[inline]
+    fn drop(&mut self) {
+        unsafe {
+            raw::JS_FreeContext(self.ctx);
+        }
     }
 }
 
@@ -176,7 +186,7 @@ impl WeakContext {
     }
 
     #[inline]
-    pub fn to_c_str(&self, v: &WeakValue) -> Option<CtxString> {
+    pub fn to_c_str(&self, v: &WeakValue) -> Option<CtxString<'_>> {
         unsafe {
             let mut len = 0;
             let cstr = raw::JS_ToCStringLen2(self.c, &mut len, v.0, false);
@@ -186,7 +196,7 @@ impl WeakContext {
             } else {
                 let bytes = std::slice::from_raw_parts(cstr as *const u8, len);
                 let string = str::from_utf8(bytes).unwrap_unchecked();
-                Some(CtxString::from_ctx_and_str(self.upgrade(), string))
+                Some(CtxString::from_ctx_and_str(self, string))
             }
         }
     }
@@ -268,7 +278,7 @@ impl WeakContext {
         &self,
         v: &WeakValue,
         opts: raw::JSGetPropertyNameOption,
-    ) -> OwnPropertyNames {
+    ) -> OwnPropertyNames<'_> {
         unsafe {
             let mut tab = std::ptr::null_mut();
             let mut len = 0;
@@ -285,7 +295,7 @@ impl WeakContext {
             };
 
             OwnPropertyNames {
-                ctx: self.upgrade(),
+                ctx: self,
                 props: slice,
             }
         }
@@ -386,7 +396,7 @@ impl WeakContext {
     }
 
     #[inline]
-    pub fn atom_to_c_str(&self, atom: &Atom) -> Option<CtxString> {
+    pub fn atom_to_c_str(&self, atom: &Atom) -> Option<CtxString<'_>> {
         let string = self.atom_to_string(atom);
         if !string.is_exception() {
             self.to_c_str(&string)
@@ -394,43 +404,4 @@ impl WeakContext {
             None
         }
     }
-
-    #[inline]
-    pub fn upgrade(&self) -> Context {
-        unsafe {
-            let opaque = raw::JS_GetContextOpaque(self.c);
-            let opaque = NonNull::new(opaque).unwrap();
-            let opaque = opaque.cast::<ContextOpaque>();
-            Context {
-                c: opaque.as_ref()._this.upgrade().unwrap(),
-            }
-        }
-    }
-}
-
-pub(crate) struct InnerContext {
-    pub(crate) ctx: NonNull<raw::JSContext>,
-    pub(crate) _r: Runtime,
-}
-
-impl Drop for InnerContext {
-    #[inline]
-    fn drop(&mut self) {
-        unsafe {
-            let old = raw::JS_GetContextOpaque(self.ctx);
-            raw::JS_SetContextOpaque(self.ctx, std::ptr::null_mut());
-
-            let old = NonNull::new(old);
-            if let Some(old) = old {
-                let old = old.cast::<ContextOpaque>();
-                drop(Box::from_raw(old.as_ptr()));
-            }
-
-            raw::JS_FreeContext(self.ctx);
-        }
-    }
-}
-
-pub(crate) struct ContextOpaque {
-    pub(crate) _this: Weak<InnerContext>,
 }

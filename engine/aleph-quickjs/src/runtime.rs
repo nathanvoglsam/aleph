@@ -37,7 +37,6 @@ use aleph_alloc::alloc::Allocator;
 use aleph_alloc::mallocator::Mallocator;
 
 use crate::Context;
-use crate::context::{ContextOpaque, InnerContext};
 
 #[derive(Clone)]
 pub struct Runtime(pub(crate) Rc<InnerRuntime>);
@@ -126,20 +125,10 @@ impl Runtime {
     pub fn new_context(&self) -> Option<Context> {
         unsafe {
             let ctx = raw::JS_NewContext(self.0.0)?;
-            let ctx = InnerContext {
+            Some(Context {
                 ctx,
                 _r: self.clone(),
-            };
-            let ctx = Rc::new(ctx);
-
-            let opaque = ContextOpaque {
-                _this: Rc::downgrade(&ctx),
-            };
-            let opaque = Box::new(opaque);
-            let opaque = Box::into_raw(opaque);
-            raw::JS_SetContextOpaque(ctx.ctx, opaque.cast());
-
-            Some(Context { c: ctx })
+            })
         }
     }
 
