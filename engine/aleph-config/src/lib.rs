@@ -44,13 +44,13 @@ use thiserror::Error;
 pub struct ConfigRunner {
     runtime: qjs::Runtime,
 
-    context: qjs::Context,
+    context: Option<qjs::Context>,
 
     /// The directory we will load config scripts from
     config_dir: Utf8PathBuf,
 
     /// A reference to the quickjs object that stores the config
-    config_object: qjs::RefValue,
+    config_object: Option<qjs::RefValue>,
 }
 
 impl ConfigRunner {
@@ -68,9 +68,9 @@ impl ConfigRunner {
 
             let out = Self {
                 runtime,
-                context,
+                context: Some(context),
                 config_dir,
-                config_object,
+                config_object: Some(config_object),
             };
             Ok(out)
         })
@@ -121,7 +121,8 @@ impl ConfigRunner {
             // config into.
 
             let global = context.get_global_object();
-            if 0 > context.set_property_str(&global, "Configs", self.config_object.clone()) {
+            let config_object = self.config_object.as_ref().unwrap();
+            if 0 > context.set_property_str(&global, "Configs", config_object.clone()) {
                 return Err(js_exception_to_err(&context));
             }
 
@@ -163,7 +164,8 @@ impl ConfigRunner {
             // Provide the 'Configs' object which is where the scripts are expected to write their
             // config into.
             let global = context.get_global_object();
-            if 0 > context.set_property_str(&global, "Configs", self.config_object.clone()) {
+            let config_object = self.config_object.as_ref().unwrap();
+            if 0 > context.set_property_str(&global, "Configs", config_object.clone()) {
                 return Err(js_exception_to_err(&context));
             }
 
@@ -179,9 +181,11 @@ impl ConfigRunner {
         })
     }
 
-    pub fn finalize(self) -> serde_json::Map<String, serde_json::Value> {
+    pub fn finalize(mut self) -> serde_json::Map<String, serde_json::Value> {
         Config::with(|| {
-            let json = self.context.to_json(&self.config_object).unwrap();
+            let context = self.context.as_ref().unwrap();
+            let config_object = self.config_object.as_ref().unwrap();
+            let json = context.to_json(config_object).unwrap();
             let mut json = match json {
                 serde_json::Value::Null
                 | serde_json::Value::Bool(_)
@@ -191,6 +195,11 @@ impl ConfigRunner {
                 serde_json::Value::Object(v) => v,
             };
             Self::command_line_overrides(&mut json);
+
+            // Destroy the context and force a GC to clean up as best we can
+            drop(self.config_object.take());
+            drop(self.context.take());
+            self.runtime.gc();
 
             json
         })
