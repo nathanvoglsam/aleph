@@ -29,6 +29,7 @@
 
 use core::str;
 use std::ffi::{c_char, c_int};
+use std::mem::transmute;
 use std::ops::Deref;
 use std::ptr::NonNull;
 
@@ -36,7 +37,8 @@ use aleph_nstr::NStr;
 use raw::{JSEvalOptions, JSTag, JSValue};
 
 use crate::{
-    ArgValue, Atom, CtxString, GenericHostFn, OwnPropertyNames, RefValue, Runtime, WeakValue,
+    ArgValue, Atom, CtxString, HostFn, HostFnCombineFloat, HostFnData, HostFnMagic, HostFnMapFloat,
+    OwnPropertyNames, RefValue, Runtime, WeakValue,
 };
 
 #[derive(Clone)]
@@ -165,14 +167,97 @@ impl WeakContext {
     }
 
     #[inline]
-    pub fn new_host_function(
+    pub fn new_host_function(&self, func: HostFn, name: &NStr, num_params: c_int) -> RefValue {
+        unsafe {
+            let v = raw::JS_NewCFunction2(
+                self.c,
+                func.0,
+                name.to_cstr_ptr(),
+                num_params,
+                raw::JSCFunctionEnum::GENERIC,
+                0,
+            );
+            RefValue(v)
+        }
+    }
+
+    #[inline]
+    pub fn new_host_function_magic(
         &self,
-        func: GenericHostFn,
+        func: HostFnMagic,
         name: &NStr,
         num_params: c_int,
+        magic: c_int,
     ) -> RefValue {
         unsafe {
-            let v = raw::JS_NewCFunction(self.c, func.0, name.to_cstr_ptr(), num_params);
+            let v = raw::JS_NewCFunction2(
+                self.c,
+                transmute(func.0),
+                name.to_cstr_ptr(),
+                num_params,
+                raw::JSCFunctionEnum::GENERIC_MAGIC,
+                magic,
+            );
+            RefValue(v)
+        }
+    }
+
+    #[inline]
+    pub fn new_host_function_data<const COUNT: usize>(
+        &self,
+        func: HostFnData<COUNT>,
+        name: &NStr,
+        num_params: c_int,
+        magic: c_int,
+        datas: &[ArgValue],
+    ) -> RefValue {
+        unsafe {
+            assert_eq!(HostFnData::<COUNT>::LEN, datas.len());
+            let len: c_int = datas.len().try_into().unwrap();
+            let datas = datas.as_ptr() as *const _ as *mut raw::JSValueConst;
+            let v = raw::JS_NewCFunctionData2(
+                self.c,
+                func.0,
+                name.to_cstr_ptr(),
+                num_params,
+                magic,
+                len,
+                datas,
+            );
+            RefValue(v)
+        }
+    }
+
+    #[inline]
+    pub fn new_host_function_map_float(&self, func: HostFnMapFloat, name: &NStr) -> RefValue {
+        unsafe {
+            let v = raw::JS_NewCFunction2(
+                self.c,
+                transmute(func.0),
+                name.to_cstr_ptr(),
+                1,
+                raw::JSCFunctionEnum::F_F,
+                0,
+            );
+            RefValue(v)
+        }
+    }
+
+    #[inline]
+    pub fn new_host_function_combine_float(
+        &self,
+        func: HostFnCombineFloat,
+        name: &NStr,
+    ) -> RefValue {
+        unsafe {
+            let v = raw::JS_NewCFunction2(
+                self.c,
+                transmute(func.0),
+                name.to_cstr_ptr(),
+                2,
+                raw::JSCFunctionEnum::F_F_F,
+                0,
+            );
             RefValue(v)
         }
     }

@@ -892,8 +892,6 @@ mod fns {
 
     pub type JSJobFn = extern "C" fn(ctx: NonNull<JSContext>, argc: c_int, argv: *mut JSValueConst) -> JSValue;
 
-    pub type JSGenericMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValueConst, argc: c_int, argv: *mut JSValueConst, magic: c_int) -> JSValue;
-    pub type JSConstructorMagicFn = extern "C" fn(ctx: NonNull<JSContext>, new_target: JSValueConst, argc: c_int, argv: *mut JSValueConst, magic: c_int) -> JSValue;
     pub type JSFFFn = extern "C" fn(f64) -> f64;
     pub type JSFFFFn = extern "C" fn(f64, f64) -> f64;
     pub type JSGetterFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValueConst) -> JSValue;
@@ -1016,9 +1014,9 @@ pub struct JSSharedArrayBufferFunctions {
 #[derive(Copy, Clone)]
 pub union JSCFunctionType {
     pub generic: JSCFunctionFn,
-    pub generic_magic: JSGenericMagicFn,
+    pub generic_magic: JSCFunctionMagicFn,
     pub constructor: JSCFunctionFn,
-    pub constructor_magic: JSConstructorMagicFn,
+    pub constructor_magic: JSCFunctionMagicFn,
     pub constructor_or_func: JSCFunctionFn,
     pub f_f: JSFFFn,
     pub f_f_f: JSFFFFn,
@@ -1397,31 +1395,6 @@ pub unsafe fn JS_ToCString(ctx: NonNull<JSContext>, v1: JSValue) -> *const c_cha
     unsafe { JS_ToCStringLen2(ctx, std::ptr::null_mut(), v1, false) }
 }
 
-pub unsafe fn JS_NewCFunction(
-    ctx: NonNull<JSContext>,
-    func: JSCFunctionFn,
-    name: *const c_char,
-    length: c_int,
-) -> JSValue {
-    unsafe { JS_NewCFunction2(ctx, func, name, length, JSCFunctionEnum::GENERIC, 0) }
-}
-
-pub unsafe fn JS_NewCFunctionMagic(
-    ctx: NonNull<JSContext>,
-    func: JSCFunctionMagicFn,
-    name: *const c_char,
-    length: c_int,
-    cproto: JSCFunctionEnum,
-    magic: c_int,
-) -> JSValue {
-    unsafe {
-        let ft = JSCFunctionType {
-            generic_magic: func,
-        };
-        JS_NewCFunction2(ctx, ft.generic, name, length, cproto, magic)
-    }
-}
-
 unsafe extern "C" {
     #![cfg_attr(rustfmt, rustfmt_skip)]
 
@@ -1635,7 +1608,7 @@ unsafe extern "C" {
     pub fn JS_DefinePropertyValueUint32(ctx: NonNull<JSContext>, this_obj: JSValueConst, idx: u32, val: JSValue, flags: JSDefinePropertyFlags) -> c_int;
     pub fn JS_DefinePropertyValueStr(ctx: NonNull<JSContext>, this_obj: JSValueConst, prop: *const c_char, val: JSValue, flags: JSDefinePropertyFlags) -> c_int;
     pub fn JS_DefinePropertyGetSet(ctx: NonNull<JSContext>, this_obj: JSValueConst, prop: JSAtom, getter: JSValue, setter: JSValue, flags: JSDefinePropertyFlags) -> c_int;
-    pub fn JS_SetOpaque(obj: JSValueConst, opaque: *mut c_void);
+    pub fn JS_SetOpaque(obj: JSValueConst, opaque: *mut c_void) -> c_int;
     pub fn JS_GetOpaque(obj: JSValueConst, class_id: JSClassID) -> *mut c_void;
     pub fn JS_GetOpaque2(ctx: NonNull<JSContext>, obj: JSValueConst, class_id: JSClassID) -> *mut c_void;
     pub fn JS_GetAnyOpaque(obj: JSValueConst, class_id: *mut Option<JSClassID>) -> *mut c_void;
@@ -1694,7 +1667,7 @@ unsafe extern "C" {
     pub fn JS_NewCFunction2(ctx: NonNull<JSContext>, func: JSCFunctionFn, name: *const c_char, length: c_int, cproto: JSCFunctionEnum, magic: c_int) -> JSValue;
     pub fn JS_NewCFunction3(ctx: NonNull<JSContext>, func: JSCFunctionFn, name: *const c_char, length: c_int, cproto: JSCFunctionEnum, magic: c_int, proto_val: JSValueConst) -> JSValue;
     pub fn JS_NewCFunctionData(ctx: NonNull<JSContext>, func: JSCFunctionDataFn, length: c_int, magic: c_int, data_len: c_int, data: *mut JSValueConst) -> JSValue;
-    pub fn JS_NewCFunctionData2(ctx: NonNull<JSContext>, func: JSCFunctionDataFn, length: c_int, magic: c_int, data_len: c_int, data: *mut JSValueConst) -> JSValue;
+    pub fn JS_NewCFunctionData2(ctx: NonNull<JSContext>, func: JSCFunctionDataFn, name: *const c_char, length: c_int, magic: c_int, data_len: c_int, data: *mut JSValueConst) -> JSValue;
 
     pub fn JS_SetConstructor(ctx: NonNull<JSContext>, func_obj: JSValueConst, proto: JSValueConst);
 

@@ -40,7 +40,12 @@ mod value;
 pub use atom::Atom;
 pub use context::{Context, WeakContext};
 pub use ctx_string::CtxString;
-pub use host_function::GenericHostFn;
+pub use host_function::{
+    HostFn, HostFnCombineFloat, HostFnData, HostFnMagic, HostFnMapFloat, SignatureHostFn,
+    SignatureHostFnCombineFloat, SignatureHostFnData, SignatureHostFnMagic,
+    SignatureHostFnMapFloat, catch_unwind_and_throw_js_exception, context_arg, this_val_arg,
+    value_list_arg,
+};
 pub use own_property_names::{OwnPropertyNames, PropertyEnum};
 pub use runtime::Runtime;
 pub use value::{ArgValue, NumberVariant, RefValue, Value, WeakValue};

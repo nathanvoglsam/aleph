@@ -27,10 +27,20 @@
 // SOFTWARE.
 //
 
-#[derive(Copy, Clone)]
-pub struct GenericHostFn(pub(crate) raw::JSCFunctionFn);
+use std::mem::transmute;
+use std::panic::{UnwindSafe, catch_unwind};
+use std::ptr::NonNull;
 
-impl GenericHostFn {
+use crate::{RefValue, WeakContext, WeakValue};
+
+// ============================================================================================== //
+
+#[derive(Copy, Clone)]
+pub struct HostFn(pub(crate) raw::JSCFunctionFn);
+
+pub type SignatureHostFn = fn(ctx: &WeakContext, this: &WeakValue, args: &[WeakValue]) -> RefValue;
+
+impl HostFn {
     #[doc(hidden)]
     pub unsafe fn new(v: raw::JSCFunctionFn) -> Self {
         Self(v)
@@ -38,45 +48,203 @@ impl GenericHostFn {
 }
 
 #[macro_export]
-macro_rules! make_generic_host_fn {
+macro_rules! make_host_fn {
     ($f:path) => {{
-        use ::core::ffi::c_int;
-        use ::core::mem::transmute;
-        use ::core::ptr::NonNull;
-        use $crate::raw::{JSContext, JSValue, JSValueConst};
-        use $crate::{WeakContext, WeakValue};
-
         extern "C" fn __wrapper_fn(
-            ctx: NonNull<JSContext>,
-            this_val: JSValueConst,
-            argc: c_int,
-            argv: *mut JSValueConst,
-        ) -> JSValue {
-            let result = ::std::panic::catch_unwind(|| unsafe {
-                let ctx = &ctx;
-                let ctx: &WeakContext = transmute::<&NonNull<JSContext>, &WeakContext>(ctx);
-
-                let this = &this_val;
-                let this: &WeakValue = transmute::<&JSValueConst, &WeakValue>(this);
-
-                let args: &[WeakValue] = if argc == 0 {
-                    &[]
-                } else {
-                    let argv = argv.cast::<WeakValue>();
-                    let argc = argc as usize;
-                    std::slice::from_raw_parts(argv, argc)
-                };
-
-                let result = $f(ctx, this, args);
-                result.detatch()
-            });
-            match result {
-                ::core::result::Result::Ok(v) => v,
-                ::core::result::Result::Err(_e) => unsafe {
-                    raw::JS_ThrowPlainError(ctx, c"Native Panic".as_ptr())
-                },
+            ctx: ::core::ptr::NonNull<$crate::raw::JSContext>,
+            this_val: $crate::raw::JSValueConst,
+            argc: ::core::ffi::c_int,
+            argv: *mut $crate::raw::JSValueConst,
+        ) -> $crate::raw::JSValue {
+            let _typecheck_f: $crate::SignatureHostFn = $f;
+            unsafe {
+                $crate::catch_unwind_and_throw_js_exception(ctx, || {
+                    let ctx = $crate::context_arg(&ctx);
+                    let this = $crate::this_val_arg(&this_val);
+                    let args = $crate::value_list_arg(argc as usize, &argv);
+                    let result = $f(ctx, this, args);
+                    result.detatch()
+                })
             }
         }
-        unsafe { $crate::GenericHostFn::new(__wrapper_fn) }
+        unsafe { $crate::HostFn::new(__wrapper_fn) }
     }};
+}
+
+// ============================================================================================== //
+
+#[derive(Copy, Clone)]
+pub struct HostFnMagic(pub(crate) raw::JSCFunctionMagicFn);
+
+pub type SignatureHostFnMagic =
+    fn(ctx: &WeakContext, this: &WeakValue, args: &[WeakValue], magic: i32) -> RefValue;
+
+impl HostFnMagic {
+    #[doc(hidden)]
+    pub unsafe fn new(v: raw::JSCFunctionMagicFn) -> Self {
+        Self(v)
+    }
+}
+
+#[macro_export]
+macro_rules! make_host_fn_magic {
+    ($f:path) => {{
+        extern "C" fn __wrapper_fn(
+            ctx: ::core::ptr::NonNull<$crate::raw::JSContext>,
+            this_val: $crate::raw::JSValueConst,
+            argc: ::core::ffi::c_int,
+            argv: *mut $crate::raw::JSValueConst,
+            magic: c_int,
+        ) -> $crate::raw::JSValue {
+            let _typecheck_f: $crate::SignatureHostFnMagic = $f;
+            unsafe {
+                $crate::catch_unwind_and_throw_js_exception(ctx, || {
+                    let ctx = $crate::context_arg(&ctx);
+                    let this = $crate::this_val_arg(&this_val);
+                    let args = $crate::value_list_arg(argc as usize, &argv);
+                    let result = $f(ctx, this, args, magic);
+                    result.detatch()
+                })
+            }
+        }
+        unsafe { $crate::HostFnMagic::new(__wrapper_fn) }
+    }};
+}
+
+// ============================================================================================== //
+
+#[derive(Copy, Clone)]
+pub struct HostFnData<const COUNT: usize>(pub(crate) raw::JSCFunctionDataFn);
+
+pub type SignatureHostFnData<const COUNT: usize> = fn(
+    ctx: &WeakContext,
+    this: &WeakValue,
+    args: &[WeakValue],
+    magic: i32,
+    data: &[WeakValue; COUNT],
+) -> RefValue;
+
+impl<const COUNT: usize> HostFnData<COUNT> {
+    pub const LEN: usize = COUNT;
+
+    #[doc(hidden)]
+    pub unsafe fn new(v: raw::JSCFunctionDataFn) -> Self {
+        Self(v)
+    }
+}
+
+#[macro_export]
+macro_rules! make_host_fn_data {
+    ($f:path, $len: literal) => {{
+        extern "C" fn __wrapper_fn(
+            ctx: ::core::ptr::NonNull<$crate::raw::JSContext>,
+            this_val: $crate::raw::JSValueConst,
+            argc: ::core::ffi::c_int,
+            argv: *mut $crate::raw::JSValueConst,
+            magic: c_int,
+            data: *mut $crate::raw::JSValueConst,
+        ) -> $crate::raw::JSValue {
+            let _typecheck_len: usize = $len;
+            let _typecheck_f: $crate::SignatureHostFnData<$len> = $f;
+            unsafe {
+                $crate::catch_unwind_and_throw_js_exception(ctx, || {
+                    let ctx = $crate::context_arg(&ctx);
+                    let this = $crate::this_val_arg(&this_val);
+                    let args = $crate::value_list_arg(argc as usize, &argv);
+                    let data = $crate::value_list_arg($len, &data);
+                    let result = $f(ctx, this, args, magic);
+                    result.detatch()
+                })
+            }
+        }
+        unsafe { $crate::HostFnData::<$len>::new(__wrapper_fn) }
+    }};
+}
+
+// ============================================================================================== //
+
+#[derive(Copy, Clone)]
+pub struct HostFnMapFloat(pub(crate) raw::JSFFFn);
+
+pub type SignatureHostFnMapFloat = fn(f64) -> f64;
+
+impl HostFnMapFloat {
+    #[doc(hidden)]
+    pub unsafe fn new(v: raw::JSFFFn) -> Self {
+        Self(v)
+    }
+}
+
+#[macro_export]
+macro_rules! make_host_fn_map_float {
+    ($f:path) => {{
+        extern "C" fn __wrapper_fn(v: f64) -> f64 {
+            let _typecheck_f: $crate::SignatureHostFnMapFloat = $f;
+            $f(v)
+        }
+        unsafe { $crate::HostFnMapFloat::new(__wrapper_fn) }
+    }};
+}
+
+// ============================================================================================== //
+
+#[derive(Copy, Clone)]
+pub struct HostFnCombineFloat(pub(crate) raw::JSFFFFn);
+
+pub type SignatureHostFnCombineFloat = fn(f64, f64) -> f64;
+
+impl HostFnCombineFloat {
+    #[doc(hidden)]
+    pub unsafe fn new(v: raw::JSFFFFn) -> Self {
+        Self(v)
+    }
+}
+
+#[macro_export]
+macro_rules! make_host_fn_combine_float {
+    ($f:path) => {{
+        extern "C" fn __wrapper_fn(a: f64, b: f64) -> f64 {
+            let _typecheck_f: $crate::SignatureHostFnCombineFloat = $f;
+            $f(a, b)
+        }
+        unsafe { $crate::HostFnCombineFloat::new(__wrapper_fn) }
+    }};
+}
+
+// ============================================================================================== //
+
+/// Internal function for host function wrappers
+#[doc(hidden)]
+pub unsafe fn context_arg(ctx: &NonNull<raw::JSContext>) -> &WeakContext {
+    unsafe { transmute::<&NonNull<raw::JSContext>, &WeakContext>(ctx) }
+}
+
+/// Internal function for host function wrappers
+#[doc(hidden)]
+pub unsafe fn this_val_arg(this_val: &raw::JSValueConst) -> &WeakValue {
+    unsafe { transmute::<&raw::JSValueConst, &WeakValue>(this_val) }
+}
+
+/// Internal function for host function wrappers
+#[doc(hidden)]
+pub unsafe fn value_list_arg(len: usize, ptr: &*mut raw::JSValueConst) -> &[WeakValue] {
+    unsafe {
+        if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(ptr.cast::<WeakValue>(), len)
+        }
+    }
+}
+
+/// Internal function to translate a rust panic into a JS exception.
+#[doc(hidden)]
+pub unsafe fn catch_unwind_and_throw_js_exception(
+    ctx: NonNull<raw::JSContext>,
+    f: impl (FnOnce() -> raw::JSValue) + UnwindSafe,
+) -> raw::JSValue {
+    match catch_unwind(f) {
+        Ok(v) => v,
+        Err(_e) => unsafe { raw::JS_ThrowPlainError(ctx, c"Native Panic".as_ptr()) },
+    }
 }
