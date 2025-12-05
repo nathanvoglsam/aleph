@@ -37,21 +37,30 @@ use aleph_nstr::NStr;
 use raw::{JSEvalOptions, JSTag, JSValue};
 
 use crate::{
-    ArgValue, Atom, CtxString, HostFn, HostFnCombineFloat, HostFnData, HostFnMagic, HostFnMapFloat,
+    ArgValue, Atom, HostFn, HostFnCombineFloat, HostFnData, HostFnMagic, HostFnMapFloat, RuntimeString,
     OwnPropertyNames, RefValue, Runtime, WeakValue,
 };
 
-#[derive(Clone)]
 pub struct Context {
-    pub(crate) ctx: NonNull<raw::JSContext>,
-    pub(crate) _r: Runtime,
+    pub(crate) ctx: WeakContext,
+    pub(crate) r: Runtime,
+}
+
+impl Clone for Context {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            ctx: WeakContext { c: self.ctx.c },
+            r: self.r.clone(),
+        }
+    }
 }
 
 impl Deref for Context {
     type Target = WeakContext;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { std::mem::transmute::<&NonNull<raw::JSContext>, &WeakContext>(&self.ctx) }
+        &self.ctx
     }
 }
 
@@ -59,7 +68,7 @@ impl Drop for Context {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            raw::JS_FreeContext(self.ctx);
+            raw::JS_FreeContext(self.ctx.c);
         }
     }
 }
@@ -112,16 +121,16 @@ impl WeakContext {
                 ..Default::default()
             };
             let v = raw::JS_Eval2(self.c, script.to_cstr_ptr(), script.len(), &options);
-            RefValue(v)
+            RefValue::new(v)
         }
     }
 
-    /// Returns the global object [`Object`] for this context.
+    /// Returns the global object [`RefValue`] for this context.
     #[inline]
     pub fn get_global_object(&self) -> RefValue {
         unsafe {
             let v = raw::JS_GetGlobalObject(self.c);
-            RefValue(v)
+            RefValue::new(v)
         }
     }
 
@@ -137,7 +146,7 @@ impl WeakContext {
     pub fn get_exception(&self) -> RefValue {
         unsafe {
             let v = raw::JS_GetException(self.c);
-            RefValue(v)
+            RefValue::new(v)
         }
     }
 
@@ -154,7 +163,7 @@ impl WeakContext {
     pub fn new_string(&self, v: &str) -> RefValue {
         unsafe {
             let v = raw::JS_NewStringLen(self.c, v.as_ptr() as *const c_char, v.len());
-            RefValue(v)
+            RefValue::new(v)
         }
     }
 
@@ -162,7 +171,7 @@ impl WeakContext {
     pub fn new_object(&self) -> RefValue {
         unsafe {
             let v = raw::JS_NewObject(self.c);
-            RefValue(v)
+            RefValue::new(v)
         }
     }
 
@@ -177,7 +186,7 @@ impl WeakContext {
                 raw::JSCFunctionEnum::GENERIC,
                 0,
             );
-            RefValue(v)
+            RefValue::new(v)
         }
     }
 
@@ -198,7 +207,7 @@ impl WeakContext {
                 raw::JSCFunctionEnum::GENERIC_MAGIC,
                 magic,
             );
-            RefValue(v)
+            RefValue::new(v)
         }
     }
 
@@ -224,7 +233,7 @@ impl WeakContext {
                 len,
                 datas,
             );
-            RefValue(v)
+            RefValue::new(v)
         }
     }
 
@@ -239,7 +248,7 @@ impl WeakContext {
                 raw::JSCFunctionEnum::F_F,
                 0,
             );
-            RefValue(v)
+            RefValue::new(v)
         }
     }
 
@@ -258,7 +267,7 @@ impl WeakContext {
                 raw::JSCFunctionEnum::F_F_F,
                 0,
             );
-            RefValue(v)
+            RefValue::new(v)
         }
     }
 
@@ -266,7 +275,7 @@ impl WeakContext {
     pub fn to_string(&self, v: &WeakValue) -> RefValue {
         unsafe {
             let string = raw::JS_ToString(self.c, v.0);
-            RefValue(string)
+            RefValue::new(string)
         }
     }
 
@@ -300,7 +309,7 @@ impl WeakContext {
     pub fn get_property(&self, v: &WeakValue, prop: &Atom) -> RefValue {
         unsafe {
             let v = raw::JS_GetProperty(self.c, v.0, prop.v);
-            RefValue(v)
+            RefValue::new(v)
         }
     }
 
@@ -340,6 +349,16 @@ impl WeakContext {
     }
 
     #[inline]
+    pub fn seal_object(&self, v: &WeakValue) -> c_int {
+        unsafe { raw::JS_SealObject(self.c, v.0) }
+    }
+
+    #[inline]
+    pub fn freeze_object(&self, v: &WeakValue) -> c_int {
+        unsafe { raw::JS_FreezeObject(self.c, v.0) }
+    }
+
+    #[inline]
     pub fn call(&self, f: &WeakValue, this: &WeakValue, args: &[ArgValue]) -> RefValue {
         use std::mem::{align_of, size_of};
         unsafe {
@@ -354,7 +373,7 @@ impl WeakContext {
             };
 
             let v = raw::JS_Call(self.c, f.0, this.0, argc, argv);
-            RefValue(v)
+            RefValue::new(v)
         }
     }
 
@@ -468,7 +487,7 @@ impl WeakContext {
     pub fn atom_to_value(&self, atom: &Atom) -> RefValue {
         unsafe {
             let string = raw::JS_AtomToValue(self.c, atom.v);
-            RefValue(string)
+            RefValue::new(string)
         }
     }
 
@@ -476,7 +495,7 @@ impl WeakContext {
     pub fn atom_to_string(&self, atom: &Atom) -> RefValue {
         unsafe {
             let string = raw::JS_AtomToString(self.c, atom.v);
-            RefValue(string)
+            RefValue::new(string)
         }
     }
 

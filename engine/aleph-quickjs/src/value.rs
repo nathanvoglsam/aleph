@@ -199,7 +199,7 @@ impl Deref for Value {
 
 impl Into<RefValue> for Value {
     fn into(self) -> RefValue {
-        RefValue(self.0)
+        RefValue::new(self.0)
     }
 }
 
@@ -209,9 +209,13 @@ impl Into<RefValue> for Value {
 /// [`RefValue`] is an _owned_ JS value, with a retained reference count. When an instance of this
 /// type is destroyed the value's reference count will be decremented.
 #[repr(transparent)]
-pub struct RefValue(pub(crate) JSValue);
+pub struct RefValue(pub(crate) WeakValue);
 
 impl RefValue {
+    pub(crate) fn new(v: JSValue) -> Self {
+        Self(WeakValue(v))
+    }
+
     /// Destroys the [`RefValue`], without decrementing the JSValue's ref-count.
     ///
     /// # Warning
@@ -221,7 +225,7 @@ impl RefValue {
     /// but outside of those cases this should not be used.
     #[inline]
     pub fn detatch(self) -> JSValue {
-        let v = self.0;
+        let v = self.0.0;
         std::mem::forget(self);
         v
     }
@@ -238,10 +242,7 @@ impl Deref for RefValue {
     type Target = WeakValue;
 
     fn deref(&self) -> &Self::Target {
-        // Safety: We guarantee the layout of RefValue and WeakValue are the same via a repr
-        //         transparent attribute. WeakValue becomes a borrowed view over the RefValue.
-        //         borrow rules remain respected.
-        unsafe { std::mem::transmute::<&RefValue, &WeakValue>(self) }
+        &self.0
     }
 }
 
@@ -249,7 +250,7 @@ impl Drop for RefValue {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            self.0.decrement_ref_count();
+            self.0.0.decrement_ref_count();
         }
     }
 }
@@ -278,7 +279,7 @@ impl WeakValue {
     pub fn upgrade(&self) -> RefValue {
         unsafe {
             let _ignore = self.0.increment_ref_count();
-            RefValue(self.0)
+            RefValue::new(self.0)
         }
     }
 

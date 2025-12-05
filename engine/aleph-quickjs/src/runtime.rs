@@ -36,7 +36,7 @@ use std::rc::Rc;
 use aleph_alloc::alloc::Allocator;
 use aleph_alloc::mallocator::Mallocator;
 
-use crate::Context;
+use crate::{Context, WeakContext};
 
 #[derive(Clone)]
 pub struct Runtime(pub(crate) Rc<InnerRuntime>);
@@ -126,8 +126,8 @@ impl Runtime {
         unsafe {
             let ctx = raw::JS_NewContext(self.0.0)?;
             Some(Context {
-                ctx,
-                _r: self.clone(),
+                ctx: WeakContext { c: ctx },
+                r: self.clone(),
             })
         }
     }
