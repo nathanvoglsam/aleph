@@ -31,21 +31,21 @@ pub extern crate aleph_quickjs_sys as raw;
 
 mod atom;
 mod context;
-mod ctx_string;
 mod host_function;
+mod runtime_string;
 mod own_property_names;
 mod runtime;
 mod value;
 
 pub use atom::Atom;
 pub use context::{Context, WeakContext};
-pub use ctx_string::CtxString;
 pub use host_function::{
     HostFn, HostFnCombineFloat, HostFnData, HostFnMagic, HostFnMapFloat, SignatureHostFn,
     SignatureHostFnCombineFloat, SignatureHostFnData, SignatureHostFnMagic,
     SignatureHostFnMapFloat, catch_unwind_and_throw_js_exception, context_arg, this_val_arg,
     value_list_arg,
 };
+pub use runtime_string::RuntimeString;
 pub use own_property_names::{OwnPropertyNames, PropertyEnum};
 pub use runtime::Runtime;
 pub use value::{ArgValue, NumberVariant, RefValue, Value, WeakValue};

@@ -280,7 +280,7 @@ impl WeakContext {
     }
 
     #[inline]
-    pub fn to_c_str(&self, v: &WeakValue) -> Option<CtxString<'_>> {
+    pub fn to_c_str(&self, v: &WeakValue) -> Option<RuntimeString> {
         unsafe {
             let mut len = 0;
             let cstr = raw::JS_ToCStringLen2(self.c, &mut len, v.0, false);
@@ -290,7 +290,7 @@ impl WeakContext {
             } else {
                 let bytes = std::slice::from_raw_parts(cstr as *const u8, len);
                 let string = str::from_utf8(bytes).unwrap_unchecked();
-                Some(CtxString::from_ctx_and_str(self, string))
+                Some(RuntimeString::from_ctx_and_str(string))
             }
         }
     }
@@ -500,7 +500,7 @@ impl WeakContext {
     }
 
     #[inline]
-    pub fn atom_to_c_str(&self, atom: &Atom) -> Option<CtxString<'_>> {
+    pub fn atom_to_c_str(&self, atom: &Atom) -> Option<RuntimeString> {
         let string = self.atom_to_string(atom);
         if !string.is_exception() {
             self.to_c_str(&string)

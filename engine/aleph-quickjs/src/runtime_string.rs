@@ -30,38 +30,34 @@
 use std::ffi::c_char;
 use std::ops::Deref;
 
-use crate::WeakContext;
+use crate::runtime::with_runtime;
 
-pub struct CtxString<'a> {
-    ctx: &'a WeakContext,
+pub struct RuntimeString {
     v: *const str,
 }
 
-impl<'a> CtxString<'a> {
-    /// Constructs a new [`CtxString`] from the given context and str.
+impl RuntimeString {
+    /// Constructs a new [`RuntimeString`] from the given str.
     ///
     /// # Safety
     ///
     /// It is the caller's responsibility to ensure that the given string 'v' is live and was
-    /// allocated from the given [`Context`]. [`CtxString`] will take ownership of the string and
-    /// the [`Drop`] implementation will free the
-    pub const unsafe fn from_ctx_and_str(ctx: &'a WeakContext, v: &str) -> Self {
-        Self {
-            ctx,
-            v: v as *const str,
-        }
+    /// allocated from the owning thread's [`Runtime`]. [`RuntimeString`] will take ownership of the
+    /// string and the [`Drop`] implementation will free it.
+    pub const unsafe fn from_ctx_and_str(v: &str) -> Self {
+        Self { v: v as *const str }
     }
 }
 
-impl<'a> Drop for CtxString<'a> {
+impl Drop for RuntimeString {
     fn drop(&mut self) {
-        // Safety: It is unsafe to construct a 'CtxString' with the incorrect ctx and dead string
-        //         so we can assume this is safe
-        unsafe { raw::JS_FreeCString(self.ctx.c, (*self.v).as_ptr() as *const c_char) }
+        with_runtime(|rt| unsafe {
+            raw::JS_FreeCStringRT(rt.0, (*self.v).as_ptr() as *const c_char)
+        })
     }
 }
 
-impl<'a> AsRef<str> for CtxString<'a> {
+impl AsRef<str> for RuntimeString {
     #[inline]
     fn as_ref(&self) -> &str {
         // Safety: It is unsafe for a caller to construct a CtxString where this operation is unsafe
@@ -69,7 +65,7 @@ impl<'a> AsRef<str> for CtxString<'a> {
     }
 }
 
-impl<'a> Deref for CtxString<'a> {
+impl Deref for RuntimeString {
     type Target = str;
 
     #[inline]
