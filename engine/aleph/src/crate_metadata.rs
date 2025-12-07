@@ -54,11 +54,6 @@ pub struct AlephCrateMetadata<'a> {
     /// cook will fail at build time.
     #[serde(default)]
     pub configs: Vec<String>,
-
-    /// Odes the crate want to provide only type definitions for the config system
-    /// (no config script)
-    #[serde(default, rename = "config-defs")]
-    pub config_defs: bool,
 }
 
 impl<'a> AlephCrateMetadata<'a> {
@@ -71,7 +66,7 @@ impl<'a> AlephCrateMetadata<'a> {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.shaders.is_none() && self.configs.is_empty() && !self.config_defs
+        self.shaders.is_none() && self.configs.is_empty()
     }
 
     fn value_for_package(package: &Package) -> Option<&serde_json::Value> {

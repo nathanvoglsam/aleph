@@ -37,8 +37,8 @@ use aleph_nstr::NStr;
 use raw::{JSEvalOptions, JSTag, JSValue};
 
 use crate::{
-    ArgValue, Atom, HostFn, HostFnCombineFloat, HostFnData, HostFnMagic, HostFnMapFloat, RuntimeString,
-    OwnPropertyNames, RefValue, Runtime, WeakValue,
+    ArgValue, Atom, HostFn, HostFnCombineFloat, HostFnData, HostFnMagic, HostFnMapFloat,
+    OwnPropertyNames, RefValue, Runtime, RuntimeString, WeakValue,
 };
 
 pub struct Context {

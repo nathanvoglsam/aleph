@@ -36,7 +36,7 @@ use std::str::FromStr;
 use aleph_alloc::instrumentation::{
     IAllocationCategory, Instrumented, is_instrumentation_enabled, system,
 };
-use aleph_nstr::{NStr, nstr};
+use aleph_nstr::NStr;
 use aleph_target::build::{target_architecture, target_build_type, target_platform};
 use camino::{Utf8Path, Utf8PathBuf};
 use thiserror::Error;
@@ -78,13 +78,10 @@ impl ConfigRunner {
 
     pub fn run_all_configs(&mut self) -> Result<(), RunConfigError> {
         Config::with(|| {
+            // Collect all .js config files in the config directory into a list
+            let mut items = Vec::new();
             for item in self.config_dir.read_dir_utf8()? {
                 let item = item?;
-
-                // Skip '@' configs as those are overrides not config scripts
-                if item.file_name().starts_with('@') {
-                    continue;
-                }
 
                 // Skip non js files
                 if !item.file_name().ends_with(".js") {
@@ -92,10 +89,19 @@ impl ConfigRunner {
                 }
 
                 let file_type = item.file_type()?;
-                if file_type.is_file() || file_type.is_symlink() {
-                    let name = item.path().file_stem().unwrap();
-                    self.run_config_by_name(name)?;
+                if !file_type.is_file() && !file_type.is_symlink() {
+                    continue;
                 }
+
+                items.push(item.file_name().to_string());
+            }
+
+            // Sort in alphabetical order to get a stable config run order
+            items.sort();
+
+            // And run them, in alphabetical order
+            for item in items {
+                self.run_config_by_name(&item)?;
             }
 
             Ok(())
@@ -107,7 +113,7 @@ impl ConfigRunner {
             let script = self.load_config_script(name)?;
             let script_nstr = NStr::from_str(&script).unwrap();
 
-            let filename = format!("{name}.js\0");
+            let filename = format!("{name}\0");
             let filename = NStr::from_str(&filename).unwrap();
 
             // We create a new context for every script so they don't polute eachother's global
@@ -119,61 +125,18 @@ impl ConfigRunner {
 
             // Provide the 'Configs' object which is where the scripts are expected to write their
             // config into.
-
             let global = context.get_global_object();
             let config_object = self.config_object.as_ref().unwrap();
             if 0 > context.set_property_str(&global, "Configs", config_object.clone()) {
                 return Err(js_exception_to_err(&context));
             }
 
+            // Provide the 'Environment' object which contains info about the build+platform+arch
             Self::setup_global_environment(&context)?;
 
-            // Run the setup script to provide the default functions
-            log::trace!("Running aleph-config.js");
-            let result = context.eval(
-                SETUP_SCRIPT,
-                nstr!("aleph-config.js"),
-                qjs::raw::JSEvalFlags::STRICT,
-            );
-            let _ = check_exception(&context, result)?;
-
-            // Load the script module itself. This won't run the config script, just load all the
-            // code into the context. We have to fetch the entry point and execute the entry point
-            // separately...
+            // And finally we evaluate the script. The script is expected to write the config into
+            // the 'Configs' global.
             log::trace!("Running {filename}");
-            let result = context.eval(script_nstr, filename, qjs::raw::JSEvalFlags::STRICT);
-            let _ = check_exception(&context, result)?;
-
-            Ok(())
-        })
-    }
-
-    pub fn run_override_script(&mut self) -> Result<(), RunConfigError> {
-        Config::with(|| {
-            let script = self.load_config_script("@game")?;
-            let script_nstr = NStr::from_str(&script).unwrap();
-
-            let filename = nstr!("@game.js");
-
-            // We create a new context for every script so they don't polute eachother's global state.
-            //
-            // Objects are free to be shared between contexts within the same runtime so we hold on to
-            // the config object though
-            let context = self.runtime.new_context().unwrap();
-
-            // Provide the 'Configs' object which is where the scripts are expected to write their
-            // config into.
-            let global = context.get_global_object();
-            let config_object = self.config_object.as_ref().unwrap();
-            if 0 > context.set_property_str(&global, "Configs", config_object.clone()) {
-                return Err(js_exception_to_err(&context));
-            }
-
-            Self::setup_global_environment(&context)?;
-
-            // Load the script module itself. This won't run the config script, just load all the code
-            // into the context. We have to fetch the entry point and execute the entry point
-            // separately...
             let result = context.eval(script_nstr, filename, qjs::raw::JSEvalFlags::STRICT);
             let _ = check_exception(&context, result)?;
 
@@ -292,39 +255,27 @@ impl ConfigRunner {
     }
 
     fn setup_global_environment(context: &qjs::Context) -> Result<(), RunConfigError> {
-        let global = context.get_global_object();
+        // Normalize GNU/MSVC
+        assert!(!target_platform().is_unknown());
+        let p_string = match target_platform() {
+            aleph_target::Platform::WindowsGNU => "windows",
+            aleph_target::Platform::WindowsMSVC => "windows",
+            _ => target_platform().name(),
+        };
+        let p_string = context.new_string(p_string);
 
-        let p_string = context.new_string(target_platform().name());
+        assert!(!target_architecture().is_unknown());
         let a_string = context.new_string(target_architecture().name());
+
         let b_string = context.new_string(target_build_type().name());
 
-        if 0 > context.set_property_str(&global, "THIS_PLATFORM", p_string) {
-            return Err(js_exception_to_err(context));
-        }
-        if 0 > context.set_property_str(&global, "THIS_ARCHITECTURE", a_string) {
-            return Err(js_exception_to_err(context));
-        }
-        if 0 > context.set_property_str(&global, "THIS_BUILD_TYPE", b_string) {
-            return Err(js_exception_to_err(context));
-        }
+        let env = context.new_object();
+        context.set_property_str(&env, "platform", p_string);
+        context.set_property_str(&env, "arch", a_string);
+        context.set_property_str(&env, "buildType", b_string);
 
-        let p = context.new_object();
-        let a = context.new_object();
-        let b = context.new_object();
-        let e = context.new_object();
-
-        if 0 > context.set_property_str(&global, "Platform", p) {
-            return Err(js_exception_to_err(context));
-        }
-        if 0 > context.set_property_str(&global, "Architecture", a) {
-            return Err(js_exception_to_err(context));
-        }
-        if 0 > context.set_property_str(&global, "BuildType", b) {
-            return Err(js_exception_to_err(context));
-        }
-        if 0 > context.set_property_str(&global, "Environment", e) {
-            return Err(js_exception_to_err(context));
-        }
+        let global = context.get_global_object();
+        context.set_property_str(&global, "Environment", env);
 
         Ok(())
     }
@@ -333,7 +284,7 @@ impl ConfigRunner {
 impl ConfigRunner {
     /// Internal function for loading the config script under the given name from the script folder.
     fn load_config_script(&self, name: &str) -> Result<String, RunConfigError> {
-        let config = self.config_dir.join(name).with_extension("js");
+        let config = self.config_dir.join(name);
 
         // Check if the config file exists
         if !config.is_file() {
@@ -421,8 +372,6 @@ fn js_exception_to_err(context: &qjs::Context) -> RunConfigError {
         .expect("Failed to get exception message");
     RunConfigError::Js(message.to_string())
 }
-
-const SETUP_SCRIPT: &NStr = nstr!(include_str!("../config/config.js"));
 
 struct Config;
 aleph_alloc::new_alloc_category!(Config, "01996b38-bed1-78a3-8b78-03cb717d5bb0");

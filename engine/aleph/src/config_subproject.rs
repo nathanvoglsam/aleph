@@ -57,41 +57,49 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
 
     fn retain_crate(_package: &Package, metadata: &AlephCrateMetadata) -> bool {
         // Skip any packages with no config script
-        !metadata.configs.is_empty() || metadata.config_defs
+        !metadata.configs.is_empty()
     }
 
     fn load_crate(
         arena: &'a Blink,
         _ctx: &AlephProject,
-        project_ctx: &SubprojectProjectContext<'a, Self>,
+        _project_ctx: &SubprojectProjectContext<'a, Self>,
         package: &Package,
         metadata: &AlephCrateMetadata,
     ) -> anyhow::Result<Self::CrateMeta> {
-        let mut config_names = BVec::with_capacity_in(metadata.configs.len(), arena.allocator());
-        config_names.extend(metadata.configs.iter().map(|v| &*arena.copy_str(v)));
-        let config_names = BVec::leak(config_names);
-
         let config_dir = package.manifest_path.parent().unwrap().join("config");
-        let config_dir = arena.alloc_utf8_path(simplified(&config_dir));
 
-        let iter = metadata.configs.iter().map(|v| {
-            let dst = project_ctx.meta.configs_root.join(v).with_extension("js");
-            let dst = arena.alloc_utf8_path(simplified(&dst));
+        let mut config_names = BVec::with_capacity_in(metadata.configs.len(), arena.allocator());
+        let mut configs = BVec::with_capacity_in(metadata.configs.len(), arena.allocator());
+        let mut override_names = BVec::with_capacity_in(metadata.configs.len(), arena.allocator());
+        let mut overrides = BVec::with_capacity_in(metadata.configs.len(), arena.allocator());
 
-            let src = config_dir.join(v).with_extension("js");
+        for name in metadata.configs.iter() {
+            let name = &*arena.copy_str(name);
+            let src = config_dir.join(name).with_extension("ts");
             let src = arena.alloc_utf8_path(simplified(&src));
 
-            ConfigPair { src, dst }
-        });
-        let mut configs = BVec::with_capacity_in(metadata.configs.len(), arena.allocator());
-        configs.extend(iter);
-        let configs = BVec::leak(configs);
+            if name.starts_with('@') {
+                // Override config
+                override_names.push(name);
+                overrides.push(src);
+            } else {
+                // Base config
+                config_names.push(name);
+                configs.push(src);
+            }
+        }
+
+        let config_names: &'a [&'a str] = BVec::leak(config_names);
+        let configs: &'a [&'a Utf8Path] = BVec::leak(configs);
+        let override_names: &'a [&'a str] = BVec::leak(override_names);
+        let overrides: &'a [&'a Utf8Path] = BVec::leak(overrides);
 
         Ok(ConfigCrateMeta {
-            config_dir,
             config_names,
             configs,
-            defs_only: metadata.config_defs,
+            override_names,
+            overrides,
         })
     }
 
@@ -148,24 +156,16 @@ impl<'a> ConfigProjectMeta<'a> {
 
 #[derive(Clone, Debug)]
 pub struct ConfigCrateMeta<'a> {
-    /// Path to the crate's config folder
-    pub config_dir: &'a Utf8Path,
-
     /// The list of config names the crate exports. This is what [`Self::configs`] is derived from.
     pub config_names: &'a [&'a str],
 
-    /// Pairs of src and dst files for each declared config.
-    pub configs: &'a [ConfigPair<'a>],
+    /// Path to the '{config}.ts' file in the crate's 'config' folder.
+    pub configs: &'a [&'a Utf8Path],
 
-    /// Whether this crate provides only type defs and no config script
-    pub defs_only: bool,
-}
+    /// The list of override names the crate exports. This is what [`Self::overrides`] is derived
+    /// from. Overrides are marked with a name starting with '@'.
+    pub override_names: &'a [&'a str],
 
-#[derive(Clone, Debug)]
-pub struct ConfigPair<'a> {
-    /// Path to the 'config.js' file in the crate's 'config' folder.
-    pub src: &'a Utf8Path,
-
-    /// Path to '.aleph/configs/{config}.js'
-    pub dst: &'a Utf8Path,
+    /// Path to the '{override}.ts' file in the crate's 'config' folder.
+    pub overrides: &'a [&'a Utf8Path],
 }

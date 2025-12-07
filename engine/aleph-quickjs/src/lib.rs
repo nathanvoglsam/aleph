@@ -32,9 +32,9 @@ pub extern crate aleph_quickjs_sys as raw;
 mod atom;
 mod context;
 mod host_function;
-mod runtime_string;
 mod own_property_names;
 mod runtime;
+mod runtime_string;
 mod value;
 
 pub use atom::Atom;
@@ -45,9 +45,9 @@ pub use host_function::{
     SignatureHostFnMapFloat, catch_unwind_and_throw_js_exception, context_arg, this_val_arg,
     value_list_arg,
 };
-pub use runtime_string::RuntimeString;
 pub use own_property_names::{OwnPropertyNames, PropertyEnum};
 pub use runtime::Runtime;
+pub use runtime_string::RuntimeString;
 pub use value::{ArgValue, NumberVariant, RefValue, Value, WeakValue};
 
 #[cfg(test)]

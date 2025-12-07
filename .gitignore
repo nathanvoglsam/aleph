@@ -40,7 +40,7 @@ shader_cache.bin
 /build_js.hxml
 
 # Ignore Generated jsconfig
-/jsconfig.json
+/tsconfig.json
 
 # Ignore Generated VSCode Workspaces
 /aleph.code-workspace

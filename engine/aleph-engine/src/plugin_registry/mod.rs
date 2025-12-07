@@ -198,17 +198,6 @@ impl PluginRegistry {
             }
         }
 
-        match configs.run_override_script() {
-            Ok(_) => {}
-            Err(v) => {
-                log::error!("Failed while running @game script. Reason: {:?}", v);
-                if !matches!(v, RunConfigError::NoConfig) {
-                    // If the error is for anything other than a missing config then we panic
-                    panic!("Failed while running @game script. Reason: {:?}", v);
-                }
-            }
-        }
-
         configs.finalize()
     }
 

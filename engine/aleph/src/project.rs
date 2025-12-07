@@ -89,6 +89,12 @@ pub struct AlephProject<'a> {
     /// The path to the '.aleph/sdk/**/ninja/ninja' executable for this project
     ninja_path: Utf8PathBuf,
 
+    /// The path to the '.aleph/sdk/**/node' executable for this project
+    node_path: Utf8PathBuf,
+
+    /// The path to the '.aleph/sdk/**/tsc' executable for this project
+    tsc_path: Utf8PathBuf,
+
     /// The path to the Cargo.toml file adjacent to the aleph-project.toml
     cargo_toml_file: Utf8PathBuf,
 
@@ -140,6 +146,10 @@ impl<'a> AlephProject<'a> {
         let assets_build_path = dot_aleph_path.join("data").join("assets");
         let configs_build_path = dot_aleph_path.join("configs");
 
+        let mut common_sdk_path = dot_aleph_path.clone();
+        common_sdk_path.push("sdk");
+        common_sdk_path.push("common");
+
         let mut sdk_path = dot_aleph_path.clone();
         sdk_path.push("sdk");
         sdk_path.push(sdk_platform_name());
@@ -177,6 +187,22 @@ impl<'a> AlephProject<'a> {
             ninja_path.push("ninja");
         }
 
+        let mut node_path = sdk_path.clone();
+        node_path.push("nodejs");
+        if !target_platform().is_windows() {
+            node_path.push("bin");
+        }
+        if target_platform().is_windows() {
+            node_path.push("node.exe");
+        } else {
+            node_path.push("node");
+        }
+
+        let mut tsc_path = common_sdk_path.clone();
+        tsc_path.push("tsc");
+        tsc_path.push("lib");
+        tsc_path.push("tsc.js");
+
         let out = Self {
             _arena: arena,
             project_file,
@@ -189,6 +215,8 @@ impl<'a> AlephProject<'a> {
             dxc_path,
             slang_path,
             ninja_path,
+            node_path,
+            tsc_path,
             cargo_toml_file,
             vscode_workspace_file,
             _cargo_target_dir: cargo_target_dir,
@@ -307,6 +335,18 @@ impl<'a> AlephProject<'a> {
     /// may not exist so check before using!
     pub fn ninja_path(&self) -> &Utf8Path {
         &self.ninja_path
+    }
+
+    /// Returns the path to the project's bundled ninja, in '.aleph/sdk/**/node'. This path
+    /// may not exist so check before using!
+    pub fn node_path(&self) -> &Utf8Path {
+        &self.node_path
+    }
+
+    /// Returns the path to the project's bundled ninja, in '.aleph/sdk/**/tsc'. This path
+    /// may not exist so check before using!
+    pub fn tsc_path(&self) -> &Utf8Path {
+        &self.tsc_path
     }
 
     /// Returns the './target/{target-triple}/{profile}' path for the request target + profile set.
