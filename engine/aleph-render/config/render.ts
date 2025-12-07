@@ -27,8 +27,29 @@
 // SOFTWARE.
 //
 
-interface Configs {
-    "aleph-test"?: {
-        scenes: string[];
+namespace render {
+    export interface Config {
+        /** 
+         * The number of frames the renderer is allowed to have in flight on the GPU at any one
+         * time.
+         */
+        framesInFlight: number;
+    
+        /**
+         * When enabled, the renderer is forced to rebuild the frame graph every frame regardless of
+         * whether it otherwise would've needed to.
+         * 
+         * Useful for profiling.
+         */
+        forceGraphRebuild: boolean;
     }
+}
+
+declare interface Configs {
+    render?: render.Config,
+}
+
+Configs.render = {
+    framesInFlight: 2,
+    forceGraphRebuild: false,
 }

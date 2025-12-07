@@ -27,33 +27,35 @@
 // SOFTWARE.
 //
 
-declare namespace rhi {
+namespace rhi {
     /**
      * All the supported RHI backends.
      */
-    declare type Backend = "d3d12" | "vulkan" | "metal"; 
+    export const enum Backend {
+        D3D12 = "d3d12",
+        Vulkan = "vulkan",
+        Metal = "metal",
+    }
 
     /**
      * Special options specific to the D3D12 backend.
      */
-    declare interface D3D12Options {}
+    export interface D3D12Options { }
 
     /**
      * Special options specific to the Metal backend.
      */
-    declare interface MetalOptions {}
+    export interface MetalOptions { }
 
     /**
      * Special options specific to the Vulkan backend.
      */
-    declare interface VulkanOptions {
+    export interface VulkanOptions {
         /** Whether to disable sync2 and force the sync2 emulation path on. **/
         denySync2: boolean;
     }
-}
 
-interface Configs {
-    rhi?: {
+    export interface Config {
         /** The backend that should be used **/
         api: rhi.Backend;
 
@@ -69,10 +71,29 @@ interface Configs {
         /** Whether to enable RHI and platform validation layers if they are available. **/
         validation: boolean;
 
-        /** 
+        /**
          * Whether debuging utilities are allowed to be initialized. Different backends have debug
          * tools only available on dev machines.
          */
         debug: boolean;
-    },
+    }
+}
+
+declare interface Configs {
+    rhi?: rhi.Config,
+}
+
+{
+    let api = {
+        [Platform.Windows]: rhi.Backend.D3D12,
+        [Platform.Linux]: rhi.Backend.Vulkan,
+        [Platform.Macos]: rhi.Backend.Metal,
+        [Platform.iOS]: rhi.Backend.Metal,
+    };
+
+    Configs.rhi = {
+        api: api[Environment.platform],
+        validation: false,
+        debug: false,
+    };
 }

@@ -27,6 +27,12 @@
 // SOFTWARE.
 //
 
-Configs["aleph-test"] = {
-    scenes: ["game/aleph-test/assets/IntelSponza/NewSponza_Main_Blender_glTF.gltf"]
-};
+if (Configs.rhi !== undefined) {
+    Configs.rhi.api = rhi.Backend.Vulkan;
+    Configs.rhi.validation = true;
+    Configs.rhi.debug = true;
+}
+if (Configs["aleph-test"] !== undefined) {
+    Configs["aleph-test"].scenes = ["game/aleph-test/assets/IntelSponza/NewSponza_Main_Blender_glTF.gltf", "game/aleph-test/assets/IntelSponzaCurtains/NewSponza_Curtains_glTF.gltf"];
+    //Configs["aleph-test"].scenes = ["game/aleph-test/assets/flying_world/FlyingWorld-BattleOfTheTrashGod.gltf"];
+}

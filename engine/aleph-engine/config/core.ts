@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
-interface Configs {
+declare interface Configs {
     core?: {},
 }
+
+Configs.core = {};

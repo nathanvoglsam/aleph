@@ -27,7 +27,12 @@
 // SOFTWARE.
 //
 
-Configs.render = {
-    framesInFlight: 2,
-    forceGraphRebuild: false,
+declare interface Configs {
+    "aleph-test"?: {
+        scenes: string[];
+    }
 }
+
+Configs["aleph-test"] = {
+    scenes: ["game/aleph-test/assets/IntelSponza/NewSponza_Main_Blender_glTF.gltf"]
+};
