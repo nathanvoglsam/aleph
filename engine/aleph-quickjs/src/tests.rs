@@ -92,14 +92,12 @@ pub fn eval_script_call_c_func() {
 
     static CALLED: AtomicBool = AtomicBool::new(false);
 
-    fn func(_ctx: &WeakContext, this: &WeakValue, args: &[WeakValue]) -> RefValue {
+    fn func(_ctx: &WeakContext, this: &WeakValue, [arg]: &[WeakValue; 1]) -> RefValue {
         CALLED.store(true, Ordering::SeqCst);
 
         assert!(this.is_undefined());
-        assert_eq!(args.len(), 1);
 
-        let v = &args[0];
-        assert_eq!(v.get_number(), Some(NumberVariant::Integer(56)));
+        assert_eq!(arg.get_number(), Some(NumberVariant::Integer(56)));
 
         Value::new_i32(21).upgrade()
     }
@@ -112,7 +110,50 @@ pub fn eval_script_call_c_func() {
             let global = context.get_global_object();
 
             let func_name = nstr!("call_me_maybe");
-            let func_v = context.new_host_function(make_host_fn!(func), func_name, 1);
+            let func_v = context.new_host_function(make_host_fn!(func), func_name);
+            assert!(func_v.is_object());
+
+            let result = context.set_property_str(&global, func_name.to_str(), func_v.clone());
+            assert_ne!(result, -1);
+
+            let filename = nstr!("script.js");
+            let script = nstr!("call_me_maybe(56);");
+            let result = context.eval(script, filename, JSEvalFlags::STRICT);
+            let result = check_exception(&context, result);
+
+            assert!(CALLED.load(Ordering::SeqCst));
+            assert_eq!(result.get_tag(), JSTag::INT);
+            assert_eq!(result.get_number(), Some(NumberVariant::Integer(21)));
+        });
+    });
+}
+
+#[test]
+pub fn eval_script_call_c_func_not_enough_args() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    static CALLED: AtomicBool = AtomicBool::new(false);
+
+    fn func(_ctx: &WeakContext, this: &WeakValue, [present, missing]: &[WeakValue; 2]) -> RefValue {
+        CALLED.store(true, Ordering::SeqCst);
+
+        assert!(this.is_undefined());
+
+        assert_eq!(present.get_number(), Some(NumberVariant::Integer(56)));
+        assert!(missing.is_undefined());
+
+        Value::new_i32(21).upgrade()
+    }
+
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
+
+            let global = context.get_global_object();
+
+            let func_name = nstr!("call_me_maybe");
+            let func_v = context.new_host_function(make_host_fn!(func), func_name);
             assert!(func_v.is_object());
 
             let result = context.set_property_str(&global, func_name.to_str(), func_v.clone());
@@ -204,12 +245,10 @@ pub fn eval_script_call_c_func_combine_float() {
 
 #[test]
 pub fn eval_script_call_c_func_recursive() {
-    fn func(ctx: &WeakContext, this: &WeakValue, args: &[WeakValue]) -> RefValue {
+    fn func(ctx: &WeakContext, this: &WeakValue, [f, depth]: &[WeakValue; 2]) -> RefValue {
         assert!(this.is_undefined());
-        assert_eq!(args.len(), 2);
 
-        let f = &args[0];
-        let depth = args[1].get_number().unwrap().normalize();
+        let depth = depth.get_number().unwrap().normalize();
 
         if depth >= 5.0 {
             Value::new_f64(depth * depth).upgrade()
@@ -228,7 +267,7 @@ pub fn eval_script_call_c_func_recursive() {
             let global = context.get_global_object();
 
             let func_name = nstr!("call_me_maybe");
-            let func_v = context.new_host_function(make_host_fn!(func), func_name, 1);
+            let func_v = context.new_host_function(make_host_fn!(func), func_name);
             assert!(func_v.is_object());
 
             let result = context.set_property_str(&global, func_name.to_str(), func_v.clone());

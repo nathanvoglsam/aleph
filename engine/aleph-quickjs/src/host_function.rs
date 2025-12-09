@@ -36,128 +36,154 @@ use crate::{RefValue, WeakContext, WeakValue};
 // ============================================================================================== //
 
 #[derive(Copy, Clone)]
-pub struct HostFn(pub(crate) raw::JSCFunctionFn);
+pub struct HostFn<const ARGS: usize>(pub(crate) raw::JSCFunctionFn);
 
-pub type SignatureHostFn = fn(ctx: &WeakContext, this: &WeakValue, args: &[WeakValue]) -> RefValue;
+pub type SignatureHostFn<const ARGS: usize> =
+    fn(ctx: &WeakContext, this: &WeakValue, args: &[WeakValue; ARGS]) -> RefValue;
 
-impl HostFn {
+impl<const ARGS: usize> HostFn<ARGS> {
     #[doc(hidden)]
     pub unsafe fn new(v: raw::JSCFunctionFn) -> Self {
         Self(v)
     }
 }
 
+#[doc(hidden)]
+pub const fn host_fn_arg_num<const ARGS: usize>(_v: SignatureHostFn<ARGS>) -> usize {
+    ARGS
+}
+
 #[macro_export]
 macro_rules! make_host_fn {
     ($f:path) => {{
+        const ARGS: usize = $crate::host_fn_arg_num($f);
         extern "C" fn __wrapper_fn(
             ctx: ::core::ptr::NonNull<$crate::raw::JSContext>,
             this_val: $crate::raw::JSValueConst,
-            argc: ::core::ffi::c_int,
+            _argc: ::core::ffi::c_int,
             argv: *mut $crate::raw::JSValueConst,
         ) -> $crate::raw::JSValue {
-            let _typecheck_f: $crate::SignatureHostFn = $f;
+            let _typecheck_f: $crate::SignatureHostFn<ARGS> = $f;
             unsafe {
                 $crate::catch_unwind_and_throw_js_exception(ctx, || {
                     let ctx = $crate::context_arg(&ctx);
                     let this = $crate::this_val_arg(&this_val);
-                    let args = $crate::value_list_arg(argc as usize, &argv);
+                    let args = $crate::value_list_arg::<ARGS>(&argv);
                     let result = $f(ctx, this, args);
                     result.detatch()
                 })
             }
         }
-        unsafe { $crate::HostFn::new(__wrapper_fn) }
+        unsafe { $crate::HostFn::<ARGS>::new(__wrapper_fn) }
     }};
 }
 
 // ============================================================================================== //
 
 #[derive(Copy, Clone)]
-pub struct HostFnMagic(pub(crate) raw::JSCFunctionMagicFn);
+pub struct HostFnMagic<const ARGS: usize>(pub(crate) raw::JSCFunctionMagicFn);
 
-pub type SignatureHostFnMagic =
-    fn(ctx: &WeakContext, this: &WeakValue, args: &[WeakValue], magic: i32) -> RefValue;
+pub type SignatureHostFnMagic<const ARGS: usize> =
+    fn(ctx: &WeakContext, this: &WeakValue, args: &[WeakValue; ARGS], magic: i32) -> RefValue;
 
-impl HostFnMagic {
+impl<const ARGS: usize> HostFnMagic<ARGS> {
     #[doc(hidden)]
     pub unsafe fn new(v: raw::JSCFunctionMagicFn) -> Self {
         Self(v)
     }
 }
 
+#[doc(hidden)]
+pub const fn host_fn_magic_arg_num<const ARGS: usize>(_v: SignatureHostFnMagic<ARGS>) -> usize {
+    ARGS
+}
+
 #[macro_export]
 macro_rules! make_host_fn_magic {
     ($f:path) => {{
+        const ARGS: usize = $crate::host_fn_magic_arg_num($f);
         extern "C" fn __wrapper_fn(
             ctx: ::core::ptr::NonNull<$crate::raw::JSContext>,
             this_val: $crate::raw::JSValueConst,
-            argc: ::core::ffi::c_int,
+            _argc: ::core::ffi::c_int,
             argv: *mut $crate::raw::JSValueConst,
             magic: c_int,
         ) -> $crate::raw::JSValue {
-            let _typecheck_f: $crate::SignatureHostFnMagic = $f;
+            let _typecheck_f: $crate::SignatureHostFnMagic<ARGS> = $f;
             unsafe {
                 $crate::catch_unwind_and_throw_js_exception(ctx, || {
                     let ctx = $crate::context_arg(&ctx);
                     let this = $crate::this_val_arg(&this_val);
-                    let args = $crate::value_list_arg(argc as usize, &argv);
+                    let args = $crate::value_list_arg::<ARGS>(&argv);
                     let result = $f(ctx, this, args, magic);
                     result.detatch()
                 })
             }
         }
-        unsafe { $crate::HostFnMagic::new(__wrapper_fn) }
+        unsafe { $crate::HostFnMagic::<ARGS>::new(__wrapper_fn) }
     }};
 }
 
 // ============================================================================================== //
 
 #[derive(Copy, Clone)]
-pub struct HostFnData<const COUNT: usize>(pub(crate) raw::JSCFunctionDataFn);
+pub struct HostFnData<const ARGS: usize, const DATAS: usize>(pub(crate) raw::JSCFunctionDataFn);
 
-pub type SignatureHostFnData<const COUNT: usize> = fn(
+pub type SignatureHostFnData<const ARGS: usize, const DATAS: usize> = fn(
     ctx: &WeakContext,
     this: &WeakValue,
-    args: &[WeakValue],
+    args: &[WeakValue; ARGS],
     magic: i32,
-    data: &[WeakValue; COUNT],
+    data: &[WeakValue; DATAS],
 ) -> RefValue;
 
-impl<const COUNT: usize> HostFnData<COUNT> {
-    pub const LEN: usize = COUNT;
-
+impl<const ARGS: usize, const DATAS: usize> HostFnData<ARGS, DATAS> {
     #[doc(hidden)]
     pub unsafe fn new(v: raw::JSCFunctionDataFn) -> Self {
         Self(v)
     }
 }
 
+#[doc(hidden)]
+pub const fn host_fn_data_arg_num<const ARGS: usize, const DATAS: usize>(
+    _v: HostFnData<ARGS, DATAS>,
+) -> usize {
+    ARGS
+}
+
+#[doc(hidden)]
+pub const fn host_fn_data_data_num<const ARGS: usize, const DATAS: usize>(
+    _v: HostFnData<ARGS, DATAS>,
+) -> usize {
+    DATAS
+}
+
 #[macro_export]
 macro_rules! make_host_fn_data {
-    ($f:path, $len: literal) => {{
+    ($f:path) => {{
+        const ARGS: usize = $crate::host_fn_data_arg_num($f);
+        const DATAS: usize = $crate::host_fn_data_data_num($f);
         extern "C" fn __wrapper_fn(
             ctx: ::core::ptr::NonNull<$crate::raw::JSContext>,
             this_val: $crate::raw::JSValueConst,
-            argc: ::core::ffi::c_int,
+            _argc: ::core::ffi::c_int,
             argv: *mut $crate::raw::JSValueConst,
             magic: c_int,
             data: *mut $crate::raw::JSValueConst,
         ) -> $crate::raw::JSValue {
-            let _typecheck_len: usize = $len;
-            let _typecheck_f: $crate::SignatureHostFnData<$len> = $f;
+            let _typecheck_f: $crate::SignatureHostFnData<ARGS, DATAS> = $f;
             unsafe {
                 $crate::catch_unwind_and_throw_js_exception(ctx, || {
                     let ctx = $crate::context_arg(&ctx);
                     let this = $crate::this_val_arg(&this_val);
-                    let args = $crate::value_list_arg(argc as usize, &argv);
-                    let data = $crate::value_list_arg($len, &data);
+                    let args = $crate::value_list_arg::<ARGS>(&argv);
+                    let data = $crate::value_list_arg::<DATAS>(&data);
                     let result = $f(ctx, this, args, magic);
                     result.detatch()
                 })
             }
         }
-        unsafe { $crate::HostFnData::<$len>::new(__wrapper_fn) }
+        unsafe { $crate::HostFnData::<ARGS, DATAS>::new(__wrapper_fn) }
     }};
 }
 
@@ -173,6 +199,11 @@ impl HostFnMapFloat {
     pub unsafe fn new(v: raw::JSFFFn) -> Self {
         Self(v)
     }
+}
+
+#[doc(hidden)]
+pub const fn host_fn_map_float_arg_num() -> usize {
+    1
 }
 
 #[macro_export]
@@ -198,6 +229,11 @@ impl HostFnCombineFloat {
     pub unsafe fn new(v: raw::JSFFFFn) -> Self {
         Self(v)
     }
+}
+
+#[doc(hidden)]
+pub const fn host_fn_combine_float_arg_num() -> usize {
+    2
 }
 
 #[macro_export]
@@ -227,12 +263,18 @@ pub unsafe fn this_val_arg(this_val: &raw::JSValueConst) -> &WeakValue {
 
 /// Internal function for host function wrappers
 #[doc(hidden)]
-pub unsafe fn value_list_arg(len: usize, ptr: &*mut raw::JSValueConst) -> &[WeakValue] {
+pub unsafe fn value_list_arg<const ARGS: usize>(
+    ptr: &*mut raw::JSValueConst,
+) -> &[WeakValue; ARGS] {
     unsafe {
-        if len == 0 {
-            &[]
+        if ARGS == 0 {
+            let ptr = NonNull::<[WeakValue; ARGS]>::dangling();
+            ptr.as_ref()
         } else {
-            std::slice::from_raw_parts(ptr.cast::<WeakValue>(), len)
+            let ptr = NonNull::new(*ptr)
+                .unwrap_unchecked()
+                .cast::<[WeakValue; ARGS]>();
+            ptr.as_ref()
         }
     }
 }

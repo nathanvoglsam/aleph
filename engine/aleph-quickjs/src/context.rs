@@ -38,7 +38,8 @@ use raw::{JSEvalOptions, JSTag, JSValue};
 
 use crate::{
     ArgValue, Atom, HostFn, HostFnCombineFloat, HostFnData, HostFnMagic, HostFnMapFloat,
-    OwnPropertyNames, RefValue, Runtime, RuntimeString, WeakValue,
+    OwnPropertyNames, RefValue, Runtime, RuntimeString, WeakValue, host_fn_combine_float_arg_num,
+    host_fn_map_float_arg_num,
 };
 
 pub struct Context {
@@ -176,13 +177,17 @@ impl WeakContext {
     }
 
     #[inline]
-    pub fn new_host_function(&self, func: HostFn, name: &NStr, num_params: c_int) -> RefValue {
+    pub fn new_host_function<const ARGS: usize>(
+        &self,
+        func: HostFn<ARGS>,
+        name: &NStr,
+    ) -> RefValue {
         unsafe {
             let v = raw::JS_NewCFunction2(
                 self.c,
                 func.0,
                 name.to_cstr_ptr(),
-                num_params,
+                ARGS as c_int,
                 raw::JSCFunctionEnum::GENERIC,
                 0,
             );
@@ -191,11 +196,10 @@ impl WeakContext {
     }
 
     #[inline]
-    pub fn new_host_function_magic(
+    pub fn new_host_function_magic<const ARGS: usize>(
         &self,
-        func: HostFnMagic,
+        func: HostFnMagic<ARGS>,
         name: &NStr,
-        num_params: c_int,
         magic: c_int,
     ) -> RefValue {
         unsafe {
@@ -203,7 +207,7 @@ impl WeakContext {
                 self.c,
                 transmute(func.0),
                 name.to_cstr_ptr(),
-                num_params,
+                ARGS as c_int,
                 raw::JSCFunctionEnum::GENERIC_MAGIC,
                 magic,
             );
@@ -212,23 +216,22 @@ impl WeakContext {
     }
 
     #[inline]
-    pub fn new_host_function_data<const COUNT: usize>(
+    pub fn new_host_function_data<const ARGS: usize, const DATAS: usize>(
         &self,
-        func: HostFnData<COUNT>,
+        func: HostFnData<ARGS, DATAS>,
         name: &NStr,
-        num_params: c_int,
         magic: c_int,
         datas: &[ArgValue],
     ) -> RefValue {
         unsafe {
-            assert_eq!(HostFnData::<COUNT>::LEN, datas.len());
+            assert_eq!(DATAS, datas.len());
             let len: c_int = datas.len().try_into().unwrap();
             let datas = datas.as_ptr() as *const _ as *mut raw::JSValueConst;
             let v = raw::JS_NewCFunctionData2(
                 self.c,
                 func.0,
                 name.to_cstr_ptr(),
-                num_params,
+                ARGS as c_int,
                 magic,
                 len,
                 datas,
@@ -244,7 +247,7 @@ impl WeakContext {
                 self.c,
                 transmute(func.0),
                 name.to_cstr_ptr(),
-                1,
+                host_fn_map_float_arg_num() as c_int,
                 raw::JSCFunctionEnum::F_F,
                 0,
             );
@@ -263,7 +266,7 @@ impl WeakContext {
                 self.c,
                 transmute(func.0),
                 name.to_cstr_ptr(),
-                2,
+                host_fn_combine_float_arg_num() as c_int,
                 raw::JSCFunctionEnum::F_F_F,
                 0,
             );

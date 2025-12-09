@@ -42,8 +42,9 @@ pub use context::{Context, WeakContext};
 pub use host_function::{
     HostFn, HostFnCombineFloat, HostFnData, HostFnMagic, HostFnMapFloat, SignatureHostFn,
     SignatureHostFnCombineFloat, SignatureHostFnData, SignatureHostFnMagic,
-    SignatureHostFnMapFloat, catch_unwind_and_throw_js_exception, context_arg, this_val_arg,
-    value_list_arg,
+    SignatureHostFnMapFloat, catch_unwind_and_throw_js_exception, context_arg, host_fn_arg_num,
+    host_fn_combine_float_arg_num, host_fn_data_arg_num, host_fn_data_data_num,
+    host_fn_magic_arg_num, host_fn_map_float_arg_num, this_val_arg, value_list_arg,
 };
 pub use own_property_names::{OwnPropertyNames, PropertyEnum};
 pub use runtime::Runtime;
