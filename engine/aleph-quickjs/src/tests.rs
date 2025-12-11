@@ -33,8 +33,8 @@ use aleph_nstr::{NStr, nstr};
 use raw::*;
 
 use crate::{
-    ArgValue, Context, NumberVariant, RefValue, Runtime, Value, WeakContext, WeakValue,
-    make_host_fn, make_host_fn_combine_float, make_host_fn_map_float,
+    ArgValue, NumberVariant, RefValue, Runtime, Value, WeakContext, WeakValue, make_host_fn,
+    make_host_fn_combine_float, make_host_fn_map_float,
 };
 
 #[test]
@@ -56,8 +56,7 @@ pub fn eval_script_int_add() {
 
             let filename = nstr!("script.js");
             let script = nstr!("2 + 2");
-            let result = context.eval(script, filename, JSEvalFlags::STRICT);
-            let result = check_exception(&context, result);
+            let result = context.eval(script, filename, JSEvalFlags::STRICT).unwrap();
 
             assert_eq!(result.get_tag(), JSTag::INT);
             assert_eq!(result.get_number(), Some(NumberVariant::Integer(4)));
@@ -74,14 +73,28 @@ pub fn eval_script_float_add() {
 
             let filename = nstr!("script.js");
             let script = nstr!("2.2 + 2.4");
-            let result = context.eval(script, filename, JSEvalFlags::STRICT);
-            let result = check_exception(&context, result);
+            let result = context.eval(script, filename, JSEvalFlags::STRICT).unwrap();
 
             assert_eq!(result.get_tag(), JSTag::FLOAT64);
             assert_eq!(
                 result.get_number(),
                 Some(NumberVariant::Double(2.2f64 + 2.4f64))
             );
+        });
+    });
+}
+
+#[test]
+pub fn eval_script_throw() {
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
+
+            let filename = nstr!("script.js");
+            let script = nstr!("throw \"This is an exception or something\"");
+            let result = context.eval(script, filename, JSEvalFlags::STRICT);
+            assert!(result.is_err());
         });
     });
 }
@@ -110,16 +123,19 @@ pub fn eval_script_call_c_func() {
             let global = context.get_global_object();
 
             let func_name = nstr!("call_me_maybe");
-            let func_v = context.new_host_function(make_host_fn!(func), func_name);
+            let func_v = context
+                .new_host_function(make_host_fn!(func), func_name)
+                .unwrap();
             assert!(func_v.is_object());
 
-            let result = context.set_property_str(&global, func_name.to_str(), func_v.clone());
-            assert_ne!(result, -1);
+            let set = context
+                .set_property_str(&global, func_name.to_str(), func_v.clone())
+                .unwrap();
+            assert!(set);
 
             let filename = nstr!("script.js");
             let script = nstr!("call_me_maybe(56);");
-            let result = context.eval(script, filename, JSEvalFlags::STRICT);
-            let result = check_exception(&context, result);
+            let result = context.eval(script, filename, JSEvalFlags::STRICT).unwrap();
 
             assert!(CALLED.load(Ordering::SeqCst));
             assert_eq!(result.get_tag(), JSTag::INT);
@@ -153,16 +169,19 @@ pub fn eval_script_call_c_func_not_enough_args() {
             let global = context.get_global_object();
 
             let func_name = nstr!("call_me_maybe");
-            let func_v = context.new_host_function(make_host_fn!(func), func_name);
+            let func_v = context
+                .new_host_function(make_host_fn!(func), func_name)
+                .unwrap();
             assert!(func_v.is_object());
 
-            let result = context.set_property_str(&global, func_name.to_str(), func_v.clone());
-            assert_ne!(result, -1);
+            let set = context
+                .set_property_str(&global, func_name.to_str(), func_v.clone())
+                .unwrap();
+            assert!(set);
 
             let filename = nstr!("script.js");
             let script = nstr!("call_me_maybe(56);");
-            let result = context.eval(script, filename, JSEvalFlags::STRICT);
-            let result = check_exception(&context, result);
+            let result = context.eval(script, filename, JSEvalFlags::STRICT).unwrap();
 
             assert!(CALLED.load(Ordering::SeqCst));
             assert_eq!(result.get_tag(), JSTag::INT);
@@ -185,22 +204,23 @@ pub fn eval_script_call_c_func_map_float() {
             let global = context.get_global_object();
 
             let func_name = nstr!("call_me_maybe");
-            let func_v =
-                context.new_host_function_map_float(make_host_fn_map_float!(func), func_name);
+            let func_v = context
+                .new_host_function_map_float(make_host_fn_map_float!(func), func_name)
+                .unwrap();
             assert!(func_v.is_object());
 
-            let result = context.set_property_str(&global, func_name.to_str(), func_v.clone());
-            assert_ne!(result, -1);
+            let set = context
+                .set_property_str(&global, func_name.to_str(), func_v.clone())
+                .unwrap();
+            assert!(set);
 
             let filename = nstr!("script.js");
             let script = nstr!("function main() { return call_me_maybe(21); }");
-            let result = context.eval(script, filename, JSEvalFlags::STRICT);
-            let _result = check_exception(&context, result);
+            let _result = context.eval(script, filename, JSEvalFlags::STRICT).unwrap();
 
             let global = context.get_global_object();
-            let js_func = context.get_property_str(&global, "main");
-            let result = context.call(&js_func, &Value::UNDEFINED, &[]);
-            let result = check_exception(&context, result);
+            let js_func = context.get_property_str(&global, "main").unwrap();
+            let result = context.call(&js_func, &Value::UNDEFINED, &[]).unwrap();
 
             assert_eq!(result.get_number(), Some(NumberVariant::Integer(43)));
         });
@@ -222,21 +242,22 @@ pub fn eval_script_call_c_func_combine_float() {
 
             let func_name = nstr!("call_me_maybe");
             let func_v = context
-                .new_host_function_combine_float(make_host_fn_combine_float!(func), func_name);
+                .new_host_function_combine_float(make_host_fn_combine_float!(func), func_name)
+                .unwrap();
             assert!(func_v.is_object());
 
-            let result = context.set_property_str(&global, func_name.to_str(), func_v.clone());
-            assert_ne!(result, -1);
+            let set = context
+                .set_property_str(&global, func_name.to_str(), func_v.clone())
+                .unwrap();
+            assert!(set);
 
             let filename = nstr!("script.js");
             let script = nstr!("function main() { return call_me_maybe(21, 2); }");
-            let result = context.eval(script, filename, JSEvalFlags::STRICT);
-            let _result = check_exception(&context, result);
+            let _result = context.eval(script, filename, JSEvalFlags::STRICT).unwrap();
 
             let global = context.get_global_object();
-            let js_func = context.get_property_str(&global, "main");
-            let result = context.call(&js_func, &Value::UNDEFINED, &[]);
-            let result = check_exception(&context, result);
+            let js_func = context.get_property_str(&global, "main").unwrap();
+            let result = context.call(&js_func, &Value::UNDEFINED, &[]).unwrap();
 
             assert_eq!(result.get_number(), Some(NumberVariant::Integer(43)));
         });
@@ -255,7 +276,7 @@ pub fn eval_script_call_c_func_recursive() {
         } else {
             let new_depth = Value::new_f64(depth + 1.0);
             let args: [ArgValue; 2] = [f.as_arg(), new_depth.as_arg()];
-            ctx.call(f, &Value::UNDEFINED, &args)
+            ctx.call(f, &Value::UNDEFINED, &args).into()
         }
     }
 
@@ -267,21 +288,23 @@ pub fn eval_script_call_c_func_recursive() {
             let global = context.get_global_object();
 
             let func_name = nstr!("call_me_maybe");
-            let func_v = context.new_host_function(make_host_fn!(func), func_name);
+            let func_v = context
+                .new_host_function(make_host_fn!(func), func_name)
+                .unwrap();
             assert!(func_v.is_object());
 
-            let result = context.set_property_str(&global, func_name.to_str(), func_v.clone());
-            assert_ne!(result, -1);
+            let result = context
+                .set_property_str(&global, func_name.to_str(), func_v.clone())
+                .unwrap();
+            assert!(result);
 
             let filename = nstr!("script.js");
             let script = nstr!("function main() { return call_me_maybe(call_me_maybe, 0); }");
-            let result = context.eval(script, filename, JSEvalFlags::STRICT);
-            let _result = check_exception(&context, result);
+            let _result = context.eval(script, filename, JSEvalFlags::STRICT).unwrap();
 
             let global = context.get_global_object();
-            let js_func = context.get_property_str(&global, "main");
-            let result = context.call(&js_func, &Value::UNDEFINED, &[]);
-            let result = check_exception(&context, result);
+            let js_func = context.get_property_str(&global, "main").unwrap();
+            let result = context.call(&js_func, &Value::UNDEFINED, &[]).unwrap();
 
             assert_eq!(result.get_number(), Some(NumberVariant::Double(25.0)));
         });
@@ -313,8 +336,7 @@ pub fn eval_script_get_property_names() {
             let context = runtime.new_context().unwrap();
 
             let filename = nstr!("script.js");
-            let result = context.eval(SCRIPT, filename, JSEvalFlags::STRICT);
-            let result = check_exception(&context, result);
+            let result = context.eval(SCRIPT, filename, JSEvalFlags::STRICT).unwrap();
             assert!(
                 result.is_undefined(),
                 "Expected 'undefined' got '{:?}'",
@@ -323,7 +345,7 @@ pub fn eval_script_get_property_names() {
 
             let global = context.get_global_object();
 
-            let result = context.get_property_str(&global, "OUTPUT");
+            let result = context.get_property_str(&global, "OUTPUT").unwrap();
 
             assert!(
                 result.is_object(),
@@ -331,10 +353,12 @@ pub fn eval_script_get_property_names() {
                 result.get_tag()
             );
 
-            let props = context.get_own_property_names(
-                &result,
-                JSGetPropertyNameOption::STRING_MASK | JSGetPropertyNameOption::ENUM_ONLY,
-            );
+            let props = context
+                .get_own_property_names(
+                    &result,
+                    JSGetPropertyNameOption::STRING_MASK | JSGetPropertyNameOption::ENUM_ONLY,
+                )
+                .unwrap();
 
             let props = props.iter();
 
@@ -379,8 +403,7 @@ pub fn eval_script_to_serde() {
 
             //unsafe {
             let filename = nstr!("script.js");
-            let result = context.eval(SCRIPT, filename, JSEvalFlags::STRICT);
-            let result = check_exception(&context, result);
+            let result = context.eval(SCRIPT, filename, JSEvalFlags::STRICT).unwrap();
             assert!(
                 result.is_undefined(),
                 "Expected 'undefined' got '{:?}'",
@@ -389,7 +412,7 @@ pub fn eval_script_to_serde() {
 
             let global = context.get_global_object();
 
-            let result = context.get_property_str(&global, "OUTPUT");
+            let result = context.get_property_str(&global, "OUTPUT").unwrap();
 
             assert!(
                 result.is_object(),
@@ -435,7 +458,7 @@ pub fn runtime_deferred_gc_free() {
                 let baseline = context.compute_memory_usage();
 
                 // Create an object and assert we have exclusive ownership of it
-                let obj1 = context.new_object();
+                let obj1 = context.new_object().unwrap();
                 assert_eq!(obj1.get_ref_count(), Some(1));
 
                 // Capture the allocation stats after we've created a single object. We should have exactly
@@ -495,20 +518,21 @@ pub fn set_object_property_ref_count_behavior() {
             let runtime = Runtime::init_thread_runtime();
             let context = runtime.new_context().unwrap();
 
-            let root = context.new_object();
-            let leaf = context.new_object();
+            let root = context.new_object().unwrap();
+            let leaf = context.new_object().unwrap();
 
             assert_eq!(root.get_ref_count(), Some(1));
             assert_eq!(leaf.get_ref_count(), Some(1));
 
-            let result = context.set_property_str(&root, "leaf", leaf.clone());
-            assert!(result >= 0);
+            let result = context
+                .set_property_str(&root, "leaf", leaf.clone())
+                .unwrap();
+            assert!(result);
 
             assert_eq!(root.get_ref_count(), Some(1));
             assert_eq!(leaf.get_ref_count(), Some(2));
 
-            let result = context.delete_property_str(&root, "leaf");
-            assert!(result >= 0);
+            let _ = context.delete_property_str(&root, "leaf").unwrap();
 
             assert_eq!(root.get_ref_count(), Some(1));
             assert_eq!(leaf.get_ref_count(), Some(1));
@@ -525,24 +549,11 @@ pub fn string_with_internal_null_character() {
 
             let string = "String with a \0 character in the middle";
 
-            let v = context.new_string(string);
+            let v = context.new_string(string).unwrap();
             assert!(v.is_string());
 
             let got_string = context.to_c_str(&v).unwrap();
             assert_eq!(string, got_string.as_ref());
         });
     });
-}
-
-fn check_exception<'a>(ctx: &'a Context, v: RefValue) -> RefValue {
-    if v.is_exception() {
-        let exception = ctx.get_exception();
-        let message = ctx
-            .to_c_str(&exception)
-            .expect("Failed to get exception message");
-        let message_str = message.as_ref();
-        panic!("Unhandled JS Exception: {}", message_str);
-    } else {
-        v
-    }
 }

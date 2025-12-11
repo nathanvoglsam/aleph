@@ -42,6 +42,12 @@ use crate::{Context, WeakContext};
 pub struct Runtime(pub(crate) Rc<InnerRuntime>);
 
 impl Runtime {
+    /// Get a handle to the thread-local runtime on the calling thread, initializing the runtime if
+    /// it has not already been created.
+    ///
+    /// This will create a 'default' runtime without any extra configuration. Use
+    /// [`Runtime::init_thread_runtime_in`] to create a runtime that overrides the allocator
+    /// functions.
     #[inline]
     pub fn init_thread_runtime() -> Self {
         let rt = THREAD_RUNTIME.with(|rt| {
@@ -54,6 +60,18 @@ impl Runtime {
         Self(rt)
     }
 
+    /// Get a handle to the thread-local runtime on the calling thread, initializing the runtime if
+    /// it has not already been created.
+    ///
+    /// This function provides extended functionality over [`Runtime::init_thread_runtime`],
+    /// allowing configuration of the runtime's malloc/free functions.
+    ///
+    /// # Warning
+    ///
+    /// The thread-local runtime is lazily initialized on first use. If another caller has already
+    /// created the runtime with another function then this function will simply return the existing
+    /// runtime _without configuring the allocator functions_. If you intend to use this interface
+    /// it is recommended to call this _very_ early in your application lifecycle.
     #[inline]
     pub fn init_thread_runtime_in<Alloc: Allocator + Sized>(a: &'static Alloc) -> Self {
         extern "C" fn js_calloc<A: Allocator + Sized>(
@@ -121,6 +139,7 @@ impl Runtime {
         Self(rt)
     }
 
+    /// Constructs a new [`Context`] inside this runtime.
     #[inline]
     pub fn new_context(&self) -> Option<Context> {
         unsafe {
@@ -132,6 +151,7 @@ impl Runtime {
         }
     }
 
+    /// Triggers a manual GC cycle on the runtime.
     #[inline]
     pub fn gc(&self) {
         unsafe {

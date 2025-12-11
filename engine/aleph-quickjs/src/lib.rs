@@ -38,7 +38,7 @@ mod runtime_string;
 mod value;
 
 pub use atom::Atom;
-pub use context::{Context, WeakContext};
+pub use context::{Context, Exception, WeakContext};
 pub use host_function::{
     HostFn, HostFnCombineFloat, HostFnData, HostFnMagic, HostFnMapFloat, SignatureHostFn,
     SignatureHostFnCombineFloat, SignatureHostFnData, SignatureHostFnMagic,

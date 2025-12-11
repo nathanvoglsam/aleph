@@ -72,6 +72,7 @@ fn run_tsc_with_node(project: &AlephProject) -> anyhow::Result<()> {
     // If we have a bundled node exe use that, otherwise just rely on what's in the path
     let node = project.node_path();
     let node = if node.exists() {
+        log::trace!("Found 'node' in our SDK at '{node}'.");
         dunce_utf8::simplified(node)
     } else {
         log::warn!("Failed to find 'node' in our SDK! Relying on system path instead");
@@ -82,6 +83,7 @@ fn run_tsc_with_node(project: &AlephProject) -> anyhow::Result<()> {
     let tsc = project.tsc_path();
     let tsc = dunce_utf8::simplified(tsc);
     if !tsc.exists() {
+        log::error!("tsc.js not found!");
         return Err(anyhow!("tsc.js not found!"));
     }
 

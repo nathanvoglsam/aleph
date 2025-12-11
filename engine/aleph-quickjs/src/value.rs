@@ -28,6 +28,7 @@
 //
 
 use std::ffi::c_int;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ops::Deref;
 
@@ -64,7 +65,7 @@ impl Value {
     ///
     /// This does not contain the actual exception value. The exception object must be fetched
     /// from the context with [`Context::get_exception`]. Because this contains nothing but
-    /// a tag signalling an exception being thrown, this is a pure value type too.
+    /// a tag signaling an exception being thrown, this is a pure value type too.
     pub const EXCEPTION: Self = Self(JSValue::EXCEPTION);
 
     /// A special QuickJS value for 'uninitialized'. I don't actually know what this is for.
@@ -120,6 +121,7 @@ impl Value {
             | JSTag::UNDEFINED
             | JSTag::UNINITIALIZED
             | JSTag::EXCEPTION
+            | JSTag::SHORT_BIG_INT
             | JSTag::FLOAT64 => Some(Self(v)),
             _ => unreachable!(),
         }
@@ -155,7 +157,7 @@ impl Value {
     /// any other value will be stored as a double.
     ///
     /// This, of course, means that in reality we can only store integer values within the
-    /// safe integer range of a double (`2^53 - 1`) rather than the full range if an i64. It is the
+    /// safe integer range of a double (`2^53 - 1`) rather than the full range of an i64. It is the
     /// callers responsibility to check this range if it's important the exact value is retained.
     pub const fn new_i64(val: i64) -> Self {
         let min = i32::MIN as i64;
@@ -189,6 +191,7 @@ impl Value {
 impl Deref for Value {
     type Target = WeakValue;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         // Safety: We guarantee the layout of RefValue and WeakValue are the same via a repr
         //         transparent attribute. WeakValue becomes a borrowed view over the RefValue.
@@ -198,13 +201,14 @@ impl Deref for Value {
 }
 
 impl Into<RefValue> for Value {
+    #[inline]
     fn into(self) -> RefValue {
         RefValue::new(self.0)
     }
 }
 
 /// A wrapper over [`JSValue`] that can contain reference JS values like 'object' or 'string'. This
-/// may also contain pure reference types too.
+/// may also contain pure value types too, like number.
 ///
 /// [`RefValue`] is an _owned_ JS value, with a retained reference count. When an instance of this
 /// type is destroyed the value's reference count will be decremented.
@@ -212,7 +216,7 @@ impl Into<RefValue> for Value {
 pub struct RefValue(pub(crate) WeakValue);
 
 impl RefValue {
-    pub(crate) fn new(v: JSValue) -> Self {
+    pub(crate) const fn new(v: JSValue) -> Self {
         Self(WeakValue(v))
     }
 
@@ -223,8 +227,7 @@ impl RefValue {
     /// This will cause a memory leak as the refcount will never reach zero under normal
     /// circumstances. There are valid uses for this function when calling the qjs C API directly,
     /// but outside of those cases this should not be used.
-    #[inline]
-    pub fn detatch(self) -> JSValue {
+    pub const fn detatch(self) -> JSValue {
         let v = self.0.0;
         std::mem::forget(self);
         v
@@ -241,6 +244,7 @@ impl Clone for RefValue {
 impl Deref for RefValue {
     type Target = WeakValue;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -260,8 +264,17 @@ impl Drop for RefValue {
 /// get passed to JS call functions.
 #[repr(transparent)]
 pub struct ArgValue<'a> {
-    pub(crate) v: JSValue,
+    pub(crate) v: WeakValue,
     pub(crate) phantom: PhantomData<&'a ()>,
+}
+
+impl<'a> Deref for ArgValue<'a> {
+    type Target = WeakValue;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.v
+    }
 }
 
 /// A 'view' like object derived from a [`RefValue`] or some other owning context. A weak value
@@ -292,7 +305,7 @@ impl WeakValue {
     #[inline]
     pub fn as_arg(&self) -> ArgValue<'_> {
         ArgValue {
-            v: self.0,
+            v: WeakValue(self.0),
             phantom: PhantomData::default(),
         }
     }
@@ -303,7 +316,7 @@ impl WeakValue {
     ///
     /// This uses what QuickJS calls the 'normalized' tag. A NaN-boxed value stores the tag as
     /// different NaN bit patterns. If we have a NaN value that stores something that isn't a JSTag
-    /// then it's just treted as 'number'. The problem is if we try and match on our enumerated tag
+    /// then it's just treated as 'number'. The problem is if we try and match on our enumerated tag
     /// values then we may get values that mean 'number' that we can't match on.
     ///
     /// QuickJS provides the 'normalized tag' function that normalizes NaN-boxed tags into the
@@ -333,52 +346,64 @@ impl WeakValue {
         }
     }
 
+    /// Returns true if 'self' is a 'number'
     pub const fn is_number(&self) -> bool {
         self.0.is_number()
     }
 
+    /// Returns true if 'self' is a 'boolean'
     pub const fn is_bool(&self) -> bool {
         self.0.is_bool()
     }
 
+    /// Returns true if 'self' is a null reference
     pub const fn is_null(&self) -> bool {
         self.0.is_null()
     }
 
+    /// Returns true if 'self' is the 'undefined' value
     pub const fn is_undefined(&self) -> bool {
         self.0.is_undefined()
     }
 
+    /// Returns true if 'self' is an exception signal
     pub const fn is_exception(&self) -> bool {
         self.0.is_exception()
     }
 
+    /// Returns true if 'self' is uninitialized
     pub const fn is_uninitialized(&self) -> bool {
         self.0.is_uninitialized()
     }
 
+    /// Returns true if 'self' is a big int
     pub const fn is_big_int(&self) -> bool {
         self.0.is_big_int()
     }
 
+    /// Returns true if 'self' is a string
     pub const fn is_string(&self) -> bool {
         self.0.is_string()
     }
 
+    /// Returns true if 'self' is a symbol
     pub const fn is_symbol(&self) -> bool {
         self.0.is_symbol()
     }
 
+    /// Returns true if 'self' is an object
     pub const fn is_object(&self) -> bool {
         self.0.is_object()
     }
 
-    /// Returns whether 'self' is an array
+    /// Returns true if 'self' is an array
     pub fn is_array(&self) -> bool {
         // Safety: This wrapper type is guaranteed to contain a live JS object
         unsafe { raw::JS_IsArray(self.0) }
     }
 
+    /// Returns the reference count of the value, if it is a reference type. Pure value types like
+    /// 'number' return [`None`].
     #[inline(always)]
     pub fn get_ref_count(&self) -> Option<c_int> {
         // Safety: This wrapper type is guaranteed to contain a live JS object
@@ -414,6 +439,7 @@ impl NumberVariant {
         }
     }
 
+    /// Returns the inner [`f64`] if self contains a [`NumberVariant::Double`] variant.
     pub const fn get_double(self) -> Option<f64> {
         match self {
             NumberVariant::Double(v) => Some(v),
@@ -421,6 +447,7 @@ impl NumberVariant {
         }
     }
 
+    /// Returns the inner [`c_int`] if self contains a [`NumberVariant::Integer`] variant.
     pub const fn get_int(self) -> Option<c_int> {
         match self {
             NumberVariant::Double(_) => None,

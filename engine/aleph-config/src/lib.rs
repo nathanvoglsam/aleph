@@ -63,7 +63,7 @@ impl ConfigRunner {
                 qjs::Runtime::init_thread_runtime()
             };
             let context = runtime.new_context().unwrap();
-            let config_object = context.new_object();
+            let config_object = context.new_object().unwrap();
             let config_dir = find_folder_in_search_path("configs")?;
 
             let out = Self {
@@ -127,9 +127,7 @@ impl ConfigRunner {
             // config into.
             let global = context.get_global_object();
             let config_object = self.config_object.as_ref().unwrap();
-            if 0 > context.set_property_str(&global, "Configs", config_object.clone()) {
-                return Err(js_exception_to_err(&context));
-            }
+            context.set_property_str(&global, "Configs", config_object.clone())?;
 
             // Provide the 'Environment' object which contains info about the build+platform+arch
             Self::setup_global_environment(&context)?;
@@ -137,8 +135,9 @@ impl ConfigRunner {
             // And finally we evaluate the script. The script is expected to write the config into
             // the 'Configs' global.
             log::trace!("Running {filename}");
-            let result = context.eval(script_nstr, filename, qjs::raw::JSEvalFlags::STRICT);
-            let _ = check_exception(&context, result)?;
+            let _ = context
+                .eval(script_nstr, filename, qjs::raw::JSEvalFlags::STRICT)
+                .unwrap();
 
             Ok(())
         })
@@ -262,20 +261,20 @@ impl ConfigRunner {
             aleph_target::Platform::WindowsMSVC => "windows",
             _ => target_platform().name(),
         };
-        let p_string = context.new_string(p_string);
+        let p_string = context.new_string(p_string)?;
 
         assert!(!target_architecture().is_unknown());
-        let a_string = context.new_string(target_architecture().name());
+        let a_string = context.new_string(target_architecture().name())?;
 
-        let b_string = context.new_string(target_build_type().name());
+        let b_string = context.new_string(target_build_type().name())?;
 
-        let env = context.new_object();
-        context.set_property_str(&env, "platform", p_string);
-        context.set_property_str(&env, "arch", a_string);
-        context.set_property_str(&env, "buildType", b_string);
+        let env = context.new_object()?;
+        context.set_property_str(&env, "platform", p_string)?;
+        context.set_property_str(&env, "arch", a_string)?;
+        context.set_property_str(&env, "buildType", b_string)?;
 
         let global = context.get_global_object();
-        context.set_property_str(&global, "Environment", env);
+        context.set_property_str(&global, "Environment", env)?;
 
         Ok(())
     }
@@ -307,6 +306,18 @@ pub enum RunConfigError {
 
     #[error("No config with the given name was found")]
     NoConfig,
+}
+
+impl<'a> From<qjs::Exception<'a>> for RunConfigError {
+    fn from(value: qjs::Exception<'a>) -> Self {
+        let c = value.context();
+        let v = value.into_inner();
+        let string = c
+            .to_c_str(&v)
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| String::from("<Unknown error>"));
+        RunConfigError::Js(string)
+    }
 }
 
 ///
@@ -351,26 +362,6 @@ fn find_folder_in_search_path(folder: &str) -> io::Result<Utf8PathBuf> {
         io::ErrorKind::NotFound,
         format!("Failed to find a '{folder}' directory in our search paths."),
     ))
-}
-
-fn check_exception(
-    context: &qjs::Context,
-    v: qjs::RefValue,
-) -> Result<qjs::RefValue, RunConfigError> {
-    if v.is_exception() {
-        Err(js_exception_to_err(context))
-    } else {
-        Ok(v)
-    }
-}
-
-fn js_exception_to_err(context: &qjs::Context) -> RunConfigError {
-    let exception = context.get_exception();
-    assert!(!exception.is_undefined());
-    let message = context
-        .to_c_str(&exception)
-        .expect("Failed to get exception message");
-    RunConfigError::Js(message.to_string())
 }
 
 struct Config;

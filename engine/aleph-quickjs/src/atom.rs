@@ -50,6 +50,7 @@ impl Clone for Atom {
 }
 
 impl Drop for Atom {
+    #[inline]
     fn drop(&mut self) {
         unsafe {
             with_runtime(|rt| {

@@ -29,11 +29,16 @@
 
 use std::ffi::c_char;
 use std::ops::Deref;
+use std::ptr::NonNull;
 
 use crate::runtime::with_runtime;
 
+/// A 'c-string' created from a `JSContext`. This is different from a `JSValue` that contains a
+/// string, which is a reference to a whole JS object. This is a reference to a string, and needs
+/// to be freed to the runtime `JS_FreeCStringRT`.
+#[repr(transparent)]
 pub struct RuntimeString {
-    v: *const str,
+    v: NonNull<str>,
 }
 
 impl RuntimeString {
@@ -45,14 +50,16 @@ impl RuntimeString {
     /// allocated from the owning thread's [`Runtime`]. [`RuntimeString`] will take ownership of the
     /// string and the [`Drop`] implementation will free it.
     pub const unsafe fn from_ctx_and_str(v: &str) -> Self {
-        Self { v: v as *const str }
+        Self {
+            v: NonNull::from_ref(v),
+        }
     }
 }
 
 impl Drop for RuntimeString {
     fn drop(&mut self) {
         with_runtime(|rt| unsafe {
-            raw::JS_FreeCStringRT(rt.0, (*self.v).as_ptr() as *const c_char)
+            raw::JS_FreeCStringRT(rt.0, self.v.cast::<c_char>().as_ptr() as *const _)
         })
     }
 }
@@ -60,8 +67,9 @@ impl Drop for RuntimeString {
 impl AsRef<str> for RuntimeString {
     #[inline]
     fn as_ref(&self) -> &str {
-        // Safety: It is unsafe for a caller to construct a CtxString where this operation is unsafe
-        unsafe { &*self.v }
+        // Safety: It is unsafe for a caller to construct a RuntimeString where this operation is
+        // unsafe
+        unsafe { self.v.as_ref() }
     }
 }
 
@@ -71,5 +79,17 @@ impl Deref for RuntimeString {
     #[inline]
     fn deref(&self) -> &Self::Target {
         self.as_ref()
+    }
+}
+
+impl std::fmt::Debug for RuntimeString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self)
+    }
+}
+
+impl std::fmt::Display for RuntimeString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self)
     }
 }
