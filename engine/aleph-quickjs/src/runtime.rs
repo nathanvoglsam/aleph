@@ -195,5 +195,5 @@ impl Drop for InnerRuntime {
 }
 
 thread_local! {
-    static THREAD_RUNTIME: OnceCell<Rc<InnerRuntime>> = OnceCell::new();
+    static THREAD_RUNTIME: OnceCell<Rc<InnerRuntime>> = const { OnceCell::new() };
 }

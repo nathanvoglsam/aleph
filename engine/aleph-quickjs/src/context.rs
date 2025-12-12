@@ -37,10 +37,11 @@ use std::ptr::NonNull;
 use aleph_nstr::NStr;
 use raw::{JSEvalOptions, JSTag, JSValue};
 
+use crate::class::ClassOpaqueContainer;
 use crate::{
-    ArgValue, Atom, HostFn, HostFnCombineFloat, HostFnData, HostFnMagic, HostFnMapFloat,
-    OwnPropertyNames, RefValue, Runtime, RuntimeString, WeakValue, host_fn_combine_float_arg_num,
-    host_fn_map_float_arg_num,
+    ArgValue, Atom, Class, ClassOpaqueHandle, HostFn, HostFnCombineFloat, HostFnData, HostFnMagic,
+    HostFnMapFloat, OwnPropertyNames, RefValue, Runtime, RuntimeString, WeakValue,
+    host_fn_combine_float_arg_num, host_fn_map_float_arg_num,
 };
 
 pub struct Context {
@@ -181,6 +182,33 @@ impl WeakContext {
         unsafe {
             let v = raw::JS_NewObject(self.c);
             self.maybe_exception(RefValue::new(v))
+        }
+    }
+
+    #[inline]
+    pub fn new_object_class<T: Class<Opaque: ClassOpaqueContainer>>(
+        &self,
+        state: <T as Class>::Opaque,
+    ) -> Result<RefValue, Exception<'_>> {
+        unsafe {
+            // Construct our object. May lazy init the class id on first usage.
+            let id = T::get_thread_class_id();
+            let v = raw::JS_NewObjectClass(self.c, id.0.get() as c_int);
+            let v = self.maybe_exception(RefValue::new(v))?;
+
+            // Try and set the opaque. This should never be able to fail, but we keep this here as
+            // a defense.
+            let opaque = state.into_raw();
+            let result = raw::JS_SetOpaque(v.0.0, opaque.as_ptr());
+            if result < 0 {
+                // If we fail to set the opaque state on the object we reconstitute it and drop it
+                let state = <T as Class>::Opaque::from_raw(opaque);
+                drop(state);
+
+                // And return an error.
+                return Err(Exception::undefined(self));
+            }
+            Ok(v)
         }
     }
 
@@ -528,6 +556,88 @@ impl WeakContext {
     pub fn atom_to_c_str(&self, atom: &Atom) -> Result<RuntimeString, Exception<'_>> {
         let string = self.atom_to_string(atom)?;
         self.to_c_str(&string).ok_or(Exception::undefined(self))
+    }
+
+    /// Fetches the 'handle' opaque attached to the given value, if one exists for class `T` on the
+    /// value.
+    pub fn get_opaque_handle<T: Class<Opaque: ClassOpaqueHandle>>(
+        &self,
+        v: &WeakValue,
+    ) -> Option<T::Opaque> {
+        unsafe {
+            let ptr = raw::JS_GetOpaque(v.0, T::get_thread_class_id())?;
+            Some(T::Opaque::from_raw(ptr))
+        }
+    }
+
+    /// Retreives a reference to the inner object stored inside the opaque slot on the given value,
+    /// if one exists for class `T` on the value.
+    pub fn borrow_opaque_ref<'a, T: Class<Opaque: ClassOpaqueContainer>>(
+        &self,
+        v: &'a WeakValue,
+    ) -> Option<&'a <T::Opaque as ClassOpaqueContainer>::Inner> {
+        unsafe {
+            let ptr = raw::JS_GetOpaque(v.0, T::get_thread_class_id())?;
+            let out = T::Opaque::ptr_to_inner(ptr);
+            Some(out.as_ref())
+        }
+    }
+
+    /// Retreives a reference to the inner object stored inside the opaque slot on the given value,
+    /// if one exists for class `T` on the value.
+    ///
+    /// This returns a mutable borrow and, similar to [`Context::take_opaque`], performs a dynamic
+    /// borrow check by requiring a mutable borrow of a [`RefValue`] and only returning a reference
+    /// if the reference count on the object is 1.
+    pub fn borrow_opaque_mut<'a, T: Class<Opaque: ClassOpaqueContainer>>(
+        &self,
+        v: &'a mut RefValue,
+    ) -> Option<&'a mut <T::Opaque as ClassOpaqueContainer>::Inner> {
+        unsafe {
+            if matches!(v.0.0.get_ref_count(), Some(1)) {
+                // We've got an exclusive borrow!
+                let ptr = raw::JS_GetOpaque(v.0.0, T::get_thread_class_id())?;
+                let mut out = T::Opaque::ptr_to_inner(ptr);
+                Some(out.as_mut())
+            } else {
+                // If we have no ref-count then the value isn't an object so there's no object to
+                // take. If the ref-count isn't 1 then we don't have a true exclusive borrow so we
+                // can't take from the opaque slot either.
+                None
+            }
+        }
+    }
+
+    /// Takes the opaque from the given [`RefValue`] and returns it to the caller, if one exists for
+    /// class `T` on that value.
+    ///
+    /// This must take an exclusive borrow of 'v', and _must_ be a [`RefValue`] because we must
+    /// assert that this [`RefValue`] is the _only_ reference to the underlying JS object. This is,
+    /// in effect, a runtime borrow check. We must ensure there are no outstanding borrows of 'v' to
+    /// prevent [`Context::borrow_opaque`] from being invalidated by moving the opaque out of the
+    /// object.
+    ///
+    /// We can guarantee we own _a_ [`RefValue`], but we can only know if we own the JS value inside
+    /// by checking the reference count. Once we've proven we have truly exclusive access to the
+    /// JS value we can take the 'opaque' from the value.
+    pub fn take_opaque<T: Class<Opaque: ClassOpaqueContainer>>(
+        &self,
+        v: &mut RefValue,
+    ) -> Option<T::Opaque> {
+        unsafe {
+            if matches!(v.0.0.get_ref_count(), Some(1)) {
+                // We've got an exclusive borrow!
+                let ptr = raw::JS_GetOpaque(v.0.0, T::get_thread_class_id())?;
+                let _ignore = raw::JS_SetOpaque(v.0.0, std::ptr::null_mut());
+                let out = T::Opaque::from_raw(ptr);
+                Some(out)
+            } else {
+                // If we have no ref-count then the value isn't an object so there's no object to
+                // take. If the ref-count isn't 1 then we don't have a true exclusive borrow so we
+                // can't take from the opaque slot either.
+                None
+            }
+        }
     }
 
     pub(crate) fn check_exception<T>(&self, r: c_int, v: T) -> Result<T, Exception<'_>> {

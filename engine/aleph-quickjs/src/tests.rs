@@ -28,13 +28,14 @@
 //
 
 use std::collections::HashSet;
+use std::rc::Rc;
 
 use aleph_nstr::{NStr, nstr};
 use raw::*;
 
 use crate::{
     ArgValue, NumberVariant, RefValue, Runtime, Value, WeakContext, WeakValue, make_host_fn,
-    make_host_fn_combine_float, make_host_fn_map_float,
+    make_host_fn_combine_float, make_host_fn_map_float, new_class,
 };
 
 #[test]
@@ -112,7 +113,7 @@ pub fn eval_script_call_c_func() {
 
         assert_eq!(arg.get_number(), Some(NumberVariant::Integer(56)));
 
-        Value::new_i32(21).upgrade()
+        Value::new_i32(21).into_ref()
     }
 
     std::thread::scope(|scope| {
@@ -158,7 +159,7 @@ pub fn eval_script_call_c_func_not_enough_args() {
         assert_eq!(present.get_number(), Some(NumberVariant::Integer(56)));
         assert!(missing.is_undefined());
 
-        Value::new_i32(21).upgrade()
+        Value::new_i32(21).into_ref()
     }
 
     std::thread::scope(|scope| {
@@ -272,7 +273,7 @@ pub fn eval_script_call_c_func_recursive() {
         let depth = depth.get_number().unwrap().normalize();
 
         if depth >= 5.0 {
-            Value::new_f64(depth * depth).upgrade()
+            Value::new_f64(depth * depth).into_ref()
         } else {
             let new_depth = Value::new_f64(depth + 1.0);
             let args: [ArgValue; 2] = [f.as_arg(), new_depth.as_arg()];
@@ -425,6 +426,149 @@ pub fn eval_script_to_serde() {
 
             assert_eq!(result_json, expected_json);
             //}
+        });
+    });
+}
+
+#[test]
+pub fn eval_script_call_c_func_with_class() {
+    new_class!(Int64, Box<i64>);
+
+    fn func(ctx: &WeakContext, this: &WeakValue, [arg]: &[WeakValue; 1]) -> RefValue {
+        assert!(this.is_undefined());
+
+        let v = *ctx.borrow_opaque_ref::<Int64>(arg).unwrap();
+        assert_eq!(v, i64::MAX - 20);
+
+        Value::new_i32(21).into_ref()
+    }
+
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
+
+            let global = context.get_global_object();
+
+            let func_name = nstr!("call_me_maybe");
+            let func_v = context
+                .new_host_function(make_host_fn!(func), func_name)
+                .unwrap();
+            let set = context
+                .set_property_str(&global, func_name.to_str(), func_v.clone())
+                .unwrap();
+            assert!(set);
+
+            let class_object = context
+                .new_object_class::<Int64>(Box::new(i64::MAX - 20))
+                .unwrap();
+            let set = context
+                .set_property_str(&global, "THE_OBJECT", class_object.clone())
+                .unwrap();
+            assert!(set);
+
+            let filename = nstr!("script.js");
+            let script = nstr!("call_me_maybe(THE_OBJECT);");
+            let result = context.eval(script, filename, JSEvalFlags::STRICT).unwrap();
+
+            let v = *context.borrow_opaque_ref::<Int64>(&class_object).unwrap();
+            assert_eq!(v, i64::MAX - 20);
+
+            assert_eq!(result.get_tag(), JSTag::INT);
+            assert_eq!(result.get_number(), Some(NumberVariant::Integer(21)));
+        });
+    });
+}
+
+#[test]
+pub fn call_c_func_with_rc_class() {
+    new_class!(CoolClass, Rc<String>);
+
+    fn func(ctx: &WeakContext, this: &WeakValue, [arg]: &[WeakValue; 1]) -> RefValue {
+        assert!(this.is_undefined());
+
+        let v = ctx.borrow_opaque_ref::<CoolClass>(arg).unwrap();
+        assert_eq!(v.as_str(), "ThisIsAString");
+
+        Value::UNDEFINED.into_ref()
+    }
+
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
+
+            let word = "ThisIsAString".to_string();
+            let class = Rc::new(word);
+            assert_eq!(Rc::strong_count(&class), 1);
+
+            let func_name = nstr!("call_me_maybe");
+            let func_v = context
+                .new_host_function(make_host_fn!(func), func_name)
+                .unwrap();
+
+            let class_object = context
+                .new_object_class::<CoolClass>(class.clone())
+                .unwrap();
+            assert_eq!(Rc::strong_count(&class), 2);
+
+            let _ = context
+                .call(&func_v, &Value::UNDEFINED, &[class_object.as_arg()])
+                .unwrap();
+
+            let v = context
+                .borrow_opaque_ref::<CoolClass>(&class_object)
+                .unwrap();
+            assert_eq!(v.as_str(), "ThisIsAString");
+            assert_eq!(Rc::strong_count(&class), 2);
+
+            // Drop and force a GC so the finalizer gets called
+            drop(class_object);
+            context.gc();
+
+            assert_eq!(Rc::strong_count(&class), 1);
+        });
+    });
+}
+
+#[test]
+pub fn class_finalizer_with_take() {
+    new_class!(CoolClass, Rc<()>);
+
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let runtime = Runtime::init_thread_runtime();
+            let context = runtime.new_context().unwrap();
+
+            // Make the value we're going to attach to the object
+            let class = Rc::new(());
+            assert_eq!(Rc::strong_count(&class), 1);
+
+            // And then make the JS object, cloning the RC. There should be two references to it
+            let mut class_object = context
+                .new_object_class::<CoolClass>(class.clone())
+                .unwrap();
+            assert_eq!(Rc::strong_count(&class), 2);
+
+            // Borrow the inner value, rc should still be 2
+            let _ = context
+                .borrow_opaque_ref::<CoolClass>(&class_object)
+                .unwrap();
+            assert_eq!(Rc::strong_count(&class), 2);
+
+            // Take the RC from the class object, leaving a nullptr. rc should still be 2
+            let taken = context.take_opaque::<CoolClass>(&mut class_object).unwrap();
+            assert_eq!(Rc::strong_count(&taken), 2);
+
+            // Drop and force a GC so the finalizer gets called, because we took the opaque from the
+            // object this should _not_ try and drop anything. RC after GC cycle should still be 2.
+            drop(class_object);
+            context.gc();
+            assert_eq!(Rc::strong_count(&taken), 2);
+
+            // Now we drop he RC we gave to the object directly. Only now should the RC reach 1.
+            drop(taken);
+            assert_eq!(Rc::strong_count(&class), 1);
         });
     });
 }

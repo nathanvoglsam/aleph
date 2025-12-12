@@ -357,16 +357,6 @@ impl JSValue {
         Self::__new_val(JSTag::CATCH_OFFSET, val)
     }
 
-    pub unsafe fn new_string(ctx: NonNull<JSContext>, str: *const c_char) -> JSValue {
-        unsafe {
-            let len = {
-                let str = CStr::from_ptr(str);
-                str.count_bytes()
-            };
-            JS_NewStringLen(ctx, str, len)
-        }
-    }
-
     pub const fn get_obj(&self) -> *mut JSObject {
         self.get_ptr() as *mut JSObject
     }
@@ -988,9 +978,9 @@ pub struct JSClassExoticMethods {
 #[derive(Clone)]
 pub struct JSClassDef {
     pub class_name: *const c_char,
-    pub finalizer: JSClassFinalizerFn,
-    pub gc_mark: JSClassGCMarkFn,
-    pub call: JSClassCallFn,
+    pub finalizer: Option<JSClassFinalizerFn>,
+    pub gc_mark: Option<JSClassGCMarkFn>,
+    pub call: Option<JSClassCallFn>,
     pub exotic: *mut JSClassExoticMethods,
 }
 
@@ -1610,9 +1600,9 @@ unsafe extern "C" {
     pub fn JS_DefinePropertyValueStr(ctx: NonNull<JSContext>, this_obj: JSValueConst, prop: *const c_char, val: JSValue, flags: JSDefinePropertyFlags) -> c_int;
     pub fn JS_DefinePropertyGetSet(ctx: NonNull<JSContext>, this_obj: JSValueConst, prop: JSAtom, getter: JSValue, setter: JSValue, flags: JSDefinePropertyFlags) -> c_int;
     pub fn JS_SetOpaque(obj: JSValueConst, opaque: *mut c_void) -> c_int;
-    pub fn JS_GetOpaque(obj: JSValueConst, class_id: JSClassID) -> *mut c_void;
-    pub fn JS_GetOpaque2(ctx: NonNull<JSContext>, obj: JSValueConst, class_id: JSClassID) -> *mut c_void;
-    pub fn JS_GetAnyOpaque(obj: JSValueConst, class_id: *mut Option<JSClassID>) -> *mut c_void;
+    pub fn JS_GetOpaque(obj: JSValueConst, class_id: JSClassID) -> Option<NonNull<c_void>>;
+    pub fn JS_GetOpaque2(ctx: NonNull<JSContext>, obj: JSValueConst, class_id: JSClassID) -> Option<NonNull<c_void>>;
+    pub fn JS_GetAnyOpaque(obj: JSValueConst, class_id: *mut Option<JSClassID>) -> Option<NonNull<c_void>>;
 
     pub fn JS_ParseJSON(ctx: NonNull<JSContext>, buf: *const c_char, buf_len: usize, filename: *const c_char) -> JSValue;
     pub fn JS_JSONStringify(ctx: NonNull<JSContext>, obj: JSValueConst, replacer: JSValueConst, space0: JSValueConst) -> JSValue;

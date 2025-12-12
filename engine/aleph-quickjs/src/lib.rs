@@ -27,9 +27,11 @@
 // SOFTWARE.
 //
 
+pub extern crate aleph_nstr as nstr;
 pub extern crate aleph_quickjs_sys as raw;
 
 mod atom;
+mod class;
 mod context;
 mod host_function;
 mod own_property_names;
@@ -38,6 +40,10 @@ mod runtime_string;
 mod value;
 
 pub use atom::Atom;
+pub use class::{
+    Class, ClassID, ClassOpaque, ClassOpaqueContainer, ClassOpaqueHandle, class_def,
+    get_or_init_class_id_for,
+};
 pub use context::{Context, Exception, WeakContext};
 pub use host_function::{
     HostFn, HostFnCombineFloat, HostFnData, HostFnMagic, HostFnMapFloat, SignatureHostFn,

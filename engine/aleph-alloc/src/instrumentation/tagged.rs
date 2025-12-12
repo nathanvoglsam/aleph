@@ -32,6 +32,7 @@ use std::ptr::NonNull;
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
+use crate::allocator_global_handle::AllocatorGlobalHandle;
 use crate::instrumentation::{CategoryInfo, IAllocationCategory, emit_alloc, emit_free};
 
 /// An allocator wrapper that uses a dynamic, thread-local category stack for attributing
@@ -57,6 +58,12 @@ impl<A: Allocator> Tagged<A> {
     #[inline]
     pub fn into_inner(self) -> A {
         self.0
+    }
+}
+
+unsafe impl<A: AllocatorGlobalHandle> AllocatorGlobalHandle for Tagged<A> {
+    fn make_handle() -> Self {
+        Self::new(<A as AllocatorGlobalHandle>::make_handle())
     }
 }
 

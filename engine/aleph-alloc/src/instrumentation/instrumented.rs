@@ -33,6 +33,7 @@ use std::ptr::NonNull;
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
+use crate::allocator_global_handle::AllocatorGlobalHandle;
 use crate::instrumentation::{CategoryInfo, IAllocationCategory, emit_alloc, emit_free};
 
 /// An allocator wrapper type that will instrument all allocations made into it with the associated
@@ -55,6 +56,14 @@ impl<T: IAllocationCategory, A: Allocator> Instrumented<T, A> {
     #[inline]
     pub fn into_inner(self) -> A {
         self.inner
+    }
+}
+
+unsafe impl<T: IAllocationCategory, A: AllocatorGlobalHandle> AllocatorGlobalHandle
+    for Instrumented<T, A>
+{
+    fn make_handle() -> Self {
+        Self::new(<A as AllocatorGlobalHandle>::make_handle())
     }
 }
 

@@ -186,6 +186,11 @@ impl Value {
             Self::new_i32(val as i32)
         }
     }
+
+    /// Constructs a new [`RefValue`] from the self.
+    pub const fn into_ref(self) -> RefValue {
+        RefValue::from_value(self)
+    }
 }
 
 impl Deref for Value {
@@ -218,6 +223,11 @@ pub struct RefValue(pub(crate) WeakValue);
 impl RefValue {
     pub(crate) const fn new(v: JSValue) -> Self {
         Self(WeakValue(v))
+    }
+
+    /// Constructs a new [`RefValue`] from the given pure [`Value`].
+    pub const fn from_value(v: Value) -> Self {
+        Self(WeakValue(v.0))
     }
 
     /// Destroys the [`RefValue`], without decrementing the JSValue's ref-count.
@@ -397,6 +407,7 @@ impl WeakValue {
     }
 
     /// Returns true if 'self' is an array
+    #[inline]
     pub fn is_array(&self) -> bool {
         // Safety: This wrapper type is guaranteed to contain a live JS object
         unsafe { raw::JS_IsArray(self.0) }

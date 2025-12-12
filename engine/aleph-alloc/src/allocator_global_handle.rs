@@ -27,31 +27,26 @@
 // SOFTWARE.
 //
 
-#[doc(hidden)]
-pub extern crate aleph_nstr as nstr;
+use std::alloc::System;
 
-#[doc(hidden)]
-pub extern crate uuid;
+use allocator_api2::alloc::Allocator;
 
-#[doc(hidden)]
-pub extern crate ctor;
+/// A trait implemented by [`Allocator`] types which are simply zero sized handles to some global
+/// allocator.
+///
+/// # Safety
+///
+/// It is up to the user to ensure this is only implemented on types where the allocator state is
+/// global, and that any particular instance of the impl type is interchangable. An example is the
+/// [`System`] allocator, which is a zero sized struct that simply defers to the system's global
+/// allocator. Any [`System`] instance is the same, so this trait is correct to implement on it.
+pub unsafe trait AllocatorGlobalHandle: Allocator {
+    /// Constructs a new handle
+    fn make_handle() -> Self;
+}
 
-#[doc(hidden)]
-pub extern crate crossbeam;
-
-#[doc(hidden)]
-pub extern crate const_format;
-
-pub mod allocator_global_handle;
-pub mod instrumentation;
-pub mod mallocator;
-pub mod offset_allocator;
-
-pub use allocator_api2::boxed::Box as BBox;
-pub use allocator_api2::vec::Vec as BVec;
-pub use allocator_api2::*;
-pub use blink_alloc::*;
-pub use hashbrown::*;
-
-pub type BHashMap<K, V, A = alloc::Global> = HashMap<K, V, DefaultHashBuilder, A>;
-pub type BHashSet<T, A = alloc::Global> = HashSet<T, DefaultHashBuilder, A>;
+unsafe impl AllocatorGlobalHandle for System {
+    fn make_handle() -> Self {
+        Self
+    }
+}
