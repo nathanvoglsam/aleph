@@ -69,7 +69,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
             wanted_mask: vk::MemoryPropertyFlags,
         ) -> u32 {
             let mut bitset = 0;
-            for memory_type in types {
+            for memory_type in types.iter().rev() {
                 bitset <<= 1; // does nothing on first iteration, post shift would over-shift
 
                 let type_is_superset = (memory_type.property_flags & wanted_mask) == wanted_mask;
