@@ -1528,7 +1528,7 @@ unsafe extern "C" {
     pub fn JS_FreeCString(ctx: NonNull<JSContext>, ptr: *const c_char);
     pub fn JS_FreeCStringRT(ctx: NonNull<JSRuntime>, ptr: *const c_char);
 
-    pub fn JS_NewObjectProtoClass(ctx: NonNull<JSContext>, proto: JSValue, class_id: JSClassID) -> JSValue;
+    pub fn JS_NewObjectProtoClass(ctx: NonNull<JSContext>, proto: JSValueConst, class_id: JSClassID) -> JSValue;
     pub fn JS_NewObjectClass(ctx: NonNull<JSContext>, class_id: c_int) -> JSValue;
     pub fn JS_NewObjectProto(ctx: NonNull<JSContext>, proto: JSValue) -> JSValue;
     pub fn JS_NewObject(ctx: NonNull<JSContext>) -> JSValue;
