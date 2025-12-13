@@ -124,9 +124,9 @@ impl Queue {
                 queue_type,
                 handle,
                 submit_lock: Mutex::new(()),
-                fence: device.device.CreateFence(0, D3D12_FENCE_FLAG_NONE).unwrap(),
-                last_submitted_index: Default::default(),
-                last_completed_index: Default::default(),
+                fence: device.device.CreateFence(1, D3D12_FENCE_FLAG_NONE).unwrap(),
+                last_submitted_index: AtomicU64::new(1),
+                last_completed_index: AtomicU64::new(1),
                 in_flight: ArrayQueue::new(256),
             })
         }
