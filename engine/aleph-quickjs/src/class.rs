@@ -64,7 +64,7 @@ pub unsafe trait Class {
 }
 
 /// Base trait that must be implemented by class opaque containers. Provides the minimum facilities
-/// to correctly handle dropping the container.
+/// to correctly handle creating and dropping the container.
 ///
 /// There are two sub-traits that are needed to make a useful [`ClaseOpaque`] type.
 /// - [`ClassOpaqueContainer`]
@@ -73,8 +73,8 @@ pub unsafe trait Class {
 /// # 'Container'
 ///
 /// Should be implemented on allocating containers like [`Box`] or [`Rc`]. The impl should provide
-/// an associated type for the contained T, and functions are provided to enable conversion to/from
-/// the opaque pointer stored on a JS object.
+/// an associated type for the contained T, and functions are provided to get a NonNull<T> to enable
+/// borrowing the inner object.
 ///
 /// # 'Handle'
 ///
@@ -84,13 +84,20 @@ pub unsafe trait Class {
 ///
 /// # Anyway...
 ///
-/// This trait only provides the drop glue, which is common to both.
+/// This trait only provides the drop glue and conversion to/from the opaque pointer, which is
+/// common to both.
 pub unsafe trait ClassOpaque: Sized + 'static {
     /// Takes an opaque pointer and correctly handles calling the drop implementation for the type
     /// erased container.
     ///
     /// For handle-like opaque types this should be a no-op
     unsafe fn drop_opaque(ptr: NonNull<c_void>);
+
+    /// Convert 'Self' into a pointer to be attached to a JS object.
+    fn into_raw(self) -> NonNull<c_void>;
+
+    /// Reconstitute the original 'Self' from the pointer fetched off of some JS object.
+    unsafe fn from_raw(ptr: NonNull<c_void>) -> Self;
 }
 
 /// Interface expected of types that can be used with [`raw::JS_SetOpaque`] and
@@ -102,12 +109,6 @@ pub unsafe trait ClassOpaqueContainer: ClassOpaque {
     /// the inner type. This doesn't necessarily have to be a different type as 'Self'.
     type Inner: Sized + 'static;
 
-    /// Convert 'Self' into a pointer to be attached to a JS object.
-    fn into_raw(self) -> NonNull<c_void>;
-
-    /// Reconstitute the original 'Self' from the pointer fetched off of some JS object.
-    unsafe fn from_raw(ptr: NonNull<c_void>) -> Self;
-
     /// Takes a pointer made by [`ClassOpaqueContainer::into_raw`] and returns whatever 'Self' has
     /// declared as the fetch type. This will typically be a shared reference to some inner type.
     unsafe fn ptr_to_inner(ptr: NonNull<c_void>) -> NonNull<Self::Inner>;
@@ -117,13 +118,7 @@ pub unsafe trait ClassOpaqueContainer: ClassOpaque {
 /// [`raw::JS_GetOpaque`] to attach data to an object of some class.
 ///
 /// See [`ClassOpaque`] for more info.
-pub unsafe trait ClassOpaqueHandle: ClassOpaque + Copy + Clone {
-    /// Convert 'Self' into a pointer to be attached to a JS object.
-    fn into_raw(self) -> NonNull<c_void>;
-
-    /// Reconstitute the original 'Self' from the pointer fetched off of some JS object.
-    fn from_raw(ptr: NonNull<c_void>) -> Self;
-}
+pub unsafe trait ClassOpaqueHandle: ClassOpaque + Copy + Clone {}
 
 /// Declares a new native class type with the given '$name' that will use '$ty' as the opaque type
 /// stored onto the object.
@@ -140,6 +135,19 @@ pub unsafe trait ClassOpaqueHandle: ClassOpaque + Copy + Clone {
 ///
 /// $name will also be stringified to become the registered name of the class within the runtime.
 /// The name must contain only ASCII characters, which is checked at compile time.
+///
+/// # Usage
+///
+/// The struct type should be used as a generic parameter for functions like:
+/// - [`crate::WeakContext::new_object_class`]
+/// - [`crate::WeakContext::get_opaque_handle`]
+/// - [`crate::WeakContext::borrow_opaque_ref`]
+/// - [`crate::WeakContext::borrow_opaque_mut`]
+/// - [`crate::WeakContext::take_opaque`]
+///
+/// Which functions can be used depends on whether the opaque container implements either:
+/// - [`ClassOpaqueContainer`]
+/// - [`ClassOpaqueHandle`]
 #[macro_export]
 macro_rules! new_class {
     ($name: ident, $ty: path) => {
@@ -224,10 +232,6 @@ unsafe impl<T: Sized + 'static> ClassOpaque for Box<T> {
     unsafe fn drop_opaque(ptr: NonNull<c_void>) {
         unsafe { drop(Box::<T>::from_raw(ptr.cast().as_ptr())) }
     }
-}
-
-unsafe impl<T: Sized + 'static> ClassOpaqueContainer for Box<T> {
-    type Inner = T;
 
     fn into_raw(self) -> NonNull<c_void> {
         unsafe { NonNull::new(Box::into_raw(self)).unwrap_unchecked().cast() }
@@ -236,6 +240,10 @@ unsafe impl<T: Sized + 'static> ClassOpaqueContainer for Box<T> {
     unsafe fn from_raw(ptr: NonNull<c_void>) -> Self {
         unsafe { Box::<T>::from_raw(ptr.cast().as_ptr()) }
     }
+}
+
+unsafe impl<T: Sized + 'static> ClassOpaqueContainer for Box<T> {
+    type Inner = T;
 
     unsafe fn ptr_to_inner(ptr: NonNull<c_void>) -> NonNull<Self::Inner> {
         ptr.cast()
@@ -248,12 +256,6 @@ unsafe impl<T: Sized + 'static, A: AllocatorGlobalHandle + 'static> ClassOpaque 
     unsafe fn drop_opaque(ptr: NonNull<c_void>) {
         unsafe { drop(BBox::<T>::from_raw(ptr.cast().as_ptr())) }
     }
-}
-
-unsafe impl<T: Sized + 'static, A: AllocatorGlobalHandle + 'static> ClassOpaqueContainer
-    for BBox<T, A>
-{
-    type Inner = T;
 
     fn into_raw(self) -> NonNull<c_void> {
         unsafe { NonNull::new(BBox::into_raw(self)).unwrap_unchecked().cast() }
@@ -262,6 +264,12 @@ unsafe impl<T: Sized + 'static, A: AllocatorGlobalHandle + 'static> ClassOpaqueC
     unsafe fn from_raw(ptr: NonNull<c_void>) -> Self {
         unsafe { BBox::<T, A>::from_raw_in(ptr.cast().as_ptr(), A::make_handle()) }
     }
+}
+
+unsafe impl<T: Sized + 'static, A: AllocatorGlobalHandle + 'static> ClassOpaqueContainer
+    for BBox<T, A>
+{
+    type Inner = T;
 
     unsafe fn ptr_to_inner(ptr: NonNull<c_void>) -> NonNull<Self::Inner> {
         ptr.cast()
@@ -274,10 +282,6 @@ unsafe impl<T: Sized + 'static> ClassOpaque for Rc<T> {
     unsafe fn drop_opaque(ptr: NonNull<c_void>) {
         unsafe { drop(Rc::<T>::from_raw(ptr.cast().as_ptr())) }
     }
-}
-
-unsafe impl<T: Sized + 'static> ClassOpaqueContainer for Rc<T> {
-    type Inner = T;
 
     fn into_raw(self) -> NonNull<c_void> {
         unsafe {
@@ -290,6 +294,10 @@ unsafe impl<T: Sized + 'static> ClassOpaqueContainer for Rc<T> {
     unsafe fn from_raw(ptr: NonNull<c_void>) -> Self {
         unsafe { Rc::<T>::from_raw(ptr.cast().as_ptr()) }
     }
+}
+
+unsafe impl<T: Sized + 'static> ClassOpaqueContainer for Rc<T> {
+    type Inner = T;
 
     unsafe fn ptr_to_inner(ptr: NonNull<c_void>) -> NonNull<Self::Inner> {
         ptr.cast()

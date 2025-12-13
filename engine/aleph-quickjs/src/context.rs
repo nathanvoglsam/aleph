@@ -39,8 +39,8 @@ use raw::{JSEvalOptions, JSTag, JSValue};
 
 use crate::class::ClassOpaqueContainer;
 use crate::{
-    ArgValue, Atom, Class, ClassOpaqueHandle, HostFn, HostFnCombineFloat, HostFnData, HostFnMagic,
-    HostFnMapFloat, OwnPropertyNames, RefValue, Runtime, RuntimeString, WeakValue,
+    ArgValue, Atom, Class, ClassOpaque, ClassOpaqueHandle, HostFn, HostFnCombineFloat, HostFnData,
+    HostFnMagic, HostFnMapFloat, OwnPropertyNames, RefValue, Runtime, RuntimeString, WeakValue,
     host_fn_combine_float_arg_num, host_fn_map_float_arg_num,
 };
 
@@ -186,7 +186,7 @@ impl WeakContext {
     }
 
     #[inline]
-    pub fn new_object_class<T: Class<Opaque: ClassOpaqueContainer>>(
+    pub fn new_object_class<T: Class<Opaque: ClassOpaque>>(
         &self,
         state: <T as Class>::Opaque,
     ) -> Result<RefValue, Exception<'_>> {
@@ -560,6 +560,8 @@ impl WeakContext {
 
     /// Fetches the 'handle' opaque attached to the given value, if one exists for class `T` on the
     /// value.
+    ///
+    /// Only available for [`ClassOpaqueHandle`] classes.
     pub fn get_opaque_handle<T: Class<Opaque: ClassOpaqueHandle>>(
         &self,
         v: &WeakValue,
@@ -572,6 +574,8 @@ impl WeakContext {
 
     /// Retreives a reference to the inner object stored inside the opaque slot on the given value,
     /// if one exists for class `T` on the value.
+    ///
+    /// Only available for [`ClassOpaqueContainer`] classes.
     pub fn borrow_opaque_ref<'a, T: Class<Opaque: ClassOpaqueContainer>>(
         &self,
         v: &'a WeakValue,
@@ -589,6 +593,8 @@ impl WeakContext {
     /// This returns a mutable borrow and, similar to [`Context::take_opaque`], performs a dynamic
     /// borrow check by requiring a mutable borrow of a [`RefValue`] and only returning a reference
     /// if the reference count on the object is 1.
+    ///
+    /// Only available for [`ClassOpaqueContainer`] classes.
     pub fn borrow_opaque_mut<'a, T: Class<Opaque: ClassOpaqueContainer>>(
         &self,
         v: &'a mut RefValue,
@@ -620,6 +626,8 @@ impl WeakContext {
     /// We can guarantee we own _a_ [`RefValue`], but we can only know if we own the JS value inside
     /// by checking the reference count. Once we've proven we have truly exclusive access to the
     /// JS value we can take the 'opaque' from the value.
+    ///
+    /// Only available for [`ClassOpaqueContainer`] classes.
     pub fn take_opaque<T: Class<Opaque: ClassOpaqueContainer>>(
         &self,
         v: &mut RefValue,
