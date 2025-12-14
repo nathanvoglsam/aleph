@@ -51,8 +51,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use tracy_client::sys;
-
 #[macro_export]
 macro_rules! scope {
     ($name:expr) => {
@@ -189,7 +187,7 @@ const fn clamp_depth_mem(v: i32) -> i32 {
     }
 }
 
-const CALLSTACK_DEPTH_MSG: i32 = clamp_depth_msg(62);
+const CALLSTACK_DEPTH_MSG: u16 = clamp_depth_msg(62) as u16;
 
 const fn clamp_depth_msg(v: i32) -> i32 {
     if cfg!(feature = "message-callstacks") {

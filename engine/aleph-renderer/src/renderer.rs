@@ -555,7 +555,8 @@ impl SwapManager {
     unsafe fn acquire_next_image(&mut self) -> AcquiredImage {
         // Query if the surface wants to rebuild this frame and coerce the 'needs_rebuild' flag to
         // true if it wasn't already flagged.
-        self.needs_rebuild = self.needs_rebuild || self.surface.needs_rebuild();
+        let surface_needs_rebuild = self.surface.needs_rebuild();
+        self.needs_rebuild = self.needs_rebuild || surface_needs_rebuild;
 
         let mut rebuilt = false;
         let mut attempts_remaining = 2;

@@ -258,8 +258,7 @@ impl Window {
                 self.resized.store(true, Ordering::Relaxed);
                 window_state.current_width = *width as u32;
                 window_state.current_height = *height as u32;
-                log::trace!("Window resized by OS");
-                log::trace!("Window Size: {}x{}", width, height);
+                log::trace!("Window logical size changed: {}x{}", width, height);
             }
             sdl3::event::WindowEvent::FocusGained => {
                 window_state.focused = true;
@@ -271,10 +270,11 @@ impl Window {
                 self.resized.store(true, Ordering::Relaxed);
                 window_state.current_width = *width as u32;
                 window_state.current_height = *height as u32;
-                log::trace!("Window size changed");
-                log::trace!("Window Size: {}x{}", width, height);
+                log::trace!("Window pixel size changed: {}x{}", width, height);
             }
-            sdl3::event::WindowEvent::DisplayChanged(_)
+            sdl3::event::WindowEvent::DisplayChanged(v) => {
+                log::trace!("Window display changed: {v}");
+            }
             | sdl3::event::WindowEvent::Moved(_, _)
             | sdl3::event::WindowEvent::Minimized
             | sdl3::event::WindowEvent::Maximized
@@ -283,11 +283,13 @@ impl Window {
             | sdl3::event::WindowEvent::MouseEnter
             | sdl3::event::WindowEvent::MouseLeave
             | sdl3::event::WindowEvent::HitTest(_, _)
-            | sdl3::event::WindowEvent::None
             | sdl3::event::WindowEvent::Shown
             | sdl3::event::WindowEvent::Hidden
             | sdl3::event::WindowEvent::Exposed
             | sdl3::event::WindowEvent::ICCProfChanged => {}
+            sdl3::event::WindowEvent::None => {
+                log::trace!("Got window event 'None'");
+            }
         }
 
         let converted_event = match event {

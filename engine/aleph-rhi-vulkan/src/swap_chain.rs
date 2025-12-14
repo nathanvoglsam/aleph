@@ -330,6 +330,8 @@ impl SwapChain {
         inner.vk_format = format;
         inner.color_space = color_space;
         inner.vk_present_mode = present_mode;
+        inner.present_mode = config.present_mode;
+        inner.vk_present_mode = present_mode;
         inner.images = new_images;
 
         Ok(())

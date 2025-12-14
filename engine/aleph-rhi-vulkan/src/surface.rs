@@ -137,7 +137,7 @@ impl ISurface for Surface {
             format: Format::Bgra8Unorm,
             vk_format: Default::default(),
             color_space: Default::default(),
-            present_mode: Default::default(),
+            present_mode: config.present_mode,
             vk_present_mode: Default::default(),
             extent: Default::default(),
             images: BVec::new_in(Default::default()),
