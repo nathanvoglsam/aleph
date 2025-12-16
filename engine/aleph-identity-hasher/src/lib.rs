@@ -27,8 +27,10 @@
 // SOFTWARE.
 //
 
-// use std::any::TypeId;
-use std::hash::{Hash, Hasher};
+use std::hash::{BuildHasherDefault, Hash, Hasher};
+
+/// Type alias used for providing a hasher argument to a hash table.
+pub type BuildIdentityHasher = BuildHasherDefault<IdentityHasher>;
 
 /// Internal utility for extracting a u64 from small values like integers. Uses the `write_<int>`
 /// specializations to extract a u64 that  gives us.
