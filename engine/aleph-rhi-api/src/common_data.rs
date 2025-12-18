@@ -615,56 +615,55 @@ impl ResourceUsageFlags {
     /// - `read_only` Declares whether the access is read only.
     /// - `format` Provides a texture format for texture usages that need a format to resolve.
     ///     - `format` is only needed if 'self' contains [`ResourceUsageFlags::RENDER_TARGET`]
-    #[inline]
-    pub fn default_barrier_sync(&self, read_only: bool, format: Format) -> BarrierSync {
+    pub const fn default_barrier_sync(&self, read_only: bool, format: Format) -> BarrierSync {
+        const SHADER_ACCESS_MASK: BarrierSync = const {
+            let mut sync = BarrierSync::NONE;
+            sync = sync.union(BarrierSync::PIXEL_SHADING);
+            sync = sync.union(BarrierSync::VERTEX_SHADING);
+            // sync = sync.union(BarrierSync::RAYTRACING); // TODO: Validation on D3D12 flags this possibly erroneously
+            sync = sync.union(BarrierSync::COMPUTE_SHADING);
+            sync
+        };
+
         let mut sync = BarrierSync::NONE;
         if self.contains(Self::COPY_SOURCE) {
-            sync |= BarrierSync::COPY;
+            sync = sync.union(BarrierSync::COPY);
         }
         if self.contains(Self::COPY_DEST) {
-            sync |= BarrierSync::COPY;
+            sync = sync.union(BarrierSync::COPY);
         }
         if self.contains(Self::VERTEX_BUFFER) {
-            sync |= BarrierSync::VERTEX_SHADING;
+            sync = sync.union(BarrierSync::VERTEX_SHADING);
         }
         if self.contains(Self::INDEX_BUFFER) {
-            sync |= BarrierSync::INDEX_INPUT;
+            sync = sync.union(BarrierSync::INDEX_INPUT);
         }
         if self.contains(Self::CONSTANT_BUFFER) {
-            sync |= BarrierSync::PIXEL_SHADING
-                | BarrierSync::VERTEX_SHADING
-                // | BarrierSync::RAYTRACING // TODO: Validation on D3D12 flags this possibly erroneously
-                | BarrierSync::COMPUTE_SHADING;
+            sync = sync.union(SHADER_ACCESS_MASK);
         }
         if self.contains(Self::SHADER_RESOURCE) {
-            sync |= BarrierSync::PIXEL_SHADING
-                | BarrierSync::VERTEX_SHADING
-                // | BarrierSync::RAYTRACING // TODO: Validation on D3D12 flags this possibly erroneously
-                | BarrierSync::COMPUTE_SHADING;
+            sync = sync.union(SHADER_ACCESS_MASK);
         }
         if self.contains(Self::UNORDERED_ACCESS) {
-            sync |= BarrierSync::PIXEL_SHADING
-                | BarrierSync::VERTEX_SHADING
-                // | BarrierSync::RAYTRACING // TODO: Validation on D3D12 flags this possibly erroneously
-                | BarrierSync::COMPUTE_SHADING;
+            sync = sync.union(SHADER_ACCESS_MASK);
         }
         if self.contains(Self::INDIRECT_DRAW_ARGS) {
-            sync |= BarrierSync::EXECUTE_INDIRECT;
+            sync = sync.union(BarrierSync::EXECUTE_INDIRECT);
         }
         if self.contains(Self::ACCELERATION_STRUCTURE_BUILD_INPUT) {
-            sync |= BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE;
+            sync = sync.union(BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE);
         }
         if self.contains(Self::ACCELERATION_STRUCTURE_STORAGE) {
-            sync |= BarrierSync::RAYTRACING;
+            sync = sync.union(BarrierSync::RAYTRACING);
             if !read_only {
-                sync |= BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE;
+                sync = sync.union(BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE);
             }
         }
         if self.contains(Self::RENDER_TARGET) {
             if format.is_depth_stencil() {
-                sync |= BarrierSync::DEPTH_STENCIL;
+                sync = sync.union(BarrierSync::DEPTH_STENCIL);
             } else {
-                sync |= BarrierSync::RENDER_TARGET;
+                sync = sync.union(BarrierSync::RENDER_TARGET);
             }
         }
         sync
@@ -675,38 +674,37 @@ impl ResourceUsageFlags {
     ///
     /// - `format` Provides a texture format for texture usages that need a format to resolve.
     ///     - `format` is only needed if 'self' contains [`ResourceUsageFlags::RENDER_TARGET`]
-    #[inline]
-    pub fn barrier_access_for_read(&self, format: Format) -> BarrierAccess {
+    pub const fn barrier_access_for_read(&self, format: Format) -> BarrierAccess {
         let mut out = BarrierAccess::NONE;
         if self.contains(Self::COPY_SOURCE) {
-            out |= BarrierAccess::COPY_READ
+            out = out.union(BarrierAccess::COPY_READ);
         }
         if self.contains(Self::VERTEX_BUFFER) {
-            out |= BarrierAccess::VERTEX_BUFFER_READ
+            out = out.union(BarrierAccess::VERTEX_BUFFER_READ);
         }
         if self.contains(Self::INDEX_BUFFER) {
-            out |= BarrierAccess::INDEX_BUFFER_READ
+            out = out.union(BarrierAccess::INDEX_BUFFER_READ);
         }
         if self.contains(Self::CONSTANT_BUFFER) {
-            out |= BarrierAccess::CONSTANT_BUFFER_READ
+            out = out.union(BarrierAccess::CONSTANT_BUFFER_READ);
         }
         if self.contains(Self::INDIRECT_DRAW_ARGS) {
-            out |= BarrierAccess::INDIRECT_COMMAND_READ
+            out = out.union(BarrierAccess::INDIRECT_COMMAND_READ);
         }
         if self.contains(Self::ACCELERATION_STRUCTURE_BUILD_INPUT) {
-            out |= BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_READ
+            out = out.union(BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_READ);
         }
         if self.contains(Self::ACCELERATION_STRUCTURE_STORAGE) {
-            out |= BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_READ
+            out = out.union(BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_READ);
         }
         if self.contains(Self::SHADER_RESOURCE) {
-            out |= BarrierAccess::SHADER_READ
+            out = out.union(BarrierAccess::SHADER_READ);
         }
         if self.contains(Self::RENDER_TARGET) {
             if format.is_depth_stencil() {
-                out |= BarrierAccess::DEPTH_STENCIL_READ
+                out = out.union(BarrierAccess::DEPTH_STENCIL_READ);
             } else {
-                out |= BarrierAccess::RENDER_TARGET_READ
+                out = out.union(BarrierAccess::RENDER_TARGET_READ);
             }
         }
         out
@@ -717,23 +715,22 @@ impl ResourceUsageFlags {
     ///
     /// - `format` Provides a texture format for texture usages that need a format to resolve.
     ///     - `format` is only needed if 'self' contains [`ResourceUsageFlags::RENDER_TARGET`]
-    #[inline]
-    pub fn barrier_access_for_write(&self, format: Format) -> BarrierAccess {
+    pub const fn barrier_access_for_write(&self, format: Format) -> BarrierAccess {
         let mut out = BarrierAccess::NONE;
         if self.contains(Self::COPY_DEST) {
-            out |= BarrierAccess::COPY_WRITE
+            out = out.union(BarrierAccess::COPY_WRITE);
         }
         if self.contains(Self::ACCELERATION_STRUCTURE_STORAGE) {
-            out |= BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_WRITE
+            out = out.union(BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_WRITE);
         }
         if self.contains(Self::UNORDERED_ACCESS) {
-            out |= BarrierAccess::SHADER_WRITE
+            out = out.union(BarrierAccess::SHADER_WRITE);
         }
         if self.contains(Self::RENDER_TARGET) {
             if format.is_depth_stencil() {
-                out |= BarrierAccess::DEPTH_STENCIL_WRITE
+                out = out.union(BarrierAccess::DEPTH_STENCIL_WRITE);
             } else {
-                out |= BarrierAccess::RENDER_TARGET_WRITE
+                out = out.union(BarrierAccess::RENDER_TARGET_WRITE);
             }
         }
         out
