@@ -31,15 +31,14 @@ use std::sync::Arc;
 
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
+use aleph_magnesium::renderer::frame_graph::{GraphArgs, GraphSwapImageInfo};
+use aleph_magnesium::renderer::render_plane::RenderPlaneOutput;
+use aleph_magnesium::renderer::shader_accessor::{IShaderAccessor, IShaderAccessorExt};
+use aleph_magnesium::renderer::state_cache::{IStateCacheKey, StateCache};
+use aleph_magnesium::resource::texture::TextureHandle;
 use aleph_math::Vec2;
 use aleph_nstr::nstr;
 use aleph_pin_board::{BoardParamId, PinBoard};
-use aleph_renderer::pass::{GraphArgs, GraphSwapImageInfo};
-use aleph_renderer::{
-    IShaderAccessor, IShaderAccessorExt, IStateCacheKey, RenderPlaneOutput, StateCache,
-    TextureHandle,
-};
-use aleph_rhi_api::*;
 use egui::RenderData;
 use interfaces::any::AnyArc;
 
@@ -63,7 +62,7 @@ impl BoardParamId for EguiPassContext {
 
 pub fn pass(
     frame_graph: &mut FrameGraphBuilder<GraphArgs>,
-    device: &dyn IDevice,
+    device: &dyn rhi::IDevice,
     pin_board: &PinBoard,
     state_cache: &mut StateCache,
     pixels_per_point: f32,
@@ -78,29 +77,29 @@ pub fn pass(
 
     let mut result = None;
     frame_graph.add_pass(nstr!("EguiPass"), |resources| {
-        let render_target_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
-            .with_format(Format::Bgra8UnormSrgb)
-            .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
-            .with_name(obj_name!("RenderTarget"));
+        let render_target_desc = rhi::TextureDesc::texture_2d(b_desc.width, b_desc.height)
+            .with_format(rhi::Format::Bgra8UnormSrgb)
+            .with_clear_value(rhi::OptimalClearValue::ColorInt(0x00000000))
+            .with_name(rhi::obj_name!("RenderTarget"));
         let render_target =
-            resources.create_texture(&render_target_desc, ResourceUsageFlags::RENDER_TARGET);
+            resources.create_texture(&render_target_desc, rhi::ResourceUsageFlags::RENDER_TARGET);
         result = Some(RenderPlaneOutput {
             id: render_target.into(),
             desc: render_target_desc.strip_name(),
         });
 
         let vtx_buffer = resources.create_buffer(
-            &BufferDesc::new(VERTEX_BUFFER_SIZE as u64)
+            &rhi::BufferDesc::new(VERTEX_BUFFER_SIZE as u64)
                 .cpu_write()
-                .with_name(obj_name!("VertexBuffer")),
-            ResourceUsageFlags::VERTEX_BUFFER,
+                .with_name(rhi::obj_name!("VertexBuffer")),
+            rhi::ResourceUsageFlags::VERTEX_BUFFER,
         );
 
         let idx_buffer = resources.create_buffer(
-            &BufferDesc::new(INDEX_BUFFER_SIZE as u64)
+            &rhi::BufferDesc::new(INDEX_BUFFER_SIZE as u64)
                 .cpu_write()
-                .with_name(obj_name!("IndexBuffer")),
-            ResourceUsageFlags::INDEX_BUFFER,
+                .with_name(rhi::obj_name!("IndexBuffer")),
+            rhi::ResourceUsageFlags::INDEX_BUFFER,
         );
 
         let data = EguiPassPayload {
@@ -127,13 +126,13 @@ pub fn pass(
             } = args.board.get::<EguiPassContext>().unwrap();
 
             let font_view = args.texture_pool.get_ref(*font_handle).unwrap();
-            let font_view = font_view.get_default_view().unwrap();
+            let font_view = font_view.default_view().unwrap();
 
             let block_layout = state.layout.block_layout.as_ref();
             let block = descriptor_arena.allocate_block(block_layout).unwrap();
             let params = [
-                TextureWrite::srv(font_view).into(),
-                SamplerWrite::new(sampler).into(),
+                rhi::TextureWrite::srv(font_view).into(),
+                rhi::SamplerWrite::new(sampler).into(),
             ];
             resources
                 .device()
@@ -144,7 +143,7 @@ pub fn pass(
             let v_ptr = device.map_buffer(vtx_buffer).unwrap();
             let vtx_alloc = UploadBumpAllocator::new_from_block(
                 vtx_buffer.clone(),
-                ResourceUsageFlags::VERTEX_BUFFER,
+                rhi::ResourceUsageFlags::VERTEX_BUFFER,
                 v_ptr,
                 0,
                 VERTEX_BUFFER_SIZE,
@@ -154,7 +153,7 @@ pub fn pass(
             let i_ptr = device.map_buffer(idx_buffer).unwrap();
             let idx_alloc = UploadBumpAllocator::new_from_block(
                 idx_buffer.clone(),
-                ResourceUsageFlags::INDEX_BUFFER,
+                rhi::ResourceUsageFlags::INDEX_BUFFER,
                 i_ptr,
                 0,
                 INDEX_BUFFER_SIZE,
@@ -162,17 +161,17 @@ pub fn pass(
             .unwrap();
 
             // Get an RTV from our imported back buffer
-            let image_view = ImageView::get_rtv_for(device, render_target).unwrap();
+            let image_view = rhi::ImageView::get_rtv_for(device, render_target).unwrap();
 
             // Begin a render pass targeting our back buffer
-            encoder.begin_rendering(&BeginRenderingInfo {
+            encoder.begin_rendering(&rhi::BeginRenderingInfo {
                 layer_count: 1,
                 extent: extent.clone(),
-                color_attachments: &[RenderingColorAttachmentInfo {
+                color_attachments: &[rhi::RenderingColorAttachmentInfo {
                     image_view,
-                    image_layout: ImageLayout::ColorAttachment,
-                    load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0)),
-                    store_op: AttachmentStoreOp::Store,
+                    image_layout: rhi::ImageLayout::ColorAttachment,
+                    load_op: rhi::AttachmentLoadOp::Clear(rhi::ColorClearValue::Int(0)),
+                    store_op: rhi::AttachmentStoreOp::Store,
                 }],
                 depth_stencil_attachment: None,
                 allow_uav_writes: false,
@@ -181,7 +180,7 @@ pub fn pass(
             encoder.bind_graphics_pipeline(&state.pipeline);
             encoder.bind_parameter_blocks(
                 state.layout.binding_signature.as_ref(),
-                PipelineBindPoint::Graphics,
+                rhi::PipelineBindPoint::Graphics,
                 0,
                 &[block],
             );
@@ -201,14 +200,14 @@ pub fn pass(
             //
             encoder.bind_vertex_buffers(
                 0,
-                &[InputAssemblyBufferBinding {
+                &[rhi::InputAssemblyBufferBinding {
                     buffer: vtx_buffer,
                     offset: 0,
                 }],
             );
             encoder.bind_index_buffer(
-                IndexType::U32,
-                &InputAssemblyBufferBinding {
+                rhi::IndexType::U32,
+                &rhi::InputAssemblyBufferBinding {
                     buffer: idx_buffer,
                     offset: 0,
                 },
@@ -217,7 +216,7 @@ pub fn pass(
             //
             // Set the viewport state, we're going to be rendering to the whole frame
             //
-            encoder.set_viewports(&[Viewport {
+            encoder.set_viewports(&[rhi::Viewport {
                 x: 0.0,
                 y: 0.0,
                 width: extent.width as _,
@@ -265,9 +264,9 @@ pub fn pass(
 }
 
 unsafe fn record_job_commands(
-    encoder: &mut dyn IGeneralEncoder,
+    encoder: &mut dyn rhi::IGeneralEncoder,
     job: &aleph_egui::ClippedPrimitive,
-    swap_extent: Extent2D,
+    swap_extent: rhi::Extent2D,
     pixels_per_point: f32,
     vtx_base: usize,
     idx_base: usize,
@@ -295,9 +294,9 @@ unsafe fn record_job_commands(
 
 fn calculate_clip_rect(
     job: &aleph_egui::ClippedPrimitive,
-    swap_extent: Extent2D,
+    swap_extent: rhi::Extent2D,
     pixels_per_point: f32,
-) -> Rect {
+) -> rhi::Rect {
     let width_pixels = swap_extent.width as f32;
     let height_pixels = swap_extent.height as f32;
 
@@ -323,7 +322,7 @@ fn calculate_clip_rect(
         y: max.y.clamp(min.y, height_pixels),
     };
 
-    Rect {
+    rhi::Rect {
         x: min.x.round() as _,
         y: min.y.round() as _,
         w: (max.x - min.x).round() as _,
@@ -339,9 +338,9 @@ impl IStateCacheKey for EguiLayoutKey {
 }
 
 pub struct EguiLayout {
-    pub sampler: SamplerHandle,
-    pub block_layout: AnyArc<dyn IParameterBlockLayout>,
-    pub binding_signature: AnyArc<dyn IBindingSignature>,
+    pub sampler: rhi::SamplerHandle,
+    pub block_layout: AnyArc<dyn rhi::IParameterBlockLayout>,
+    pub binding_signature: AnyArc<dyn rhi::IBindingSignature>,
 }
 
 impl EguiLayout {
@@ -349,7 +348,7 @@ impl EguiLayout {
         EguiLayoutKey
     }
 
-    pub fn new(device: &dyn IDevice) -> Self {
+    pub fn new(device: &dyn rhi::IDevice) -> Self {
         let sampler = Self::create_sampler(device);
         let block_layout = Self::create_block_layout(device);
         let binding_signature = Self::create_binding_signature(device, block_layout.as_ref());
@@ -361,39 +360,41 @@ impl EguiLayout {
         }
     }
 
-    pub fn create_block_layout(device: &dyn IDevice) -> AnyArc<dyn IParameterBlockLayout> {
-        let desc = ParameterBlockDesc {
+    pub fn create_block_layout(
+        device: &dyn rhi::IDevice,
+    ) -> AnyArc<dyn rhi::IParameterBlockLayout> {
+        let desc = rhi::ParameterBlockDesc {
             params: &[
-                ParameterType::Texture2D.param(),
-                ParameterType::SamplerState.param(),
+                rhi::ParameterType::Texture2D.param(),
+                rhi::ParameterType::SamplerState.param(),
             ],
-            visibility: DescriptorShaderVisibility::All,
+            visibility: rhi::DescriptorShaderVisibility::All,
             flags: Default::default(),
-            name: obj_name_opt!("ParameterBlockLayout"),
+            name: rhi::obj_name_opt!("ParameterBlockLayout"),
         };
         device.create_parameter_block_layout(&desc).unwrap()
     }
 
     pub fn create_binding_signature(
-        device: &dyn IDevice,
-        block_layout: &dyn IParameterBlockLayout,
-    ) -> AnyArc<dyn IBindingSignature> {
-        let desc = BindingSignatureDesc {
+        device: &dyn rhi::IDevice,
+        block_layout: &dyn rhi::IParameterBlockLayout,
+    ) -> AnyArc<dyn rhi::IBindingSignature> {
+        let desc = rhi::BindingSignatureDesc {
             parameter_block_layouts: &[block_layout],
-            push_constant_block: PushConstantBlock::new(16),
-            name: obj_name_opt!("BindingSignature"),
+            push_constant_block: rhi::PushConstantBlock::new(16),
+            name: rhi::obj_name_opt!("BindingSignature"),
         };
         device.create_binding_signature(&desc).unwrap()
     }
 
-    pub fn create_sampler(device: &dyn IDevice) -> SamplerHandle {
-        let desc = SamplerDesc {
-            min_filter: SamplerFilter::Linear,
-            mag_filter: SamplerFilter::Linear,
-            mip_filter: SamplerMipFilter::Linear,
-            address_mode_u: SamplerAddressMode::Clamp,
-            address_mode_v: SamplerAddressMode::Clamp,
-            address_mode_w: SamplerAddressMode::Clamp,
+    pub fn create_sampler(device: &dyn rhi::IDevice) -> rhi::SamplerHandle {
+        let desc = rhi::SamplerDesc {
+            min_filter: rhi::SamplerFilter::Linear,
+            mag_filter: rhi::SamplerFilter::Linear,
+            mip_filter: rhi::SamplerMipFilter::Linear,
+            address_mode_u: rhi::SamplerAddressMode::Clamp,
+            address_mode_v: rhi::SamplerAddressMode::Clamp,
+            address_mode_w: rhi::SamplerAddressMode::Clamp,
             ..Default::default()
         };
         device.create_sampler(&desc).unwrap()
@@ -401,7 +402,7 @@ impl EguiLayout {
 }
 
 #[derive(PartialEq, Eq, Hash)]
-pub struct EguiStateKey(pub Format);
+pub struct EguiStateKey(pub rhi::Format);
 
 impl IStateCacheKey for EguiStateKey {
     type Storage = EguiState;
@@ -409,15 +410,15 @@ impl IStateCacheKey for EguiStateKey {
 
 pub struct EguiState {
     pub layout: Arc<EguiLayout>,
-    pub pipeline: GraphicsPipelineHandle,
+    pub pipeline: rhi::GraphicsPipelineHandle,
 }
 
 impl EguiState {
-    pub fn key(format: Format) -> EguiStateKey {
+    pub fn key(format: rhi::Format) -> EguiStateKey {
         EguiStateKey(format)
     }
 
-    pub fn new(cache: &mut StateCache, device: &dyn IDevice, format: Format) -> Self {
+    pub fn new(cache: &mut StateCache, device: &dyn rhi::IDevice, format: rhi::Format) -> Self {
         let key = EguiLayout::key();
         let layout = cache.get_or_insert_with(&key, |_, _| EguiLayout::new(device));
 
@@ -432,74 +433,74 @@ impl EguiState {
     }
 
     pub fn create_pipeline_state(
-        device: &dyn IDevice,
-        binding_signature: &dyn IBindingSignature,
+        device: &dyn rhi::IDevice,
+        binding_signature: &dyn rhi::IBindingSignature,
         shader_db: &dyn IShaderAccessor,
-        format: Format,
-    ) -> GraphicsPipelineHandle {
-        let rasterizer_state_new = RasterizerStateDesc {
-            cull_mode: CullMode::None,
-            front_face: FrontFaceOrder::CounterClockwise,
-            polygon_mode: PolygonMode::Fill,
+        format: rhi::Format,
+    ) -> rhi::GraphicsPipelineHandle {
+        let rasterizer_state_new = rhi::RasterizerStateDesc {
+            cull_mode: rhi::CullMode::None,
+            front_face: rhi::FrontFaceOrder::CounterClockwise,
+            polygon_mode: rhi::PolygonMode::Fill,
             depth_bias: 0,
             depth_bias_clamp: 0.0,
             depth_bias_slope_factor: 0.0,
         };
 
-        let depth_stencil_state_new = DepthStencilStateDesc {
+        let depth_stencil_state_new = rhi::DepthStencilStateDesc {
             depth_test: false,
             ..Default::default()
         };
 
-        let vertex_layout_new = VertexInputStateDesc {
-            input_bindings: &[VertexInputBindingDesc {
+        let vertex_layout_new = rhi::VertexInputStateDesc {
+            input_bindings: &[rhi::VertexInputBindingDesc {
                 binding: 0,
                 stride: 20,
-                input_rate: VertexInputRate::PerVertex,
+                input_rate: rhi::VertexInputRate::PerVertex,
             }],
             input_attributes: &[
-                VertexInputAttributeDesc {
+                rhi::VertexInputAttributeDesc {
                     location: 0,
                     binding: 0,
-                    format: VertexFormat::Float2,
+                    format: rhi::VertexFormat::Float2,
                     offset: 0,
                 },
-                VertexInputAttributeDesc {
+                rhi::VertexInputAttributeDesc {
                     location: 1,
                     binding: 0,
-                    format: VertexFormat::Float2,
+                    format: rhi::VertexFormat::Float2,
                     offset: 8,
                 },
-                VertexInputAttributeDesc {
+                rhi::VertexInputAttributeDesc {
                     location: 2,
                     binding: 0,
-                    format: VertexFormat::UChar4Normalized,
+                    format: rhi::VertexFormat::UChar4Normalized,
                     offset: 16,
                 },
             ],
         };
 
-        let input_assembly_state_new = InputAssemblyStateDesc {
-            primitive_topology: PrimitiveTopology::TriangleList,
+        let input_assembly_state_new = rhi::InputAssemblyStateDesc {
+            primitive_topology: rhi::PrimitiveTopology::TriangleList,
         };
 
-        let blend_state_new = BlendStateDesc {
-            attachments: &[AttachmentBlendState {
+        let blend_state_new = rhi::BlendStateDesc {
+            attachments: &[rhi::AttachmentBlendState {
                 blend_enabled: true,
-                src_factor: BlendFactor::One,
-                dst_factor: BlendFactor::OneMinusSrcAlpha,
-                blend_op: BlendOp::Add,
-                alpha_src_factor: BlendFactor::OneMinusDstAlpha,
-                alpha_dst_factor: BlendFactor::One,
-                alpha_blend_op: BlendOp::Add,
-                color_write_mask: ColorComponentFlags::all(),
+                src_factor: rhi::BlendFactor::One,
+                dst_factor: rhi::BlendFactor::OneMinusSrcAlpha,
+                blend_op: rhi::BlendOp::Add,
+                alpha_src_factor: rhi::BlendFactor::OneMinusDstAlpha,
+                alpha_dst_factor: rhi::BlendFactor::One,
+                alpha_blend_op: rhi::BlendOp::Add,
+                color_write_mask: rhi::ColorComponentFlags::all(),
             }],
         };
 
         let vertex_shader = shader_db.load_stage(shaders::egui::egui_vert()).unwrap();
         let fragment_shader = shader_db.load_stage(shaders::egui::egui_frag()).unwrap();
 
-        let graphics_pipeline_desc_new = GraphicsPipelineDesc {
+        let graphics_pipeline_desc_new = rhi::GraphicsPipelineDesc {
             shader_stages: &[vertex_shader, fragment_shader],
             binding_signature,
             vertex_layout: &vertex_layout_new,
@@ -509,7 +510,7 @@ impl EguiState {
             blend_state: &blend_state_new,
             render_target_formats: &[format],
             depth_stencil_format: None,
-            name: obj_name_opt!("GraphicsPipelineState"),
+            name: rhi::obj_name_opt!("GraphicsPipelineState"),
         };
 
         device

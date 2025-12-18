@@ -29,33 +29,32 @@
 
 extern crate aleph_engine as aleph;
 
-use std::path::Path;
-
 use aleph::Engine;
 use aleph::interfaces::make_plugin_description_for_crate;
 use aleph::interfaces::plugin::{IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription};
-use aleph::interfaces::renderer::Renderer;
 use aleph::interfaces::schedule::CoreStage;
 use aleph_egui::IEguiContextProvider;
 use aleph_egui::widgets::{FrameTimeHistory, MemoryStats, frame_stats, memory_stats};
 use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform, TransformHistory};
 use aleph_engine::interfaces::label::make_label;
 use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
+use aleph_engine::interfaces::mg::material::binding::MaterialBinding;
+use aleph_engine::interfaces::mg::material::{StandardMaterial, StandardMaterialLayout};
+use aleph_engine::interfaces::mg::material_instance::MaterialInstanceDesc;
+use aleph_engine::interfaces::mg::renderer::immediate_resource_builder::ImmediateResourceBuilder;
+use aleph_engine::interfaces::mg::renderer::{BufferOptions, Renderer, SimpleTextureOptions};
+use aleph_engine::interfaces::mg::resource::texture::TextureHandle;
+use aleph_engine::interfaces::mg::resource::texture::simple::SimpleTextureLayout;
+use aleph_engine::interfaces::mg::resource_loader::mip_upload::MipUploadDesc;
+use aleph_engine::interfaces::mg::resource_loader::upload_buffer::{IUploadBuffer, UploadBuffer};
 use aleph_engine::interfaces::platform::{IFrameTimer, IGamepads};
 use aleph_engine::interfaces::plugin::{CoreRefs, InitOrder};
-use aleph_engine::interfaces::renderer::{
-    BufferObject, BufferObjectDesc, BufferUploadDesc, MaterialBinding, MaterialInstanceObject,
-    ResourceCommand, StandardMaterial, StandardMaterialLayout,
-};
 use aleph_engine::interfaces::schedule::WorldResource;
 use aleph_engine::interfaces::scheduler::ResMut;
-use aleph_rhi_api::ResourceUsageFlags;
 
-use crate::game::async_texture_loader::AsyncTextureLoader;
 use crate::game::config::Config;
 use crate::game::cube_mesh::upload_cube_buffers;
 use crate::game::free_camera::FreeCamera;
-use crate::game::gltf_loader::{BumpThingy, PollResult, load_scene};
 use crate::game::throbber_logic::ThrobberLogic;
 
 pub fn engine_runner() {
@@ -138,27 +137,31 @@ impl IPlugin for PluginGameLogic {
 
         let standard_material = StandardMaterial::new();
 
-        let async_texture_loader = AsyncTextureLoader::new(renderer.device().upgrade());
+        // let async_texture_loader = AsyncTextureLoader::new(renderer.device().upgrade());
 
-        let mut arena = BumpThingy::new(renderer.device());
+        // let mut arena = BumpThingy::new(renderer.device());
 
-        let mut thinkers = Vec::new();
-        for scene in config.scenes.iter() {
-            load_scene(
-                world,
-                renderer,
-                &mut arena,
-                &mut thinkers,
-                &standard_material,
-                &async_texture_loader,
-                Path::new(&scene),
-            );
-        }
+        // let mut thinkers = Vec::new();
+        // for scene in config.scenes.iter() {
+        //     load_scene(
+        //         world,
+        //         renderer,
+        //         &mut arena,
+        //         &mut thinkers,
+        //         &standard_material,
+        //         &async_texture_loader,
+        //         Path::new(&scene),
+        //     );
+        // }
 
         let (idx, vtx) = upload_cube_buffers(renderer);
 
-        let white_tex = renderer.default_resources().white_texture_rgba8();
-        let norm_tex = renderer.default_resources().normal_texture_rgba8();
+        let white_tex =
+            create_1x1_colour_texture(&mut renderer.immediate_resource_builder(), 0xFFFFFFFF);
+        let black_tex =
+            create_1x1_colour_texture(&mut renderer.immediate_resource_builder(), 0x00000000);
+        let norm_tex =
+            create_1x1_colour_texture(&mut renderer.immediate_resource_builder(), 0xFFFF8080);
         let colour = [0.5, 1.0, 0.5, 1.0];
         let metal = 0.0;
         let roughness = 0.5;
@@ -169,25 +172,29 @@ impl IPlugin for PluginGameLogic {
             _padding2: [0; 96],
         };
 
-        let mut desc = BufferObjectDesc::new();
-        desc.size(256);
-        desc.usage(ResourceUsageFlags::CONSTANT_BUFFER);
-        let mut upload = BufferUploadDesc::new_owned(renderer.device(), &desc).unwrap();
+        // Create material data buffer
+        let mut upload = UploadBuffer::new_owned(renderer.device(), 256).unwrap();
         upload
-            .buffer
             .bytes_mut()
             .copy_from_slice(bytemuck::bytes_of(&layout));
-        let object = BufferObject::new_for_desc(renderer.device(), desc).unwrap();
-        let buffer = renderer.create_buffer(object).unwrap();
-        renderer.submit_resource_command(ResourceCommand::BufferUpload(buffer, upload));
-        let mut material_instance = MaterialInstanceObject::new(standard_material.clone());
-        material_instance.update_binding(0, MaterialBinding::Buffer(Some(buffer)));
-        material_instance.update_binding(1, MaterialBinding::Texture(Some(white_tex)));
-        material_instance.update_binding(2, MaterialBinding::Texture(Some(white_tex)));
-        material_instance.update_binding(3, MaterialBinding::Texture(Some(norm_tex)));
-        let material_instance = renderer
-            .create_material_instance(material_instance)
+        let buffer = renderer
+            .create_buffer_immediate(256, Some(upload.into_smallbox()), &BufferOptions::default())
             .unwrap();
+
+        let inst_bindings = [
+            MaterialBinding::Buffer(Some(buffer)),
+            MaterialBinding::Texture(Some(white_tex)),
+            MaterialBinding::Texture(Some(white_tex)),
+            MaterialBinding::Texture(Some(norm_tex)),
+        ];
+        let inst_desc = MaterialInstanceDesc {
+            double_sided: false,
+            bindings: &inst_bindings,
+        };
+        let material_instance = renderer
+            .create_material_instance(&standard_material, &inst_desc)
+            .unwrap();
+
         let transform = Transform {
             position: DVec3::zero(),
             rotation: Rotor3::identity(),
@@ -205,30 +212,47 @@ impl IPlugin for PluginGameLogic {
             },
         ));
 
-        resources.insert(async_texture_loader);
+        // resources.insert(async_texture_loader);
 
         let mut free_camera = FreeCamera::new(frame_timer.clone(), gamepads.get_accessor(), camera);
         let throbber_logic = ThrobberLogic::new(frame_timer.clone(), throbber);
         schedule.add_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::logic"),
-            move |(mut world, loader, mut renderer): (
-                ResMut<WorldResource>,
-                ResMut<AsyncTextureLoader>,
-                ResMut<Renderer>,
-            )| {
+            move |(mut world, mut renderer): (ResMut<WorldResource>, ResMut<Renderer>)| {
                 free_camera.tick(&mut world.0);
                 throbber_logic.tick(&mut world.0);
-                loader.think(&mut renderer);
-                thinkers.retain_mut(|t| match t.poll_and_resolve(&mut renderer) {
-                    PollResult::Success => false,
-                    PollResult::Waiting => true,
-                    PollResult::Fail => {
-                        log::error!("Thinker Failed!");
-                        false
-                    }
-                });
+                // loader.think(&mut renderer);
+                // thinkers.retain_mut(|t| match t.poll_and_resolve(&mut renderer) {
+                //     PollResult::Success => false,
+                //     PollResult::Waiting => true,
+                //     PollResult::Fail => {
+                //         log::error!("Thinker Failed!");
+                //         false
+                //     }
+                // });
             },
         );
     }
+}
+
+pub fn create_1x1_colour_texture(
+    resource_builder: &mut ImmediateResourceBuilder,
+    payload: u32,
+) -> TextureHandle {
+    let mut desc = SimpleTextureLayout::new();
+    // desc.usage(rhi::ResourceUsageFlags::SHADER_RESOURCE);
+    desc.with_format(rhi::Format::Rgba8Unorm);
+    desc.image_2d(1, 1);
+
+    let mut data = MipUploadDesc::new_owned(resource_builder.device, &desc, 0, 0, 1).unwrap();
+
+    let dst = &mut data.buffer.bytes_mut()[0..4];
+    dst.copy_from_slice(bytemuck::bytes_of(&payload));
+
+    let handle = resource_builder
+        .create_simple_texture_immediate(&desc, data, &SimpleTextureOptions::default())
+        .unwrap();
+
+    handle
 }

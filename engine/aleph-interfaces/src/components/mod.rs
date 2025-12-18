@@ -104,7 +104,8 @@ mod lights {
 }
 
 mod static_mesh {
-    use renderer::{BufferHandle, MaterialInstanceHandle};
+    use mg::material_instance::MaterialInstanceHandle;
+    use mg::resource::buffer::BufferHandle;
 
     ///
     ///

@@ -29,16 +29,17 @@
 
 use std::ops::Deref;
 
+use aleph_alloc::crossbeam;
+use aleph_alloc::crossbeam::channel::Sender;
 use aleph_frame_graph::FrameGraphBuilder;
+use aleph_magnesium::renderer::Renderer;
+use aleph_magnesium::renderer::builder::RendererBuilder;
+use aleph_magnesium::renderer::render_plane::DefaultRenderPlane;
+use aleph_magnesium::renderer::shader_accessor::ShaderAccessor;
+use aleph_magnesium::scene::RenderTransform;
+use aleph_magnesium::scene::render_scene::RenderScene;
 use aleph_math::ToSingle;
 use aleph_pin_board::ScopedParamBoard;
-use aleph_renderer::pass::GraphArgs;
-use aleph_renderer::{
-    CameraInfo, DefaultRenderPlane, DefaultResources, DrawOptions, IRenderPlane, IRenderSurface,
-    PerspectiveInfo, RenderPlaneOutput, RenderScene, RenderSceneParam, RenderTransform, Renderer,
-    RendererBuilder, ShaderAccessor, StateCache,
-};
-use aleph_rhi_api::*;
 use aleph_shader_db::ArchivedShaderDatabase;
 use interfaces::any::{AnyArc, QueryInterface, declare_interfaces};
 use interfaces::components::{self, Camera, Transform, TransformHistory};
@@ -49,13 +50,23 @@ use interfaces::plugin::*;
 use interfaces::rhi::IRhiProvider;
 use interfaces::schedule::{CoreStage, WorldResource};
 use interfaces::scheduler::{Res, ResMut};
+use mg::renderer::builder::ApplicationSurface;
+use mg::renderer::draw_options::DrawOptions;
+use mg::renderer::frame_graph::GraphArgs;
+use mg::renderer::immediate_resource_builder::ImmediateResourceBuilder;
+use mg::renderer::render_plane::{IRenderPlane, RenderPlaneOutput};
+use mg::renderer::state_cache::StateCache;
+use mg::renderer::surface_notify::SurfaceNotification;
+use mg::scene::frame_graph::RenderSceneParam;
+use mg::scene::objects::camera::{CameraInfo, PerspectiveInfo};
+use mg::scene::objects::static_mesh::StaticMesh;
 use serde::Deserialize;
 
 use crate::egui_draw::EguiPassContext;
 use crate::egui_font_texture::EguiFontTexture;
 
 pub struct PluginRender {
-    device: Option<AnyArc<dyn IDevice>>,
+    device: Option<AnyArc<dyn rhi::IDevice>>,
 }
 
 impl PluginRender {
@@ -95,28 +106,15 @@ impl IPlugin for PluginRender {
         self.device = Some(device.clone());
 
         Self::log_gpu_info(
-            device.deref().query_interface::<dyn IDevice>().unwrap(),
+            device
+                .deref()
+                .query_interface::<dyn rhi::IDevice>()
+                .unwrap(),
             adapter.deref(),
         );
 
         let drawable_size = window.drawable_size();
-        let swap_config = SwapChainConfiguration {
-            format: Format::Bgra8UnormSrgb,
-            width: drawable_size.0,
-            height: drawable_size.1,
-            present_mode: PresentationMode::Fifo,
-            buffer_count: 3,
-            present_queue: QueueType::General,
-        };
-        let swap_chain = surface
-            .create_swap_chain(device.deref(), &swap_config)
-            .unwrap();
-        assert!(swap_chain.present_supported_on_queue(QueueType::General));
-
-        let surface = RenderSurface {
-            window: window.clone(),
-            swap_chain,
-        };
+        let drawable_size = rhi::Extent2D::new(drawable_size.0, drawable_size.1);
 
         // Try load the shader db, first from the immediate working directory and then from the
         // potential aleph project's .aleph/shaders directory.
@@ -129,15 +127,25 @@ impl IPlugin for PluginRender {
         shader_db.validate_header();
         let shader_db = ShaderAccessor::new(shader_db);
 
+        let (surface_send, surface_recv) = crossbeam::channel::unbounded();
+        let surface_sender = SurfaceSender {
+            window: window.clone(),
+            sender: surface_send,
+        };
+
         let mut renderer = RendererBuilder::new();
         renderer.device(device.clone());
-        renderer.surface(surface);
+        renderer.surface(ApplicationSurface {
+            surface,
+            extent: drawable_size,
+            notify: Box::new(surface_recv),
+        });
         renderer.shader_db(Box::new(shader_db));
         renderer.render_plane(DefaultRenderPlane::default());
         if render_data.is_some() {
             renderer.render_plane(EguiRenderPlane::new(window.clone()));
         }
-        renderer.frames_in_flight(config.frames_in_flight as usize);
+        renderer.render_ahead_frames(config.render_ahead_frames as usize);
 
         registry.core().resources.insert(RenderScene::new());
         registry.core().resources.insert(renderer.build().unwrap());
@@ -165,7 +173,7 @@ impl IPlugin for PluginRender {
                             rotation: t.rotation,
                             scale: t.scale,
                         },
-                        aleph_renderer::StaticMesh {
+                        StaticMesh {
                             vtx: m.vtx,
                             idx: m.idx,
                             material_instance: m.material_instance,
@@ -174,24 +182,30 @@ impl IPlugin for PluginRender {
                 }
 
                 board.scope(|board| {
-                    board.publish::<RenderSceneParam>(&render_scene);
-
+                    // Find the first camera object in the scene and make that the active camera.
                     let mut query = world.0.query::<(&Transform, &Camera)>();
                     let (_, (t, c)) = query.next().unwrap();
-
-                    let size = window.drawable_size();
-                    let aspect = size.0 as f32 / size.1 as f32;
                     let camera_info = CameraInfo {
                         position: t.position.to_single(),
                         orientation: t.rotation,
-                        projection: PerspectiveInfo::new(c.vertical_fov, c.z_near, aspect),
+                        projection: PerspectiveInfo::new(c.vertical_fov, c.z_near),
                     };
-                    board.publish::<CameraInfo>(camera_info);
+
+                    // Provide the renderer with our render scene
+                    // TODO: I'd really like to avoid exposing the pin board outside of the renderer
+                    //       because it _feels_ like it should be implementation detail. However
+                    //       I don't have a good way of lending arbitrary data to the renderer for
+                    //       only the duration of draw_frame. In the future we should have some kind
+                    //       of command buffer that we lend that can store references. Putting the
+                    //       command buffer inside the renderer isn't possible.
+                    let param = RenderSceneParam::make(&render_scene, camera_info);
+                    board.publish::<RenderSceneParam>(param);
 
                     if let Some(e) = egui_data.as_mut() {
                         let render_data = e.render_data.take();
 
-                        // Filter the deltas to only those that affect the font texture
+                        // Filter the deltas to only those that affect the font texture and upload
+                        // a new font texture immediately.
                         let font_updates = render_data
                             .textures_delta
                             .set
@@ -201,21 +215,34 @@ impl IPlugin for PluginRender {
                         e.font_texture
                             .update_font_texture(&mut renderer, font_updates);
 
+                        // Pass the egui commands and font texture that so our egui render pass
+                        // can do its thing.
                         board.publish::<EguiPassContext>(EguiPassContext {
                             font_handle: e.font_texture.font_handle.unwrap(),
                             render_data,
                         });
                     }
 
-                    unsafe {
-                        let options = DrawOptions {
-                            force_rebuild_frame_graph: config.force_graph_rebuild,
-                        };
-                        renderer.draw_next_frame(&options, board);
-                    }
+                    let options = DrawOptions {
+                        force_rebuild_frame_graph: config.force_graph_rebuild,
+                    };
+                    renderer.draw_frame(&options, board);
                 });
             },
         );
+
+        // System to take the send events about the rendering surface into the renderer over the
+        // channel that we gave it.
+        registry
+            .core()
+            .schedule
+            .add_exclusive_at_end_system_to_stage(
+                CoreStage::InputCollection.into(),
+                make_label!("render::send_surface_events"),
+                move || {
+                    surface_sender.pump();
+                },
+            );
 
         // System to update the transform history of entities so we get correct motion vectors. We
         // do this immediately after the main render job gets kicked off as we want to capture the
@@ -273,7 +300,7 @@ impl PluginRender {
     /// Internal function for logging info about the CPU that is being used
     ///
     #[allow(clippy::erasing_op)]
-    fn log_gpu_info(device: &dyn IDevice, adapter: &dyn IAdapter) {
+    fn log_gpu_info(device: &dyn rhi::IDevice, adapter: &dyn rhi::IAdapter) {
         let info = adapter.description();
 
         let gpu_vendor = info.vendor;
@@ -290,23 +317,21 @@ impl PluginRender {
     }
 }
 
-struct RenderSurface {
+struct SurfaceSender {
     window: AnyArc<dyn IWindow>,
-    swap_chain: AnyArc<dyn ISwapChain>,
+    sender: Sender<SurfaceNotification>,
 }
 
-impl IRenderSurface for RenderSurface {
-    fn get_render_extent(&self) -> Extent2D {
-        let size = self.window.drawable_size();
-        Extent2D::new(size.0, size.1)
-    }
-
-    fn get_swap_chain(&self) -> &dyn ISwapChain {
-        self.swap_chain.as_ref()
-    }
-
-    fn needs_rebuild(&self) -> bool {
-        self.window.resized()
+impl SurfaceSender {
+    fn pump(&self) {
+        if self.window.resized() {
+            let size = self.window.drawable_size();
+            let size = rhi::Extent2D::new(size.0, size.1);
+            self.sender
+                .try_send(SurfaceNotification::Resized(size))
+                .ok()
+                .unwrap()
+        }
     }
 }
 
@@ -321,13 +346,16 @@ impl EguiRenderPlane {
 }
 
 impl IRenderPlane for EguiRenderPlane {
+    fn init_resources(&mut self, _resource_builder: &mut ImmediateResourceBuilder) {
+        // nothing
+    }
+
     fn register_passes(
         &self,
         frame_graph: &mut FrameGraphBuilder<GraphArgs>,
-        device: &dyn IDevice,
+        device: &dyn rhi::IDevice,
         pin_board: &aleph_pin_board::PinBoard,
         state_cache: &mut StateCache,
-        _default_resources: &DefaultResources,
     ) -> RenderPlaneOutput {
         let pixels_per_point = self.window.current_display_scale();
         crate::egui_draw::pass(
@@ -342,8 +370,8 @@ impl IRenderPlane for EguiRenderPlane {
 
 #[derive(Deserialize)]
 struct Config {
-    #[serde(rename = "framesInFlight")]
-    pub frames_in_flight: u32,
+    #[serde(rename = "renderAheadFrames")]
+    pub render_ahead_frames: u32,
 
     #[serde(rename = "forceGraphRebuild")]
     pub force_graph_rebuild: bool,
@@ -351,7 +379,7 @@ struct Config {
 
 impl Config {
     pub fn log(&self) {
-        log::info!("render.framesInFlight = {}", self.frames_in_flight);
+        log::info!("render.renderAheadFrames = {}", self.render_ahead_frames);
         log::info!("render.forceGraphRebuild = {}", self.force_graph_rebuild);
     }
 }

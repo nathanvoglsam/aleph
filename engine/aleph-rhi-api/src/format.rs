@@ -354,28 +354,6 @@ impl Format {
         self.metadata().block_dimensions
     }
 
-    /// Returns the minimum row pitch required for a buffer to texture copy operation on a texture
-    /// with the format of 'self' in texels.
-    ///
-    /// # Info
-    ///
-    /// We require a minimum row pitch of 256 bytes for buffer to texture copies as this limit is
-    /// imposed by D3D12. D3D12 exposes the limit in bytes but Vulkan exposes the same concept in
-    /// texels. This utility function can be used for determining what values are valid row pitch
-    /// sizes for a particular format.
-    ///
-    /// # Warning
-    ///
-    /// This function will only produce sane output if [`Format::bytes_per_element`] is a power of
-    /// two. Some formats like [`Format::Rgb32Float`] do not meet this requirement, however they are
-    /// not valid _texture_ formats. These are purely _vertex_ formats and so you should never need
-    /// to call this function on one of these formats as this function is entirely concerned with
-    /// handling texture uploads.
-    ///
-    pub const fn buffer_to_texture_copy_row_pitch(&self) -> u32 {
-        256u32 / self.bytes_per_element()
-    }
-
     pub const fn has_aspect(&self, aspect: TextureCopyAspect) -> bool {
         self.aspect_mask().contains(aspect.as_flag())
     }

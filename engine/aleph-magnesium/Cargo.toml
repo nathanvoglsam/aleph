@@ -1,0 +1,72 @@
+##
+##
+## This file is a part of Aleph
+##
+## https://github.com/nathanvoglsam/aleph
+##
+## MIT License
+##
+## Copyright (c) 2020 Aleph Engine
+##
+## Permission is hereby granted, free of charge, to any person obtaining a copy
+## of this software and associated documentation files (the "Software"), to deal
+## in the Software without restriction, including without limitation the rights
+## to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+## copies of the Software, and to permit persons to whom the Software is
+## furnished to do so, subject to the following conditions:
+##
+## The above copyright notice and this permission notice shall be included in all
+## copies or substantial portions of the Software.
+##
+## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+## SOFTWARE.
+##
+
+
+[package]
+name = "aleph-magnesium"
+version = "0.1.0"
+authors.workspace = true
+description = "A games focused 3D renderer library"
+license.workspace = true
+repository.workspace = true
+documentation = "https://docs.rs/aleph-magnesium/"
+edition.workspace = true
+
+[package.metadata.aleph]
+shaders = { modules = ["aleph-magnesium"] }
+
+[badges]
+azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
+
+[dependencies]
+aleph-alloc = { workspace = true }
+aleph-device-allocators = { workspace = true }
+aleph-any = { workspace = true }
+aleph-atomic-borrow = { workspace = true }
+aleph-frame-graph = { workspace = true }
+aleph-hibitset = { workspace = true }
+aleph-identity-hasher = { workspace = true }
+aleph-math = { workspace = true }
+aleph-pin-board = { workspace = true }
+aleph-rhi-api = { workspace = true }
+aleph-shader-db = { workspace = true }
+aleph-profile = { workspace = true }
+aleph-nstr = { workspace = true }
+aleph-object-system = { workspace = true }
+aleph-vk-format = { workspace = true }
+
+log = { workspace = true }
+crossbeam = { workspace = true }
+bytemuck = { workspace = true }
+thiserror = { workspace = true }
+allocator-api2 = { workspace = true }
+rayon = { workspace = true }
+arrayvec = { workspace = true }
+smallbox = { workspace = true }
+parking_lot = { workspace = true }

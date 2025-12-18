@@ -28,12 +28,12 @@
 //
 
 pub mod async_loader;
-pub mod async_texture_loader;
+// pub mod async_texture_loader;
 pub mod config;
 pub mod cube_mesh;
 pub mod free_camera;
 pub mod game_logic;
-pub mod gltf_loader;
+// pub mod gltf_loader;
 pub mod throbber_logic;
 
 aleph_alloc::register_global_allocator!();

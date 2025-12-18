@@ -30,10 +30,10 @@
 namespace render {
     export interface Config {
         /** 
-         * The number of frames the renderer is allowed to have in flight on the GPU at any one
-         * time.
+         * The number of frames the renderer is allowed to have in flight before it will stall waiting on the oldest
+         * frame to complete. This limits the number of frames ahead of the GPU the CPU is allowed to queue work.
          */
-        framesInFlight: number;
+        renderAheadFrames: number;
     
         /**
          * When enabled, the renderer is forced to rebuild the frame graph every frame regardless of
@@ -50,6 +50,6 @@ declare interface Configs {
 }
 
 Configs.render = {
-    framesInFlight: 2,
+    renderAheadFrames: 1,
     forceGraphRebuild: false,
 }

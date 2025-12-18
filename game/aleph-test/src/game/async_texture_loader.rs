@@ -33,11 +33,6 @@ use std::sync::Arc;
 use aleph_device_allocators::UploadBumpAllocator;
 use aleph_engine::any::AnyArc;
 use aleph_engine::interfaces::object_system::unsafe_impl_iobject;
-use aleph_engine::interfaces::renderer::pass::resource_processor::GenerateMips;
-use aleph_engine::interfaces::renderer::{
-    Renderer, ResourceCommand, TextureObject, TextureObjectDesc, TextureStreamingRequest,
-    TextureUploadDesc,
-};
 use aleph_ktx::{DocumentType, KtxDocument, VkFormat};
 use aleph_rhi_api::*;
 use crossbeam::queue::SegQueue;

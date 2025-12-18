@@ -58,7 +58,7 @@ aleph-pin-board = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-shader-db = { workspace = true }
 aleph-nstr = { workspace = true }
-aleph-renderer = { workspace = true }
+aleph-magnesium = { workspace = true }
 
 serde = { workspace = true }
 serde_json = { workspace = true }

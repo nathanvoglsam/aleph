@@ -46,7 +46,7 @@ development-build = ["aleph-target/development-build"]
 instrumentation = ["aleph-alloc/instrumentation-enabled"]
 
 [dependencies]
-aleph-alloc = { workspace = true, features = ["instrumentation-enabled"] }
+aleph-alloc = { workspace = true, features = [] }
 aleph-engine = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-egui = { workspace = true }

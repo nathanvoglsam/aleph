@@ -286,6 +286,53 @@ impl OffsetAllocator {
         }
     }
 
+    /// A wrapper over [`OffsetAllocator::allocate`] that can return an allocation aligned to the
+    /// request alignment within the allocator's logical address space.
+    ///
+    /// Returns the allocation identifier, as well as an alternative offset within the allocator's
+    /// logical address space that should be used instead of the offset stored in the returned
+    /// allocation. This is the aligned address, and is guaranteed to be valid for 'size'.
+    ///
+    /// - 'align' must be a power of two.
+    #[inline]
+    pub fn allocate_aligned(&mut self, size: u32, align: u32) -> (Allocation, u32) {
+        assert!(align.is_power_of_two());
+
+        // We expand the size of the allocation to be 'size + align'. This is to guaranteed we get
+        // a block big enough that we can find some offset within the first 'align' bytes that is
+        // aligned and valid for 'size' bytes.
+        //
+        // We expand to u64 and to ensure we don't overflow. The size of the expanded allocation
+        // still can't exceed u32::MAX.
+        let expanded_size = size as u64 + align as u64;
+        let expanded_size = match expanded_size.try_into() {
+            Err(_) => return (Allocation::default(), 0),
+            Ok(v) => v,
+        };
+
+        // Allocate our inflated block, immediately returning on failure.
+        let allocation = self.allocate(expanded_size);
+        if allocation.is_fail() {
+            return (allocation, 0);
+        }
+
+        // Calculate our offset block start position within the expanded allocation we just
+        // allocated. This is, again, setup to prevent overflow by doing math in u64 and checking
+        // if our offset is outside the u32 range.
+        let block_start = allocation.offset as u64 + align as u64;
+        let block_start = block_start & !(align as u64 - 1);
+        let block_start = match block_start.try_into() {
+            Err(_) => {
+                // We've errored after successfully allocating a block, we should return it.
+                self.free(allocation);
+                return (allocation, 0);
+            }
+            Ok(v) => v,
+        };
+
+        (allocation, block_start)
+    }
+
     pub fn free(&mut self, allocation: Allocation) {
         assert_ne!(allocation.metadata, Allocation::NO_SPACE);
 

@@ -52,6 +52,7 @@ members = [
     "engine/aleph-interfaces",
     "engine/aleph-ktx",
     "engine/aleph-label",
+    "engine/aleph-magnesium",
     "engine/aleph-malloc-info",
     "engine/aleph-math",
     "engine/aleph-mikktspace",
@@ -66,7 +67,6 @@ members = [
     "engine/aleph-quickjs",
     "engine/aleph-quickjs-sys",
     "engine/aleph-render",
-    "engine/aleph-renderer",
     "engine/aleph-rhi-api",
     "engine/aleph-rhi-dx12",
     "engine/aleph-rhi-impl-utils",
@@ -218,12 +218,13 @@ aleph-engine = { path = "./engine/aleph-engine", version = "0.1" }
 aleph-engine-build = { path = "./engine/aleph-engine-build", version = "0.1" }
 aleph-frame-graph = { path = "./engine/aleph-frame-graph", version = "0.1" }
 aleph-gpu-allocator = { path = "./engine/aleph-gpu-allocator", version = "0.1" }
-## aleph-hibitset = { path = "./engine/aleph-hibitset", version = "0.1" }
+aleph-hibitset = { path = "./engine/aleph-hibitset", version = "0.1" }
 aleph-identity-hasher = { path = "./engine/aleph-identity-hasher", version = "0.1" }
 aleph-image = { path = "./engine/aleph-image", version = "0.1" }
 aleph-interfaces = { path = "./engine/aleph-interfaces", version = "0.1" }
 aleph-ktx = { path = "./engine/aleph-ktx", version = "0.1" }
 aleph-label = { path = "./engine/aleph-label", version = "0.1" }
+aleph-magnesium = { path = "./engine/aleph-magnesium", version = "0.1" }
 aleph-malloc-info = { path = "./engine/aleph-malloc-info", version = "0.1" }
 aleph-math = { path = "./engine/aleph-math", version = "0.1" }
 aleph-mikktspace = { path = "./engine/aleph-mikktspace", version = "0.1" }
@@ -237,7 +238,6 @@ aleph-profile = { path = "./engine/aleph-profile", version = "0.1" }
 aleph-profile-procmacros = { path = "./engine/aleph-profile-procmacros", version = "0.1" }
 aleph-quickjs = { path = "./engine/aleph-quickjs", version = "0.1" }
 aleph-quickjs-sys = { path = "./engine/aleph-quickjs-sys", version = "0.1" }
-aleph-renderer = { path = "./engine/aleph-renderer", version = "0.1" }
 aleph-rhi-api = { path = "./engine/aleph-rhi-api", version = "0.1" }
 aleph-rhi-dx12 = { path = "./engine/aleph-rhi-dx12", version = "0.1" }
 aleph-rhi-impl-utils = { path = "./engine/aleph-rhi-impl-utils", version = "0.1" }

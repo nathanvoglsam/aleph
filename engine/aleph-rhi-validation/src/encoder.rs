@@ -403,7 +403,7 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
     ) {
         regions.iter().for_each(|v| {
             let dst = ValidationTexture::get(dst);
-            Self::validate_buffer_to_texture_copy_buffer_layout(dst.desc.format, v);
+            Self::validate_buffer_to_texture_copy_buffer_layout(v);
             Self::validate_buffer_to_texture_copy_dest_region(dst, dst.desc.format, v)
         });
 
@@ -465,10 +465,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
         }
     }
 
-    fn validate_buffer_to_texture_copy_buffer_layout(
-        dst_format: Format,
-        region: &BufferToTextureCopyRegion,
-    ) {
+    fn validate_buffer_to_texture_copy_buffer_layout(region: &BufferToTextureCopyRegion) {
         assert_eq!(
             region.src.offset % 512,
             0,
@@ -495,12 +492,6 @@ impl<T: ?Sized> ValidationEncoder<T> {
             "row_pitch ({}) must be >= extent.width ({})",
             region.src.row_pitch,
             region.src.extent.width
-        );
-        let row_pitch_align = dst_format.buffer_to_texture_copy_row_pitch();
-        assert_eq!(
-            region.src.row_pitch % row_pitch_align,
-            0,
-            "row_pitch must be a multiple of {row_pitch_align} texels"
         );
     }
 

@@ -1,5 +1,0 @@
-[module]
-name = "aleph-renderer"
-
-## List of warnings to disable
-disabled_warnings = [15205]

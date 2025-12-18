@@ -27,39 +27,42 @@
 // SOFTWARE.
 //
 
-use aleph_engine::interfaces::renderer::{
-    BufferHandle, BufferObject, BufferObjectDesc, BufferUploadDesc, Renderer, ResourceCommand,
-};
-use aleph_rhi_api::*;
+use aleph_engine::interfaces::mg::renderer::{BufferOptions, Renderer};
+use aleph_engine::interfaces::mg::resource::buffer::BufferHandle;
+use aleph_engine::interfaces::mg::resource_loader::upload_buffer::{IUploadBuffer, UploadBuffer};
 use bytemuck::{Pod, Zeroable};
 
 #[aleph_profile::function]
 pub fn upload_cube_buffers(renderer: &mut Renderer) -> (BufferHandle, BufferHandle) {
-    let mut v_desc = BufferObjectDesc::new();
-    v_desc.size(size_of_val(&VERTS) as u64);
-    v_desc.usage(ResourceUsageFlags::VERTEX_BUFFER);
-    let mut v_buffer = BufferUploadDesc::new_owned(renderer.device(), &v_desc).unwrap();
+    let v_size = size_of_val(&VERTS) as u64;
+    let mut v_buffer = UploadBuffer::new_owned(renderer.device(), v_size).unwrap();
 
     let src = bytemuck::cast_slice::<Vertex, u8>(&VERTS);
-    let vtx_data = &mut v_buffer.buffer.bytes_mut()[0..size_of_val(&VERTS)];
+    let vtx_data = &mut v_buffer.bytes_mut()[0..size_of_val(&VERTS)];
     vtx_data.copy_from_slice(src);
 
-    let v_object = BufferObject::new_for_desc(renderer.device(), v_desc).unwrap();
-    let v_handle = renderer.create_buffer(v_object).unwrap();
-    renderer.submit_resource_command(ResourceCommand::BufferUpload(v_handle, v_buffer));
+    let v_handle = renderer
+        .create_buffer_immediate(
+            v_size,
+            Some(v_buffer.into_smallbox()),
+            &BufferOptions::default(),
+        )
+        .unwrap();
 
-    let mut i_desc = BufferObjectDesc::new();
-    i_desc.size(size_of_val(&INDICES) as u64);
-    i_desc.usage(ResourceUsageFlags::INDEX_BUFFER);
-    let mut i_buffer = BufferUploadDesc::new_owned(renderer.device(), &i_desc).unwrap();
+    let i_size = size_of_val(&INDICES) as u64;
+    let mut i_buffer = UploadBuffer::new_owned(renderer.device(), i_size).unwrap();
 
     let src = bytemuck::cast_slice::<_, u8>(&INDICES);
-    let idx_data = &mut i_buffer.buffer.bytes_mut()[0..size_of_val(&INDICES)];
+    let idx_data = &mut i_buffer.bytes_mut()[0..size_of_val(&INDICES)];
     idx_data.copy_from_slice(src);
 
-    let i_object = BufferObject::new_for_desc(renderer.device(), i_desc).unwrap();
-    let i_handle = renderer.create_buffer(i_object).unwrap();
-    renderer.submit_resource_command(ResourceCommand::BufferUpload(i_handle, i_buffer));
+    let i_handle = renderer
+        .create_buffer_immediate(
+            i_size,
+            Some(i_buffer.into_smallbox()),
+            &BufferOptions::default(),
+        )
+        .unwrap();
 
     (i_handle, v_handle)
 }

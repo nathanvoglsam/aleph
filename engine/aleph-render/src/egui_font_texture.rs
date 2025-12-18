@@ -30,13 +30,14 @@
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::Instrumented;
 use aleph_egui::Egui;
-use aleph_renderer::pass::resource_processor::GenerateMips;
-use aleph_renderer::{
-    Renderer, ResourceCommand, TextureHandle, TextureObject, TextureObjectDesc, TextureUploadDesc,
-};
-use aleph_rhi_api::*;
+use aleph_magnesium::renderer::{Renderer, SimpleTextureOptions};
+use aleph_magnesium::resource::texture::TextureHandle;
+use aleph_magnesium::resource::texture::physical::PhysicalTextureDesc;
+use aleph_magnesium::resource::texture::simple::SimpleTextureLayout;
+use aleph_magnesium::resource_loader::mip_upload::MipUploadDesc;
 use egui::epaint::ImageDelta;
 use egui::{ColorImage, ImageData};
+use mg::resource::texture::single::SingleTextureDesc;
 
 pub struct EguiFontTexture {
     pub font_texture: FontTexture,
@@ -68,38 +69,26 @@ impl EguiFontTexture {
                 self.font_texture.height as u32,
             );
 
-            let mut desc = TextureObjectDesc::new();
-            desc.format(Format::Rgba8Unorm);
-            desc.usage(ResourceUsageFlags::SHADER_RESOURCE);
+            let mut desc = SimpleTextureLayout::new();
+            desc.with_format(rhi::Format::Rgba8Unorm);
             desc.image_2d(dimensions.0, dimensions.1);
 
-            assert_eq!(
-                desc.upload_row_texels_for_level(0),
-                desc.width,
-                "Currently we don't handle row pitch here"
-            );
+            let mut data = MipUploadDesc::new_owned(renderer.device(), &desc, 0, 0, 1).unwrap();
 
-            let mut object = TextureObject::new_for_desc(renderer.device(), desc.clone()).unwrap();
-            object.recreate_default_view(renderer.device());
-            let handle = renderer.create_texture(object).unwrap();
-            self.font_handle = Some(handle); // TODO: destroy the old texture
-
-            let mut data = TextureUploadDesc::new_owned(renderer.device(), &desc, 0, 1).unwrap();
-
-            let size = desc.upload_bytes_for_level(0);
+            let physical_desc = desc.with_stride(0);
+            let size = physical_desc.upload_bytes();
             let dst = &mut data.buffer.bytes_mut()[0..size];
             dst.copy_from_slice(&self.font_texture.bytes[0..size]);
 
-            renderer
-                .device()
-                .unmap_buffer(data.buffer.buffer())
+            let handle = renderer
+                .create_simple_texture_immediate(&desc, data, &SimpleTextureOptions::default())
                 .unwrap();
 
-            renderer.submit_resource_command(ResourceCommand::TextureUpload(
-                handle,
-                GenerateMips::No,
-                data,
-            ));
+            let mut old_texture = Some(handle);
+            std::mem::swap(&mut old_texture, &mut self.font_handle);
+            if let Some(old_texture) = old_texture {
+                renderer.destroy_texture(old_texture);
+            }
         }
     }
 
