@@ -275,7 +275,7 @@ impl Window {
             sdl3::event::WindowEvent::DisplayChanged(v) => {
                 log::trace!("Window display changed: {v}");
             }
-            | sdl3::event::WindowEvent::Moved(_, _)
+            sdl3::event::WindowEvent::Moved(_, _)
             | sdl3::event::WindowEvent::Minimized
             | sdl3::event::WindowEvent::Maximized
             | sdl3::event::WindowEvent::Restored
