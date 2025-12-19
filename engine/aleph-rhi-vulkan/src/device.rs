@@ -1069,11 +1069,11 @@ impl IDevice for Device {
     fn poll_fence(&self, fence: &FenceHandle) -> bool {
         let fence = Fence::get(fence);
 
+        // This already handles NOT_READY
         let result = unsafe { self.device.get_fence_status(fence.fence) };
 
         match result {
-            Ok(_) => true,
-            Err(vk::Result::NOT_READY) => false,
+            Ok(v) => v,
             v => {
                 v.unwrap();
                 unreachable!()
