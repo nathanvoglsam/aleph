@@ -549,6 +549,11 @@ bitflags::bitflags! {
             | Self::ACCELERATION_STRUCTURE_STORAGE.bits()
             | Self::UNORDERED_ACCESS.bits()
             | Self::RENDER_TARGET.bits();
+
+        /// Mask that represents all masks related to raytracing acceleration structures
+        const RAYTRACING_USAGE_MASK = Self::ACCELERATION_STRUCTURE_BUILD_INPUT.bits()
+            | Self::ACCELERATION_STRUCTURE_STORAGE.bits();
+
     }
 }
 
