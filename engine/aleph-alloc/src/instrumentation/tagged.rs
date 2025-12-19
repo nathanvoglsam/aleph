@@ -443,7 +443,7 @@ mod category_stack {
 
     #[cfg(feature = "instrumentation-enabled")]
     thread_local! {
-        static STACK: CategoryStack = CategoryStack::new();
+        static STACK: CategoryStack = const { CategoryStack::new() };
     }
 
     #[cfg(feature = "instrumentation-enabled")]
@@ -453,11 +453,10 @@ mod category_stack {
 
     #[cfg(feature = "instrumentation-enabled")]
     impl CategoryStack {
-        #[inline]
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self {
                 inner: std::cell::RefCell::new(CategoryStackInner {
-                    stack: [CategoryInfo::get::<Uncategorized>(); _],
+                    stack: [None; _],
                     head: 0,
                 }),
             }
@@ -466,7 +465,7 @@ mod category_stack {
         #[inline]
         fn peek(&self) -> &'static CategoryInfo {
             let inner = self.inner.borrow();
-            inner.stack[inner.head]
+            inner.stack[inner.head].unwrap_or(CategoryInfo::get::<Uncategorized>())
         }
 
         #[inline]
@@ -478,7 +477,7 @@ mod category_stack {
             }
 
             let new_head = usize::min(inner.head + 1, inner.stack.len());
-            inner.stack[new_head] = info;
+            inner.stack[new_head] = Some(info);
             inner.head = new_head;
         }
 
@@ -486,14 +485,14 @@ mod category_stack {
         fn pop(&self) {
             let mut inner = self.inner.borrow_mut();
             let old_head = inner.head;
-            inner.stack[old_head] = CategoryInfo::get::<Uncategorized>();
+            inner.stack[old_head] = None;
             inner.head = old_head.saturating_sub(1);
         }
     }
 
     #[cfg(feature = "instrumentation-enabled")]
     struct CategoryStackInner {
-        stack: [&'static CategoryInfo; 1024],
+        stack: [Option<&'static CategoryInfo>; 1024],
         head: usize,
     }
 }
