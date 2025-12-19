@@ -937,7 +937,7 @@ impl IDevice for Device {
         let fence = Fence::get(fence);
         unsafe {
             let v = fence.fence.GetCompletedValue();
-            v < fence.get_wait_value()
+            v >= fence.get_wait_value()
         }
     }
 
