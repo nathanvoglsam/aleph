@@ -86,6 +86,7 @@ members = [
     "engine/aleph-vk-format",
     "engine/aleph-vk2dfd",
     "engine/aleph-windows",
+    "engine/aleph-windows-thread-local",
     "game/aleph-test",
 ]
 
@@ -257,6 +258,7 @@ aleph-typed-table = { path = "./engine/aleph-typed-table", version = "0.1" }
 aleph-vk-format = { path = "./engine/aleph-vk-format", version = "1" }
 aleph-vk2dfd = { path = "./engine/aleph-vk2dfd", version = "0.1" }
 aleph-windows = { path = "./engine/aleph-windows", version = "0.1" }
+aleph-windows-thread-local = { path = "./engine/aleph-windows-thread-local", version = "0.1" }
 
 # Aleph Plugins
 aleph-egui = { path = "./engine/aleph-egui", version = "0.1" }
