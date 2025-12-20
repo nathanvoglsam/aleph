@@ -53,6 +53,9 @@ const_format = { workspace = true }
 hashbrown = { workspace = true }
 uuid = { workspace = true }
 
+[target.'cfg(all(target_os = "windows", target_env = "gnu"))'.dependencies]
+aleph-windows-thread-local = { workspace = true }
+
 [features]
 default = []
 instrumentation-enabled = []

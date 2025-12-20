@@ -415,6 +415,76 @@ pub fn with_category_v<O>(_info: &'static CategoryInfo, f: impl FnOnce() -> O) -
 mod category_stack {
     use crate::instrumentation::{CategoryInfo, Uncategorized};
 
+    #[cfg(feature = "instrumentation-enabled")]
+    #[cfg(all(target_os = "windows", target_env = "gnu"))]
+    mod gnu {
+        //! Special windows-gnu specific implementation that sidesteps the standard library's
+        //! thread local implementation. The built-in thread_local! hits the global allocator.
+        //! However, using this requires using thread_local! inside the global allocator...
+        //!
+        //! Using thread_local! on windows-gnu for this causes a stack overflow because of infinite
+        //! recursion. To work around this we use Windows APIs directly in a way that we never
+        //! hit rust's 'Global' allocator.
+
+        use std::sync::LazyLock;
+
+        use aleph_windows_thread_local::ThreadLocal;
+
+        use crate::instrumentation::CategoryInfo;
+        use crate::instrumentation::tagged::category_stack::CategoryStack;
+
+        static STACK: LazyLock<ThreadLocal<CategoryStack>> =
+            LazyLock::new(|| ThreadLocal::new(CategoryStack::new));
+
+        #[inline]
+        pub fn peek() -> &'static CategoryInfo {
+            STACK.with(|stack| stack.peek())
+        }
+
+        #[inline]
+        pub fn push(_info: &'static CategoryInfo) {
+            STACK.with(|stack| stack.push(_info))
+        }
+
+        #[inline]
+        pub fn pop() {
+            STACK.with(|stack| stack.pop())
+        }
+    }
+
+    #[cfg(feature = "instrumentation-enabled")]
+    #[cfg(not(all(target_os = "windows", target_env = "gnu")))]
+    mod not_gnu {
+        use crate::instrumentation::CategoryInfo;
+        use crate::instrumentation::tagged::category_stack::CategoryStack;
+
+        thread_local! {
+            static STACK: CategoryStack = const { CategoryStack::new() };
+        }
+
+        #[inline]
+        pub fn peek() -> &'static CategoryInfo {
+            STACK.with(|stack| stack.peek())
+        }
+
+        #[inline]
+        pub fn push(_info: &'static CategoryInfo) {
+            STACK.with(|stack| stack.push(_info))
+        }
+
+        #[inline]
+        pub fn pop() {
+            STACK.with(|stack| stack.pop())
+        }
+    }
+
+    #[cfg(feature = "instrumentation-enabled")]
+    #[cfg(all(target_os = "windows", target_env = "gnu"))]
+    use gnu as backend;
+    #[cfg(feature = "instrumentation-enabled")]
+    #[cfg(not(all(target_os = "windows", target_env = "gnu")))]
+    use not_gnu as backend;
+
     #[inline]
     pub fn peek() -> &'static CategoryInfo {
         #[cfg(not(feature = "instrumentation-enabled"))]
@@ -424,29 +494,23 @@ mod category_stack {
         }
 
         #[cfg(feature = "instrumentation-enabled")]
-        {
-            STACK.with(|stack| stack.peek())
-        }
+        backend::peek()
     }
 
     #[inline]
     pub fn push(_info: &'static CategoryInfo) {
         #[cfg(feature = "instrumentation-enabled")]
-        STACK.with(|stack| stack.push(_info))
+        backend::push(_info)
     }
 
     #[inline]
     pub fn pop() {
         #[cfg(feature = "instrumentation-enabled")]
-        STACK.with(|stack| stack.pop())
+        backend::pop()
     }
 
     #[cfg(feature = "instrumentation-enabled")]
-    thread_local! {
-        static STACK: CategoryStack = const { CategoryStack::new() };
-    }
-
-    #[cfg(feature = "instrumentation-enabled")]
+    #[derive(Default)]
     struct CategoryStack {
         inner: std::cell::RefCell<CategoryStackInner>,
     }
@@ -494,5 +558,15 @@ mod category_stack {
     struct CategoryStackInner {
         stack: [Option<&'static CategoryInfo>; 1024],
         head: usize,
+    }
+
+    #[cfg(feature = "instrumentation-enabled")]
+    impl Default for CategoryStackInner {
+        fn default() -> Self {
+            Self {
+                stack: [None; _],
+                head: 0,
+            }
+        }
     }
 }
