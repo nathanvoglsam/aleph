@@ -37,18 +37,14 @@ use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
-use crossbeam::atomic::AtomicCell;
 
-use crate::fence::FenceState;
 use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::{get_as_unwrapped, unwrap};
-use crate::semaphore::SemaphoreState;
 use crate::{
     ValidationAdapter, ValidationBindingSignature, ValidationBuffer, ValidationCommandList,
     ValidationComputePipeline, ValidationContext, ValidationDescriptorArena,
     ValidationDescriptorPool, ValidationFence, ValidationGraphicsPipeline,
-    ValidationParameterBlockLayout, ValidationQueue, ValidationSampler, ValidationSemaphore,
-    ValidationTexture,
+    ValidationParameterBlockLayout, ValidationQueue, ValidationSampler, ValidationTexture,
 };
 
 pub struct ValidationDevice {
@@ -462,17 +458,11 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError> {
-        let initial_state = if signalled {
-            FenceState::ObservedAsSignalled
-        } else {
-            FenceState::NotSignalled
-        };
-        let inner = self.inner.create_fence(signalled)?;
+    fn create_fence(&self, value: u64) -> Result<FenceHandle, FenceCreateError> {
+        let inner = self.inner.create_fence(value)?;
         let fence = ValidationFence {
             _device: self._this.upgrade().unwrap(),
             inner,
-            state: AtomicCell::new(initial_state),
         };
         let fence = Object::new_arc_opaque(fence);
         unsafe { Ok(FenceHandle::new(fence)) }
@@ -481,112 +471,37 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError> {
-        let inner = self.inner.create_semaphore()?;
-        let semaphore = ValidationSemaphore {
-            _device: self._this.upgrade().unwrap(),
-            inner,
-            state: AtomicCell::new(SemaphoreState::Reset),
-        };
-        let semaphore = Object::new_arc_opaque(semaphore);
-        unsafe { Ok(SemaphoreHandle::new(semaphore)) }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
     fn wait_fences(
         &self,
         fences: &[&FenceHandle],
+        values: &[u64],
         wait_all: bool,
         timeout: u32,
     ) -> FenceWaitResult {
-        fences.iter().for_each(|v| {
-            let v = ValidationFence::get(v);
-            if timeout == u32::MAX {
-                let fence_state = v.state.load();
-                assert_ne!(
-                    fence_state,
-                    FenceState::NotSignalled,
-                    "It is invalid to wait on a fence with no pending work with a u32::MAX timeout"
-                );
-            }
-        });
-
         let inner_fences: Vec<_> = fences
             .iter()
             .copied()
             .map(ValidationFence::get)
             .map(|v| &v.inner)
             .collect();
-        let result = self.inner.wait_fences(&inner_fences, wait_all, timeout);
-
-        if result == FenceWaitResult::Complete {
-            // If we met the wait condition we can update the fence states as at least one of them
-            // have been signalled
-            fences.iter().for_each(|v| {
-                let v = ValidationFence::get(v);
-
-                // We can only update the state if we can prove the fence is signalled.
-                //
-                // If 'wait_all' is true we know that all the fences are signalled so we can update
-                // the state without any further checks.
-                //
-                // If 'wait_all' is false then we only know that at least one fence is signalled.
-                // We poll all the fences after the wait to confirm they are in fact signalled and
-                // update the state accordingly.
-                if wait_all {
-                    v.state.store(FenceState::ObservedAsSignalled);
-                } else {
-                    // Will update the state as a side effect of calling poll_fence. Skips storing
-                    // to the state twice
-                    self.poll_fence(&v.inner);
-                }
-            });
-        }
-
-        result
+        self.inner
+            .wait_fences(&inner_fences, values, wait_all, timeout)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn poll_fence(&self, fence: &FenceHandle) -> bool {
+    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> u64 {
         let fence = ValidationFence::get(fence);
-
-        let result = self.inner.poll_fence(&fence.inner);
-
-        if result {
-            fence.state.store(FenceState::ObservedAsSignalled);
-        }
-
-        result
+        self.inner.get_fence_signaled_value(&fence.inner)
     }
 
-    fn reset_fences(&self, fences: &[&FenceHandle]) {
-        fences.iter().for_each(|v| {
-            let v = ValidationFence::get(v);
-            let fence_state = v.state.load();
-            assert_ne!(
-                fence_state,
-                FenceState::Pending,
-                "It is invalid to reset a fence while it is still in use on a queue."
-            );
-        });
+    // ========================================================================================== //
+    // ========================================================================================== //
 
-        let inner_fences: Vec<_> = fences
-            .iter()
-            .copied()
-            .map(ValidationFence::get)
-            .map(|v| &v.inner)
-            .collect();
-
-        self.inner.reset_fences(&inner_fences);
-
-        fences.iter().for_each(|v| {
-            let v = ValidationFence::get(v);
-            v.state.store(FenceState::NotSignalled);
-        });
+    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) {
+        let fence = ValidationFence::get(fence);
+        unsafe { self.inner.signal_fence(&fence.inner, value) }
     }
 
     // ========================================================================================== //

@@ -49,7 +49,6 @@ use crate::fence::Fence;
 use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::unwrap;
-use crate::semaphore::Semaphore;
 use crate::swap_image::SwapImage;
 
 pub struct Queue {
@@ -295,19 +294,11 @@ impl IQueue for Queue {
         let mut timeline_info = manager.timeline_info();
         let info = manager.submit_info(&mut timeline_info);
 
-        // Signal the fence, if one is provided, to let CPU know the submitted commands are
-        // now fully retired.
-        let fence = desc
-            .fence
-            .map(Fence::get)
-            .map(|v| v.fence)
-            .unwrap_or(vk::Fence::null());
-
         unsafe {
             let _lock = self.submit_lock.lock();
             device
                 .device
-                .queue_submit(self.handle, &[info], fence)
+                .queue_submit(self.handle, &[info], vk::Fence::null())
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
         }
 
@@ -433,10 +424,13 @@ impl<'a> SubmissionManager<'a> {
     /// Constructs a new [`SubmissionSemaphoreManager`] with space in the internal lists reserved
     /// based on the given queue submission description
     pub fn new(desc: &'a QueueSubmitDesc<'a>) -> Self {
+        assert_eq!(desc.wait_fences.len(), desc.wait_values.len());
+        assert_eq!(desc.signal_fences.len(), desc.signal_values.len());
+
         // Reserve space for 1 semaphore for each caller provided 'wait_semaphore'. We add space for
         // one extra semaphore if the caller is attaching a swap image so that we can wait for the
         // image acquisition operation.
-        let caller_wait_num = desc.wait_semaphores.len();
+        let caller_wait_num = desc.wait_fences.len();
         let swap_wait_num = if desc.swap_image.is_some() { 1 } else { 0 };
         let wait_num = caller_wait_num + swap_wait_num;
 
@@ -444,7 +438,7 @@ impl<'a> SubmissionManager<'a> {
         // space for an extra internal timeline semaphore that is used by the queue to track what
         // command lists have completed. A further entry is reserved if a swap image is attached to
         // signal a semaphore that the present operation will wait on.
-        let caller_signal_num = desc.signal_semaphores.len();
+        let caller_signal_num = desc.signal_fences.len();
         let internal_signal_num = 1;
         let swap_signal_num = if desc.swap_image.is_some() { 1 } else { 0 };
         let signal_num = caller_signal_num + internal_signal_num + swap_signal_num;
@@ -483,7 +477,7 @@ impl<'a> SubmissionManager<'a> {
         };
 
         self.handle_command_lists(desc, &mut submission)?;
-        self.handle_api_semaphores(desc);
+        self.handle_api_fences(desc);
         self.handle_internal_semaphores(queue, &mut submission);
         self.handle_swap_semaphores(&mut submission);
 
@@ -533,18 +527,26 @@ impl<'a> SubmissionManager<'a> {
         Ok(())
     }
 
-    /// This function will add all API level semaphores that are provided from the caller. These
+    /// This function will add all API level fences that are provided from the caller. These
     /// are handled differently from the internal semaphores that are used for synchronizing inside
     /// the API implementation.
-    fn handle_api_semaphores(&mut self, desc: &QueueSubmitDesc) {
-        for semaphore in desc.wait_semaphores {
-            let semaphore = Semaphore::get(semaphore);
-            self.wait_on_binary_semaphore(semaphore.semaphore);
+    fn handle_api_fences(&mut self, desc: &QueueSubmitDesc) {
+        let iter = desc
+            .wait_fences
+            .iter()
+            .zip(desc.wait_values.iter().copied());
+        for (fence, value) in iter {
+            let fence = Fence::get(fence);
+            self.wait_on_timeline_semaphore(fence.semaphore, value);
         }
 
-        for semaphore in desc.signal_semaphores {
-            let semaphore = Semaphore::get(semaphore);
-            self.signal_binary_semaphore(semaphore.semaphore);
+        let iter = desc
+            .signal_fences
+            .iter()
+            .zip(desc.signal_values.iter().copied());
+        for (fence, value) in iter {
+            let fence = Fence::get(fence);
+            self.signal_timeline_semaphore(fence.semaphore, value);
         }
     }
 
@@ -584,6 +586,13 @@ impl<'a> SubmissionManager<'a> {
     fn wait_on_binary_semaphore(&mut self, semaphore: vk::Semaphore) {
         self.wait_semaphores.push(semaphore);
         self.wait_values.push(0);
+        self.wait_dst_stage_masks
+            .push(vk::PipelineStageFlags::ALL_COMMANDS);
+    }
+
+    fn wait_on_timeline_semaphore(&mut self, semaphore: vk::Semaphore, value: u64) {
+        self.wait_semaphores.push(semaphore);
+        self.wait_values.push(value);
         self.wait_dst_stage_masks
             .push(vk::PipelineStageFlags::ALL_COMMANDS);
     }

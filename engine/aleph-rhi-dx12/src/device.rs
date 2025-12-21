@@ -31,7 +31,6 @@ use std::any::TypeId;
 use std::mem::{ManuallyDrop, size_of, transmute_copy};
 use std::ops::Deref;
 use std::ptr::NonNull;
-use std::sync::atomic::AtomicU64;
 
 use aleph_alloc::offset_allocator::OffsetAllocator;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
@@ -87,7 +86,6 @@ use crate::parameter_block_layout::{CompiledParameterBlockLayout, ParameterBlock
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::queue::Queue;
 use crate::sampler::Sampler;
-use crate::semaphore::Semaphore;
 use crate::texture::{ImageViewObject, Texture};
 
 pub struct Device {
@@ -808,18 +806,16 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError> {
-        let initial_value = if signalled { 1 } else { 0 };
+    fn create_fence(&self, value: u64) -> Result<FenceHandle, FenceCreateError> {
         let fence: ID3D12Fence = unsafe {
             self.device
-                .CreateFence(initial_value, D3D12_FENCE_FLAG_NONE)
+                .CreateFence(value, D3D12_FENCE_FLAG_NONE)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
         let fence = Fence {
             _device: self.this.upgrade().unwrap(),
             fence,
-            value: AtomicU64::new(2),
         };
         let fence = Object::new_arc_opaque(fence);
         unsafe { Ok(FenceHandle::new(fence)) }
@@ -828,27 +824,10 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError> {
-        let fence: ID3D12Fence = unsafe {
-            self.device
-                .CreateFence(0, D3D12_FENCE_FLAG_NONE)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
-        };
-        let semaphore = Semaphore {
-            _device: self.this.upgrade().unwrap(),
-            fence,
-            value: AtomicU64::new(0),
-        };
-        let semaphore = Object::new_arc_opaque(semaphore);
-        unsafe { Ok(SemaphoreHandle::new(semaphore)) }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
     fn wait_fences(
         &self,
         fences: &[&FenceHandle],
+        values: &[u64],
         wait_all: bool,
         timeout: u32,
     ) -> FenceWaitResult {
@@ -868,7 +847,7 @@ impl IDevice for Device {
                         };
                     }
                     let fence = Fence::get(fences[0]);
-                    let wait_value = fence.get_wait_value();
+                    let wait_value = values[0];
 
                     WAIT_HANDLE.with(|handle| unsafe {
                         fence
@@ -893,13 +872,11 @@ impl IDevice for Device {
 
                     // Unwrap the fences into the form accepted by D3D12, and produce a matching array
                     // of values filled with the expected value for a signalled fence.
+                    assert_eq!(fences.len(), values.len());
                     let mut inner_fences: BVec<Option<ID3D12Fence>, _> =
-                        BVec::with_capacity_in(fences.len(), bump.allocator());
-                    let mut wait_values: BVec<u64, _> =
                         BVec::with_capacity_in(fences.len(), bump.allocator());
                     for fence in fences.iter().copied().map(Fence::get) {
                         inner_fences.push(Some(fence.fence.clone()));
-                        wait_values.push(fence.get_wait_value());
                     }
 
                     MULTIPLE_WAIT_HANDLE.with(|handle| unsafe {
@@ -912,7 +889,7 @@ impl IDevice for Device {
                         self.device
                             .SetEventOnMultipleFenceCompletion(
                                 inner_fences.as_ptr(),
-                                wait_values.as_ptr(),
+                                values.as_ptr(),
                                 fences.len() as u32,
                                 flags,
                                 *handle,
@@ -933,20 +910,23 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn poll_fence(&self, fence: &FenceHandle) -> bool {
+    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> u64 {
         let fence = Fence::get(fence);
-        unsafe {
-            let v = fence.fence.GetCompletedValue();
-            v >= fence.get_wait_value()
-        }
+        unsafe { fence.fence.GetCompletedValue() }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn reset_fences(&self, _fences: &[&FenceHandle]) {
-        // Fence reset is a no-op on dx12 as a fence is always ready to use. It uses a monotonic
-        // counter to keep the signals and waits correct.
+    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) {
+        let fence = Fence::get(fence);
+        unsafe {
+            fence
+                .fence
+                .Signal(value)
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))
+                .unwrap()
+        }
     }
 
     // ========================================================================================== //

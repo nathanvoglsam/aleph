@@ -48,7 +48,6 @@ mod pipeline;
 mod queue;
 mod rhi_backend;
 mod sampler;
-mod semaphore;
 mod surface;
 mod swap_chain;
 mod swap_image;

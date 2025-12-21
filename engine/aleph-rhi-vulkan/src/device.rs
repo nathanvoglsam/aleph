@@ -68,7 +68,6 @@ use crate::parameter_block_layout::ParameterBlockLayout;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::queue::Queue;
 use crate::sampler::Sampler;
-use crate::semaphore::Semaphore;
 use crate::texture::Texture;
 
 pub struct Device {
@@ -990,20 +989,20 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError> {
-        let fence = unsafe {
-            let mut info = vk::FenceCreateInfo::default();
-            if signalled {
-                info = info.flags(vk::FenceCreateFlags::SIGNALED)
-            }
+    fn create_fence(&self, value: u64) -> Result<FenceHandle, FenceCreateError> {
+        let semaphore = unsafe {
+            let mut info = vk::SemaphoreTypeCreateInfo::default()
+                .initial_value(value)
+                .semaphore_type(vk::SemaphoreType::TIMELINE);
+            let info = vk::SemaphoreCreateInfo::default().push_next(&mut info);
             self.device
-                .create_fence(&info, GLOBAL)
+                .create_semaphore(&info, GLOBAL)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
         let fence = Fence {
             _device: self.this.upgrade().unwrap(),
-            fence,
+            semaphore,
         };
         let fence = Rhi::with(|| Object::new_arc_opaque(fence));
         unsafe { Ok(FenceHandle::new(fence)) }
@@ -1012,33 +1011,32 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError> {
-        let semaphore = unsafe {
-            let info = vk::SemaphoreCreateInfo::default();
-            self.device
-                .create_semaphore(&info, GLOBAL)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
-        };
-
-        let semaphore = Semaphore {
-            _device: self.this.upgrade().unwrap(),
-            semaphore,
-        };
-        let semaphore = Rhi::with(|| Object::new_arc_opaque(semaphore));
-        unsafe { Ok(SemaphoreHandle::new(semaphore)) }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
     fn wait_fences(
         &self,
         fences: &[&FenceHandle],
+        values: &[u64],
         wait_all: bool,
         timeout: u32,
     ) -> FenceWaitResult {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
+
+            assert_eq!(
+                fences.len(),
+                values.len(),
+                "You must provide a matching number of fences and wait values"
+            );
+
+            let iter = fences.iter().copied().map(Fence::get).map(|v| v.semaphore);
+            let mut fences = BVec::new_in(bump.allocator());
+            fences.extend(iter);
+
+            let mut info = vk::SemaphoreWaitInfo::default();
+            if !wait_all {
+                info = info.flags(vk::SemaphoreWaitFlags::ANY);
+            }
+            info = info.semaphores(&fences);
+            info = info.values(values);
 
             let timeout = if timeout == u32::MAX {
                 u64::MAX
@@ -1046,12 +1044,7 @@ impl IDevice for Device {
                 timeout as u64 * 1000000 // Convert to nanoseconds
             };
 
-            let iter = fences.iter().copied().map(Fence::get).map(|v| v.fence);
-            let mut fences = BVec::new_in(bump.allocator());
-            fences.extend(iter);
-
-            let result = unsafe { self.device.wait_for_fences(&fences, wait_all, timeout) };
-
+            let result = unsafe { self.device.wait_semaphores(&info, timeout) };
             match result {
                 Ok(_) => FenceWaitResult::Complete,
                 Err(vk::Result::TIMEOUT) => FenceWaitResult::Timeout,
@@ -1066,12 +1059,10 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn poll_fence(&self, fence: &FenceHandle) -> bool {
+    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> u64 {
         let fence = Fence::get(fence);
 
-        // This already handles NOT_READY
-        let result = unsafe { self.device.get_fence_status(fence.fence) };
-
+        let result = unsafe { self.device.get_semaphore_counter_value(fence.semaphore) };
         match result {
             Ok(v) => v,
             v => {
@@ -1084,16 +1075,20 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn reset_fences(&self, fences: &[&FenceHandle]) {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) {
+        let fence = Fence::get(fence);
 
-            let iter = fences.iter().copied().map(Fence::get).map(|v| v.fence);
-            let mut fences = BVec::new_in(bump.allocator());
-            fences.extend(iter);
-
-            unsafe { self.device.reset_fences(&fences).unwrap() }
-        })
+        let info = vk::SemaphoreSignalInfo::default()
+            .semaphore(fence.semaphore)
+            .value(value);
+        let result = unsafe { self.device.signal_semaphore(&info) };
+        match result {
+            Ok(v) => v,
+            v => {
+                v.unwrap();
+                unreachable!()
+            }
+        }
     }
 
     // ========================================================================================== //

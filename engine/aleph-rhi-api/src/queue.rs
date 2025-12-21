@@ -142,16 +142,29 @@ pub struct QueueSubmitDesc<'a> {
     /// A list of the command lists that are to be submitted in this batch
     pub command_lists: &'a [Cell<Option<Box<dyn ICommandList>>>],
 
-    /// A list of semaphores that will block the execution of the batch until all semaphores in the
-    /// list are signaled.
-    pub wait_semaphores: &'a [&'a SemaphoreHandle],
+    /// A list of fences that will block the execution of the batch until all fences in the list are
+    /// signaled.
+    ///
+    /// Will wait for the associated value in 'wait_values' to become signaled.
+    ///
+    /// `wait_fences.len()` and `wait_values.len()` must be equal!
+    pub wait_fences: &'a [&'a FenceHandle],
 
-    /// A list of semaphores that will be signaled once all command lists in the batch have
-    /// completed executing.
-    pub signal_semaphores: &'a [&'a SemaphoreHandle],
+    /// Associates with 'wait_fences'. Provides the value that the associated fence must become
+    /// signaled to for the submission to unblock.
+    pub wait_values: &'a [u64],
 
-    /// A fence that will be signaled once all command lists in the batch have completed executing.
-    pub fence: Option<&'a FenceHandle>,
+    /// A list of fences that will be signaled once all command lists in the batch have completed
+    /// executing.
+    ///
+    /// This fences will be signaled with the associated value in 'signal_values',
+    ///
+    /// `signel_fences.len()` and `signal_values.len()` must be equal!
+    pub signal_fences: &'a [&'a FenceHandle],
+
+    /// Associated with 'signal_values'. Provides the value that will be signaled on the associated
+    /// fence when the queue submission is fully retired.
+    pub signal_values: &'a [u64],
 
     /// The acquired swap chain image to associate this queue submission with.
     ///
@@ -166,14 +179,15 @@ impl<'a> QueueSubmitDesc<'a> {
     pub const fn new() -> Self {
         Self {
             command_lists: &[],
-            wait_semaphores: &[],
-            signal_semaphores: &[],
-            fence: None,
+            wait_fences: &[],
+            wait_values: &[],
+            signal_fences: &[],
+            signal_values: &[],
             swap_image: None,
         }
     }
 
-    /// Takes the given desc and returns it with [QueueSubmitDesc::command_lists] set to the given
+    /// Takes the given desc and returns it with [`QueueSubmitDesc::command_lists`] set to the given
     /// parameter
     pub const fn with_lists(
         mut self,
@@ -183,29 +197,33 @@ impl<'a> QueueSubmitDesc<'a> {
         self
     }
 
-    /// Takes the given desc and returns it with [QueueSubmitDesc::wait_semaphores] set to the given
-    /// parameter
-    pub const fn with_wait_semaphores(
+    /// Takes the given desc and returns it with [`QueueSubmitDesc::wait_fences`] set to the given
+    /// parameter. Also provides [`QueueSubmitDesc::wait_values`].
+    pub const fn with_wait_fences(
         mut self,
-        wait_semaphores: &'a [&'a SemaphoreHandle],
+        wait_fences: &'a [&'a FenceHandle],
+        wait_values: &'a [u64],
     ) -> Self {
-        self.wait_semaphores = wait_semaphores;
+        if wait_fences.len() != wait_values.len() {
+            panic!("'wait_fences.len() != 'wait_values.len()'");
+        }
+        self.wait_fences = wait_fences;
+        self.wait_values = wait_values;
         self
     }
 
     /// Takes the given desc and returns it with [QueueSubmitDesc::signal_semaphores] set to the
-    /// given parameter
+    /// given parameter. Also provides [`QueueSubmitDesc::signal_values`].
     pub const fn with_signal_semaphores(
         mut self,
-        signal_semaphores: &'a [&'a SemaphoreHandle],
+        signal_fences: &'a [&'a FenceHandle],
+        signal_values: &'a [u64],
     ) -> Self {
-        self.signal_semaphores = signal_semaphores;
-        self
-    }
-
-    /// Takes the given desc and returns it with [QueueSubmitDesc::fence] set to the given parameter
-    pub const fn with_fence(mut self, fence: &'a FenceHandle) -> Self {
-        self.fence = Some(fence);
+        if signal_fences.len() != signal_values.len() {
+            panic!("'signal_fences.len() != 'signal_values.len()'");
+        }
+        self.signal_fences = signal_fences;
+        self.signal_values = signal_values;
         self
     }
 

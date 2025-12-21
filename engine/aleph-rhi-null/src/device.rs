@@ -39,7 +39,7 @@ use crate::internal::unwrap;
 use crate::{
     NullAdapter, NullBindingSignature, NullBuffer, NullCommandList, NullComputePipeline,
     NullContext, NullDescriptorArena, NullDescriptorPool, NullFence, NullGraphicsPipeline,
-    NullParameterBlockLayout, NullQueue, NullSampler, NullSemaphore, NullTexture,
+    NullParameterBlockLayout, NullQueue, NullSampler, NullTexture,
 };
 
 pub struct NullDevice {
@@ -277,7 +277,7 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_fence(&self, _signalled: bool) -> Result<FenceHandle, FenceCreateError> {
+    fn create_fence(&self, _value: u64) -> Result<FenceHandle, FenceCreateError> {
         let fence = NullFence {
             _device: self._this.upgrade().unwrap(),
         };
@@ -288,20 +288,10 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError> {
-        let fence = NullSemaphore {
-            _device: self._this.upgrade().unwrap(),
-        };
-        let fence = Object::new_arc_opaque(fence);
-        unsafe { Ok(SemaphoreHandle::new(fence)) }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
     fn wait_fences(
         &self,
         _fences: &[&FenceHandle],
+        _values: &[u64],
         _wait_all: bool,
         _timeout: u32,
     ) -> FenceWaitResult {
@@ -311,11 +301,14 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn poll_fence(&self, _fence: &FenceHandle) -> bool {
-        true
+    fn get_fence_signaled_value(&self, _fence: &FenceHandle) -> u64 {
+        u64::MAX
     }
 
-    fn reset_fences(&self, _fences: &[&FenceHandle]) {}
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    unsafe fn signal_fence(&self, _fence: &FenceHandle, _value: u64) {}
 
     // ========================================================================================== //
     // ========================================================================================== //

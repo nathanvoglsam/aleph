@@ -192,34 +192,42 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     );
 
     /// Constructs a new fence in the requested state.
-    fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError>;
+    fn create_fence(&self, value: u64) -> Result<FenceHandle, FenceCreateError>;
 
-    /// Constructs a new semaphore in the default (reset) state.
-    fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError>;
-
-    /// This function will block the calling thread until the fences are signalled by an operation
+    /// This function will block the calling thread until the fences are signaled by an operation
     /// some GPU queue.
     ///
+    /// Takes two associated arrays, an array of fences and an array of wait values. The two arrays
+    /// pair a fence to the value that should be waited for on the associated fence.
+    ///
     /// - `wait_all` controls whether the call should block until all the fences in the set are
-    ///   signalled. if `wait_all` is `false` then the [IDevice::wait_fences] call will return when
+    ///   signaled. if `wait_all` is `false` then the [`IDevice::wait_fences`] call will return when
     ///   any of the given fences is signaled.
     ///
     /// - `timeout` specifies how long to wait, in milliseconds, before timing out and returning
     ///   from the function. If the timeout time is reached before the wait condition is met then
-    ///   the function will return [FenceWaitResult::Timeout]. If `timeout` is equal to `u32::MAX`
+    ///   the function will return [`FenceWaitResult::Timeout`]. If `timeout` is equal to `u32::MAX`
     ///   the wait_fences call will block indefinitely and can not timeout.
     ///
     /// # Info
     ///
-    /// If the fences are never signalled this function will deadlock
-    fn wait_fences(&self, fences: &[&FenceHandle], wait_all: bool, timeout: u32)
-    -> FenceWaitResult;
+    /// If the fences are never signaled this function will deadlock
+    fn wait_fences(
+        &self,
+        fences: &[&FenceHandle],
+        values: &[u64],
+        wait_all: bool,
+        timeout: u32,
+    ) -> FenceWaitResult;
 
-    /// Polls, and returns, whether the fence has been signalled by the device.
-    fn poll_fence(&self, fence: &FenceHandle) -> bool;
+    /// Polls the fence for the current signaled value.
+    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> u64;
 
-    /// Resets all the given fences to the default state, ready to be used again on a queue.
-    fn reset_fences(&self, fences: &[&FenceHandle]);
+    /// Signals the fence with the given value.
+    ///
+    /// The value counter is monotonic. It is illegal to signal a value <= the current signaled
+    /// value.
+    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64);
 
     /// Returns the API used by the underlying backend implementation.
     fn get_backend_api(&self) -> BackendAPI;
@@ -326,13 +334,6 @@ pub enum FenceCreateError {
     Platform,
 }
 error_enum_from_unit_type!(FenceCreateError);
-
-#[derive(Error, Debug)]
-pub enum SemaphoreCreateError {
-    #[error("An internal backend error has occurred. Details were logged.")]
-    Platform,
-}
-error_enum_from_unit_type!(SemaphoreCreateError);
 
 /// Set of errors that can occur when mapping a buffer
 #[derive(Error, Debug)]
@@ -477,3 +478,10 @@ pub enum CommandListCreateError {
     Platform,
 }
 error_enum_from_unit_type!(CommandListCreateError);
+
+#[derive(Error, Debug)]
+pub enum FencePollError {
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
+}
+error_enum_from_unit_type!(FencePollError);

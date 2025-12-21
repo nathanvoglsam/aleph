@@ -37,13 +37,8 @@ use std::sync::atomic::Ordering;
 use aleph_any::{AnyArc, AnyWeak, IAny, QueryInterface, TraitObject};
 use aleph_rhi_api::*;
 
-use crate::fence::FenceState;
 use crate::internal::{get_as_unwrapped, unwrap};
-use crate::semaphore::SemaphoreState;
-use crate::{
-    ValidationCommandList, ValidationDevice, ValidationFence, ValidationSemaphore,
-    ValidationTexture,
-};
+use crate::{ValidationCommandList, ValidationDevice, ValidationTexture};
 
 pub struct ValidationQueue {
     pub(crate) _this: AnyWeak<Self>,
@@ -115,67 +110,8 @@ impl IQueue for ValidationQueue {
             v.set(Some(list_box));
         }
 
-        // TODO: Validating semaphore usage requires tracking the submissions to fully track a
-        //       semaphore's state. Otherwise we can only know whether a semaphore has been queued
-        //       for signalling.
-        // for v in desc.wait_semaphores {
-        //     let v = v
-        //         .query_interface::<ValidationSemaphore>()
-        //         .expect("Unknown ISemaphore implementation");
-        //     let semaphore_state = v.state.load();
-        //
-        //     assert_eq!(
-        //         semaphore_state,
-        //         SemaphoreState::Waiting,
-        //         "It is invalid to submit a wait semaphore after using it in a previous submission"
-        //     );
-        // }
-        //
-        // for v in desc.signal_semaphores {
-        //     let v = v
-        //         .query_interface::<ValidationSemaphore>()
-        //         .expect("Unknown ISemaphore implementation");
-        //     let semaphore_state = v.state.load();
-        //
-        //     assert_eq!(
-        //         semaphore_state,
-        //         SemaphoreState::Reset,
-        //         "It is invalid to submit a signal semaphore before use in a previous submission"
-        //     );
-        // }
-
-        if let Some(v) = desc.fence {
-            let v = ValidationFence::get(v);
-            let fence_state = v.state.load();
-
-            assert_eq!(
-                fence_state,
-                FenceState::NotSignalled,
-                "It is invalid to submit a wait fence without resetting it from prior use"
-            );
-        }
-
         get_as_unwrapped::queue_submit_desc(desc, |inner_desc| {
             let result = unsafe { self.inner.submit(inner_desc) };
-
-            // for v in desc.wait_semaphores {
-            //     let v = v
-            //         .query_interface::<ValidationSemaphore>()
-            //         .expect("Unknown ISemaphore implementation");
-            //
-            //     v.state.store(SemaphoreState::Waited);
-            // }
-
-            for v in desc.signal_semaphores {
-                let v = ValidationSemaphore::get(v);
-                v.state.store(SemaphoreState::Waiting);
-            }
-
-            if let Some(v) = desc.fence {
-                let v = ValidationFence::get(v);
-                v.state.store(FenceState::Pending);
-            }
-
             result
         })
     }

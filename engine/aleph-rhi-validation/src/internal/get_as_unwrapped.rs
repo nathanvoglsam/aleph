@@ -43,7 +43,7 @@ use crate::internal::unwrap;
 use crate::texture::ValidationImageView;
 use crate::{
     ValidationBuffer, ValidationCommandList, ValidationFence, ValidationSampler,
-    ValidationSemaphore, ValidationSwapImage, ValidationTexture,
+    ValidationSwapImage, ValidationTexture,
 };
 
 pub fn buffer(buffer: &BufferHandle) -> &BufferHandle {
@@ -115,27 +115,24 @@ pub fn queue_submit_desc<Return>(
         Cell::new(Some(v))
     }));
 
-    let mut wait_semaphores =
-        BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
-    wait_semaphores.extend(
-        desc.wait_semaphores
+    let mut wait_fences = BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
+    wait_fences.extend(
+        desc.wait_fences
             .iter()
             .copied()
-            .map(ValidationSemaphore::get)
+            .map(ValidationFence::get)
             .map(|v| &v.inner),
     );
 
-    let mut signal_semaphores =
-        BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
-    signal_semaphores.extend(
-        desc.signal_semaphores
+    let mut signal_fences = BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
+    signal_fences.extend(
+        desc.signal_fences
             .iter()
             .copied()
-            .map(ValidationSemaphore::get)
+            .map(ValidationFence::get)
             .map(|v| &v.inner),
     );
 
-    let fence = desc.fence.map(|v| &ValidationFence::get(v).inner);
     let swap_image = desc
         .swap_image
         .map(|v| {
@@ -148,9 +145,10 @@ pub fn queue_submit_desc<Return>(
 
     let new_desc = QueueSubmitDesc {
         command_lists: command_lists.as_slice(),
-        wait_semaphores: wait_semaphores.as_slice(),
-        signal_semaphores: signal_semaphores.as_slice(),
-        fence,
+        wait_fences: wait_fences.as_slice(),
+        wait_values: desc.wait_values,
+        signal_fences: signal_fences.as_slice(),
+        signal_values: desc.signal_values,
         swap_image,
     };
 

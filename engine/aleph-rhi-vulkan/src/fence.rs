@@ -37,7 +37,7 @@ use crate::internal::allocation_callbacks::GLOBAL;
 
 pub struct Fence {
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) fence: vk::Fence,
+    pub(crate) semaphore: vk::Semaphore,
 }
 
 unsafe_impl_iobject!(Fence, "01944f89-17b4-7580-bb46-ccfce6f195cb");
@@ -53,7 +53,9 @@ impl Fence {
 impl Drop for Fence {
     fn drop(&mut self) {
         unsafe {
-            self._device.device.destroy_fence(self.fence, GLOBAL);
+            self._device
+                .device
+                .destroy_semaphore(self.semaphore, GLOBAL);
         }
     }
 }
