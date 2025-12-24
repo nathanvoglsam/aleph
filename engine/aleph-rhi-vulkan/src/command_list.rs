@@ -70,43 +70,8 @@ impl ICommandList for CommandList {
         &'a mut self,
     ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError> {
         if matches!(self.list_type, QueueType::General) {
-            match self.state {
-                ListState::Empty => {
-                    // Open the command list for recording with no bound pipeline so we can attach it to
-                    // the command allocator
-                    unsafe {
-                        self._device
-                            .device
-                            .reset_command_pool(self.pool, Default::default())
-                            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-
-                        let begin_info = vk::CommandBufferBeginInfo::default()
-                            .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
-                        self._device
-                            .device
-                            .begin_command_buffer(self.buffer, &begin_info)
-                            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-                    }
-
-                    self.state = ListState::Open;
-
-                    let _buffer = self.buffer;
-                    let _context = self._device.context.clone();
-                    let _device = self._device.clone();
-                    let encoder = Encoder::<'a> {
-                        _parent: self,
-                        _buffer,
-                        _context,
-                        _device,
-                        bound_graphics_pipeline: None,
-                        bound_compute_pipeline: None,
-                        arena: Blink::new_in(BlinkAlloc::new_in(RhiSystem::default())),
-                    };
-                    Ok(Box::new(encoder))
-                }
-                ListState::Open => Err(CommandListBeginError::InvalidCommandListState),
-                ListState::Closed => Err(CommandListBeginError::InvalidCommandListState),
-            }
+            // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
+            Ok(self.begin()?)
         } else {
             Err(CommandListBeginError::InvalidEncoderType(
                 QueueType::General,
@@ -117,17 +82,63 @@ impl ICommandList for CommandList {
     fn begin_compute<'a>(
         &'a mut self,
     ) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError> {
-        Err(CommandListBeginError::InvalidEncoderType(
-            QueueType::Compute,
-        ))
+        if matches!(self.list_type, QueueType::General | QueueType::Compute) {
+            // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
+            Ok(self.begin()?)
+        } else {
+            Err(CommandListBeginError::InvalidEncoderType(
+                QueueType::Compute,
+            ))
+        }
     }
 
     fn begin_transfer<'a>(
         &'a mut self,
     ) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError> {
-        Err(CommandListBeginError::InvalidEncoderType(
-            QueueType::Transfer,
-        ))
+        // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
+        Ok(self.begin()?)
+    }
+}
+
+impl CommandList {
+    fn begin<'a>(&'a mut self) -> Result<Box<Encoder<'a>>, CommandListBeginError> {
+        match self.state {
+            ListState::Empty => {
+                // Open the command list for recording with no bound pipeline so we can attach it to
+                // the command allocator
+                unsafe {
+                    self._device
+                        .device
+                        .reset_command_pool(self.pool, Default::default())
+                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+
+                    let begin_info = vk::CommandBufferBeginInfo::default()
+                        .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
+                    self._device
+                        .device
+                        .begin_command_buffer(self.buffer, &begin_info)
+                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                }
+
+                self.state = ListState::Open;
+
+                let _buffer = self.buffer;
+                let _context = self._device.context.clone();
+                let _device = self._device.clone();
+                let encoder = Encoder::<'a> {
+                    _parent: self,
+                    _buffer,
+                    _context,
+                    _device,
+                    bound_graphics_pipeline: None,
+                    bound_compute_pipeline: None,
+                    arena: Blink::new_in(BlinkAlloc::new_in(RhiSystem::default())),
+                };
+                Ok(Box::new(encoder))
+            }
+            ListState::Open => Err(CommandListBeginError::InvalidCommandListState),
+            ListState::Closed => Err(CommandListBeginError::InvalidCommandListState),
+        }
     }
 }
 

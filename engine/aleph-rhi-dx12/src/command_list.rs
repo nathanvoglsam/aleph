@@ -70,42 +70,8 @@ impl ICommandList for CommandList {
         &'a mut self,
     ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError> {
         if matches!(self.list_type, QueueType::General) {
-            match self.state {
-                ListState::Empty => {
-                    // Open the command list for recording with no bound pipeline so we can attach it to
-                    // the command allocator
-                    unsafe {
-                        self.allocator
-                            .Reset()
-                            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-
-                        self.list
-                            .Reset(&self.allocator, None)
-                            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-
-                        self.list.SetDescriptorHeaps(&self.descriptor_heaps);
-                    }
-
-                    self.state = ListState::Open;
-
-                    let _list = self.list.clone();
-                    let _queue_type = self.list_type;
-                    let encoder = Encoder::<'a> {
-                        _parent: self,
-                        _list,
-                        _queue_type,
-                        bound_graphics_pipeline: None,
-                        bound_compute_pipeline: None,
-                        input_binding_strides: [0; 16],
-                        arena: Blink::new_in(BlinkAlloc::new_in(RhiSystem::default())),
-                        bound_graphics_sets: vec![None; 16].into(),
-                        bound_compute_sets: vec![None; 16].into(),
-                    };
-                    Ok(Box::new(encoder))
-                }
-                ListState::Open => Err(CommandListBeginError::InvalidCommandListState),
-                ListState::Closed => Err(CommandListBeginError::InvalidCommandListState),
-            }
+            // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
+            Ok(self.begin()?)
         } else {
             Err(CommandListBeginError::InvalidEncoderType(
                 QueueType::General,
@@ -116,17 +82,62 @@ impl ICommandList for CommandList {
     fn begin_compute<'a>(
         &'a mut self,
     ) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError> {
-        Err(CommandListBeginError::InvalidEncoderType(
-            QueueType::Compute,
-        ))
+        if matches!(self.list_type, QueueType::General | QueueType::Compute) {
+            // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
+            Ok(self.begin()?)
+        } else {
+            Err(CommandListBeginError::InvalidEncoderType(
+                QueueType::General,
+            ))
+        }
     }
 
     fn begin_transfer<'a>(
         &'a mut self,
     ) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError> {
-        Err(CommandListBeginError::InvalidEncoderType(
-            QueueType::Transfer,
-        ))
+        // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
+        Ok(self.begin()?)
+    }
+}
+
+impl CommandList {
+    fn begin<'a>(&'a mut self) -> Result<Box<Encoder<'a>>, CommandListBeginError> {
+        match self.state {
+            ListState::Empty => {
+                // Open the command list for recording with no bound pipeline so we can attach it to
+                // the command allocator
+                unsafe {
+                    self.allocator
+                        .Reset()
+                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+
+                    self.list
+                        .Reset(&self.allocator, None)
+                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+
+                    self.list.SetDescriptorHeaps(&self.descriptor_heaps);
+                }
+
+                self.state = ListState::Open;
+
+                let _list = self.list.clone();
+                let _queue_type = self.list_type;
+                let encoder = Encoder::<'a> {
+                    _parent: self,
+                    _list,
+                    _queue_type,
+                    bound_graphics_pipeline: None,
+                    bound_compute_pipeline: None,
+                    input_binding_strides: [0; 16],
+                    arena: Blink::new_in(BlinkAlloc::new_in(RhiSystem::default())),
+                    bound_graphics_sets: vec![None; 16].into(),
+                    bound_compute_sets: vec![None; 16].into(),
+                };
+                Ok(Box::new(encoder))
+            }
+            ListState::Open => Err(CommandListBeginError::InvalidCommandListState),
+            ListState::Closed => Err(CommandListBeginError::InvalidCommandListState),
+        }
     }
 }
 
