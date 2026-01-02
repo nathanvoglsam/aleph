@@ -258,7 +258,8 @@ impl ISwapChain for SwapChain {
             inner.config.width = width;
             inner.config.height = height;
             self.recreate_swap_images(&mut inner, queues.len() as u32)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| SwapChainRebuildError::Platform)?;
         }
 
         self.acquired.store(false, Ordering::SeqCst);

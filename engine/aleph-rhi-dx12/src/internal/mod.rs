@@ -45,6 +45,7 @@ pub mod descriptor_chunk;
 pub mod descriptor_heap;
 pub mod descriptor_heaps;
 pub mod dxgi_debug_interface;
+pub mod error_mapper;
 pub mod feature_support;
 pub mod graphics_pipeline_state_stream;
 pub mod parameter_block;
@@ -169,30 +170,37 @@ pub const fn plane_layer_for_aspect_flag(format: Format, aspect: TextureAspect) 
 ///
 /// Calls `GetLastError` internally on error
 ///
-pub unsafe fn handle_wait_result(result: WAIT_EVENT) -> bool {
+pub unsafe fn handle_wait_result(result: WAIT_EVENT) -> Result<FenceWaitResult, FenceWaitError> {
     unsafe {
         use windows::Win32::Foundation::*;
 
         // Successfully waited on the event
         if result == WAIT_OBJECT_0 {
-            return true;
+            return Ok(FenceWaitResult::Complete);
         }
 
-        // Timeout is an error as we're supposed to block until the event is signalled
+        // Timeout is an error as we're supposed to block until the event is signaled
         if result == WAIT_TIMEOUT {
-            return false;
+            return Ok(FenceWaitResult::Timeout);
         }
 
         // Handle the error case
         if result == WAIT_FAILED {
-            GetLastError().to_hresult().unwrap();
-            unreachable!("WaitForSingleObject failed");
+            log::error!(
+                "Platform Error: ({result:?}) {}",
+                GetLastError().to_hresult()
+            );
+            return Err(FenceWaitError::Platform);
         }
 
         // This shouldn't even be possible to observe as the event is thread-local so can't
-        // event be observed across threads. But handle it anyway as you never know
+        // be observed across threads. But handle it anyway as you never know
         if result == WAIT_ABANDONED {
-            panic!("Event was abandoned by owning thread");
+            log::error!(
+                "Platform Error: ({result:?}) {}",
+                GetLastError().to_hresult()
+            );
+            return Err(FenceWaitError::Platform);
         }
 
         unreachable!("Unexpected result value");

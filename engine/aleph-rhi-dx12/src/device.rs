@@ -75,6 +75,7 @@ use crate::internal::conv::{
 };
 use crate::internal::descriptor_chunk::DescriptorChunk;
 use crate::internal::descriptor_heaps::DescriptorHeaps;
+use crate::internal::error_mapper::map_error_class;
 use crate::internal::graphics_pipeline_state_stream::{
     GraphicsPipelineStateStream, GraphicsPipelineStateStreamBuilder,
 };
@@ -212,10 +213,12 @@ impl IDevice for Device {
                     bump.allocator(),
                 );
                 let blob = RootSignatureBlob::new(&desc)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| BindingSignatureCreateError::Platform)?;
                 self.device
                     .CreateRootSignature::<ID3D12RootSignature>(0, &blob)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| BindingSignatureCreateError::Platform)?
             };
 
             if let Some(name) = desc.name {
@@ -300,7 +303,8 @@ impl IDevice for Device {
             let pipeline = unsafe {
                 self.device
                     .CreatePipelineState(&state_stream_ref)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| PipelineCreateError::Platform)?
             };
 
             if let Some(name) = desc.name {
@@ -351,7 +355,8 @@ impl IDevice for Device {
         let pipeline = unsafe {
             self.device
                 .CreateComputePipelineState(&pipeline_desc)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| PipelineCreateError::Platform)?
         };
 
         if let Some(name) = desc.name {
@@ -502,7 +507,7 @@ impl IDevice for Device {
             let allocator = self.allocator.as_ref().unwrap();
             allocator
                 .allocate_buffer(self, &allocation_desc)
-                .ok_or(())?
+                .ok_or(BufferCreateError::OutOfMemory)?
         };
         let base_address =
             unsafe { GPUDescriptorHandle::try_from(resource.GetGPUVirtualAddress()).unwrap() };
@@ -545,7 +550,7 @@ impl IDevice for Device {
             let allocator = self.allocator.as_ref().unwrap();
             allocator
                 .allocate_texture(self, &allocation_desc)
-                .ok_or(())?
+                .ok_or(TextureCreateError::OutOfMemory)?
         };
 
         if let Some(name) = desc.name {
@@ -608,8 +613,11 @@ impl IDevice for Device {
         if let Some(list) = self.command_list_pool.get_for_queue_type(desc.queue_type) {
             if let Some(name) = desc.name {
                 set_name(&list.allocator, name)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-                set_name(&list.list, name).map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| CommandListCreateError::Platform)?;
+                set_name(&list.list, name)
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| CommandListCreateError::Platform)?;
             }
 
             let FreeCommandList {
@@ -643,18 +651,24 @@ impl IDevice for Device {
         let allocator = unsafe {
             self.device
                 .CreateCommandAllocator(platform_list_type)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| CommandListCreateError::Platform)?
         };
 
         let list = unsafe {
             self.device
                 .CreateCommandList1(0, platform_list_type, Default::default())
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| CommandListCreateError::Platform)?
         };
 
         if let Some(name) = desc.name {
-            set_name(&allocator, name).map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-            set_name(&list, name).map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+            set_name(&allocator, name)
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| CommandListCreateError::Platform)?;
+            set_name(&list, name)
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| CommandListCreateError::Platform)?;
         }
 
         let descriptor_heaps = [
@@ -810,7 +824,8 @@ impl IDevice for Device {
         let fence: ID3D12Fence = unsafe {
             self.device
                 .CreateFence(value, D3D12_FENCE_FLAG_NONE)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| FenceCreateError::Platform)?
         };
 
         let fence = Fence {
@@ -830,14 +845,14 @@ impl IDevice for Device {
         values: &[u64],
         wait_all: bool,
         timeout: u32,
-    ) -> FenceWaitResult {
+    ) -> Result<FenceWaitResult, FenceWaitError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
             match fences.len() {
                 0 => {
                     // Do nothing on empty list,
-                    FenceWaitResult::Complete
+                    Ok(FenceWaitResult::Complete)
                 }
                 1 => {
                     // Special case a single fence with 'SetEventOnCompletion'
@@ -853,12 +868,9 @@ impl IDevice for Device {
                         fence
                             .fence
                             .SetEventOnCompletion(wait_value, *handle)
-                            .unwrap();
-                        if handle_wait_result(WaitForSingleObject(*handle, timeout)) {
-                            FenceWaitResult::Complete
-                        } else {
-                            FenceWaitResult::Timeout
-                        }
+                            .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                            .map_err(map_error_class)?;
+                        handle_wait_result(WaitForSingleObject(*handle, timeout))
                     })
                 }
                 _ => {
@@ -894,13 +906,10 @@ impl IDevice for Device {
                                 flags,
                                 *handle,
                             )
-                            .unwrap();
+                            .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                            .map_err(map_error_class)?;
 
-                        if handle_wait_result(WaitForSingleObject(*handle, timeout)) {
-                            FenceWaitResult::Complete
-                        } else {
-                            FenceWaitResult::Timeout
-                        }
+                        handle_wait_result(WaitForSingleObject(*handle, timeout))
                     })
                 }
             }
@@ -910,22 +919,22 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> u64 {
+    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> Result<u64, FencePollError> {
         let fence = Fence::get(fence);
-        unsafe { fence.fence.GetCompletedValue() }
+        unsafe { Ok(fence.fence.GetCompletedValue()) }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) {
+    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) -> Result<(), FenceSignalError> {
         let fence = Fence::get(fence);
         unsafe {
             fence
                 .fence
                 .Signal(value)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))
-                .unwrap()
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(map_error_class)
         }
     }
 

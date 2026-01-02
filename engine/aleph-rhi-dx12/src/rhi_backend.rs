@@ -39,7 +39,8 @@ impl D3D12Loader {
         {
             Ok(_) => {
                 let dxgi_factory = create_dxgi_factory(validation)
-                    .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
+                    .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                    .map_err(|_| ContextCreateError::Platform)?;
 
                 let gpu_assisted = true;
                 let debug_interface = unsafe { setup_debug_layer(validation, gpu_assisted) };

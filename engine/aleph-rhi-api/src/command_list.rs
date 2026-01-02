@@ -66,7 +66,6 @@ pub enum CommandListBeginError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(CommandListBeginError);
 
 #[derive(Error, Debug)]
 pub enum CommandListCloseError {
@@ -76,4 +75,3 @@ pub enum CommandListCloseError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(CommandListCloseError);

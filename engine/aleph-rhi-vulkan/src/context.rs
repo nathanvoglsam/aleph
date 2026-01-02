@@ -517,7 +517,9 @@ impl IContext for Context {
             }
         };
 
-        let surface = result.map_err(|e| log::error!("Platform Error: {:#?}", e))?;
+        let surface = result
+            .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+            .map_err(|_| SurfaceCreateError::Platform)?;
 
         Ok(new_rhi_object(move |v| Surface {
             this: v.clone(),
@@ -547,7 +549,9 @@ impl IContext for Context {
                 .create_metal_surface(&create_info, GLOBAL)
         };
 
-        let surface = result.map_err(|e| log::error!("Platform Error: {:#?}", e))?;
+        let surface = result
+            .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+            .map_err(|_| SurfaceCreateError::Platform)?;
 
         let surface = AnyArc::new_cyclic(move |v| Surface {
             this: v.clone(),

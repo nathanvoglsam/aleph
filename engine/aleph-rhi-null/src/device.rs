@@ -294,21 +294,27 @@ impl IDevice for NullDevice {
         _values: &[u64],
         _wait_all: bool,
         _timeout: u32,
-    ) -> FenceWaitResult {
-        FenceWaitResult::Complete
+    ) -> Result<FenceWaitResult, FenceWaitError> {
+        Ok(FenceWaitResult::Complete)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn get_fence_signaled_value(&self, _fence: &FenceHandle) -> u64 {
-        u64::MAX
+    fn get_fence_signaled_value(&self, _fence: &FenceHandle) -> Result<u64, FencePollError> {
+        Ok(u64::MAX)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn signal_fence(&self, _fence: &FenceHandle, _value: u64) {}
+    unsafe fn signal_fence(
+        &self,
+        _fence: &FenceHandle,
+        _value: u64,
+    ) -> Result<(), FenceSignalError> {
+        Ok(())
+    }
 
     // ========================================================================================== //
     // ========================================================================================== //

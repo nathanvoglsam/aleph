@@ -156,7 +156,8 @@ impl Surface {
             let factory = self.context.factory.as_ref().unwrap().lock();
             unsafe {
                 dxgi_create_swap_chain(&factory, &queue, self, &desc)
-                    .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+                    .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                    .map_err(|_| SwapChainCreateError::Platform)?
             }
         };
 
@@ -180,7 +181,8 @@ impl Surface {
             let mut state = swap_chain.inner.lock();
             swap_chain
                 .recreate_swap_images(&mut state, desc.BufferCount)
-                .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
+                .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                .map_err(|_| SwapChainCreateError::Platform)?;
         }
 
         Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))

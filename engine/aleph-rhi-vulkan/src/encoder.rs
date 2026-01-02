@@ -576,7 +576,8 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 self._device
                     .device
                     .end_command_buffer(self._buffer)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| CommandListCloseError::Platform)?;
                 self._parent.state = ListState::Closed;
                 Ok(())
             },

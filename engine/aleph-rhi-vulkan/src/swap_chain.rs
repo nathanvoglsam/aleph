@@ -200,7 +200,8 @@ impl SwapChain {
             self.device.adapter.physical_device,
             self.surface.surface,
         )
-        .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
+        .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+        .map_err(|_| SwapChainCreateError::Platform)?;
 
         // If any of these are zero than the window is minimized. We can't create a swap chain for
         // a minimized window as the extents are invalid so we error out and let the user handle it.
@@ -257,7 +258,8 @@ impl SwapChain {
         inner.swap_chain = unsafe {
             swapchain_loader
                 .create_swapchain(&swap_create_info, GLOBAL)
-                .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+                .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                .map_err(|_| SwapChainCreateError::Platform)?
         };
 
         if old_swapchain != vk::SwapchainKHR::null() {
@@ -267,7 +269,8 @@ impl SwapChain {
         let images = unsafe {
             swapchain_loader
                 .get_swapchain_images(inner.swap_chain)
-                .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+                .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                .map_err(|_| SwapChainCreateError::Platform)?
         };
 
         const SWAP_NAMES: [&NStr; 8] = [

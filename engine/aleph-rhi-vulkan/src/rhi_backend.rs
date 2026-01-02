@@ -120,7 +120,8 @@ impl VulkanLoader {
         let instance_version = unsafe {
             entry
                 .try_enumerate_instance_version()
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| ContextCreateError::Platform)?
         };
         let instance_version = instance_version.unwrap();
         if vk::api_version_major(instance_version) < 1 {
@@ -177,7 +178,8 @@ impl VulkanLoader {
                 );
                 entry
                     .create_instance(&create_info, GLOBAL)
-                    .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+                    .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                    .map_err(|_| ContextCreateError::Platform)?
             } else {
                 let settings = vec![
                     vk::LayerSettingEXT::default()
@@ -192,7 +194,8 @@ impl VulkanLoader {
                 let create_info = create_info.push_next(&mut layer_settings);
                 entry
                     .create_instance(&create_info, GLOBAL)
-                    .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+                    .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                    .map_err(|_| ContextCreateError::Platform)?
             }
         };
 
@@ -534,7 +537,8 @@ fn install_debug_messenger(
     let messenger = unsafe {
         loader
             .create_debug_utils_messenger(&create_info, GLOBAL)
-            .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+            .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+            .map_err(|_| ContextCreateError::Platform)?
     };
     Ok(messenger)
 }

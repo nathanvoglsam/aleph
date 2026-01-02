@@ -110,14 +110,16 @@ impl CommandList {
                     self._device
                         .device
                         .reset_command_pool(self.pool, Default::default())
-                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| CommandListBeginError::Platform)?;
 
                     let begin_info = vk::CommandBufferBeginInfo::default()
                         .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
                     self._device
                         .device
                         .begin_command_buffer(self.buffer, &begin_info)
-                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| CommandListBeginError::Platform)?;
                 }
 
                 self.state = ListState::Open;

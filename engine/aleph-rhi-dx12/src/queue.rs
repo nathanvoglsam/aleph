@@ -328,7 +328,8 @@ impl IQueue for Queue {
                 let fence = Fence::get(fence);
                 self.handle
                     .Wait(&fence.fence, value)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| QueueSubmitError::Platform)?;
             }
 
             let mut lists: Vec<Box<CommandList>> = Vec::with_capacity(desc.command_lists.len());
@@ -364,14 +365,16 @@ impl IQueue for Queue {
                 let fence = Fence::get(fence);
                 self.handle
                     .Signal(&fence.fence, value)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| QueueSubmitError::Platform)?;
             }
 
             // Safety: We simply never, ever decrement last_submitted_index. Ever. It's impossible for
             // it to be decremented.
             let index = self
                 .record_submission_index_signal()
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| QueueSubmitError::Platform)?;
 
             self.in_flight
                 .push(QueueSubmission { index, lists })
@@ -420,7 +423,8 @@ impl IQueue for Queue {
                 .swap_chain
                 .Present1(0, flags, &presentation_params)
                 .ok()
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| QueuePresentError::Platform)?;
 
             if swap_chain
                 .acquired
@@ -434,7 +438,8 @@ impl IQueue for Queue {
             // it to be decremented.
             let _index = self
                 .record_submission_index_signal()
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| QueuePresentError::Platform)?;
 
             Ok(())
         }

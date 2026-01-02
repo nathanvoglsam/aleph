@@ -128,7 +128,8 @@ impl Buffer {
             let mut ptr = std::ptr::null_mut();
             self.resource
                 .Map(0, None, Some(&mut ptr))
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| ResourceMapError::Platform)?;
             let ptr = NonNull::new(ptr as *mut u8).ok_or(ResourceMapError::MappedNullPointer)?;
 
             lock.count = lock.count.checked_add(1).unwrap();

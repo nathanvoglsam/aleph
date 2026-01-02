@@ -207,7 +207,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     /// - `timeout` specifies how long to wait, in milliseconds, before timing out and returning
     ///   from the function. If the timeout time is reached before the wait condition is met then
     ///   the function will return [`FenceWaitResult::Timeout`]. If `timeout` is equal to `u32::MAX`
-    ///   the wait_fences call will block indefinitely and can not timeout.
+    ///   the wait_fences call will block indefinitely and can not time out.
     ///
     /// # Info
     ///
@@ -218,16 +218,16 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
         values: &[u64],
         wait_all: bool,
         timeout: u32,
-    ) -> FenceWaitResult;
+    ) -> Result<FenceWaitResult, FenceWaitError>;
 
     /// Polls the fence for the current signaled value.
-    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> u64;
+    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> Result<u64, FencePollError>;
 
     /// Signals the fence with the given value.
     ///
     /// The value counter is monotonic. It is illegal to signal a value <= the current signaled
     /// value.
-    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64);
+    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) -> Result<(), FenceSignalError>;
 
     /// Returns the API used by the underlying backend implementation.
     fn get_backend_api(&self) -> BackendAPI;
@@ -333,7 +333,6 @@ pub enum FenceCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(FenceCreateError);
 
 /// Set of errors that can occur when mapping a buffer
 #[derive(Error, Debug)]
@@ -345,7 +344,6 @@ pub enum ResourceMapError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(ResourceMapError);
 
 /// Set of errors that can occur when unmapping a buffer
 #[derive(Error, Debug)]
@@ -357,7 +355,6 @@ pub enum ResourceUnmapError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(ResourceUnmapError);
 
 #[derive(Error, Debug)]
 pub enum BufferCreateError {
@@ -367,7 +364,6 @@ pub enum BufferCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(BufferCreateError);
 
 #[derive(Error, Debug)]
 pub enum TextureCreateError {
@@ -398,7 +394,6 @@ pub enum TextureCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(TextureCreateError);
 
 #[derive(Error, Debug)]
 pub enum SamplerCreateError {
@@ -408,14 +403,12 @@ pub enum SamplerCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(SamplerCreateError);
 
 #[derive(Error, Debug)]
 pub enum ParameterBlockLayoutCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(ParameterBlockLayoutCreateError);
 
 #[derive(Error, Debug)]
 pub enum DescriptorPoolCreateError {
@@ -425,7 +418,6 @@ pub enum DescriptorPoolCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(DescriptorPoolCreateError);
 
 #[derive(Error, Debug)]
 pub enum BindingSignatureCreateError {
@@ -435,7 +427,6 @@ pub enum BindingSignatureCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(BindingSignatureCreateError);
 
 #[derive(Error, Debug)]
 pub enum PipelineCreateError {
@@ -460,14 +451,12 @@ pub enum PipelineCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(PipelineCreateError);
 
 #[derive(Error, Debug)]
 pub enum CommandPoolCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(CommandPoolCreateError);
 
 #[derive(Error, Debug)]
 pub enum CommandListCreateError {
@@ -477,11 +466,3 @@ pub enum CommandListCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(CommandListCreateError);
-
-#[derive(Error, Debug)]
-pub enum FencePollError {
-    #[error("An internal backend error has occurred. Details were logged.")]
-    Platform,
-}
-error_enum_from_unit_type!(FencePollError);

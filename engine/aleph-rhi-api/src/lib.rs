@@ -154,16 +154,3 @@ macro_rules! any_arc_trait_utils_decl {
         fn weak_count(&self) -> usize;
     };
 }
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! error_enum_from_unit_type {
-    ($x: ident) => {
-        impl From<()> for $x {
-            #[inline(always)]
-            fn from(_value: ()) -> Self {
-                $x::Platform
-            }
-        }
-    };
-}

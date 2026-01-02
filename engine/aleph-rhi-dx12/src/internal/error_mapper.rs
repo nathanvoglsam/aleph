@@ -27,18 +27,36 @@
 // SOFTWARE.
 //
 
-pub mod allocation_callbacks;
-pub mod allocator_bridge;
-pub mod conv;
-pub mod device_info;
-pub mod error_mapper;
-pub mod features;
-pub mod loader;
-pub mod messenger;
-pub mod mvk;
-pub mod profile;
-pub mod queue_present_support;
-pub mod semaphore_pool;
-pub mod set_name;
-pub mod unwrap;
-pub mod write_descriptors;
+use aleph_rhi_api::{FenceSignalError, FenceWaitError};
+use windows::Win32::Foundation::*;
+use windows::Win32::Graphics::Dxgi::*;
+
+#[inline]
+pub fn map_error_class<T: ErrorClasses>(err: windows::core::Error) -> T {
+    match err.code() {
+        DXGI_ERROR_DEVICE_HUNG
+        | DXGI_ERROR_DEVICE_REMOVED
+        | DXGI_ERROR_DEVICE_RESET
+        | DXGI_ERROR_DRIVER_INTERNAL_ERROR => T::DEVICE_LOST,
+        E_OUTOFMEMORY => T::OUT_OF_MEMORY,
+        _ => T::PLATFORM,
+    }
+}
+
+pub trait ErrorClasses {
+    const DEVICE_LOST: Self;
+    const OUT_OF_MEMORY: Self;
+    const PLATFORM: Self;
+}
+
+impl ErrorClasses for FenceWaitError {
+    const DEVICE_LOST: Self = FenceWaitError::DeviceLost;
+    const OUT_OF_MEMORY: Self = FenceWaitError::Platform;
+    const PLATFORM: Self = FenceWaitError::Platform;
+}
+
+impl ErrorClasses for FenceSignalError {
+    const DEVICE_LOST: Self = FenceSignalError::DeviceLost;
+    const OUT_OF_MEMORY: Self = FenceSignalError::Platform;
+    const PLATFORM: Self = FenceSignalError::Platform;
+}

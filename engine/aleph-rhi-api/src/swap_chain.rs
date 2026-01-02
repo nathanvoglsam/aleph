@@ -288,7 +288,6 @@ pub enum SwapChainCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(SwapChainCreateError);
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
@@ -296,7 +295,6 @@ pub enum SwapChainRebuildError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(SwapChainRebuildError);
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
@@ -337,4 +335,3 @@ pub enum ImageAcquireError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(ImageAcquireError);

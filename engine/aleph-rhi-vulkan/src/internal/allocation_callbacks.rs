@@ -39,6 +39,7 @@ use ash::vk;
 
 /// Takes an [Allocator] and returns a [vk::AllocationCallbacks] wrapper that adapts the rust
 /// allocator into the
+#[allow(unused)]
 pub fn callbacks_from_rust_allocator<A: Allocator>(
     v: &BlinkAlloc<A>,
 ) -> vk::AllocationCallbacks<'_> {

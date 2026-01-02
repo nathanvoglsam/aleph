@@ -299,7 +299,8 @@ impl IQueue for Queue {
             device
                 .device
                 .queue_submit(self.handle, &[info], vk::Fence::null())
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| QueueSubmitError::Platform)?;
         }
 
         self.in_flight

@@ -117,7 +117,8 @@ impl IAdapter for Adapter {
 
         // Create the actual d3d12 device
         let device = create_device(adapter.deref(), D3D_FEATURE_LEVEL_11_0)
-            .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
+            .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+            .map_err(|_| RequestDeviceError::Platform)?;
 
         fn create_queues(v: &mut Device) {
             // Load our 3 queues
@@ -155,8 +156,9 @@ impl IAdapter for Adapter {
             None
         };
 
-        let descriptor_heaps =
-            DescriptorHeaps::new(&device).map_err(|e| log::error!("Platform Error: {:#?}", e))?;
+        let descriptor_heaps = DescriptorHeaps::new(&device)
+            .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+            .map_err(|_| RequestDeviceError::Platform)?;
 
         // Bundle and return the device
         let device = AnyArc::new_cyclic(move |v| {

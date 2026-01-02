@@ -253,7 +253,6 @@ pub enum QueueSubmitError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(QueueSubmitError);
 
 #[derive(Error, Debug)]
 pub enum QueuePresentError {
@@ -285,4 +284,3 @@ pub enum QueuePresentError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(QueuePresentError);

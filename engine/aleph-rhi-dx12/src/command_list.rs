@@ -87,7 +87,7 @@ impl ICommandList for CommandList {
             Ok(self.begin()?)
         } else {
             Err(CommandListBeginError::InvalidEncoderType(
-                QueueType::General,
+                QueueType::Compute,
             ))
         }
     }
@@ -109,11 +109,13 @@ impl CommandList {
                 unsafe {
                     self.allocator
                         .Reset()
-                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| CommandListBeginError::Platform)?;
 
                     self.list
                         .Reset(&self.allocator, None)
-                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| CommandListBeginError::Platform)?;
 
                     self.list.SetDescriptorHeaps(&self.descriptor_heaps);
                 }

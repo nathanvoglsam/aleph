@@ -195,4 +195,3 @@ pub enum RequestDeviceError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(RequestDeviceError);

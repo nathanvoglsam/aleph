@@ -57,9 +57,10 @@ use crate::context::Context;
 use crate::descriptor_arena::DescriptorArena;
 use crate::descriptor_pool::DescriptorPool;
 use crate::fence::Fence;
-use crate::internal::allocation_callbacks::{GLOBAL, callbacks_from_rust_allocator};
+use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::allocator_bridge::VulkanAllocatorBridge;
 use crate::internal::conv::*;
+use crate::internal::error_mapper::map_error_class;
 use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::set_name::set_name;
 use crate::internal::unwrap;
@@ -193,7 +194,8 @@ impl IDevice for Device {
             let descriptor_set_layout = unsafe {
                 self.device
                     .create_descriptor_set_layout(&create_info, GLOBAL)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| ParameterBlockLayoutCreateError::Platform)?
             };
 
             set_name(
@@ -252,7 +254,8 @@ impl IDevice for Device {
             let pipeline_layout = unsafe {
                 self.device
                     .create_pipeline_layout(&create_info, GLOBAL)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| BindingSignatureCreateError::Platform)?
             };
 
             set_name(
@@ -324,7 +327,6 @@ impl IDevice for Device {
             let attachments = Self::translate_color_attachment_state(bump.allocator(), desc);
             let color_blend_state = Self::translate_color_blend_state(&attachments);
 
-            let alloc_adapter = callbacks_from_rust_allocator(bump.allocator());
             let mut shader_modules =
                 BVec::with_capacity_in(desc.shader_stages.len(), bump.allocator());
             for (i, v) in desc.shader_stages.iter().copied().enumerate() {
@@ -333,8 +335,9 @@ impl IDevice for Device {
                     let shader_data = Self::unwrap_shader_bytecode(bump.allocator(), i, v)?;
                     let create_info = vk::ShaderModuleCreateInfo::default().code(shader_data);
                     self.device
-                        .create_shader_module(&create_info, Some(&alloc_adapter))
-                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                        .create_shader_module(&create_info, GLOBAL)
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| PipelineCreateError::Platform)?
                 };
                 shader_modules.push((stage, module));
             }
@@ -362,14 +365,14 @@ impl IDevice for Device {
             let pipeline = unsafe {
                 self.device
                     .create_graphics_pipelines(vk::PipelineCache::null(), &[builder], GLOBAL)
-                    .map_err(|(_, v)| log::error!("Platform Error: {:#?}", v))?
+                    .inspect_err(|(_, v)| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| PipelineCreateError::Platform)?
             };
             let pipeline = pipeline[0];
 
             for (_, module) in shader_modules {
                 unsafe {
-                    self.device
-                        .destroy_shader_module(module, Some(&alloc_adapter));
+                    self.device.destroy_shader_module(module, GLOBAL);
                 }
             }
 
@@ -407,12 +410,12 @@ impl IDevice for Device {
             let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
             // Create a temporary shader module using
-            let alloc_adapter = callbacks_from_rust_allocator(bump.allocator());
             let module = unsafe {
                 let create_info = vk::ShaderModuleCreateInfo::default().code(shader_data);
                 self.device
-                    .create_shader_module(&create_info, Some(&alloc_adapter))
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                    .create_shader_module(&create_info, GLOBAL)
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| PipelineCreateError::Platform)?
             };
 
             let builder = vk::ComputePipelineCreateInfo::default()
@@ -427,15 +430,13 @@ impl IDevice for Device {
             let pipeline = unsafe {
                 self.device
                     .create_compute_pipelines(vk::PipelineCache::null(), &[builder], GLOBAL)
-                    .map_err(|(_, v)| log::error!("Platform Error: {:#?}", v))?
+                    .inspect_err(|(_, v)| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| PipelineCreateError::Platform)?
             };
             let pipeline = pipeline[0];
 
             // Destroy the temporary shader module
-            unsafe {
-                self.device
-                    .destroy_shader_module(module, Some(&alloc_adapter))
-            }
+            unsafe { self.device.destroy_shader_module(module, GLOBAL) }
 
             set_name(
                 self.debug_loader.as_ref(),
@@ -482,7 +483,8 @@ impl IDevice for Device {
             let descriptor_pool = unsafe {
                 self.device
                     .create_descriptor_pool(&create_info, GLOBAL)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| DescriptorPoolCreateError::Platform)?
             };
 
             set_name(
@@ -555,7 +557,8 @@ impl IDevice for Device {
             let descriptor_pool = unsafe {
                 self.device
                     .create_descriptor_pool(&create_info, GLOBAL)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| DescriptorPoolCreateError::Platform)?
             };
 
             set_name(
@@ -811,7 +814,8 @@ impl IDevice for Device {
             let sampler = unsafe {
                 self.device
                     .create_sampler(&create_info, GLOBAL)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| SamplerCreateError::Platform)?
             };
 
             set_name(
@@ -894,7 +898,8 @@ impl IDevice for Device {
             let command_pool = unsafe {
                 self.device
                     .create_command_pool(&create_info, GLOBAL)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| CommandListCreateError::Platform)?
             };
 
             let allocate_info = vk::CommandBufferAllocateInfo::default()
@@ -910,7 +915,8 @@ impl IDevice for Device {
                 );
                 result
                     .assume_init_on_success(buffer)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| CommandListCreateError::Platform)?
             };
 
             set_name(
@@ -997,7 +1003,8 @@ impl IDevice for Device {
             let info = vk::SemaphoreCreateInfo::default().push_next(&mut info);
             self.device
                 .create_semaphore(&info, GLOBAL)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(|_| FenceCreateError::Platform)?
         };
 
         let fence = Fence {
@@ -1017,7 +1024,7 @@ impl IDevice for Device {
         values: &[u64],
         wait_all: bool,
         timeout: u32,
-    ) -> FenceWaitResult {
+    ) -> Result<FenceWaitResult, FenceWaitError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
@@ -1045,49 +1052,46 @@ impl IDevice for Device {
             };
 
             let result = unsafe { self.device.wait_semaphores(&info, timeout) };
-            match result {
+            let out = match result {
                 Ok(_) => FenceWaitResult::Complete,
                 Err(vk::Result::TIMEOUT) => FenceWaitResult::Timeout,
-                v => {
-                    v.unwrap();
-                    unreachable!()
+                Err(v) => {
+                    log::error!("Platform Error: {:#?}", v);
+                    return Err(map_error_class(v));
                 }
-            }
+            };
+            Ok(out)
         })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> u64 {
+    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> Result<u64, FencePollError> {
         let fence = Fence::get(fence);
 
-        let result = unsafe { self.device.get_semaphore_counter_value(fence.semaphore) };
-        match result {
-            Ok(v) => v,
-            v => {
-                v.unwrap();
-                unreachable!()
-            }
+        unsafe {
+            self.device
+                .get_semaphore_counter_value(fence.semaphore)
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(map_error_class)
         }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) {
+    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) -> Result<(), FenceSignalError> {
         let fence = Fence::get(fence);
 
         let info = vk::SemaphoreSignalInfo::default()
             .semaphore(fence.semaphore)
             .value(value);
-        let result = unsafe { self.device.signal_semaphore(&info) };
-        match result {
-            Ok(v) => v,
-            v => {
-                v.unwrap();
-                unreachable!()
-            }
+        unsafe {
+            self.device
+                .signal_semaphore(&info)
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(map_error_class)
         }
     }
 

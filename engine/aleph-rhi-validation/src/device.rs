@@ -477,7 +477,7 @@ impl IDevice for ValidationDevice {
         values: &[u64],
         wait_all: bool,
         timeout: u32,
-    ) -> FenceWaitResult {
+    ) -> Result<FenceWaitResult, FenceWaitError> {
         let inner_fences: Vec<_> = fences
             .iter()
             .copied()
@@ -491,7 +491,7 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> u64 {
+    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> Result<u64, FencePollError> {
         let fence = ValidationFence::get(fence);
         self.inner.get_fence_signaled_value(&fence.inner)
     }
@@ -499,7 +499,7 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) {
+    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) -> Result<(), FenceSignalError> {
         let fence = ValidationFence::get(fence);
         unsafe { self.inner.signal_fence(&fence.inner, value) }
     }

@@ -205,7 +205,8 @@ impl Adapter {
             self.context
                 .instance
                 .create_device(self.physical_device, &device_create_info, GLOBAL)
-                .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+                .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                .map_err(|_| RequestDeviceError::Platform)?
         };
 
         let push_descriptor =

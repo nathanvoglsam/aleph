@@ -101,7 +101,6 @@ pub enum ContextCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(ContextCreateError);
 
 /// Set of errors that can occur when creating an [ISurface]
 #[derive(Error, Debug)]
@@ -113,4 +112,3 @@ pub enum SurfaceCreateError {
     #[error("Requested an RHI surface for an unsupported windowing integration type.")]
     UnsupportedWSI,
 }
-error_enum_from_unit_type!(SurfaceCreateError);

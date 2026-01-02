@@ -28,6 +28,7 @@
 //
 
 use aleph_object_system::ArcObject;
+use thiserror::Error;
 
 #[derive(Clone)]
 pub struct FenceHandle {
@@ -90,4 +91,38 @@ impl std::fmt::Display for FenceWaitResult {
             FenceWaitResult::Timeout => f.write_str("Timeout"),
         }
     }
+}
+
+/// Set of errors that can occur when waiting on a fence with [`crate::IDevice::wait_fences`]
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum FenceWaitError {
+    #[error("The platform API device was lost.")]
+    DeviceLost,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
+}
+
+/// Set of errors that can occur when polling on a fence with
+/// [`crate::IDevice::get_fence_signaled_value`]
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum FencePollError {
+    #[error("The platform API device was lost.")]
+    DeviceLost,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
+}
+
+/// Set of errors that can occur when signaling on a fence with [`crate::IDevice::signal_fence`]
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum FenceSignalError {
+    #[error("The platform API device was lost.")]
+    DeviceLost,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
