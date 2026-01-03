@@ -77,7 +77,11 @@ impl ISwapChain for ValidationSwapChain {
     ) -> Result<SwapChainConfiguration, SwapChainRebuildError> {
         // We have to block and flush all GPU work before we rebuild to ensure that none of the
         // images can be in use on the GPU timeline.
-        self._device.wait_idle();
+        match self._device.wait_idle() {
+            Ok(_) => {}
+            Err(QueueWaitError::DeviceLost) => return Err(SwapChainRebuildError::DeviceLost),
+            Err(QueueWaitError::Platform) => return Err(SwapChainRebuildError::Platform),
+        }
 
         // Finally, we can actually do the real resize operation
         let result = self.inner.rebuild(new_size);

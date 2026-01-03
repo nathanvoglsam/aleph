@@ -121,22 +121,23 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn garbage_collect(&self) {
+    fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
         if let Some(queue) = &self.general_queue {
-            queue.garbage_collect();
+            queue.garbage_collect()?;
         }
         if let Some(queue) = &self.compute_queue {
-            queue.garbage_collect();
+            queue.garbage_collect()?;
         }
         if let Some(queue) = &self.transfer_queue {
-            queue.garbage_collect();
+            queue.garbage_collect()?;
         }
+        Ok(())
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn wait_idle(&self) {
+    fn wait_idle(&self) -> Result<(), QueueWaitError> {
         // We need to take all of the queue locks to meet vulkan sync requirements.
         let _lock_ness_monster = (
             self.general_queue.as_ref().map(|v| v.submit_lock.lock()),
@@ -144,7 +145,12 @@ impl IDevice for Device {
             self.transfer_queue.as_ref().map(|v| v.submit_lock.lock()),
         );
 
-        unsafe { self.device.device_wait_idle().unwrap() }
+        unsafe {
+            self.device
+                .device_wait_idle()
+                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                .map_err(map_error_class)
+        }
     }
 
     // ========================================================================================== //

@@ -110,7 +110,11 @@ impl ISwapChain for SwapChain {
 
         // Trigger a wait idle to flush the GPU of work. Once this returns no work can be in flight
         // on any swap chain image.
-        self.device.wait_idle();
+        match self.device.wait_idle() {
+            Ok(_) => {}
+            Err(QueueWaitError::DeviceLost) => return Err(SwapChainRebuildError::DeviceLost),
+            Err(QueueWaitError::Platform) => return Err(SwapChainRebuildError::Platform),
+        }
 
         // Grab a snapshot of the current 'SwapChainConfiguration' that we use as the base for
         // recreating the vulkan swap chain. Vulkan may change support for present modes or

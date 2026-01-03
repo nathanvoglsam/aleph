@@ -48,14 +48,14 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     /// It is *not* recommended to use this in a real app as trivial parallelization is left on the
     /// table with this interface. Call [IQueue::garbage_collect] for each queue individually on
     /// separate threads without blocking, the work is completely asynchronous.
-    fn garbage_collect(&self);
+    fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError>;
 
     /// A utility that will wait for all GPU queues to be idle. For more information, see
     /// [IQueue::wait_idle].
     ///
     /// This is just a utility function that functions as if calling [IQueue::wait_idle] for all
     /// available queues individually.
-    fn wait_idle(&self);
+    fn wait_idle(&self) -> Result<(), QueueWaitError>;
 
     fn create_parameter_block_layout(
         &self,

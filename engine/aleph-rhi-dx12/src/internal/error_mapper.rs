@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_rhi_api::{FenceSignalError, FenceWaitError};
+use aleph_rhi_api::{FenceSignalError, FenceWaitError, QueueWaitError};
 use windows::Win32::Foundation::*;
 use windows::Win32::Graphics::Dxgi::*;
 
@@ -47,6 +47,12 @@ pub trait ErrorClasses {
     const DEVICE_LOST: Self;
     const OUT_OF_MEMORY: Self;
     const PLATFORM: Self;
+}
+
+impl ErrorClasses for QueueWaitError {
+    const DEVICE_LOST: Self = QueueWaitError::DeviceLost;
+    const OUT_OF_MEMORY: Self = QueueWaitError::Platform;
+    const PLATFORM: Self = QueueWaitError::Platform;
 }
 
 impl ErrorClasses for FenceWaitError {

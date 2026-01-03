@@ -92,11 +92,11 @@ impl IQueue for ValidationQueue {
         self.inner.queue_properties()
     }
 
-    fn garbage_collect(&self) {
+    fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
         self.inner.garbage_collect()
     }
 
-    fn wait_idle(&self) {
+    fn wait_idle(&self) -> Result<(), QueueWaitError> {
         self.inner.wait_idle()
     }
 

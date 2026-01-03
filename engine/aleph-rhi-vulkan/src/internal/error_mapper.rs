@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
-use aleph_rhi_api::{FencePollError, FenceSignalError, FenceWaitError};
+use aleph_rhi_api::{
+    FencePollError, FenceSignalError, FenceWaitError, QueueGarbageCollectError, QueueWaitError,
+};
 use ash::vk;
 
 #[inline]
@@ -47,6 +49,22 @@ pub trait ErrorClasses {
     const OUT_OF_DEVICE_MEMORY: Self;
     const OUT_OF_POOL_MEMORY: Self;
     const PLATFORM: Self;
+}
+
+impl ErrorClasses for QueueGarbageCollectError {
+    const DEVICE_LOST: Self = QueueGarbageCollectError::DeviceLost;
+    const OUT_OF_HOST_MEMORY: Self = QueueGarbageCollectError::Platform;
+    const OUT_OF_DEVICE_MEMORY: Self = QueueGarbageCollectError::Platform;
+    const OUT_OF_POOL_MEMORY: Self = QueueGarbageCollectError::Platform;
+    const PLATFORM: Self = QueueGarbageCollectError::Platform;
+}
+
+impl ErrorClasses for QueueWaitError {
+    const DEVICE_LOST: Self = QueueWaitError::DeviceLost;
+    const OUT_OF_HOST_MEMORY: Self = QueueWaitError::Platform;
+    const OUT_OF_DEVICE_MEMORY: Self = QueueWaitError::Platform;
+    const OUT_OF_POOL_MEMORY: Self = QueueWaitError::Platform;
+    const PLATFORM: Self = QueueWaitError::Platform;
 }
 
 impl ErrorClasses for FenceWaitError {

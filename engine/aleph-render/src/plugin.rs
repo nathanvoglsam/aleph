@@ -153,7 +153,7 @@ impl IPlugin for PluginRender {
             move |world: Res<WorldResource>,
                   mut renderer: ResMut<Renderer>,
                   mut render_scene: ResMut<RenderScene>| {
-                device.garbage_collect();
+                device.garbage_collect().unwrap();
 
                 render_scene.clear();
 
@@ -241,8 +241,8 @@ impl IPlugin for PluginRender {
             // release all references being held live by the resource tracking system. The resource
             // tracking system creates cycles in the object graph so if we don't clear them then
             // we'll leak GPU objects.
-            device.wait_idle();
-            device.garbage_collect();
+            device.wait_idle().unwrap();
+            device.garbage_collect().unwrap();
         }
     }
 

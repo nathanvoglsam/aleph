@@ -36,7 +36,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject, box_downcast};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use crossbeam::queue::ArrayQueue;
+use crossbeam::queue::SegQueue;
 use parking_lot::Mutex;
 use windows::Win32::Foundation::HANDLE;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -46,6 +46,7 @@ use windows::core::Interface;
 use crate::command_list::{CommandList, ListState};
 use crate::device::{Device, FreeCommandList};
 use crate::fence::Fence;
+use crate::internal::error_mapper::map_error_class;
 use crate::internal::unwrap;
 
 pub struct Queue {
@@ -74,7 +75,7 @@ pub struct Queue {
     /// A ring-buffer that tracks all currently in flight queue submissions. This is used in
     /// conjunction with [IQueue::garbage_collect] to track when resources are no longer in use on
     /// the GPU timeline and are safe to destroy.
-    pub(crate) in_flight: ArrayQueue<QueueSubmission>,
+    pub(crate) in_flight: SegQueue<QueueSubmission>,
 }
 
 // Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
@@ -126,7 +127,7 @@ impl Queue {
                 fence: device.device.CreateFence(1, D3D12_FENCE_FLAG_NONE).unwrap(),
                 last_submitted_index: AtomicU64::new(1),
                 last_completed_index: AtomicU64::new(1),
-                in_flight: ArrayQueue::new(256),
+                in_flight: SegQueue::new(),
             })
         }
     }
@@ -185,7 +186,7 @@ impl IQueue for Queue {
         }
     }
 
-    fn garbage_collect(&self) {
+    fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
         let device = self.device.upgrade().unwrap();
 
         // Grab the index of the most recently completed command list on this queue and update
@@ -222,10 +223,7 @@ impl IQueue for Queue {
             // Check if the
             let v = self.in_flight.pop().unwrap();
             if v.index > last_completed {
-                self.in_flight
-                    .push(v)
-                    .ok()
-                    .expect("Overflowed in-flight command list tracking buffer");
+                self.in_flight.push(v);
             } else {
                 // If the submission is complete we recycle the command lists
                 //
@@ -259,9 +257,11 @@ impl IQueue for Queue {
                 }
             }
         }
+
+        Ok(())
     }
 
-    fn wait_idle(&self) {
+    fn wait_idle(&self) -> Result<(), QueueWaitError> {
         unsafe {
             // This function may run in parallel with submissions and wait_idle/garbage_collect
             // calls from any number of other threads. A naive implementation could allow a data
@@ -294,14 +294,15 @@ impl IQueue for Queue {
                 let last_submitted = self.last_submitted_index.load(Ordering::Relaxed);
                 self.fence
                     .SetEventOnCompletion(last_submitted, HANDLE::default())
-                    .unwrap();
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(map_error_class)?;
                 match self.last_completed_index.compare_exchange(
                     last_completed,
                     last_submitted,
                     Ordering::Relaxed,
                     Ordering::Relaxed,
                 ) {
-                    Ok(_) => break,
+                    Ok(_) => break Ok(()),
                     Err(_) => continue,
                 }
             }
@@ -376,10 +377,7 @@ impl IQueue for Queue {
                 .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
                 .map_err(|_| QueueSubmitError::Platform)?;
 
-            self.in_flight
-                .push(QueueSubmission { index, lists })
-                .ok()
-                .expect("Overflowed in-flight submission tracking buffer");
+            self.in_flight.push(QueueSubmission { index, lists });
 
             Ok(())
         }

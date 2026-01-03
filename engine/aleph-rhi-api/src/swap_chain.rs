@@ -292,6 +292,9 @@ pub enum SwapChainCreateError {
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum SwapChainRebuildError {
+    #[error("The GPU device was lost.")]
+    DeviceLost,
+
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }

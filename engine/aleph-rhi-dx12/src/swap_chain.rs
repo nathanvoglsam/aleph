@@ -207,7 +207,11 @@ impl ISwapChain for SwapChain {
         // resources is the swap chain itself. That means we now have exclusive ownership of the
         // images and releasing the handles should leave them all freed. Assuming no implementation
         // bugs anyway.
-        self.device.wait_idle();
+        match self.device.wait_idle() {
+            Ok(_) => {}
+            Err(QueueWaitError::DeviceLost) => return Err(SwapChainRebuildError::DeviceLost),
+            Err(QueueWaitError::Platform) => return Err(SwapChainRebuildError::Platform),
+        }
 
         // Assert that we have the only reference to the swap chain textures. D3D12 requires
         // that ID3D12Resources created from the swap chain are fully released before resizing

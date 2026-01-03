@@ -40,13 +40,14 @@ use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject, box_downcast};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{Rhi, RhiSystem, try_clone_value_into_slot};
 use ash::vk::{self, Handle};
-use crossbeam::queue::ArrayQueue;
+use crossbeam::queue::SegQueue;
 use parking_lot::Mutex;
 
 use crate::command_list::{CommandList, ListState};
 use crate::device::{Device, FreeCommandList};
 use crate::fence::Fence;
 use crate::internal::allocation_callbacks::GLOBAL;
+use crate::internal::error_mapper::map_error_class;
 use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::unwrap;
 use crate::swap_image::SwapImage;
@@ -82,7 +83,7 @@ pub struct Queue {
     /// A ring-buffer that tracks all currently in flight queue submissions. This is used in
     /// conjunction with [IQueue::garbage_collect] to track when resources are no longer in use on
     /// the GPU timeline and are safe to destroy.
-    pub(crate) in_flight: ArrayQueue<QueueSubmission>,
+    pub(crate) in_flight: SegQueue<QueueSubmission>,
 }
 
 // Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
@@ -143,7 +144,7 @@ impl Queue {
                 semaphore,
                 last_submitted_index: Default::default(),
                 last_completed_index: Default::default(),
-                in_flight: ArrayQueue::new(256),
+                in_flight: SegQueue::new(),
             })
         })
     }
@@ -183,7 +184,7 @@ impl IQueue for Queue {
         }
     }
 
-    fn garbage_collect(&self) {
+    fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
         let device = self._device.upgrade().unwrap();
 
         // Grab the index of the most recently completed command list on this queue and update
@@ -203,16 +204,27 @@ impl IQueue for Queue {
                 device
                     .device
                     .get_semaphore_counter_value(self.semaphore)
-                    .unwrap()
+                    .inspect_err(|v| log::error!("Platform Error: {:?}", v))
+                    .map_err(map_error_class)
             };
-            match self.last_completed_index.compare_exchange(
-                old_last_completed,
-                new_last_completed,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => break new_last_completed,
-                Err(_) => continue,
+            match new_last_completed {
+                // Got the value? Hit our CAS loop
+                Ok(v) => match self.last_completed_index.compare_exchange(
+                    old_last_completed,
+                    v,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => break v,
+                    Err(_) => continue,
+                },
+
+                // Device lost? Everything is complete on the queue so we can use u64::MAX as our
+                // completed value.
+                Err(QueueGarbageCollectError::DeviceLost) => break u64::MAX,
+
+                // Any other error condition is unrecoverable so we return the error to the caller.
+                Err(e) => return Err(e),
             }
         };
 
@@ -223,12 +235,9 @@ impl IQueue for Queue {
         let num = self.in_flight.len();
         for _ in 0..num {
             // Check if the
-            let v = self.in_flight.pop().unwrap();
+            let v = Rhi::with(|| self.in_flight.pop().unwrap());
             if v.index > last_completed {
-                self.in_flight
-                    .push(v)
-                    .ok()
-                    .expect("Overflowed in-flight command list tracking buffer");
+                Rhi::with(|| self.in_flight.push(v));
             } else {
                 // Now that we know the submission is complete we can return the swap semaphore
                 // (if there is one) to the semaphore pool
@@ -274,14 +283,20 @@ impl IQueue for Queue {
                 }
             }
         }
+
+        Ok(())
     }
 
-    fn wait_idle(&self) {
+    fn wait_idle(&self) -> Result<(), QueueWaitError> {
         let device = self._device.upgrade().unwrap();
 
         unsafe {
             let _lock = self.submit_lock.lock();
-            device.device.queue_wait_idle(self.handle).unwrap();
+            device
+                .device
+                .queue_wait_idle(self.handle)
+                .inspect_err(|v| log::error!("Platform Error: {:?}", v))
+                .map_err(map_error_class)
         }
     }
 
@@ -303,10 +318,9 @@ impl IQueue for Queue {
                 .map_err(|_| QueueSubmitError::Platform)?;
         }
 
-        self.in_flight
-            .push(submission)
-            .ok()
-            .expect("Overflowed in-flight submission tracking buffer");
+        Rhi::with(|| {
+            self.in_flight.push(submission);
+        });
 
         Ok(())
     }

@@ -61,11 +61,11 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     /// fixed-sized buffers for tracking in-flight work. Failing to call this function means you
     /// will overflow the internal buffers after a few frames of queue submissions and panic, or
     /// just leak memory.
-    fn garbage_collect(&self);
+    fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError>;
 
     /// Block the calling thread until the queue is flushed of work. This is similar to
     /// vkQueueWaitIdle.
-    fn wait_idle(&self);
+    fn wait_idle(&self) -> Result<(), QueueWaitError>;
 
     ///
     /// # Safety
@@ -240,6 +240,26 @@ impl<'a> Default for QueueSubmitDesc<'a> {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Set of errors that can occur when calling [`IQueue::garbage_collect`]
+#[derive(Error, Debug)]
+pub enum QueueGarbageCollectError {
+    #[error("The platform API device was lost.")]
+    DeviceLost,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
+}
+
+/// Set of errors that can occur when calling [`IQueue::wait_idle`]
+#[derive(Error, Debug)]
+pub enum QueueWaitError {
+    #[error("The platform API device was lost.")]
+    DeviceLost,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
 
 #[derive(Error, Debug)]

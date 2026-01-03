@@ -89,9 +89,13 @@ impl IQueue for NullQueue {
         }
     }
 
-    fn garbage_collect(&self) {}
+    fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
+        Ok(())
+    }
 
-    fn wait_idle(&self) {}
+    fn wait_idle(&self) -> Result<(), QueueWaitError> {
+        Ok(())
+    }
 
     unsafe fn submit(&self, _desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         Ok(())

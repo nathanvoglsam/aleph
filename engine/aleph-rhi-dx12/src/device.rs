@@ -140,31 +140,33 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn garbage_collect(&self) {
+    fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
         if let Some(queue) = &self.general_queue {
-            queue.garbage_collect();
+            queue.garbage_collect()?;
         }
         if let Some(queue) = &self.compute_queue {
-            queue.garbage_collect();
+            queue.garbage_collect()?;
         }
         if let Some(queue) = &self.transfer_queue {
-            queue.garbage_collect();
+            queue.garbage_collect()?;
         }
+        Ok(())
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn wait_idle(&self) {
+    fn wait_idle(&self) -> Result<(), QueueWaitError> {
         if let Some(queue) = &self.general_queue {
-            queue.wait_idle();
+            queue.wait_idle()?;
         }
         if let Some(queue) = &self.compute_queue {
-            queue.wait_idle();
+            queue.wait_idle()?;
         }
         if let Some(queue) = &self.transfer_queue {
-            queue.wait_idle();
+            queue.wait_idle()?;
         }
+        Ok(())
     }
 
     // ========================================================================================== //

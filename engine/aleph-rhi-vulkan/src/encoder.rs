@@ -90,7 +90,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             let mut buffers = BVec::with_capacity_in(bindings.len(), self.arena.allocator());
             let mut offsets = BVec::with_capacity_in(bindings.len(), self.arena.allocator());
             for v in bindings.iter() {
-                let buffer = v.buffer.get().downcast_ref::<Buffer>().unwrap();
+                let buffer = Buffer::get(v.buffer);
 
                 buffers.push(buffer.buffer);
                 offsets.push(v.offset);
@@ -113,7 +113,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
     ) {
-        let buffer = binding.buffer.get().downcast_ref::<Buffer>().unwrap();
+        let buffer = Buffer::get(binding.buffer);
 
         let index_type = match index_type {
             IndexType::U16 => vk::IndexType::UINT16,
