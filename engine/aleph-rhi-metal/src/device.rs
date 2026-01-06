@@ -61,7 +61,6 @@ use crate::parameter_block_layout::ParameterBlockLayout;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::queue::Queue;
 use crate::sampler::Sampler;
-use crate::semaphore::Semaphore;
 use crate::texture::Texture;
 
 pub struct Device {
@@ -113,40 +112,42 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn garbage_collect(&self) {
+    fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
         let _lock1 = self.general_queue.as_ref().map(|v| v.submit_lock());
         let _lock2 = self.compute_queue.as_ref().map(|v| v.submit_lock());
         let _lock3 = self.transfer_queue.as_ref().map(|v| v.submit_lock());
         autoreleasepool(|_| {
             if let Some(queue) = &self.general_queue {
-                queue.garbage_collect_internal();
+                queue.garbage_collect_internal()?;
             }
             if let Some(queue) = &self.compute_queue {
-                queue.garbage_collect_internal();
+                queue.garbage_collect_internal()?;
             }
             if let Some(queue) = &self.transfer_queue {
-                queue.garbage_collect_internal();
+                queue.garbage_collect_internal()?;
             }
+            Ok(())
         })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn wait_idle(&self) {
+    fn wait_idle(&self) -> Result<(), QueueWaitError> {
         let _lock1 = self.general_queue.as_ref().map(|v| v.submit_lock());
         let _lock2 = self.compute_queue.as_ref().map(|v| v.submit_lock());
         let _lock3 = self.transfer_queue.as_ref().map(|v| v.submit_lock());
         autoreleasepool(|_| {
             if let Some(queue) = &self.general_queue {
-                queue.wait_idle_internal();
+                queue.wait_idle_internal()?;
             }
             if let Some(queue) = &self.compute_queue {
-                queue.wait_idle_internal();
+                queue.wait_idle_internal()?;
             }
             if let Some(queue) = &self.transfer_queue {
-                queue.wait_idle_internal();
+                queue.wait_idle_internal()?;
             }
+            Ok(())
         })
     }
 
@@ -326,15 +327,8 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError> {
-        autoreleasepool(|_| Fence::create(self, signalled))
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError> {
-        autoreleasepool(|_| Semaphore::create(self))
+    fn create_fence(&self, value: u64) -> Result<FenceHandle, FenceCreateError> {
+        autoreleasepool(|_| Fence::create(self, value))
     }
 
     // ========================================================================================== //
@@ -343,149 +337,152 @@ impl IDevice for Device {
     fn wait_fences(
         &self,
         fences: &[&FenceHandle],
+        values: &[u64],
         wait_all: bool,
         timeout: u32,
-    ) -> FenceWaitResult {
-        match fences {
+    ) -> Result<FenceWaitResult, FenceWaitError> {
+        match (fences, values) {
             // The single fence case can just call a wait function directly.
-            [fence] => {
+            (&[fence], &[value]) => {
                 let fence = Fence::get(fence);
                 let result = fence
                     .objects
                     .event
-                    .waitUntilSignaledValue_timeoutMS(fence.get_wait_value(), timeout as u64);
+                    .waitUntilSignaledValue_timeoutMS(value, timeout as u64);
                 if result {
-                    FenceWaitResult::Complete
+                    Ok(FenceWaitResult::Complete)
                 } else {
-                    FenceWaitResult::Timeout
+                    Ok(FenceWaitResult::Timeout)
                 }
             }
+            ([], []) => Ok(FenceWaitResult::Complete),
             // The multi-fence case requires some work of our own to group the wait into a
             // single operation. There's no 'wait multiple' available so we need to use another
             // sync primitive to get the behavior we want.
-            _ => DEVICE_BUMP.with(|bump| -> FenceWaitResult {
-                let bump = bump.scope();
+            (fences, values) => {
+                DEVICE_BUMP.with(|bump| -> Result<FenceWaitResult, FenceWaitError> {
+                    let bump = bump.scope();
 
-                let mut inner_fences = BVec::with_capacity_in(fences.len(), bump.allocator());
-                inner_fences.extend(fences.iter().map(|v| Fence::get(v)));
+                    let mut inner_fences = BVec::with_capacity_in(fences.len(), bump.allocator());
+                    inner_fences.extend(fences.iter().map(|v| Fence::get(v)));
 
-                // We do a speculative poll of the fences to see if we can exit without having
-                // to run through any of the
-                if wait_all {
-                    // For the 'wait all' case we do a pre-check to see if all the fences are
-                    // already signalled. If they are we can early exit without allocating any
-                    // sync objects.
-                    'unsignalled_check: {
-                        for fence in &inner_fences {
-                            if !fence.poll_signalled() {
-                                // If we find an unsignalled fence then we bail from the outer
-                                // block. This prevents us from hitting the 'return' statement
-                                // below.
-                                break 'unsignalled_check;
+                    // We do a speculative poll of the fences to see if we can exit without having
+                    // to run through any of the
+                    if wait_all {
+                        // For the 'wait all' case we do a pre-check to see if all the fences are
+                        // already signaled. If they are we can early exit without allocating any
+                        // sync objects.
+                        'unsignalled_check: {
+                            let iter = inner_fences.iter().copied().zip(values.iter().copied());
+                            for (fence, value) in iter {
+                                if !fence.objects.event.signaledValue() >= value {
+                                    // If we find an unsignalled fence then we bail from the outer
+                                    // block. This prevents us from hitting the 'return' statement
+                                    // below.
+                                    break 'unsignalled_check;
+                                }
+                            }
+                            // If we escape the loop and don't find any unsignalled fences then
+                            // we can immediately return as the wait conditions are complete.
+                            return Ok(FenceWaitResult::Complete);
+                        }
+                    } else {
+                        // For the 'wait any' case we do a pre-check to see if any of the fences
+                        // are already signaled. This avoids creating our sync objects for no
+                        // reason.
+                        let iter = inner_fences.iter().copied().zip(values.iter().copied());
+                        for (fence, value) in iter {
+                            if fence.objects.event.signaledValue() >= value {
+                                // If we find _any_ signaled fence in this case we can immediately
+                                // return as the wait operation is complete.
+                                return Ok(FenceWaitResult::Complete);
                             }
                         }
-                        // If we escape the loop and don't find any unsignalled fences then
-                        // we can immediately return as the wait conditions are complete.
-                        return FenceWaitResult::Complete;
                     }
-                } else {
-                    // For the 'wait any' case we do a pre-check to see if any of the fences
-                    // are already signalled. This avoids creating our sync objects for no
-                    // reason.
-                    for fence in &inner_fences {
-                        if fence.poll_signalled() {
-                            // If we find _any_ signalled fence in this case we can immediately
-                            // return as the wait operaiton is complete.
-                            return FenceWaitResult::Complete;
+
+                    // If we reach this point we have, at minimum, polled that the wait condition
+                    // has not yet been met. If the timeout is set to 0 then we can immediately
+                    // exit and avoid all the machinery below. The caller has, after all, asked
+                    // to 'wait' for 0ms.
+                    if timeout == 0 {
+                        return Ok(FenceWaitResult::Timeout);
+                    }
+
+                    // Construct our condvar that will be used to block the thread that called
+                    // IDevice::wait_fences. We adjust the count to wait for based on the 'wait_all'
+                    // flag. 'wait_all = true' requires all fences to signal and sets the count to
+                    // 'fences.len()'. 'wait_all = false' only requires a single fence to signal so
+                    // we set the count to 1.
+                    let fence_num = isize::try_from(fences.len())
+                        .expect("Waiting on too many fences. How???????");
+                    let wait_count = if wait_all { fence_num } else { 1 };
+                    let pair = Arc::new((Mutex::new(wait_count), Condvar::new()));
+
+                    // This is our notify closure. This will be sent off into the aether of Metal
+                    // and/or Apple's dispatch queue. We update each event underlying our fences to
+                    // call our notify function once it becomes signaled.
+                    let notify_pair = pair.clone();
+                    let notify_block = RcBlock::new(
+                        move |_event: NonNull<ProtocolObject<dyn MTLSharedEvent>>, _value: u64| {
+                            // This code relies on 'notifyListener' calling the closure even if the
+                            // fence is _already_ signaled when attached to the MTLSharedEvent. If it
+                            // doesn't then we may deadlock waiting on a signal that will never come.
+                            let (lock, cvar) = notify_pair.as_ref();
+                            let mut waiting = lock.lock();
+                            *waiting -= 1;
+                            cvar.notify_one();
+                        },
+                    );
+
+                    // Add a listener to every fence in the set that will notify and ultimately
+                    // unblock our waiting thread once all the fences have been signaled.
+                    let iter = inner_fences.iter().copied().zip(values.iter().copied());
+                    for (fence, value) in iter {
+                        unsafe {
+                            // TODO: we need to
+                            // 1) Test that this _drops_ the block once the notification has been called
+                            //    so that we don't leak the Arc
+                            // 2) Test that this calls the block even if the event is already
+                            //    signalled.
+                            let block = RcBlock::into_raw(notify_block.copy());
+                            fence.objects.event.notifyListener_atValue_block(
+                                &self.listener,
+                                value,
+                                block,
+                            );
                         }
                     }
-                }
 
-                // If we reach this point we have, at minimum, polled that the wait condition
-                // has not yet been met. If the timeout is set to 0 then we can immediately
-                // exit and avoid all of the machinery below. The caller has, after all, asked
-                // to 'wait' for 0ms.
-                if timeout == 0 {
-                    return FenceWaitResult::Timeout;
-                }
+                    // Finally, we wait for the fences to be signaled. This is where we will stall
+                    // the thread waiting for the condition to complete.
+                    let (lock, cvar) = pair.as_ref();
+                    let mut waiting = lock.lock();
+                    let result = cvar.wait_while_for(
+                        &mut waiting,
+                        |v| *v > 0,
+                        Duration::from_millis(timeout as u64),
+                    );
 
-                // Construct our condvar that will be used to block the thread that called
-                // IDevice::wait_fences. We adjust the count to wait for based on the 'wait_all'
-                // flag. 'wait_all = true' requires all fences to signal and sets the count to
-                // 'fences.len()'. 'wait_all = false' only requires a single fence to signal so
-                // we set the count to 1.
-                let fence_num =
-                    isize::try_from(fences.len()).expect("Waiting on too many fences. How???????");
-                let wait_count = if wait_all { fence_num } else { 1 };
-                let pair = Arc::new((Mutex::new(wait_count), Condvar::new()));
-
-                // This is our notify closure. This will be sent off into the aether of Metal
-                // and/or Apple's dispatch queue. We update each event underlying our fences to
-                // call our notify function once it becomes signalled.
-                let notify_pair = pair.clone();
-                let notify_block = RcBlock::new(
-                    move |_event: NonNull<ProtocolObject<dyn MTLSharedEvent>>, _value: u64| {
-                        // This code relies on 'notifyListener' calling the closure even if the
-                        // fence is _already_ signalled when attached to the MTLSharedEvent. If it
-                        // doesn't then we may deadlock waiting on a signal that will never come.
-                        let (lock, cvar) = notify_pair.as_ref();
-                        let mut waiting = lock.lock();
-                        *waiting -= 1;
-                        cvar.notify_one();
-                    },
-                );
-
-                // Add a listener to every fence in the set that will notify and ultimately
-                // unblock our waiting thread once all the fences have been signalled.
-                for fence in inner_fences {
-                    unsafe {
-                        // TODO: we need to
-                        // 1) Test that this _drops_ the block once the notification has been called
-                        //    so that we don't leak the Arc
-                        // 2) Test that this calls the block even if the event is already
-                        //    signalled.
-                        let block = RcBlock::into_raw(notify_block.copy());
-                        fence.objects.event.notifyListener_atValue_block(
-                            &self.listener,
-                            fence.get_wait_value(),
-                            block,
-                        );
+                    if result.timed_out() {
+                        Ok(FenceWaitResult::Timeout)
+                    } else {
+                        Ok(FenceWaitResult::Complete)
                     }
-                }
-
-                // Finally, we wait for the fences to be signalled. This is where we will stall
-                // the thread waiting for the condition to complete.
-                let (lock, cvar) = pair.as_ref();
-                let mut waiting = lock.lock();
-                let result = cvar.wait_while_for(
-                    &mut waiting,
-                    |v| *v > 0,
-                    Duration::from_millis(timeout as u64),
-                );
-
-                if result.timed_out() {
-                    FenceWaitResult::Timeout
-                } else {
-                    FenceWaitResult::Complete
-                }
-            }),
+                })
+            }
         }
     }
 
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn poll_fence(&self, fence: &FenceHandle) -> bool {
+    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> Result<u64, FencePollError> {
         let fence = Fence::get(fence);
-        fence.poll_signalled()
+        // TODO: on device lost this should always return u64::MAX
+        Ok(fence.objects.event.signaledValue())
     }
 
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn reset_fences(&self, _fences: &[&FenceHandle]) {
-        // Fence reset is a no-op on metal as a fence is always ready to use. It uses a monotonic
-        // counter to keep the signals and waits correct.
+    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) -> Result<(), FenceSignalError> {
+        let fence = Fence::get(fence);
+        fence.objects.event.setSignaledValue(value);
+        Ok(())
     }
 
     // ========================================================================================== //

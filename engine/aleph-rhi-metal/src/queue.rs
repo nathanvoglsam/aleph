@@ -41,7 +41,6 @@ use parking_lot::{Mutex, MutexGuard};
 use crate::command_list::{CommandList, ListState};
 use crate::device::Device;
 use crate::fence::Fence;
-use crate::semaphore::Semaphore;
 use crate::swap_image::SwapImage;
 
 pub struct Queue {
@@ -111,21 +110,17 @@ impl IQueue for Queue {
         }
     }
 
-    fn garbage_collect(&self) {
+    fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
         // Lock access to the queue to ensure nobody submits while we're running the GC cycle.
         let _lock = self.submit_lock.lock();
-        autoreleasepool(|_| {
-            self.garbage_collect_internal();
-        })
+        autoreleasepool(|_| self.garbage_collect_internal())
     }
 
-    fn wait_idle(&self) {
+    fn wait_idle(&self) -> Result<(), QueueWaitError> {
         // Lock access to the queue to ensure nobody submits while we're waiting for all outstanding
         // work to complete
         let _lock = self.submit_lock.lock();
-        autoreleasepool(|_| {
-            self.wait_idle_internal();
-        })
+        autoreleasepool(|_| self.wait_idle_internal())
     }
 
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
@@ -141,17 +136,17 @@ impl IQueue for Queue {
                 })
                 .collect();
 
-            let wait_list = if !desc.wait_semaphores.is_empty() {
+            let wait_list = if !desc.wait_fences.is_empty() {
+                let iter = desc
+                    .wait_fences
+                    .iter()
+                    .copied()
+                    .zip(desc.wait_values.iter().copied());
                 let list = self.objects.queue.commandBuffer().unwrap();
-
-                for semaphore in desc.wait_semaphores {
-                    let semaphore = Semaphore::get(semaphore);
-                    list.encodeWaitForEvent_value(
-                        semaphore.objects.event.as_ref(),
-                        semaphore.get_wait_value(),
-                    );
+                for (fence, value) in iter {
+                    let fence = Fence::get(fence);
+                    list.encodeWaitForEvent_value(fence.objects.event.as_ref(), value);
                 }
-
                 Some(list)
             } else {
                 None
@@ -159,21 +154,16 @@ impl IQueue for Queue {
 
             match lists.last() {
                 Some(last) => {
-                    for semaphore in desc.signal_semaphores {
-                        let semaphore = Semaphore::get(semaphore);
-
-                        last.objects.list.encodeSignalEvent_value(
-                            semaphore.objects.event.as_ref(),
-                            semaphore.get_next_signal_value(),
-                        );
-                    }
-                    if let Some(fence) = desc.fence {
+                    let iter = desc
+                        .signal_fences
+                        .iter()
+                        .copied()
+                        .zip(desc.signal_values.iter().copied());
+                    for (fence, value) in iter {
                         let fence = Fence::get(fence);
-
-                        last.objects.list.encodeSignalEvent_value(
-                            fence.objects.event.as_ref(),
-                            fence.get_next_signal_value(),
-                        );
+                        last.objects
+                            .list
+                            .encodeSignalEvent_value(fence.objects.event.as_ref(), value);
                     }
                 }
                 None => panic!("Can't call IQueue::submit with zero command buffers!"),
@@ -219,15 +209,16 @@ impl IQueue for Queue {
 }
 
 impl Queue {
-    pub fn wait_idle_internal(&self) {
+    pub fn wait_idle_internal(&self) -> Result<(), QueueWaitError> {
         while let Some(mut v) = self.in_flight.pop() {
             for list in v.lists.drain(..) {
                 list.objects.list.waitUntilCompleted();
             }
         }
+        Ok(())
     }
 
-    pub fn garbage_collect_internal(&self) {
+    pub fn garbage_collect_internal(&self) -> Result<(), QueueGarbageCollectError> {
         let num = self.in_flight.len();
         for _ in 0..num {
             let mut v = self.in_flight.pop().unwrap();
@@ -246,6 +237,7 @@ impl Queue {
                 self.in_flight.push(v).ok().unwrap();
             }
         }
+        Ok(())
     }
 
     pub fn submit_lock(&self) -> MutexGuard<'_, ()> {
