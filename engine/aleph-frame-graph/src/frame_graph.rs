@@ -99,7 +99,7 @@ pub struct FrameGraph<A: PassArgs = ()> {
     pub(crate) imported_resources: BVec<u16, FgSystem>,
 
     /// The transient resource bundles that the user requested by allocated for N frames in flight.
-    pub(crate) transient_bundles: BVec<TransientResourceBundle, FgSystem>,
+    pub(crate) transient_bundles: Option<TransientResourceBundle>,
 
     /// Per-frame deletion pool for extending the lifetime of internally managed resources like
     /// command buffers or descriptor pool.
@@ -121,10 +121,11 @@ impl<A: PassArgs> FrameGraph<A> {
     /// existing transient allocations, leaving them dangling if they are still in use anywhere.
     #[aleph_profile::function]
     pub unsafe fn allocate_transients(&mut self, num_frames: usize) {
-        self.transient_bundles.clear();
+        self.transient_bundles = None;
+        self.transient_bundles = Some(self.allocate_transient_resource_bundle());
+
+        self.deletion_pools.clear();
         for _ in 0..num_frames {
-            self.transient_bundles
-                .push(self.allocate_transient_resource_bundle());
             self.deletion_pools.push(DeletionPool::default());
         }
     }
@@ -152,10 +153,10 @@ impl<A: PassArgs> FrameGraph<A> {
         // We could record in parallel by allocating command buffers ourselves and doing a parallel
         // iteration over the execution bundles list.
         unsafe {
-            self.execute_pre_assertions(frame_index, import_bundle);
+            self.execute_pre_assertions(import_bundle);
         }
 
-        let transient_bundle = &self.transient_bundles[frame_index];
+        let transient_bundle = self.transient_bundles.as_ref().unwrap();
         let linear_descriptor_pool = self.linear_descriptor_pools.get();
 
         // Free all our deferred deletion resources from the last time we executed this frame. We
@@ -430,8 +431,8 @@ impl<A: PassArgs> FrameGraph<A> {
 impl<A: PassArgs> FrameGraph<A> {
     /// Internal function that implements the debug assertions that run prior to the main execute
     /// pass in the frame graph.
-    unsafe fn execute_pre_assertions(&self, frame_index: usize, import_bundle: &ImportBundle) {
-        let transient_bundle = &self.transient_bundles[frame_index];
+    unsafe fn execute_pre_assertions(&self, import_bundle: &ImportBundle) {
+        let transient_bundle = self.transient_bundles.as_ref().unwrap();
 
         if cfg!(debug_assertions) {
             for v in self.imported_resources.iter() {

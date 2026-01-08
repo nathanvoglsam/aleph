@@ -44,7 +44,7 @@
 //! - This means we only have to care about resource aliasing at the end of the pipeline, the graph
 //!   construction doesn't need to care about it
 //! - This ignores optimization choices when linearizing the graph into a sequence of passes. We
-//!   could choice a specific order that maximizes aliasing, but this is typically at odds with
+//!   could choose a specific order that maximizes aliasing, but this is typically at odds with
 //!   having our pipelines fed as it encourages narrow pipes and short resource lifetimes. Open
 //!   problem to be solved when it matters.
 //!
@@ -65,7 +65,7 @@ use crate::{FrameGraph, FrameGraphResources, GraphChannel, IRenderPass, Resource
 
 #[derive(Error, Debug)]
 pub enum GraphBuildError {
-    #[error("A cyclic dependency was dected inside the IR graph. Bad input passes!")]
+    #[error("A cyclic dependency was detected inside the IR graph. Bad input passes!")]
     CyclicDependencyDetected,
 
     #[error("IO Error.")]
@@ -159,7 +159,7 @@ pub struct FrameGraphBuilder<A: PassArgs = ()> {
     /// identity of the pass and is used to key to a number of different names
     pub(crate) render_passes: BVec<RenderPass<A>, FgSystem>,
 
-    /// The backing storage used for all of the root resourcs objects. A root resource represents
+    /// The backing storage used for all of the root resources objects. A root resource represents
     /// a concrete [ITexture] or [IBuffer] as created by the graph. This includes both the created
     /// transient resources as well as imported resources. Imported resources are identified by
     /// having their index in the 'imported_resources' set.
@@ -360,7 +360,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
             root_resources,
             resource_versions,
             imported_resources,
-            transient_bundles: BVec::new_in(system()),
+            transient_bundles: None,
             deletion_pools: BVec::new_in(system()),
             linear_descriptor_pools: AllocatorPool::new(
                 LinearDescriptorPoolFactory::new(device.upgrade(), 1024),
@@ -2200,9 +2200,9 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     /// This function itself is not unsafe to call, but the caller _must_ ensure that the
     /// barrier_prev and barrier_next arrays are backed by allocations that outlive the graph. They
     /// are cast to raw pointers inside [BarrierIRNode], so to safely dereference those pointers the
-    /// allocations have to life long enough.
+    /// allocations have to live long enough.
     ///
-    /// Use an arena, or just leak memory. Absoultely do _not_ store these on the stack.
+    /// Use an arena, or just leak memory. Absolutely do _not_ store these on the stack.
     ///
     /// There is a _single_ exception, the empty array. The empty array will not dereference the
     /// pointer as there's no elements to load. No allocation is needed at all for these arrays.
@@ -2256,9 +2256,9 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     /// This function itself is not unsafe to call, but the caller _must_ ensure that the
     /// barrier_prev and barrier_next arrays are backed by allocations that outlive the graph. They
     /// are cast to raw pointers inside [BarrierIRNode], so to safely dereference those pointers the
-    /// allocations have to life long enough.
+    /// allocations have to live long enough.
     ///
-    /// Use an arena, or just leak memory. Absoultely do _not_ store these on the stack.
+    /// Use an arena, or just leak memory. Absolutely do _not_ store these on the stack.
     ///
     /// There is a _single_ exception, the empty array. The empty array will not dereference the
     /// pointer as there's no elements to load. No allocation is needed at all for these arrays.
@@ -2307,9 +2307,9 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     /// This function itself is not unsafe to call, but the caller _must_ ensure that the
     /// barrier_prev and barrier_next arrays are backed by allocations that outlive the graph. They
     /// are cast to raw pointers inside [BarrierIRNode], so to safely dereference those pointers the
-    /// allocations have to life long enough.
+    /// allocations have to live long enough.
     ///
-    /// Use an arena, or just leak memory. Absoultely do _not_ store these on the stack.
+    /// Use an arena, or just leak memory. Absolutely do _not_ store these on the stack.
     ///
     /// There is a _single_ exception, the empty array. The empty array will not dereference the
     /// pointer as there's no elements to load. No allocation is needed at all for these arrays.
@@ -2505,49 +2505,10 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     }
 
     fn get_before_scope_for_init_barrier<A: PassArgs>(
-        builder: &FrameGraphBuilder<A>,
-        root: &ResourceRoot,
+        _builder: &FrameGraphBuilder<A>,
+        _root: &ResourceRoot,
     ) -> (BarrierSync, BarrierAccess) {
-        // When emitting 'Initialization' barriers we have to synchronize with the last usage of
-        // the resource in the previous frame. If we don't we may end up with sync issues as we
-        // never encode a sync scope between the resource's final use in the last frame and the
-        // first use in the current frame.
-        //
-        // Thankfully we're a frame graph and we know exactly how transient resources were used!
-        // We just have to look at how the final version of the resource was used and grab our
-        // before scope from that.
-        let final_version = &builder.resource_versions[root.final_version.0 as usize];
-        let (before_sync, before_access) = if final_version.read_count > 0 {
-            // If the (final) version has any reads then that means the writes have already
-            // been synchronized in order for the reads to have the results of the write made
-            // available.
-            //
-            // This means we only need to sync with the read accesses when initializing the
-            // resource.
-            //
-            // Strictly speaking for textures we only need to sync with the final batch of reads.
-            // However the implementation for that would be more complex and likely wouldn't make
-            // any improvement in practice so we keep the code simple and sync with the combination
-            // of all read accesses to the final resource.
-            //
-            // We don't have to handle image layouts for textures here as an init barrier will
-            // always use 'Undefined' as a discard barrier.
-            let mut read_sync = BarrierSync::empty();
-            final_version.reads_iter().for_each(|v| {
-                read_sync |= v.sync;
-            });
-            (read_sync, BarrierAccess::NONE)
-        } else {
-            // If the (final) version has no reads then that means the writes have _not_ been
-            // flushed with a barrier. That means to prepare the resource and correctly sync
-            // with the previous frame we must do that flush now.
-            //
-            // If we don't do this then we will have an x-after-write hazard as the results of
-            // the final writes were never synchronized (on the gpu timeline)
-            let create_sync = final_version.creator_sync;
-            (create_sync, BarrierAccess::NONE)
-        };
-        (before_sync, before_access)
+        (BarrierSync::NONE, BarrierAccess::NONE)
     }
 }
 
@@ -2689,7 +2650,7 @@ impl<'arena> PassOrderBuilder<'arena> {
             //
             // Doing this keeps resource lifetimes constrained as otherwise initialization barriers
             // would execute long before the first usage of a resource, extending the lifetime of
-            // the resources signifcantly which would massively reduce opporunities for resource
+            // the resources significantly which would massively reduce opportunities for resource
             // aliasing.
             self.runnable_prev_nums.fill(0);
             for &candidate in candidates.iter() {
@@ -2710,7 +2671,7 @@ impl<'arena> PassOrderBuilder<'arena> {
             // run given we schedule the barriers they're still waiting on in this execution bundle.
             //
             // This is determined by comparing the 'runnable_prev_num' with the 'waiting_on_num'.
-            // When these two values for a pass are equal it means that all oustanding prev nodes
+            // When these two values for a pass are equal it means that all outstanding prev nodes
             // for a pass are ready, so we schedule the pass into the 'passes' set and the barriers
             // into the 'barriers' set. The barriers in the same bundle always run first so
             // execution order is maintained.
