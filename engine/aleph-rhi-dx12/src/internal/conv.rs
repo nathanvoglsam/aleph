@@ -632,6 +632,12 @@ pub fn barrier_access_to_dx12(access: BarrierAccess) -> D3D12_BARRIER_ACCESS {
         BarrierAccess::SHADER_WRITE,
         D3D12_BARRIER_ACCESS_UNORDERED_ACCESS
     );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::COMMON,
+        D3D12_BARRIER_ACCESS_COMMON
+    );
 
     out
 }

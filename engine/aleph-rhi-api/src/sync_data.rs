@@ -471,6 +471,18 @@ bitflags::bitflags! {
         /// - `UNORDERED_ACCESS`
         ///
         const SHADER_WRITE = 0x2000;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `MEMORY_WRITE_BIT`
+        /// - `MEMORY_READ_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `COMMON`
+        ///
+        const COMMON = 0x4000;
     }
 }
 

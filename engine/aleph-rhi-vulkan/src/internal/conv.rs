@@ -453,6 +453,12 @@ pub fn barrier_access_to_vk(access: BarrierAccess) -> vk::AccessFlags2 {
         BarrierAccess::SHADER_WRITE,
         vk::AccessFlags2::SHADER_WRITE
     );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::COMMON,
+        vk::AccessFlags2::MEMORY_READ | vk::AccessFlags2::MEMORY_WRITE
+    );
 
     out
 }
