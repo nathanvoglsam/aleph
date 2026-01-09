@@ -470,7 +470,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             BVec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
         let mut barrier_groups = BVec::with_capacity_in(3, self.arena.allocator());
 
-        if !buffer_barriers.is_empty() {
+        if !global_barriers.is_empty() {
             for barrier in global_barriers {
                 translated_global_barriers.push(D3D12_GLOBAL_BARRIER {
                     SyncBefore: barrier_sync_to_dx12(barrier.before_sync),
