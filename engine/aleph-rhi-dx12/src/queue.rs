@@ -59,7 +59,7 @@ pub struct Queue {
     pub(crate) submit_lock: Mutex<()>,
 
     /// A special fence used specifically for tracking the work that is in-flight on this queue.
-    /// This is signalled and waited using submission indices.
+    /// This is signaled and waited using submission indices.
     pub(crate) fence: ID3D12Fence,
 
     /// The index of the most recent submission to the queue.
@@ -132,19 +132,19 @@ impl Queue {
         }
     }
 
-    /// Inserts a Signal operation onto the ID3D12Queue that signals self.fence with the ID of the
+    /// Inserts a Signal operation onto the ID3D12Queue that signals 'self.fence' with the ID of the
     /// most recent submission. This is part of our queue work tracking and is needed to implement
     /// wait_idle as D3D12 doesn't provide a magic 'wait_idle' function like Vulkan does with
     /// vkQueueWaitIdle.
     ///
-    /// This is intended to be used in queue submissions to flag self.fence to be signalled when
+    /// This is intended to be used in queue submissions to flag 'self.fence' to be signaled when
     /// the submission is complete.
     ///
     /// # Safety
     ///
     /// It is the caller's responsibility to ensure that 'last_submitted_index' is only ever
     /// monotonically increased. This calls ID3D12Queue::Signal with self.fence. An ID3D12Fence's
-    /// counter must always be signalled monotonically.
+    /// counter must always be signaled monotonically.
     ///
     /// This function can't trigger the condition on its own, as it uses a fetch_add to acquire the
     /// signal value and never decrements the index, but requires the caller to ensure they never
@@ -193,11 +193,11 @@ impl IQueue for Queue {
         // the queue's value
         //
         // Like in 'wait_idle' we need an atomic CAS loop to uphold monotonicity guarantees. There
-        // is a window between the GetCompletedValue call and the atomic store for thread
-        // preemption to allow another thread to write in a newer 'GetCompletedValue' with a
-        // higher index before the initial thread gets a chance to write its lower index. Eventually
-        // the initial thread will get execution back and overwrite the higher index with the lower
-        // index it captured before being preempted.
+        // is a window between GetCompletedValue and the atomic store for thread preemption to allow
+        // another thread to write in a newer 'GetCompletedValue' with a higher index before the
+        // initial thread gets a chance to write its lower index. Eventually the initial thread will
+        // get execution back and overwrite the higher index with the lower index it captured before
+        // being preempted.
         //
         // Atomics are 'fun'.
         let last_completed = loop {
@@ -240,8 +240,8 @@ impl IQueue for Queue {
                     // get dropped. We destroy the Box<CommandList> because it also contains
                     // a back reference to device.
                     //
-                    // If we store it inside device then we create a reference cycle and we'll
-                    // leak Device. Not great...
+                    // If we store it inside device then we create a reference cycle and leak
+                    // Device. Not great...
                     let list = FreeCommandList {
                         allocator: list.allocator,
                         list: list.list,
@@ -283,7 +283,7 @@ impl IQueue for Queue {
             //
             // By using a compare_exchange we can check if 'last_completed_index' is still the value
             // we captured before 'SetEventOnCompletion'. If another thread has changed this from
-            // underneath us we just try again until the thread 'wins' the race.
+            // underneath us, we just try again until the thread 'wins' the race.
             //
             // This could theoretically cause wait_idle to loop indefinitely if the above race
             // condition occurs repeatedly, but in practice it will never happen once let alone
@@ -403,23 +403,20 @@ impl IQueue for Queue {
             // either.
             let _lock = self.submit_lock.lock();
 
-            let flags = if swap_state
-                .dxgi_flags
-                .contains(DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING)
-            {
-                DXGI_PRESENT_ALLOW_TEARING
-            } else {
-                DXGI_PRESENT::default()
+            let (flags, sync_interval) = match swap_state.config.present_mode {
+                PresentationMode::Immediate => (DXGI_PRESENT_ALLOW_TEARING, 0),
+                PresentationMode::Mailbox => (DXGI_PRESENT::default(), 0),
+                PresentationMode::Fifo => (DXGI_PRESENT::default(), 1),
             };
             let presentation_params = DXGI_PRESENT_PARAMETERS {
                 DirtyRectsCount: 0,
-                pDirtyRects: std::ptr::null_mut(),
-                pScrollRect: std::ptr::null_mut(),
-                pScrollOffset: std::ptr::null_mut(),
+                pDirtyRects: ptr::null_mut(),
+                pScrollRect: ptr::null_mut(),
+                pScrollOffset: ptr::null_mut(),
             };
             swap_chain
                 .swap_chain
-                .Present1(0, flags, &presentation_params)
+                .Present1(sync_interval, flags, &presentation_params)
                 .ok()
                 .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
                 .map_err(|_| QueuePresentError::Platform)?;

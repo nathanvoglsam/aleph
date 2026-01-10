@@ -116,7 +116,7 @@ impl IAdapter for Adapter {
         let adapter = self.adapter.lock();
 
         // Create the actual d3d12 device
-        let device = create_device(adapter.deref(), D3D_FEATURE_LEVEL_11_0)
+        let device = create_device(adapter.deref(), D3D_FEATURE_LEVEL_12_1)
             .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
             .map_err(|_| RequestDeviceError::Platform)?;
 
