@@ -102,6 +102,14 @@ impl ISwapChain for SwapChain {
             let out_config = {
                 let mut state = self.inner.lock();
 
+                let display_sync = match state.config.present_mode {
+                    PresentationMode::Immediate => false,
+                    PresentationMode::Mailbox => true,
+                    PresentationMode::Fifo => true,
+                };
+                log::debug!("Setting CAMetalLayer 'displaySyncEnabled' to {}", display_sync);
+                self.objects.layer.setDisplaySyncEnabled(display_sync);
+
                 log::debug!(
                     "Setting CAMetalLayer 'drawableSize' to ({}, {})",
                     new_size.width,
