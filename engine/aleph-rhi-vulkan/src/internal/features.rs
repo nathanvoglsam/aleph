@@ -50,7 +50,7 @@ impl<T: CheckMeetsProfile + CreateProfile> CheckMeetsMinimum for T {
 }
 
 macro_rules! delegate {
-    ($base:ident, $compare:ident, $v:ident) => {
+    ($base:ident, $compare:ident, $status:ident, $v:ident) => {
         let text = stringify!($v);
         let b = &$base.$v;
         let c = &$compare.$v;
@@ -62,7 +62,7 @@ macro_rules! delegate {
                 c,
                 b
             );
-            return None;
+            $status = None;
         }
     };
 }
@@ -74,11 +74,11 @@ macro_rules! merge_delegate {
 }
 
 macro_rules! feat {
-    ($base:ident, $compare:ident, $v:ident) => {
+    ($base:ident, $compare:ident, $status:ident, $v:ident) => {
         let text = stringify!($v);
         if $compare.$v == vk::TRUE && $base.$v != vk::TRUE {
             log::error!("Device does not support feature: '{}'", text);
-            return None;
+            $status = None;
         }
     };
 }
@@ -92,7 +92,7 @@ macro_rules! merge_feat {
 }
 
 macro_rules! feat_mask {
-    ($base:ident, $compare:ident, $v:ident) => {
+    ($base:ident, $compare:ident, $status:ident, $v:ident) => {
         let b = $base.$v;
         let c = $compare.$v;
         let t = stringify!($v);
@@ -103,7 +103,7 @@ macro_rules! feat_mask {
                 c,
                 b
             );
-            return None;
+            $status = None;
         }
     };
 }
@@ -115,7 +115,7 @@ macro_rules! merge_feat_mask {
 }
 
 macro_rules! range {
-    ($base:ident, $compare:ident, $v:ident) => {{
+    ($base:ident, $compare:ident, $status:ident, $v:ident) => {{
         let limit_name = stringify!($v);
         let b = &$base.$v;
         let c = &$compare.$v;
@@ -125,7 +125,7 @@ macro_rules! range {
                 c,
                 b
             );
-            return None;
+            $status = None;
         }
     }};
 }
@@ -144,13 +144,13 @@ macro_rules! merge_range {
 }
 
 macro_rules! lmin {
-    ($base:ident, $compare:ident, $v:ident) => {{
+    ($base:ident, $compare:ident, $status:ident, $v:ident) => {{
         let limit_name = stringify!($v);
         let limit = $base.$v;
         let min = $compare.$v;
         if limit < min {
             log::error!("Device limit '{limit_name}' too low. Want: {min}, got {limit}");
-            return None;
+            $status = None;
         }
     }};
 }
@@ -164,7 +164,7 @@ macro_rules! merge_lmin {
 }
 
 macro_rules! lmin_arr {
-    ($base:ident, $compare:ident, $v:ident) => {{
+    ($base:ident, $compare:ident, $status:ident, $v:ident) => {{
         let limit_name = stringify!($v);
         let limit = &$base.$v;
         let min = &$compare.$v;
@@ -175,7 +175,7 @@ macro_rules! lmin_arr {
                     min,
                     limit
                 );
-                return None;
+                $status = None;
             }
         }
     }};
@@ -197,13 +197,13 @@ macro_rules! merge_lmin_arr {
 }
 
 macro_rules! lmax {
-    ($base:ident, $compare:ident, $v:ident) => {{
+    ($base:ident, $compare:ident, $status:ident, $v:ident) => {{
         let limit_name = stringify!($v);
         let limit = $base.$v;
         let max = $compare.$v;
         if limit > max {
             log::error!("Device limit '{limit_name}' too high. Want: {max}, got {limit}");
-            return None;
+            $status = None;
         }
     }};
 }
@@ -237,113 +237,114 @@ macro_rules! merge_lmax {
 impl CheckMeetsProfile for vk::PhysicalDeviceLimits {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        lmin!(self, v, max_image_dimension1_d);
-        lmin!(self, v, max_image_dimension2_d);
-        lmin!(self, v, max_image_dimension3_d);
-        lmin!(self, v, max_image_dimension_cube);
-        lmin!(self, v, max_image_array_layers);
-        lmin!(self, v, max_texel_buffer_elements);
-        lmin!(self, v, max_uniform_buffer_range);
-        lmin!(self, v, max_storage_buffer_range);
-        lmin!(self, v, max_push_constants_size);
-        lmin!(self, v, max_memory_allocation_count);
-        lmin!(self, v, max_sampler_allocation_count);
-        lmax!(self, v, buffer_image_granularity);
-        lmin!(self, v, sparse_address_space_size);
-        lmin!(self, v, max_bound_descriptor_sets);
-        lmin!(self, v, max_per_stage_descriptor_samplers);
-        lmin!(self, v, max_per_stage_descriptor_uniform_buffers);
-        lmin!(self, v, max_per_stage_descriptor_storage_buffers);
-        lmin!(self, v, max_per_stage_descriptor_sampled_images);
-        lmin!(self, v, max_per_stage_descriptor_storage_images);
-        lmin!(self, v, max_per_stage_descriptor_input_attachments);
-        lmin!(self, v, max_per_stage_resources);
-        lmin!(self, v, max_descriptor_set_samplers);
-        lmin!(self, v, max_descriptor_set_uniform_buffers);
-        lmin!(self, v, max_descriptor_set_uniform_buffers_dynamic);
-        lmin!(self, v, max_descriptor_set_storage_buffers);
-        lmin!(self, v, max_descriptor_set_storage_buffers_dynamic);
-        lmin!(self, v, max_descriptor_set_sampled_images);
-        lmin!(self, v, max_descriptor_set_storage_images);
-        lmin!(self, v, max_descriptor_set_input_attachments);
-        lmin!(self, v, max_vertex_input_attributes);
-        lmin!(self, v, max_vertex_input_bindings);
-        lmin!(self, v, max_vertex_input_attribute_offset);
-        lmin!(self, v, max_vertex_input_binding_stride);
-        lmin!(self, v, max_vertex_output_components);
-        lmin!(self, v, max_tessellation_generation_level);
-        lmin!(self, v, max_tessellation_patch_size);
-        lmin!(self, v, max_tessellation_control_per_vertex_input_components);
-        lmin!(self, v, max_tessellation_control_per_vertex_output_components);
-        lmin!(self, v, max_tessellation_control_per_patch_output_components);
-        lmin!(self, v, max_tessellation_control_total_output_components);
-        lmin!(self, v, max_tessellation_evaluation_input_components);
-        lmin!(self, v, max_tessellation_evaluation_output_components);
-        lmin!(self, v, max_geometry_shader_invocations);
-        lmin!(self, v, max_geometry_input_components);
-        lmin!(self, v, max_geometry_output_components);
-        lmin!(self, v, max_geometry_output_vertices);
-        lmin!(self, v, max_geometry_total_output_components);
-        lmin!(self, v, max_fragment_input_components);
-        lmin!(self, v, max_fragment_output_attachments);
-        lmin!(self, v, max_fragment_dual_src_attachments);
-        lmin!(self, v, max_fragment_combined_output_resources);
-        lmin!(self, v, max_compute_shared_memory_size);
-        lmin_arr!(self, v, max_compute_work_group_count);
-        lmin!(self, v, max_compute_work_group_invocations);
-        lmin_arr!(self, v, max_compute_work_group_size);
-        lmin!(self, v, sub_pixel_precision_bits);
-        lmin!(self, v, sub_texel_precision_bits);
-        lmin!(self, v, mipmap_precision_bits);
-        lmin!(self, v, max_draw_indexed_index_value);
-        lmin!(self, v, max_draw_indirect_count);
-        lmin!(self, v, max_sampler_lod_bias);
-        lmin!(self, v, max_sampler_anisotropy);
-        lmin!(self, v, max_viewports);
-        lmin_arr!(self, v, max_viewport_dimensions);
-        range!(self, v, viewport_bounds_range);
-        lmin!(self, v, viewport_sub_pixel_bits);
-        lmax!(self, v, min_memory_map_alignment);
-        lmax!(self, v, min_texel_buffer_offset_alignment);
-        lmax!(self, v, min_uniform_buffer_offset_alignment);
-        lmax!(self, v, min_storage_buffer_offset_alignment);
-        lmax!(self, v, min_texel_offset);
-        lmin!(self, v, max_texel_offset);
-        lmax!(self, v, min_texel_gather_offset);
-        lmin!(self, v, max_texel_gather_offset);
-        lmax!(self, v, min_interpolation_offset);
-        lmin!(self, v, max_interpolation_offset);
-        lmin!(self, v, sub_pixel_interpolation_offset_bits);
-        lmin!(self, v, max_framebuffer_width);
-        lmin!(self, v, max_framebuffer_height);
-        lmin!(self, v, max_framebuffer_layers);
-        feat_mask!(self, v, framebuffer_color_sample_counts);
-        feat_mask!(self, v, framebuffer_depth_sample_counts);
-        feat_mask!(self, v, framebuffer_stencil_sample_counts);
-        feat_mask!(self, v, framebuffer_no_attachments_sample_counts);
-        lmin!(self, v, max_color_attachments);
-        feat_mask!(self, v, sampled_image_color_sample_counts);
-        feat_mask!(self, v, sampled_image_integer_sample_counts);
-        feat_mask!(self, v, sampled_image_depth_sample_counts);
-        feat_mask!(self, v, sampled_image_stencil_sample_counts);
-        feat_mask!(self, v, storage_image_sample_counts);
-        lmin!(self, v, max_sample_mask_words);
-        feat!(self, v, timestamp_compute_and_graphics);
-        lmax!(self, v, timestamp_period);
-        lmin!(self, v, max_clip_distances);
-        lmin!(self, v, max_cull_distances);
-        lmin!(self, v, max_combined_clip_and_cull_distances);
-        lmin!(self, v, discrete_queue_priorities);
-        range!(self, v, point_size_range);
-        range!(self, v, line_width_range);
-        lmax!(self, v, point_size_granularity);
-        lmax!(self, v, line_width_granularity);
-        feat!(self, v, strict_lines);
-        feat!(self, v, standard_sample_locations);
-        lmax!(self, v, optimal_buffer_copy_offset_alignment);
-        lmax!(self, v, optimal_buffer_copy_row_pitch_alignment);
-        lmax!(self, v, non_coherent_atom_size);
-        Some(())
+        let mut s = Some(());
+        lmin!(self, v, s, max_image_dimension1_d);
+        lmin!(self, v, s, max_image_dimension2_d);
+        lmin!(self, v, s, max_image_dimension3_d);
+        lmin!(self, v, s, max_image_dimension_cube);
+        lmin!(self, v, s, max_image_array_layers);
+        lmin!(self, v, s, max_texel_buffer_elements);
+        lmin!(self, v, s, max_uniform_buffer_range);
+        lmin!(self, v, s, max_storage_buffer_range);
+        lmin!(self, v, s, max_push_constants_size);
+        lmin!(self, v, s, max_memory_allocation_count);
+        lmin!(self, v, s, max_sampler_allocation_count);
+        lmax!(self, v, s, buffer_image_granularity);
+        lmin!(self, v, s, sparse_address_space_size);
+        lmin!(self, v, s, max_bound_descriptor_sets);
+        lmin!(self, v, s, max_per_stage_descriptor_samplers);
+        lmin!(self, v, s, max_per_stage_descriptor_uniform_buffers);
+        lmin!(self, v, s, max_per_stage_descriptor_storage_buffers);
+        lmin!(self, v, s, max_per_stage_descriptor_sampled_images);
+        lmin!(self, v, s, max_per_stage_descriptor_storage_images);
+        lmin!(self, v, s, max_per_stage_descriptor_input_attachments);
+        lmin!(self, v, s, max_per_stage_resources);
+        lmin!(self, v, s, max_descriptor_set_samplers);
+        lmin!(self, v, s, max_descriptor_set_uniform_buffers);
+        lmin!(self, v, s, max_descriptor_set_uniform_buffers_dynamic);
+        lmin!(self, v, s, max_descriptor_set_storage_buffers);
+        lmin!(self, v, s, max_descriptor_set_storage_buffers_dynamic);
+        lmin!(self, v, s, max_descriptor_set_sampled_images);
+        lmin!(self, v, s, max_descriptor_set_storage_images);
+        lmin!(self, v, s, max_descriptor_set_input_attachments);
+        lmin!(self, v, s, max_vertex_input_attributes);
+        lmin!(self, v, s, max_vertex_input_bindings);
+        lmin!(self, v, s, max_vertex_input_attribute_offset);
+        lmin!(self, v, s, max_vertex_input_binding_stride);
+        lmin!(self, v, s, max_vertex_output_components);
+        lmin!(self, v, s, max_tessellation_generation_level);
+        lmin!(self, v, s, max_tessellation_patch_size);
+        lmin!(self, v, s, max_tessellation_control_per_vertex_input_components);
+        lmin!(self, v, s, max_tessellation_control_per_vertex_output_components);
+        lmin!(self, v, s, max_tessellation_control_per_patch_output_components);
+        lmin!(self, v, s, max_tessellation_control_total_output_components);
+        lmin!(self, v, s, max_tessellation_evaluation_input_components);
+        lmin!(self, v, s, max_tessellation_evaluation_output_components);
+        lmin!(self, v, s, max_geometry_shader_invocations);
+        lmin!(self, v, s, max_geometry_input_components);
+        lmin!(self, v, s, max_geometry_output_components);
+        lmin!(self, v, s, max_geometry_output_vertices);
+        lmin!(self, v, s, max_geometry_total_output_components);
+        lmin!(self, v, s, max_fragment_input_components);
+        lmin!(self, v, s, max_fragment_output_attachments);
+        lmin!(self, v, s, max_fragment_dual_src_attachments);
+        lmin!(self, v, s, max_fragment_combined_output_resources);
+        lmin!(self, v, s, max_compute_shared_memory_size);
+        lmin_arr!(self, v, s, max_compute_work_group_count);
+        lmin!(self, v, s, max_compute_work_group_invocations);
+        lmin_arr!(self, v, s, max_compute_work_group_size);
+        lmin!(self, v, s, sub_pixel_precision_bits);
+        lmin!(self, v, s, sub_texel_precision_bits);
+        lmin!(self, v, s, mipmap_precision_bits);
+        lmin!(self, v, s, max_draw_indexed_index_value);
+        lmin!(self, v, s, max_draw_indirect_count);
+        lmin!(self, v, s, max_sampler_lod_bias);
+        lmin!(self, v, s, max_sampler_anisotropy);
+        lmin!(self, v, s, max_viewports);
+        lmin_arr!(self, v, s, max_viewport_dimensions);
+        range!(self, v, s, viewport_bounds_range);
+        lmin!(self, v, s, viewport_sub_pixel_bits);
+        lmax!(self, v, s, min_memory_map_alignment);
+        lmax!(self, v, s, min_texel_buffer_offset_alignment);
+        lmax!(self, v, s, min_uniform_buffer_offset_alignment);
+        lmax!(self, v, s, min_storage_buffer_offset_alignment);
+        lmax!(self, v, s, min_texel_offset);
+        lmin!(self, v, s, max_texel_offset);
+        lmax!(self, v, s, min_texel_gather_offset);
+        lmin!(self, v, s, max_texel_gather_offset);
+        lmax!(self, v, s, min_interpolation_offset);
+        lmin!(self, v, s, max_interpolation_offset);
+        lmin!(self, v, s, sub_pixel_interpolation_offset_bits);
+        lmin!(self, v, s, max_framebuffer_width);
+        lmin!(self, v, s, max_framebuffer_height);
+        lmin!(self, v, s, max_framebuffer_layers);
+        feat_mask!(self, v, s, framebuffer_color_sample_counts);
+        feat_mask!(self, v, s, framebuffer_depth_sample_counts);
+        feat_mask!(self, v, s, framebuffer_stencil_sample_counts);
+        feat_mask!(self, v, s, framebuffer_no_attachments_sample_counts);
+        lmin!(self, v, s, max_color_attachments);
+        feat_mask!(self, v, s, sampled_image_color_sample_counts);
+        feat_mask!(self, v, s, sampled_image_integer_sample_counts);
+        feat_mask!(self, v, s, sampled_image_depth_sample_counts);
+        feat_mask!(self, v, s, sampled_image_stencil_sample_counts);
+        feat_mask!(self, v, s, storage_image_sample_counts);
+        lmin!(self, v, s, max_sample_mask_words);
+        feat!(self, v, s, timestamp_compute_and_graphics);
+        lmax!(self, v, s, timestamp_period);
+        lmin!(self, v, s, max_clip_distances);
+        lmin!(self, v, s, max_cull_distances);
+        lmin!(self, v, s, max_combined_clip_and_cull_distances);
+        lmin!(self, v, s, discrete_queue_priorities);
+        range!(self, v, s, point_size_range);
+        range!(self, v, s, line_width_range);
+        lmax!(self, v, s, point_size_granularity);
+        lmax!(self, v, s, line_width_granularity);
+        feat!(self, v, s, strict_lines);
+        feat!(self, v, s, standard_sample_locations);
+        lmax!(self, v, s, optimal_buffer_copy_offset_alignment);
+        lmax!(self, v, s, optimal_buffer_copy_row_pitch_alignment);
+        lmax!(self, v, s, non_coherent_atom_size);
+        s
     }
 
     #[rustfmt::skip]
@@ -460,12 +461,13 @@ impl CheckMeetsProfile for vk::PhysicalDeviceLimits {
 impl CheckMeetsProfile for vk::PhysicalDeviceSparseProperties {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, residency_standard2_d_block_shape);
-        feat!(self, v, residency_standard2_d_multisample_block_shape);
-        feat!(self, v, residency_standard3_d_block_shape);
-        feat!(self, v, residency_aligned_mip_size);
-        feat!(self, v, residency_non_resident_strict);
-        Some(())
+        let mut s = Some(());
+        feat!(self, v, s, residency_standard2_d_block_shape);
+        feat!(self, v, s, residency_standard2_d_multisample_block_shape);
+        feat!(self, v, s, residency_standard3_d_block_shape);
+        feat!(self, v, s, residency_aligned_mip_size);
+        feat!(self, v, s, residency_non_resident_strict);
+        s
     }
 
     #[rustfmt::skip]
@@ -480,6 +482,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceSparseProperties {
 
 impl CheckMeetsProfile for vk::PhysicalDeviceProperties {
     fn meets_profile(&self, v: &Self) -> Option<()> {
+        let mut s = Some(());
         let major_version = vk::api_version_major(self.api_version);
         let wanted_major_version = vk::api_version_major(v.api_version);
         if major_version < wanted_major_version {
@@ -488,7 +491,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceProperties {
                 Wanted {wanted_major_version}.x. \
                 Got {major_version}.x"
             );
-            return None;
+            s = None;
         }
 
         let minor_version = vk::api_version_minor(self.api_version);
@@ -499,12 +502,21 @@ impl CheckMeetsProfile for vk::PhysicalDeviceProperties {
                 Wanted {wanted_major_version}.{wanted_minor_version}. \
                 Got {major_version}.{minor_version}"
             );
-            return None;
+            s = None;
         }
 
-        self.limits.meets_profile(&v.limits)?;
-        self.sparse_properties.meets_profile(&v.sparse_properties)?;
-        Some(())
+        if self.limits.meets_profile(&v.limits).is_none() {
+            s = None;
+        }
+        if self
+            .sparse_properties
+            .meets_profile(&v.sparse_properties)
+            .is_none()
+        {
+            s = None;
+        }
+
+        s
     }
 
     fn merge(&mut self, v: &Self) {
@@ -569,17 +581,18 @@ impl CheckMeetsProfile for vk::PhysicalDeviceProperties {
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan11Properties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        lmin!(self, v, subgroup_size);
-        feat_mask!(self, v, subgroup_supported_stages);
-        feat_mask!(self, v, subgroup_supported_operations);
-        feat!(self, v, subgroup_quad_operations_in_all_stages);
-        delegate!(self, v, point_clipping_behavior);
-        lmin!(self, v, max_multiview_view_count);
-        lmin!(self, v, max_multiview_instance_index);
-        feat!(self, v, protected_no_fault);
-        lmin!(self, v, max_per_set_descriptors);
-        lmin!(self, v, max_memory_allocation_size);
-        Some(())
+        let mut s = Some(());
+        lmin!(self, v, s, subgroup_size);
+        feat_mask!(self, v, s, subgroup_supported_stages);
+        feat_mask!(self, v, s, subgroup_supported_operations);
+        feat!(self, v, s, subgroup_quad_operations_in_all_stages);
+        delegate!(self, v, s, point_clipping_behavior);
+        lmin!(self, v, s, max_multiview_view_count);
+        lmin!(self, v, s, max_multiview_instance_index);
+        feat!(self, v, s, protected_no_fault);
+        lmin!(self, v, s, max_per_set_descriptors);
+        lmin!(self, v, s, max_memory_allocation_size);
+        s
     }
 
     #[rustfmt::skip]
@@ -611,56 +624,57 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceIDProperties<'a> {
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan12Properties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        delegate!(self, v, conformance_version);
-        delegate!(self, v, denorm_behavior_independence);
-        delegate!(self, v, rounding_mode_independence);
-        feat!(self, v, shader_signed_zero_inf_nan_preserve_float16);
-        feat!(self, v, shader_signed_zero_inf_nan_preserve_float32);
-        feat!(self, v, shader_signed_zero_inf_nan_preserve_float64);
-        feat!(self, v, shader_denorm_preserve_float16);
-        feat!(self, v, shader_denorm_preserve_float32);
-        feat!(self, v, shader_denorm_preserve_float64);
-        feat!(self, v, shader_denorm_flush_to_zero_float16);
-        feat!(self, v, shader_denorm_flush_to_zero_float32);
-        feat!(self, v, shader_denorm_flush_to_zero_float64);
-        feat!(self, v, shader_rounding_mode_rte_float16);
-        feat!(self, v, shader_rounding_mode_rte_float32);
-        feat!(self, v, shader_rounding_mode_rte_float64);
-        feat!(self, v, shader_rounding_mode_rtz_float16);
-        feat!(self, v, shader_rounding_mode_rtz_float32);
-        feat!(self, v, shader_rounding_mode_rtz_float64);
-        lmin!(self, v, max_update_after_bind_descriptors_in_all_pools);
-        feat!(self, v, shader_uniform_buffer_array_non_uniform_indexing_native);
-        feat!(self, v, shader_sampled_image_array_non_uniform_indexing_native);
-        feat!(self, v, shader_storage_buffer_array_non_uniform_indexing_native);
-        feat!(self, v, shader_storage_image_array_non_uniform_indexing_native);
-        feat!(self, v, shader_input_attachment_array_non_uniform_indexing_native);
-        feat!(self, v, robust_buffer_access_update_after_bind);
-        feat!(self, v, quad_divergent_implicit_lod);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_samplers);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_uniform_buffers);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_storage_buffers);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_sampled_images);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_storage_images);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_input_attachments);
-        lmin!(self, v, max_per_stage_update_after_bind_resources);
-        lmin!(self, v, max_descriptor_set_update_after_bind_samplers);
-        lmin!(self, v, max_descriptor_set_update_after_bind_uniform_buffers);
-        lmin!(self, v, max_descriptor_set_update_after_bind_uniform_buffers_dynamic);
-        lmin!(self, v, max_descriptor_set_update_after_bind_storage_buffers);
-        lmin!(self, v, max_descriptor_set_update_after_bind_storage_buffers_dynamic);
-        lmin!(self, v, max_descriptor_set_update_after_bind_sampled_images);
-        lmin!(self, v, max_descriptor_set_update_after_bind_storage_images);
-        lmin!(self, v, max_descriptor_set_update_after_bind_input_attachments);
-        feat_mask!(self, v, supported_depth_resolve_modes);
-        feat_mask!(self, v, supported_stencil_resolve_modes);
-        feat!(self, v, independent_resolve_none);
-        feat!(self, v, independent_resolve);
-        feat!(self, v, filter_minmax_single_component_formats);
-        feat!(self, v, filter_minmax_image_component_mapping);
-        lmin!(self, v, max_timeline_semaphore_value_difference);
-        feat_mask!(self, v, framebuffer_integer_color_sample_counts);
-        Some(())
+        let mut s = Some(());
+        delegate!(self, v, s, conformance_version);
+        delegate!(self, v, s, denorm_behavior_independence);
+        delegate!(self, v, s, rounding_mode_independence);
+        feat!(self, v, s, shader_signed_zero_inf_nan_preserve_float16);
+        feat!(self, v, s, shader_signed_zero_inf_nan_preserve_float32);
+        feat!(self, v, s, shader_signed_zero_inf_nan_preserve_float64);
+        feat!(self, v, s, shader_denorm_preserve_float16);
+        feat!(self, v, s, shader_denorm_preserve_float32);
+        feat!(self, v, s, shader_denorm_preserve_float64);
+        feat!(self, v, s, shader_denorm_flush_to_zero_float16);
+        feat!(self, v, s, shader_denorm_flush_to_zero_float32);
+        feat!(self, v, s, shader_denorm_flush_to_zero_float64);
+        feat!(self, v, s, shader_rounding_mode_rte_float16);
+        feat!(self, v, s, shader_rounding_mode_rte_float32);
+        feat!(self, v, s, shader_rounding_mode_rte_float64);
+        feat!(self, v, s, shader_rounding_mode_rtz_float16);
+        feat!(self, v, s, shader_rounding_mode_rtz_float32);
+        feat!(self, v, s, shader_rounding_mode_rtz_float64);
+        lmin!(self, v, s, max_update_after_bind_descriptors_in_all_pools);
+        feat!(self, v, s, shader_uniform_buffer_array_non_uniform_indexing_native);
+        feat!(self, v, s, shader_sampled_image_array_non_uniform_indexing_native);
+        feat!(self, v, s, shader_storage_buffer_array_non_uniform_indexing_native);
+        feat!(self, v, s, shader_storage_image_array_non_uniform_indexing_native);
+        feat!(self, v, s, shader_input_attachment_array_non_uniform_indexing_native);
+        feat!(self, v, s, robust_buffer_access_update_after_bind);
+        feat!(self, v, s, quad_divergent_implicit_lod);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_samplers);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_uniform_buffers);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_storage_buffers);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_sampled_images);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_storage_images);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_input_attachments);
+        lmin!(self, v, s, max_per_stage_update_after_bind_resources);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_samplers);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_uniform_buffers);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_uniform_buffers_dynamic);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_storage_buffers);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_storage_buffers_dynamic);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_sampled_images);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_storage_images);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_input_attachments);
+        feat_mask!(self, v, s, supported_depth_resolve_modes);
+        feat_mask!(self, v, s, supported_stencil_resolve_modes);
+        feat!(self, v, s, independent_resolve_none);
+        feat!(self, v, s, independent_resolve);
+        feat!(self, v, s, filter_minmax_single_component_formats);
+        feat!(self, v, s, filter_minmax_image_component_mapping);
+        lmin!(self, v, s, max_timeline_semaphore_value_difference);
+        feat_mask!(self, v, s, framebuffer_integer_color_sample_counts);
+        s
     }
 
     #[rustfmt::skip]
@@ -720,52 +734,53 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan12Properties<'a> {
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan13Properties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        lmax!(self, v, min_subgroup_size);
-        lmin!(self, v, max_subgroup_size);
-        lmin!(self, v, max_compute_workgroup_subgroups);
-        feat_mask!(self, v, required_subgroup_size_stages);
-        lmin!(self, v, max_inline_uniform_block_size);
-        lmin!(self, v, max_per_stage_descriptor_inline_uniform_blocks);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_inline_uniform_blocks);
-        lmin!(self, v, max_descriptor_set_inline_uniform_blocks);
-        lmin!(self, v, max_descriptor_set_update_after_bind_inline_uniform_blocks);
-        lmin!(self, v, max_inline_uniform_total_size);
-        feat!(self, v, integer_dot_product8_bit_unsigned_accelerated);
-        feat!(self, v, integer_dot_product8_bit_signed_accelerated);
-        feat!(self, v, integer_dot_product8_bit_mixed_signedness_accelerated);
-        feat!(self, v, integer_dot_product4x8_bit_packed_unsigned_accelerated);
-        feat!(self, v, integer_dot_product4x8_bit_packed_signed_accelerated);
-        feat!(self, v, integer_dot_product4x8_bit_packed_mixed_signedness_accelerated);
-        feat!(self, v, integer_dot_product16_bit_unsigned_accelerated);
-        feat!(self, v, integer_dot_product16_bit_signed_accelerated);
-        feat!(self, v, integer_dot_product16_bit_mixed_signedness_accelerated);
-        feat!(self, v, integer_dot_product32_bit_unsigned_accelerated);
-        feat!(self, v, integer_dot_product32_bit_signed_accelerated);
-        feat!(self, v, integer_dot_product32_bit_mixed_signedness_accelerated);
-        feat!(self, v, integer_dot_product64_bit_unsigned_accelerated);
-        feat!(self, v, integer_dot_product64_bit_signed_accelerated);
-        feat!(self, v, integer_dot_product64_bit_mixed_signedness_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating8_bit_unsigned_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating8_bit_signed_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating8_bit_mixed_signedness_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating4x8_bit_packed_unsigned_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating4x8_bit_packed_signed_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating4x8_bit_packed_mixed_signedness_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating16_bit_unsigned_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating16_bit_signed_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating16_bit_mixed_signedness_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating32_bit_unsigned_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating32_bit_signed_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating32_bit_mixed_signedness_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating64_bit_unsigned_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating64_bit_signed_accelerated);
-        feat!(self, v, integer_dot_product_accumulating_saturating64_bit_mixed_signedness_accelerated);
-        lmax!(self, v, storage_texel_buffer_offset_alignment_bytes);
-        feat!(self, v, storage_texel_buffer_offset_single_texel_alignment);
-        lmax!(self, v, uniform_texel_buffer_offset_alignment_bytes);
-        feat!(self, v, uniform_texel_buffer_offset_single_texel_alignment);
-        lmin!(self, v, max_buffer_size);
-        Some(())
+        let mut s = Some(());
+        lmax!(self, v, s, min_subgroup_size);
+        lmin!(self, v, s, max_subgroup_size);
+        lmin!(self, v, s, max_compute_workgroup_subgroups);
+        feat_mask!(self, v, s, required_subgroup_size_stages);
+        lmin!(self, v, s, max_inline_uniform_block_size);
+        lmin!(self, v, s, max_per_stage_descriptor_inline_uniform_blocks);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_inline_uniform_blocks);
+        lmin!(self, v, s, max_descriptor_set_inline_uniform_blocks);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_inline_uniform_blocks);
+        lmin!(self, v, s, max_inline_uniform_total_size);
+        feat!(self, v, s, integer_dot_product8_bit_unsigned_accelerated);
+        feat!(self, v, s, integer_dot_product8_bit_signed_accelerated);
+        feat!(self, v, s, integer_dot_product8_bit_mixed_signedness_accelerated);
+        feat!(self, v, s, integer_dot_product4x8_bit_packed_unsigned_accelerated);
+        feat!(self, v, s, integer_dot_product4x8_bit_packed_signed_accelerated);
+        feat!(self, v, s, integer_dot_product4x8_bit_packed_mixed_signedness_accelerated);
+        feat!(self, v, s, integer_dot_product16_bit_unsigned_accelerated);
+        feat!(self, v, s, integer_dot_product16_bit_signed_accelerated);
+        feat!(self, v, s, integer_dot_product16_bit_mixed_signedness_accelerated);
+        feat!(self, v, s, integer_dot_product32_bit_unsigned_accelerated);
+        feat!(self, v, s, integer_dot_product32_bit_signed_accelerated);
+        feat!(self, v, s, integer_dot_product32_bit_mixed_signedness_accelerated);
+        feat!(self, v, s, integer_dot_product64_bit_unsigned_accelerated);
+        feat!(self, v, s, integer_dot_product64_bit_signed_accelerated);
+        feat!(self, v, s, integer_dot_product64_bit_mixed_signedness_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating8_bit_unsigned_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating8_bit_signed_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating8_bit_mixed_signedness_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating4x8_bit_packed_unsigned_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating4x8_bit_packed_signed_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating4x8_bit_packed_mixed_signedness_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating16_bit_unsigned_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating16_bit_signed_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating16_bit_mixed_signedness_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating32_bit_unsigned_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating32_bit_signed_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating32_bit_mixed_signedness_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating64_bit_unsigned_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating64_bit_signed_accelerated);
+        feat!(self, v, s, integer_dot_product_accumulating_saturating64_bit_mixed_signedness_accelerated);
+        lmax!(self, v, s, storage_texel_buffer_offset_alignment_bytes);
+        feat!(self, v, s, storage_texel_buffer_offset_single_texel_alignment);
+        lmax!(self, v, s, uniform_texel_buffer_offset_alignment_bytes);
+        feat!(self, v, s, uniform_texel_buffer_offset_single_texel_alignment);
+        lmin!(self, v, s, max_buffer_size);
+        s
     }
 
     #[rustfmt::skip]
@@ -821,62 +836,63 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan13Properties<'a> {
 impl CheckMeetsProfile for vk::PhysicalDeviceFeatures {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, robust_buffer_access);
-        feat!(self, v, full_draw_index_uint32);
-        feat!(self, v, image_cube_array);
-        feat!(self, v, independent_blend);
-        feat!(self, v, geometry_shader);
-        feat!(self, v, tessellation_shader);
-        feat!(self, v, sample_rate_shading);
-        feat!(self, v, dual_src_blend);
-        feat!(self, v, logic_op);
-        feat!(self, v, multi_draw_indirect);
-        feat!(self, v, draw_indirect_first_instance);
-        feat!(self, v, depth_clamp);
-        feat!(self, v, depth_bias_clamp);
-        feat!(self, v, fill_mode_non_solid);
-        feat!(self, v, depth_bounds);
-        feat!(self, v, wide_lines);
-        feat!(self, v, large_points);
-        feat!(self, v, alpha_to_one);
-        feat!(self, v, multi_viewport);
-        feat!(self, v, sampler_anisotropy);
-        feat!(self, v, texture_compression_etc2);
-        feat!(self, v, texture_compression_astc_ldr);
-        feat!(self, v, texture_compression_bc);
-        feat!(self, v, occlusion_query_precise);
-        feat!(self, v, pipeline_statistics_query);
-        feat!(self, v, vertex_pipeline_stores_and_atomics);
-        feat!(self, v, fragment_stores_and_atomics);
-        feat!(self, v, shader_tessellation_and_geometry_point_size);
-        feat!(self, v, shader_image_gather_extended);
-        feat!(self, v, shader_storage_image_extended_formats);
-        feat!(self, v, shader_storage_image_multisample);
-        feat!(self, v, shader_storage_image_read_without_format);
-        feat!(self, v, shader_storage_image_write_without_format);
-        feat!(self, v, shader_uniform_buffer_array_dynamic_indexing);
-        feat!(self, v, shader_sampled_image_array_dynamic_indexing);
-        feat!(self, v, shader_storage_buffer_array_dynamic_indexing);
-        feat!(self, v, shader_storage_image_array_dynamic_indexing);
-        feat!(self, v, shader_clip_distance);
-        feat!(self, v, shader_cull_distance);
-        feat!(self, v, shader_float64);
-        feat!(self, v, shader_int64);
-        feat!(self, v, shader_int16);
-        feat!(self, v, shader_resource_residency);
-        feat!(self, v, shader_resource_min_lod);
-        feat!(self, v, sparse_binding);
-        feat!(self, v, sparse_residency_buffer);
-        feat!(self, v, sparse_residency_image2_d);
-        feat!(self, v, sparse_residency_image3_d);
-        feat!(self, v, sparse_residency2_samples);
-        feat!(self, v, sparse_residency4_samples);
-        feat!(self, v, sparse_residency8_samples);
-        feat!(self, v, sparse_residency16_samples);
-        feat!(self, v, sparse_residency_aliased);
-        feat!(self, v, variable_multisample_rate);
-        feat!(self, v, inherited_queries);
-        Some(())
+        let mut s = Some(());
+        feat!(self, v, s, robust_buffer_access);
+        feat!(self, v, s, full_draw_index_uint32);
+        feat!(self, v, s, image_cube_array);
+        feat!(self, v, s, independent_blend);
+        feat!(self, v, s, geometry_shader);
+        feat!(self, v, s, tessellation_shader);
+        feat!(self, v, s, sample_rate_shading);
+        feat!(self, v, s, dual_src_blend);
+        feat!(self, v, s, logic_op);
+        feat!(self, v, s, multi_draw_indirect);
+        feat!(self, v, s, draw_indirect_first_instance);
+        feat!(self, v, s, depth_clamp);
+        feat!(self, v, s, depth_bias_clamp);
+        feat!(self, v, s, fill_mode_non_solid);
+        feat!(self, v, s, depth_bounds);
+        feat!(self, v, s, wide_lines);
+        feat!(self, v, s, large_points);
+        feat!(self, v, s, alpha_to_one);
+        feat!(self, v, s, multi_viewport);
+        feat!(self, v, s, sampler_anisotropy);
+        feat!(self, v, s, texture_compression_etc2);
+        feat!(self, v, s, texture_compression_astc_ldr);
+        feat!(self, v, s, texture_compression_bc);
+        feat!(self, v, s, occlusion_query_precise);
+        feat!(self, v, s, pipeline_statistics_query);
+        feat!(self, v, s, vertex_pipeline_stores_and_atomics);
+        feat!(self, v, s, fragment_stores_and_atomics);
+        feat!(self, v, s, shader_tessellation_and_geometry_point_size);
+        feat!(self, v, s, shader_image_gather_extended);
+        feat!(self, v, s, shader_storage_image_extended_formats);
+        feat!(self, v, s, shader_storage_image_multisample);
+        feat!(self, v, s, shader_storage_image_read_without_format);
+        feat!(self, v, s, shader_storage_image_write_without_format);
+        feat!(self, v, s, shader_uniform_buffer_array_dynamic_indexing);
+        feat!(self, v, s, shader_sampled_image_array_dynamic_indexing);
+        feat!(self, v, s, shader_storage_buffer_array_dynamic_indexing);
+        feat!(self, v, s, shader_storage_image_array_dynamic_indexing);
+        feat!(self, v, s, shader_clip_distance);
+        feat!(self, v, s, shader_cull_distance);
+        feat!(self, v, s, shader_float64);
+        feat!(self, v, s, shader_int64);
+        feat!(self, v, s, shader_int16);
+        feat!(self, v, s, shader_resource_residency);
+        feat!(self, v, s, shader_resource_min_lod);
+        feat!(self, v, s, sparse_binding);
+        feat!(self, v, s, sparse_residency_buffer);
+        feat!(self, v, s, sparse_residency_image2_d);
+        feat!(self, v, s, sparse_residency_image3_d);
+        feat!(self, v, s, sparse_residency2_samples);
+        feat!(self, v, s, sparse_residency4_samples);
+        feat!(self, v, s, sparse_residency8_samples);
+        feat!(self, v, s, sparse_residency16_samples);
+        feat!(self, v, s, sparse_residency_aliased);
+        feat!(self, v, s, variable_multisample_rate);
+        feat!(self, v, s, inherited_queries);
+        s
     }
 
     #[rustfmt::skip]
@@ -942,19 +958,20 @@ impl CheckMeetsProfile for vk::PhysicalDeviceFeatures {
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan11Features<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, storage_buffer16_bit_access);
-        feat!(self, v, uniform_and_storage_buffer16_bit_access);
-        feat!(self, v, storage_push_constant16);
-        feat!(self, v, storage_input_output16);
-        feat!(self, v, multiview);
-        feat!(self, v, multiview_geometry_shader);
-        feat!(self, v, multiview_tessellation_shader);
-        feat!(self, v, variable_pointers_storage_buffer);
-        feat!(self, v, variable_pointers);
-        feat!(self, v, protected_memory);
-        feat!(self, v, sampler_ycbcr_conversion);
-        feat!(self, v, shader_draw_parameters);
-        Some(())
+        let mut s = Some(());
+        feat!(self, v, s, storage_buffer16_bit_access);
+        feat!(self, v, s, uniform_and_storage_buffer16_bit_access);
+        feat!(self, v, s, storage_push_constant16);
+        feat!(self, v, s, storage_input_output16);
+        feat!(self, v, s, multiview);
+        feat!(self, v, s, multiview_geometry_shader);
+        feat!(self, v, s, multiview_tessellation_shader);
+        feat!(self, v, s, variable_pointers_storage_buffer);
+        feat!(self, v, s, variable_pointers);
+        feat!(self, v, s, protected_memory);
+        feat!(self, v, s, sampler_ycbcr_conversion);
+        feat!(self, v, s, shader_draw_parameters);
+        s
     }
 
     #[rustfmt::skip]
@@ -977,11 +994,12 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan11Features<'a> {
 impl<'a> CheckMeetsProfile for vk::PhysicalDevice16BitStorageFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, storage_buffer16_bit_access);
-        feat!(self, v, uniform_and_storage_buffer16_bit_access);
-        feat!(self, v, storage_push_constant16);
-        feat!(self, v, storage_input_output16);
-        Some(())
+        let mut s = Some(());
+        feat!(self, v, s, storage_buffer16_bit_access);
+        feat!(self, v, s, uniform_and_storage_buffer16_bit_access);
+        feat!(self, v, s, storage_push_constant16);
+        feat!(self, v, s, storage_input_output16);
+        s
     }
 
     #[rustfmt::skip]
@@ -996,10 +1014,11 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDevice16BitStorageFeatures<'a> {
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceMultiviewFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, multiview);
-        feat!(self, v, multiview_geometry_shader);
-        feat!(self, v, multiview_tessellation_shader);
-        Some(())
+        let mut s = Some(());
+        feat!(self, v, s, multiview);
+        feat!(self, v, s, multiview_geometry_shader);
+        feat!(self, v, s, multiview_tessellation_shader);
+        s
     }
 
     #[rustfmt::skip]
@@ -1013,9 +1032,10 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceMultiviewFeatures<'a> {
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVariablePointersFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, variable_pointers_storage_buffer);
-        feat!(self, v, variable_pointers);
-        Some(())
+        let mut s = Some(());
+        feat!(self, v, s, variable_pointers_storage_buffer);
+        feat!(self, v, s, variable_pointers);
+        s
     }
 
     #[rustfmt::skip]
@@ -1028,8 +1048,9 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVariablePointersFeatures<'a> {
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceProtectedMemoryFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, protected_memory);
-        Some(())
+        let mut s = Some(());
+        feat!(self, v, s, protected_memory);
+        s
     }
 
     #[rustfmt::skip]
@@ -1041,8 +1062,9 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceProtectedMemoryFeatures<'a> {
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceSamplerYcbcrConversionFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, sampler_ycbcr_conversion);
-        Some(())
+        let mut s = Some(());
+        feat!(self, v, s, sampler_ycbcr_conversion);
+        s
     }
 
     #[rustfmt::skip]
@@ -1054,8 +1076,9 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceSamplerYcbcrConversionFeatures<
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceShaderDrawParametersFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, shader_draw_parameters);
-        Some(())
+        let mut s = Some(());
+        feat!(self, v, s, shader_draw_parameters);
+        s
     }
 
     #[rustfmt::skip]
@@ -1067,54 +1090,55 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceShaderDrawParametersFeatures<'a
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan12Features<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, sampler_mirror_clamp_to_edge);
-        feat!(self, v, draw_indirect_count);
-        feat!(self, v, storage_buffer8_bit_access);
-        feat!(self, v, uniform_and_storage_buffer8_bit_access);
-        feat!(self, v, storage_push_constant8);
-        feat!(self, v, shader_buffer_int64_atomics);
-        feat!(self, v, shader_shared_int64_atomics);
-        feat!(self, v, shader_float16);
-        feat!(self, v, shader_int8);
-        feat!(self, v, descriptor_indexing);
-        feat!(self, v, shader_input_attachment_array_dynamic_indexing);
-        feat!(self, v, shader_uniform_texel_buffer_array_dynamic_indexing);
-        feat!(self, v, shader_storage_texel_buffer_array_dynamic_indexing);
-        feat!(self, v, shader_uniform_buffer_array_non_uniform_indexing);
-        feat!(self, v, shader_sampled_image_array_non_uniform_indexing);
-        feat!(self, v, shader_storage_buffer_array_non_uniform_indexing);
-        feat!(self, v, shader_storage_image_array_non_uniform_indexing);
-        feat!(self, v, shader_input_attachment_array_non_uniform_indexing);
-        feat!(self, v, shader_uniform_texel_buffer_array_non_uniform_indexing);
-        feat!(self, v, shader_storage_texel_buffer_array_non_uniform_indexing);
-        feat!(self, v, descriptor_binding_uniform_buffer_update_after_bind);
-        feat!(self, v, descriptor_binding_sampled_image_update_after_bind);
-        feat!(self, v, descriptor_binding_storage_image_update_after_bind);
-        feat!(self, v, descriptor_binding_storage_buffer_update_after_bind);
-        feat!(self, v, descriptor_binding_uniform_texel_buffer_update_after_bind);
-        feat!(self, v, descriptor_binding_storage_texel_buffer_update_after_bind);
-        feat!(self, v, descriptor_binding_update_unused_while_pending);
-        feat!(self, v, descriptor_binding_partially_bound);
-        feat!(self, v, descriptor_binding_variable_descriptor_count);
-        feat!(self, v, runtime_descriptor_array);
-        feat!(self, v, sampler_filter_minmax);
-        feat!(self, v, scalar_block_layout);
-        feat!(self, v, imageless_framebuffer);
-        feat!(self, v, uniform_buffer_standard_layout);
-        feat!(self, v, shader_subgroup_extended_types);
-        feat!(self, v, separate_depth_stencil_layouts);
-        feat!(self, v, host_query_reset);
-        feat!(self, v, timeline_semaphore);
-        feat!(self, v, buffer_device_address);
-        feat!(self, v, buffer_device_address_capture_replay);
-        feat!(self, v, buffer_device_address_multi_device);
-        feat!(self, v, vulkan_memory_model);
-        feat!(self, v, vulkan_memory_model_device_scope);
-        feat!(self, v, vulkan_memory_model_availability_visibility_chains);
-        feat!(self, v, shader_output_viewport_index);
-        feat!(self, v, shader_output_layer);
-        feat!(self, v, subgroup_broadcast_dynamic_id);
-        Some(())
+        let mut s = Some(());
+        feat!(self, v, s, sampler_mirror_clamp_to_edge);
+        feat!(self, v, s, draw_indirect_count);
+        feat!(self, v, s, storage_buffer8_bit_access);
+        feat!(self, v, s, uniform_and_storage_buffer8_bit_access);
+        feat!(self, v, s, storage_push_constant8);
+        feat!(self, v, s, shader_buffer_int64_atomics);
+        feat!(self, v, s, shader_shared_int64_atomics);
+        feat!(self, v, s, shader_float16);
+        feat!(self, v, s, shader_int8);
+        feat!(self, v, s, descriptor_indexing);
+        feat!(self, v, s, shader_input_attachment_array_dynamic_indexing);
+        feat!(self, v, s, shader_uniform_texel_buffer_array_dynamic_indexing);
+        feat!(self, v, s, shader_storage_texel_buffer_array_dynamic_indexing);
+        feat!(self, v, s, shader_uniform_buffer_array_non_uniform_indexing);
+        feat!(self, v, s, shader_sampled_image_array_non_uniform_indexing);
+        feat!(self, v, s, shader_storage_buffer_array_non_uniform_indexing);
+        feat!(self, v, s, shader_storage_image_array_non_uniform_indexing);
+        feat!(self, v, s, shader_input_attachment_array_non_uniform_indexing);
+        feat!(self, v, s, shader_uniform_texel_buffer_array_non_uniform_indexing);
+        feat!(self, v, s, shader_storage_texel_buffer_array_non_uniform_indexing);
+        feat!(self, v, s, descriptor_binding_uniform_buffer_update_after_bind);
+        feat!(self, v, s, descriptor_binding_sampled_image_update_after_bind);
+        feat!(self, v, s, descriptor_binding_storage_image_update_after_bind);
+        feat!(self, v, s, descriptor_binding_storage_buffer_update_after_bind);
+        feat!(self, v, s, descriptor_binding_uniform_texel_buffer_update_after_bind);
+        feat!(self, v, s, descriptor_binding_storage_texel_buffer_update_after_bind);
+        feat!(self, v, s, descriptor_binding_update_unused_while_pending);
+        feat!(self, v, s, descriptor_binding_partially_bound);
+        feat!(self, v, s, descriptor_binding_variable_descriptor_count);
+        feat!(self, v, s, runtime_descriptor_array);
+        feat!(self, v, s, sampler_filter_minmax);
+        feat!(self, v, s, scalar_block_layout);
+        feat!(self, v, s, imageless_framebuffer);
+        feat!(self, v, s, uniform_buffer_standard_layout);
+        feat!(self, v, s, shader_subgroup_extended_types);
+        feat!(self, v, s, separate_depth_stencil_layouts);
+        feat!(self, v, s, host_query_reset);
+        feat!(self, v, s, timeline_semaphore);
+        feat!(self, v, s, buffer_device_address);
+        feat!(self, v, s, buffer_device_address_capture_replay);
+        feat!(self, v, s, buffer_device_address_multi_device);
+        feat!(self, v, s, vulkan_memory_model);
+        feat!(self, v, s, vulkan_memory_model_device_scope);
+        feat!(self, v, s, vulkan_memory_model_availability_visibility_chains);
+        feat!(self, v, s, shader_output_viewport_index);
+        feat!(self, v, s, shader_output_layer);
+        feat!(self, v, s, subgroup_broadcast_dynamic_id);
+        s
     }
 
     #[rustfmt::skip]
@@ -1172,22 +1196,23 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan12Features<'a> {
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan13Features<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, robust_image_access);
-        feat!(self, v, inline_uniform_block);
-        feat!(self, v, descriptor_binding_inline_uniform_block_update_after_bind);
-        feat!(self, v, pipeline_creation_cache_control);
-        feat!(self, v, private_data);
-        feat!(self, v, shader_demote_to_helper_invocation);
-        feat!(self, v, shader_terminate_invocation);
-        feat!(self, v, subgroup_size_control);
-        feat!(self, v, compute_full_subgroups);
-        feat!(self, v, synchronization2);
-        feat!(self, v, texture_compression_astc_hdr);
-        feat!(self, v, shader_zero_initialize_workgroup_memory);
-        feat!(self, v, dynamic_rendering);
-        feat!(self, v, shader_integer_dot_product);
-        feat!(self, v, maintenance4);
-        Some(())
+        let mut s = Some(());
+        feat!(self, v, s, robust_image_access);
+        feat!(self, v, s, inline_uniform_block);
+        feat!(self, v, s, descriptor_binding_inline_uniform_block_update_after_bind);
+        feat!(self, v, s, pipeline_creation_cache_control);
+        feat!(self, v, s, private_data);
+        feat!(self, v, s, shader_demote_to_helper_invocation);
+        feat!(self, v, s, shader_terminate_invocation);
+        feat!(self, v, s, subgroup_size_control);
+        feat!(self, v, s, compute_full_subgroups);
+        feat!(self, v, s, synchronization2);
+        feat!(self, v, s, texture_compression_astc_hdr);
+        feat!(self, v, s, shader_zero_initialize_workgroup_memory);
+        feat!(self, v, s, dynamic_rendering);
+        feat!(self, v, s, shader_integer_dot_product);
+        feat!(self, v, s, maintenance4);
+        s
     }
 
     #[rustfmt::skip]
@@ -1213,30 +1238,31 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan13Features<'a> {
 impl<'a> CheckMeetsProfile for vk::PhysicalDeviceDescriptorIndexingProperties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        lmin!(self, v, max_update_after_bind_descriptors_in_all_pools);
-        feat!(self, v, shader_uniform_buffer_array_non_uniform_indexing_native);
-        feat!(self, v, shader_sampled_image_array_non_uniform_indexing_native);
-        feat!(self, v, shader_storage_buffer_array_non_uniform_indexing_native);
-        feat!(self, v, shader_storage_image_array_non_uniform_indexing_native);
-        feat!(self, v, shader_input_attachment_array_non_uniform_indexing_native);
-        feat!(self, v, robust_buffer_access_update_after_bind);
-        feat!(self, v, quad_divergent_implicit_lod);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_samplers);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_uniform_buffers);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_storage_buffers);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_sampled_images);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_storage_images);
-        lmin!(self, v, max_per_stage_descriptor_update_after_bind_input_attachments);
-        lmin!(self, v, max_per_stage_update_after_bind_resources);
-        lmin!(self, v, max_descriptor_set_update_after_bind_samplers);
-        lmin!(self, v, max_descriptor_set_update_after_bind_uniform_buffers);
-        lmin!(self, v, max_descriptor_set_update_after_bind_uniform_buffers_dynamic);
-        lmin!(self, v, max_descriptor_set_update_after_bind_storage_buffers);
-        lmin!(self, v, max_descriptor_set_update_after_bind_storage_buffers_dynamic);
-        lmin!(self, v, max_descriptor_set_update_after_bind_sampled_images);
-        lmin!(self, v, max_descriptor_set_update_after_bind_storage_images);
-        lmin!(self, v, max_descriptor_set_update_after_bind_input_attachments);
-        Some(())
+        let mut s = Some(());
+        lmin!(self, v, s, max_update_after_bind_descriptors_in_all_pools);
+        feat!(self, v, s, shader_uniform_buffer_array_non_uniform_indexing_native);
+        feat!(self, v, s, shader_sampled_image_array_non_uniform_indexing_native);
+        feat!(self, v, s, shader_storage_buffer_array_non_uniform_indexing_native);
+        feat!(self, v, s, shader_storage_image_array_non_uniform_indexing_native);
+        feat!(self, v, s, shader_input_attachment_array_non_uniform_indexing_native);
+        feat!(self, v, s, robust_buffer_access_update_after_bind);
+        feat!(self, v, s, quad_divergent_implicit_lod);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_samplers);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_uniform_buffers);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_storage_buffers);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_sampled_images);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_storage_images);
+        lmin!(self, v, s, max_per_stage_descriptor_update_after_bind_input_attachments);
+        lmin!(self, v, s, max_per_stage_update_after_bind_resources);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_samplers);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_uniform_buffers);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_uniform_buffers_dynamic);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_storage_buffers);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_storage_buffers_dynamic);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_sampled_images);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_storage_images);
+        lmin!(self, v, s, max_descriptor_set_update_after_bind_input_attachments);
+        s
     }
 
     #[rustfmt::skip]
@@ -1270,8 +1296,9 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceDescriptorIndexingProperties<'a
 impl<'a> CheckMeetsProfile for vk::PhysicalDevicePortabilitySubsetPropertiesKHR<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        lmax!(self, v, min_vertex_input_binding_stride_alignment);
-        Some(())
+        let mut s = Some(());
+        lmax!(self, v, s, min_vertex_input_binding_stride_alignment);
+        s
     }
 
     #[rustfmt::skip]
@@ -1283,22 +1310,23 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDevicePortabilitySubsetPropertiesKHR<
 impl<'a> CheckMeetsProfile for vk::PhysicalDevicePortabilitySubsetFeaturesKHR<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        feat!(self, v, constant_alpha_color_blend_factors);
-        feat!(self, v, events);
-        feat!(self, v, image_view_format_reinterpretation);
-        feat!(self, v, image_view_format_swizzle);
-        feat!(self, v, image_view2_d_on3_d_image);
-        feat!(self, v, multisample_array_image);
-        feat!(self, v, mutable_comparison_samplers);
-        feat!(self, v, point_polygons);
-        feat!(self, v, sampler_mip_lod_bias);
-        feat!(self, v, separate_stencil_mask_ref);
-        feat!(self, v, shader_sample_rate_interpolation_functions);
-        feat!(self, v, tessellation_isolines);
-        feat!(self, v, tessellation_point_mode);
-        feat!(self, v, triangle_fans);
-        feat!(self, v, vertex_attribute_access_beyond_stride);
-        Some(())
+        let mut s = Some(());
+        feat!(self, v, s, constant_alpha_color_blend_factors);
+        feat!(self, v, s, events);
+        feat!(self, v, s, image_view_format_reinterpretation);
+        feat!(self, v, s, image_view_format_swizzle);
+        feat!(self, v, s, image_view2_d_on3_d_image);
+        feat!(self, v, s, multisample_array_image);
+        feat!(self, v, s, mutable_comparison_samplers);
+        feat!(self, v, s, point_polygons);
+        feat!(self, v, s, sampler_mip_lod_bias);
+        feat!(self, v, s, separate_stencil_mask_ref);
+        feat!(self, v, s, shader_sample_rate_interpolation_functions);
+        feat!(self, v, s, tessellation_isolines);
+        feat!(self, v, s, tessellation_point_mode);
+        feat!(self, v, s, triangle_fans);
+        feat!(self, v, s, vertex_attribute_access_beyond_stride);
+        s
     }
 
     #[rustfmt::skip]
@@ -1323,15 +1351,17 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDevicePortabilitySubsetFeaturesKHR<'a
 
 impl CheckMeetsProfile for vk::PointClippingBehavior {
     fn meets_profile(&self, v: &Self) -> Option<()> {
+        let mut s = Some(());
         // USER_CLIP_PLANES_ONLY is the default
 
         // ALL_CLIP_PLANES is the most capable and must match
         if *self == vk::PointClippingBehavior::ALL_CLIP_PLANES
             && *v != vk::PointClippingBehavior::ALL_CLIP_PLANES
         {
-            return None;
+            s = None;
         }
-        Some(())
+
+        s
     }
 
     fn merge(&mut self, v: &Self) {

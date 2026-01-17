@@ -193,32 +193,51 @@ impl DeviceInfo {
 
     #[rustfmt::skip]
     pub fn meets_minimum_requirements(&self) -> Option<()> {
+        let mut s = Some(());
+
         let DeviceInfo { extensions: minimum_extensions, .. } = Self::minimum();
-        let mut is_missing_required_extensions = false;
         for required in minimum_extensions {
             if !self.supports_extension_ptr(required.extension_name.as_ptr()) {
                 let v = unsafe {
                     CStr::from_ptr(required.extension_name.as_ptr()).to_str().unwrap()
                 };
                 log::error!("Device missing required extension: \"{v}\"");
-                is_missing_required_extensions = true;
+                s = None;
             }
         }
-        if is_missing_required_extensions {
-            return None;
+
+        if self.properties_10.meets_minimum().is_none() {
+            s = None;
+        }
+        if self.properties_11.meets_minimum().is_none() {
+            s = None;
+        }
+        if self.properties_12.meets_minimum().is_none() {
+            s = None;
+        }
+        if self.properties_13.meets_minimum().is_none() {
+            s = None;
+        }
+        if self.portability_properties.meets_minimum().is_none() {
+            s = None;
+        }
+        if self.features_10.meets_minimum().is_none() {
+            s = None;
+        }
+        if self.features_11.meets_minimum().is_none() {
+            s = None;
+        }
+        if self.features_12.meets_minimum().is_none() {
+            s = None;
+        }
+        if self.features_13.meets_minimum().is_none() {
+            s = None;
+        }
+        if self.portability_features.meets_minimum().is_none() {
+            s = None;
         }
 
-        self.properties_10.meets_minimum()?;
-        self.properties_11.meets_minimum()?;
-        self.properties_12.meets_minimum()?;
-        self.properties_13.meets_minimum()?;
-        self.portability_properties.meets_minimum()?;
-        self.features_10.meets_minimum()?;
-        self.features_11.meets_minimum()?;
-        self.features_12.meets_minimum()?;
-        self.features_13.meets_minimum()?;
-        self.portability_features.meets_minimum()?;
-        Some(())
+        s
     }
 
     unsafe fn list_contains_extension_ptr(
