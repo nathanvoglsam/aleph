@@ -197,10 +197,110 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
-        unsafe {
-            self.begin_rendering_dynamic(info);
-            self.arena.reset();
+        {
+            let mut color_attachments =
+                BVec::with_capacity_in(info.color_attachments.len(), self.arena.allocator());
+            for v in info.color_attachments {
+                let image_view: vk::ImageView = unsafe { std::mem::transmute(v.image_view) };
+
+                let mut info = vk::RenderingAttachmentInfo::default()
+                    .image_view(image_view)
+                    .image_layout(image_layout_to_vk(v.image_layout))
+                    .load_op(load_op_to_vk(&v.load_op))
+                    .store_op(store_op_to_vk(&v.store_op));
+
+                if let AttachmentLoadOp::Clear(v) = &v.load_op {
+                    info = info.clear_value(vk::ClearValue {
+                        color: color_clear_to_vk(v),
+                    });
+                };
+                color_attachments.push(info);
+            }
+
+            let (depth_attachment, stencil_attachment) =
+                if let Some(v) = info.depth_stencil_attachment {
+                    let image_view: vk::ImageView = unsafe { std::mem::transmute(v.image_view) };
+
+                    let depth = if let Some(ops) = &v.depth {
+                        let mut info = vk::RenderingAttachmentInfo::default()
+                            .image_view(image_view)
+                            .image_layout(image_layout_to_vk(v.image_layout))
+                            .load_op(load_op_to_vk(&ops.load_op))
+                            .store_op(store_op_to_vk(&ops.store_op));
+
+                        if let AttachmentLoadOp::Clear(v) = &ops.load_op {
+                            info = info.clear_value(vk::ClearValue {
+                                depth_stencil: vk::ClearDepthStencilValue {
+                                    depth: *v,
+                                    stencil: 0,
+                                },
+                            });
+                        };
+
+                        Some(info)
+                    } else {
+                        None
+                    };
+
+                    let stencil = if let Some(ops) = &v.stencil {
+                        let mut info = vk::RenderingAttachmentInfo::default()
+                            .image_view(image_view)
+                            .image_layout(image_layout_to_vk(v.image_layout))
+                            .load_op(load_op_to_vk(&ops.load_op))
+                            .store_op(store_op_to_vk(&ops.store_op));
+
+                        if let AttachmentLoadOp::Clear(v) = &ops.load_op {
+                            let value = vk::ClearValue {
+                                depth_stencil: vk::ClearDepthStencilValue {
+                                    depth: 0.0,
+                                    stencil: *v as u32,
+                                },
+                            };
+                            info = info.clear_value(value);
+                        };
+
+                        Some(info)
+                    } else {
+                        None
+                    };
+
+                    (depth, stencil)
+                } else {
+                    (None, None)
+                };
+
+            // Select the width/height of the first attachment we find. We require that all
+            // attachments are the same size in the API so we only need to grab the size for one of
+            // them and assume the rest are the same size.
+            //
+            // The validation layer should catch this.
+            let render_extent = {
+                vk::Extent2D {
+                    width: info.extent.width,
+                    height: info.extent.height,
+                }
+            };
+
+            let mut info = vk::RenderingInfo::default()
+                .render_area(vk::Rect2D {
+                    offset: vk::Offset2D::default(),
+                    extent: render_extent,
+                })
+                .layer_count(info.layer_count)
+                .color_attachments(&color_attachments);
+            if let Some(v) = &depth_attachment {
+                info = info.depth_attachment(v);
+            }
+            if let Some(v) = &stencil_attachment {
+                info = info.stencil_attachment(v);
+            }
+
+            unsafe {
+                self._device.device.cmd_begin_rendering(self._buffer, &info);
+            }
         }
+
+        self.arena.reset();
     }
 
     unsafe fn end_rendering(&mut self) {
@@ -348,86 +448,90 @@ impl<'a> ITransferEncoder for Encoder<'a> {
     ) {
         #![allow(non_snake_case)]
 
-        let mut translated_global_barriers =
-            BVec::with_capacity_in(global_barriers.len(), self.arena.allocator());
-        let mut translated_buffer_barriers =
-            BVec::with_capacity_in(buffer_barriers.len(), self.arena.allocator());
-        let mut translated_texture_barriers =
-            BVec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
+        {
+            let mut translated_global_barriers =
+                BVec::with_capacity_in(global_barriers.len(), self.arena.allocator());
+            let mut translated_buffer_barriers =
+                BVec::with_capacity_in(buffer_barriers.len(), self.arena.allocator());
+            let mut translated_texture_barriers =
+                BVec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
 
-        for barrier in global_barriers {
-            translated_global_barriers.push(
-                vk::MemoryBarrier2::default()
-                    .src_stage_mask(barrier_sync_to_vk(barrier.before_sync))
-                    .dst_stage_mask(barrier_sync_to_vk(barrier.after_sync))
-                    .src_access_mask(barrier_access_to_vk(barrier.before_access))
-                    .dst_access_mask(barrier_access_to_vk(barrier.after_access)),
-            );
+            for barrier in global_barriers {
+                translated_global_barriers.push(
+                    vk::MemoryBarrier2::default()
+                        .src_stage_mask(barrier_sync_to_vk(barrier.before_sync))
+                        .dst_stage_mask(barrier_sync_to_vk(barrier.after_sync))
+                        .src_access_mask(barrier_access_to_vk(barrier.before_access))
+                        .dst_access_mask(barrier_access_to_vk(barrier.after_access)),
+                );
+            }
+
+            for barrier in buffer_barriers {
+                let buffer = barrier.buffer.unwrap();
+                let buffer = Buffer::get(buffer);
+
+                let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
+                    let src_family = self._device.get_queue_family_index(transition.before_queue);
+                    let dst_family = self._device.get_queue_family_index(transition.after_queue);
+                    (src_family, dst_family)
+                } else {
+                    (0, 0)
+                };
+
+                translated_buffer_barriers.push(
+                    vk::BufferMemoryBarrier2::default()
+                        .src_stage_mask(barrier_sync_to_vk(barrier.before_sync))
+                        .dst_stage_mask(barrier_sync_to_vk(barrier.after_sync))
+                        .src_access_mask(barrier_access_to_vk(barrier.before_access))
+                        .dst_access_mask(barrier_access_to_vk(barrier.after_access))
+                        .buffer(buffer.buffer)
+                        .offset(barrier.offset)
+                        .size(barrier.size)
+                        .src_queue_family_index(src_family)
+                        .dst_queue_family_index(dst_family),
+                );
+            }
+
+            for barrier in texture_barriers {
+                // Grab the d3d12 resource handle from our texture impls
+                let texture = Texture::get(barrier.texture.unwrap());
+
+                let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
+                    let src_family = self._device.get_queue_family_index(transition.before_queue);
+                    let dst_family = self._device.get_queue_family_index(transition.after_queue);
+                    (src_family, dst_family)
+                } else {
+                    (0, 0)
+                };
+
+                translated_texture_barriers.push(
+                    vk::ImageMemoryBarrier2::default()
+                        .src_stage_mask(barrier_sync_to_vk(barrier.before_sync))
+                        .dst_stage_mask(barrier_sync_to_vk(barrier.after_sync))
+                        .src_access_mask(barrier_access_to_vk(barrier.before_access))
+                        .dst_access_mask(barrier_access_to_vk(barrier.after_access))
+                        .old_layout(image_layout_to_vk(barrier.before_layout))
+                        .new_layout(image_layout_to_vk(barrier.after_layout))
+                        .image(texture.image)
+                        .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
+                        .src_queue_family_index(src_family)
+                        .dst_queue_family_index(dst_family),
+                );
+            }
+
+            let info = vk::DependencyInfo::default()
+                .memory_barriers(&translated_global_barriers)
+                .buffer_memory_barriers(&translated_buffer_barriers)
+                .image_memory_barriers(&translated_texture_barriers);
+
+            unsafe {
+                self._device
+                    .device
+                    .cmd_pipeline_barrier2(self._buffer, &info);
+            }
         }
 
-        for barrier in buffer_barriers {
-            let buffer = barrier.buffer.unwrap();
-            let buffer = Buffer::get(buffer);
-
-            let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
-                let src_family = self._device.get_queue_family_index(transition.before_queue);
-                let dst_family = self._device.get_queue_family_index(transition.after_queue);
-                (src_family, dst_family)
-            } else {
-                (0, 0)
-            };
-
-            translated_buffer_barriers.push(
-                vk::BufferMemoryBarrier2::default()
-                    .src_stage_mask(barrier_sync_to_vk(barrier.before_sync))
-                    .dst_stage_mask(barrier_sync_to_vk(barrier.after_sync))
-                    .src_access_mask(barrier_access_to_vk(barrier.before_access))
-                    .dst_access_mask(barrier_access_to_vk(barrier.after_access))
-                    .buffer(buffer.buffer)
-                    .offset(barrier.offset)
-                    .size(barrier.size)
-                    .src_queue_family_index(src_family)
-                    .dst_queue_family_index(dst_family),
-            );
-        }
-
-        for barrier in texture_barriers {
-            // Grab the d3d12 resource handle from our texture impls
-            let texture = Texture::get(barrier.texture.unwrap());
-
-            let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
-                let src_family = self._device.get_queue_family_index(transition.before_queue);
-                let dst_family = self._device.get_queue_family_index(transition.after_queue);
-                (src_family, dst_family)
-            } else {
-                (0, 0)
-            };
-
-            translated_texture_barriers.push(
-                vk::ImageMemoryBarrier2::default()
-                    .src_stage_mask(barrier_sync_to_vk(barrier.before_sync))
-                    .dst_stage_mask(barrier_sync_to_vk(barrier.after_sync))
-                    .src_access_mask(barrier_access_to_vk(barrier.before_access))
-                    .dst_access_mask(barrier_access_to_vk(barrier.after_access))
-                    .old_layout(image_layout_to_vk(barrier.before_layout))
-                    .new_layout(image_layout_to_vk(barrier.after_layout))
-                    .image(texture.image)
-                    .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
-                    .src_queue_family_index(src_family)
-                    .dst_queue_family_index(dst_family),
-            );
-        }
-
-        let info = vk::DependencyInfo::default()
-            .memory_barriers(&translated_global_barriers)
-            .buffer_memory_barriers(&translated_buffer_barriers)
-            .image_memory_barriers(&translated_texture_barriers);
-
-        unsafe {
-            self._device
-                .device
-                .cmd_pipeline_barrier2(self._buffer, &info);
-        }
+        self.arena.reset();
     }
 
     unsafe fn copy_buffer_regions(
@@ -614,111 +718,6 @@ impl<'a> ITransferEncoder for Encoder<'a> {
     unsafe fn end_event(&mut self) {
         if let Some(loader) = self._device.debug_loader.as_ref() {
             unsafe { loader.cmd_end_debug_utils_label(self._buffer) }
-        }
-    }
-}
-
-impl<'a> Encoder<'a> {
-    unsafe fn begin_rendering_dynamic(&mut self, info: &BeginRenderingInfo) {
-        let mut color_attachments =
-            BVec::with_capacity_in(info.color_attachments.len(), self.arena.allocator());
-        for v in info.color_attachments {
-            let image_view: vk::ImageView = unsafe { std::mem::transmute(v.image_view) };
-
-            let mut info = vk::RenderingAttachmentInfo::default()
-                .image_view(image_view)
-                .image_layout(image_layout_to_vk(v.image_layout))
-                .load_op(load_op_to_vk(&v.load_op))
-                .store_op(store_op_to_vk(&v.store_op));
-
-            if let AttachmentLoadOp::Clear(v) = &v.load_op {
-                info = info.clear_value(vk::ClearValue {
-                    color: color_clear_to_vk(v),
-                });
-            };
-            color_attachments.push(info);
-        }
-
-        let (depth_attachment, stencil_attachment) = if let Some(v) = info.depth_stencil_attachment
-        {
-            let image_view: vk::ImageView = unsafe { std::mem::transmute(v.image_view) };
-
-            let depth = if let Some(ops) = &v.depth {
-                let mut info = vk::RenderingAttachmentInfo::default()
-                    .image_view(image_view)
-                    .image_layout(image_layout_to_vk(v.image_layout))
-                    .load_op(load_op_to_vk(&ops.load_op))
-                    .store_op(store_op_to_vk(&ops.store_op));
-
-                if let AttachmentLoadOp::Clear(v) = &ops.load_op {
-                    info = info.clear_value(vk::ClearValue {
-                        depth_stencil: vk::ClearDepthStencilValue {
-                            depth: *v,
-                            stencil: 0,
-                        },
-                    });
-                };
-
-                Some(info)
-            } else {
-                None
-            };
-
-            let stencil = if let Some(ops) = &v.stencil {
-                let mut info = vk::RenderingAttachmentInfo::default()
-                    .image_view(image_view)
-                    .image_layout(image_layout_to_vk(v.image_layout))
-                    .load_op(load_op_to_vk(&ops.load_op))
-                    .store_op(store_op_to_vk(&ops.store_op));
-
-                if let AttachmentLoadOp::Clear(v) = &ops.load_op {
-                    let value = vk::ClearValue {
-                        depth_stencil: vk::ClearDepthStencilValue {
-                            depth: 0.0,
-                            stencil: *v as u32,
-                        },
-                    };
-                    info = info.clear_value(value);
-                };
-
-                Some(info)
-            } else {
-                None
-            };
-
-            (depth, stencil)
-        } else {
-            (None, None)
-        };
-
-        // Select the width/height of the first attachment we find. We require that all attachments
-        // are the same size in the API so we only need to grab the size for one of them and assume
-        // the rest are the same size.
-        //
-        // The validation layer should catch this.
-        let render_extent = {
-            vk::Extent2D {
-                width: info.extent.width,
-                height: info.extent.height,
-            }
-        };
-
-        let mut info = vk::RenderingInfo::default()
-            .render_area(vk::Rect2D {
-                offset: vk::Offset2D::default(),
-                extent: render_extent,
-            })
-            .layer_count(info.layer_count)
-            .color_attachments(&color_attachments);
-        if let Some(v) = &depth_attachment {
-            info = info.depth_attachment(v);
-        }
-        if let Some(v) = &stencil_attachment {
-            info = info.stencil_attachment(v);
-        }
-
-        unsafe {
-            self._device.device.cmd_begin_rendering(self._buffer, &info);
         }
     }
 }
