@@ -1,4 +1,4 @@
-## Run from project root: pwsh -ExecutionPolicy Bypass -File .\3rdparty\build.ps1
+## Run from project root: pwsh -ExecutionPolicy Bypass -File ./3rdparty/build.ps1
 
 $StartDirectory = Resolve-Path ./
 
