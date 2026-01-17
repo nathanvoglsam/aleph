@@ -107,7 +107,10 @@ impl ISwapChain for SwapChain {
                     PresentationMode::Mailbox => true,
                     PresentationMode::Fifo => true,
                 };
-                log::debug!("Setting CAMetalLayer 'displaySyncEnabled' to {}", display_sync);
+                log::debug!(
+                    "Setting CAMetalLayer 'displaySyncEnabled' to {}",
+                    display_sync
+                );
                 self.objects.layer.setDisplaySyncEnabled(display_sync);
 
                 log::debug!(
