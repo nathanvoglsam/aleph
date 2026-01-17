@@ -36,7 +36,7 @@ use aleph_gpu_allocator::{
 use ash::vk;
 
 use crate::device::Device;
-use crate::internal::allocation_callbacks::GLOBAL_CALLBACKS;
+use crate::internal::allocation_callbacks::GLOBAL;
 
 pub struct VulkanAllocatorBridge;
 
@@ -125,8 +125,9 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
             gpu_to_cpu_t1_mask,
         );
 
+        let alloc_callbacks = GLOBAL.cloned();
         VulkanAllocatorInfo {
-            alloc_callbacks: GLOBAL_CALLBACKS,
+            alloc_callbacks,
             memory_props: properties.memory_properties,
             gpu_local_types,
             cpu_to_gpu_t0_types,
@@ -186,7 +187,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
 
             let buffer = bridge
                 .device
-                .create_buffer(&desc.desc, Some(&allocator_info.alloc_callbacks))
+                .create_buffer(&desc.desc, allocator_info.alloc_callbacks.as_ref())
                 .map_err(|_| ())?;
             bridge
                 .device
@@ -204,7 +205,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
         unsafe {
             bridge
                 .device
-                .destroy_buffer(buffer, Some(&allocator_info.alloc_callbacks));
+                .destroy_buffer(buffer, allocator_info.alloc_callbacks.as_ref());
         }
     }
 
@@ -220,7 +221,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
         unsafe {
             let buffer = bridge
                 .device
-                .create_buffer(&desc.desc, Some(&allocator_info.alloc_callbacks))
+                .create_buffer(&desc.desc, allocator_info.alloc_callbacks.as_ref())
                 .map_err(|_| ())?;
 
             let mut dedicated = vk::MemoryDedicatedAllocateInfo::default().buffer(buffer);
@@ -230,7 +231,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
                 .push_next(&mut dedicated);
             let memory = bridge
                 .device
-                .allocate_memory(&info, Some(&allocator_info.alloc_callbacks))
+                .allocate_memory(&info, allocator_info.alloc_callbacks.as_ref())
                 .map_err(|_| ())?;
 
             let mapped_address = if pool_info.mappable {
@@ -272,7 +273,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
 
             let image = bridge
                 .device
-                .create_image(&desc.desc, Some(&allocator_info.alloc_callbacks))
+                .create_image(&desc.desc, allocator_info.alloc_callbacks.as_ref())
                 .map_err(|_| ())?;
             bridge
                 .device
@@ -290,7 +291,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
         unsafe {
             bridge
                 .device
-                .destroy_image(texture, Some(&allocator_info.alloc_callbacks));
+                .destroy_image(texture, allocator_info.alloc_callbacks.as_ref());
         }
     }
 
@@ -306,7 +307,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
         unsafe {
             let image = bridge
                 .device
-                .create_image(&desc.desc, Some(&allocator_info.alloc_callbacks))
+                .create_image(&desc.desc, allocator_info.alloc_callbacks.as_ref())
                 .map_err(|_| ())?;
 
             let mut dedicated = vk::MemoryDedicatedAllocateInfo::default().image(image);
@@ -316,7 +317,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
                 .push_next(&mut dedicated);
             let memory = bridge
                 .device
-                .allocate_memory(&info, Some(&allocator_info.alloc_callbacks))
+                .allocate_memory(&info, allocator_info.alloc_callbacks.as_ref())
                 .map_err(|_| ())?;
 
             let mapped_address = if pool_info.mappable {
@@ -355,7 +356,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
                 .memory_type_index(pool_info.memory_type_index);
             let memory = bridge
                 .device
-                .allocate_memory(&info, Some(&allocator_info.alloc_callbacks))
+                .allocate_memory(&info, allocator_info.alloc_callbacks.as_ref())
                 .ok()?;
 
             let mapped_address = if pool_info.mappable {
@@ -382,7 +383,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
         unsafe {
             bridge
                 .device
-                .free_memory(block.memory, Some(&allocator_info.alloc_callbacks));
+                .free_memory(block.memory, allocator_info.alloc_callbacks.as_ref());
             block.memory = vk::DeviceMemory::null();
         };
     }
@@ -571,7 +572,7 @@ fn find_first_memory_type_in_subset(required_types: u32, search_set: u32) -> Opt
 }
 
 pub struct VulkanAllocatorInfo {
-    alloc_callbacks: vk::AllocationCallbacks<'static>,
+    alloc_callbacks: Option<vk::AllocationCallbacks<'static>>,
     memory_props: vk::PhysicalDeviceMemoryProperties,
     gpu_local_types: u32,
     cpu_to_gpu_t0_types: u32,
