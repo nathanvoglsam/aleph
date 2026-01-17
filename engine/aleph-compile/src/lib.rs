@@ -31,8 +31,6 @@ extern crate aleph_target_build as target;
 
 use std::path::{Path, PathBuf};
 
-use target::{Architecture, Platform};
-
 ///
 /// Where to place build artifacts like .dll or .so files for this build. This will always be inside
 /// cargo's `target` directory.
@@ -140,41 +138,35 @@ pub fn copy_file_to_target_dir_with_name(source: &Path, name: &str) -> std::io::
     Ok(())
 }
 
-pub fn standard_binary_path_for(platform: Platform, architecture: Architecture) -> Option<PathBuf> {
-    assert!(!architecture.is_unknown());
+/// Attempt to locate the root '.aleph' directory for the aleph project we are building.
+///
+/// Recursively searches from [`cargo_out_dir`] all the way to the root directory.
+///
+/// # Panic
+///
+/// Will panic if no '.aleph' is found.
+pub fn dot_aleph_path() -> PathBuf {
+    let mut cursor = cargo_out_dir();
+    loop {
+        // Did we find a .aleph?
+        let maybe_dot_aleph = cursor.join(".aleph");
+        if maybe_dot_aleph.is_dir() {
+            // Yes, return it!
+            return maybe_dot_aleph;
+        }
 
-    match platform {
-        Platform::WindowsGNU | Platform::WindowsMSVC => {
-            let vendor = "win32";
-            let abi = if platform.is_gnu() { "gnu" } else { "msvc" };
+        // Otherwise try and go to a parent directory and look there instead
+        if let Some(parent) = cursor.parent() {
+            cursor = parent.to_owned();
+            continue;
+        }
 
-            let mut out = PathBuf::new();
-            out.push(architecture.name());
-            out.push(vendor);
-            out.push(abi);
-
-            Some(out)
-        }
-        Platform::Linux => {
-            // Note: Shipping binaries for linux sucks. In practice we'll probably never use this
-            //       but for the sake of completness we include this anyway.
-            let mut out = PathBuf::new();
-            out.push(architecture.name());
-            out.push("linux");
-            Some(out)
-        }
-        Platform::MacOS => {
-            let mut out = PathBuf::new();
-            out.push(architecture.name());
-            out.push("macos");
-            Some(out)
-        }
-        Platform::IOS => {
-            let mut out = PathBuf::new();
-            out.push(architecture.name());
-            out.push("ios");
-            Some(out)
-        }
-        Platform::Unknown => None,
+        // We reach this if we've gone all the way
+        panic!("Could not find '.aleph' directory");
     }
+}
+
+/// Gets the path to the '.aleph/deps' folder that the aleph project is being built in the scope of.
+pub fn deps_path() -> PathBuf {
+    dot_aleph_path().join("deps")
 }

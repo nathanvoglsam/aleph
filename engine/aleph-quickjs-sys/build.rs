@@ -30,8 +30,6 @@
 extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
 
-use std::path::PathBuf;
-
 use target::Platform;
 
 ///
@@ -40,18 +38,14 @@ use target::Platform;
 ///
 fn main() {
     let target_platform = target::build::target_platform();
-    let target_arch = target::build::target_architecture();
 
-    let mut binary_path = PathBuf::new();
-    binary_path.push("QuickJSNG-builds");
-    binary_path.push("out");
-    binary_path.push(compile::standard_binary_path_for(target_platform, target_arch).unwrap());
+    let deps_install_path = compile::deps_path().join("install");
 
-    let mut lib_path = binary_path.join("lib");
+    let mut lib_path = deps_install_path.join("lib");
     if !lib_path.exists() {
         // Because GNU likes to be difficult with their standard paths sometimes we get this
         // rubbish. I love making build logic more complicated!!!!
-        lib_path = binary_path.join("lib64");
+        lib_path = deps_install_path.join("lib64");
     }
 
     match target_platform {

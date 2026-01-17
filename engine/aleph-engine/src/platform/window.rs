@@ -186,8 +186,6 @@ impl Window {
                 use raw_window_handle::{AppKitWindowHandle, UiKitWindowHandle};
                 use sdl3::sys::metal::{SDL_Metal_CreateView, SDL_Metal_GetLayer};
 
-                // TODO: to move to 'VK_EXT_metal_surface' in the future we'll need to share the
-                //       CAMetalLayer from SDL_Metal_GetLayer instead of the NSView.
                 let window_handle = window.window_handle().unwrap();
                 let (window_handle, metal_layer) = match window_handle.as_raw() {
                     RawWindowHandle::AppKit(_) => {

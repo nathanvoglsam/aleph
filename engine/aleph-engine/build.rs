@@ -30,8 +30,6 @@
 extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
 
-use std::path::PathBuf;
-
 use target::Platform;
 
 ///
@@ -39,19 +37,15 @@ use target::Platform;
 /// target platforms.
 ///
 fn main() {
+    let deps_install_path = compile::deps_path().join("install");
+
     println!("cargo::rerun-if-changed=src");
-    println!("cargo::rerun-if-changed=SDL3-builds");
+    println!("cargo::rerun-if-changed={}", deps_install_path.display());
 
     let target_platform = target::build::target_platform();
-    let target_arch = target::build::target_architecture();
 
-    let mut binary_path = PathBuf::new();
-    binary_path.push("SDL3-builds");
-    binary_path.push("out");
-    binary_path.push(compile::standard_binary_path_for(target_platform, target_arch).unwrap());
-
-    let bin_path = binary_path.join("bin");
-    let lib_path = binary_path.join("lib");
+    let bin_path = deps_install_path.join("bin");
+    let lib_path = deps_install_path.join("lib");
 
     // On windows the .dll is found in the 'bin' directory. On unix-likes the .so/.dylib is found in
     // the 'lib' directory. Handle it here so everything can be common code (except iOS).
@@ -87,7 +81,7 @@ fn main() {
             // the search path, the sdl3 crate handles the linker directives.
             println!(
                 "cargo:rustc-link-search=framework={}",
-                binary_path.canonicalize().unwrap().display()
+                lib_path.canonicalize().unwrap().display()
             );
             todo!();
         }
