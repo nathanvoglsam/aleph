@@ -16,6 +16,7 @@ Set-Location $BuildDirectory
 cmake -G "Ninja" `
     -DCMAKE_INSTALL_PREFIX="$InstallDirectory" `
     -DCMAKE_BUILD_TYPE="Release" `
+    -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE `
     $ThirdPartyDirectory
 
 cmake --build ./ --config Release

@@ -37,9 +37,10 @@ use target::Platform;
 /// target platforms.
 ///
 fn main() {
-    let target_platform = target::build::target_platform();
-
     let deps_install_path = compile::deps_path().join("install");
+
+    println!("cargo::rerun-if-changed=src");
+    println!("cargo::rerun-if-changed={}", deps_install_path.display());
 
     let mut lib_path = deps_install_path.join("lib");
     if !lib_path.exists() {
@@ -48,6 +49,7 @@ fn main() {
         lib_path = deps_install_path.join("lib64");
     }
 
+    let target_platform = target::build::target_platform();
     match target_platform {
         Platform::WindowsGNU
         | Platform::WindowsMSVC
