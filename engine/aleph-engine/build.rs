@@ -43,17 +43,7 @@ fn main() {
 
     let target_platform = Platform::build_target();
 
-    let bin_path = deps_install_path.join("bin");
     let lib_path = deps_install_path.join("lib");
-
-    // On windows the .dll is found in the 'bin' directory. On unix-likes the .so/.dylib is found in
-    // the 'lib' directory. Handle it here so everything can be common code (except iOS).
-    let dll_name = dll_name(target_platform);
-    let dll_path = if target_platform.is_windows() {
-        bin_path.join(dll_name)
-    } else {
-        lib_path.join(dll_name)
-    };
 
     match target_platform {
         Platform::WindowsGNU | Platform::WindowsMSVC => {
@@ -61,12 +51,23 @@ fn main() {
                 "cargo:rustc-link-search=native={}",
                 lib_path.canonicalize().unwrap().display()
             );
-            println!("cargo:rustc-link-lib=dylib=SDL3");
+            println!("cargo:rustc-link-lib=static=SDL3-static");
 
-            compile::copy_file_to_artifacts_dir(&dll_path)
-                .expect("Failed to copy SDL3 dll to artifacts dir");
-            compile::copy_file_to_target_dir(&dll_path)
-                .expect("Failed to copy SDL3 dll to target dir");
+            // Hand unrolled from the generated pkg-config. These are the dependencies of
+            // SDL3 that we must link to as well.
+            println!("cargo:rustc-link-lib=kernel32");
+            println!("cargo:rustc-link-lib=user32");
+            println!("cargo:rustc-link-lib=gdi32");
+            println!("cargo:rustc-link-lib=winmm");
+            println!("cargo:rustc-link-lib=imm32");
+            println!("cargo:rustc-link-lib=ole32");
+            println!("cargo:rustc-link-lib=oleaut32");
+            println!("cargo:rustc-link-lib=version");
+            println!("cargo:rustc-link-lib=uuid");
+            println!("cargo:rustc-link-lib=advapi32");
+            println!("cargo:rustc-link-lib=setupapi");
+            println!("cargo:rustc-link-lib=shell32");
+            println!("cargo:rustc-link-lib=dinput8");
         }
         Platform::MacOS => {
             println!(
@@ -75,7 +76,7 @@ fn main() {
             );
             println!("cargo:rustc-link-lib=static=SDL3");
 
-            // Hand unrolled from the generated pkg-config. These are the private dependencies of
+            // Hand unrolled from the generated pkg-config. These are the dependencies of
             // SDL3 that we must link to as well.
             println!("cargo:rustc-link-lib=framework=CoreMedia");
             println!("cargo:rustc-link-lib=framework=CoreVideo");
@@ -112,18 +113,5 @@ fn main() {
         Platform::Unknown => {
             // Do nothing on 'unknown' as a safe default.
         }
-    }
-}
-
-///
-/// Gets the name of the dll/so file that will need to be copied around
-///
-const fn dll_name(platform: Platform) -> &'static str {
-    match platform {
-        Platform::WindowsGNU | Platform::WindowsMSVC => "SDL3.dll",
-        Platform::Linux => "libSDL3.so",
-        Platform::MacOS => "libSDL3.0.dylib",
-        Platform::IOS => "",
-        Platform::Unknown => "",
     }
 }

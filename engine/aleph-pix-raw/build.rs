@@ -34,16 +34,15 @@ fn main() {}
 fn main() {
     use std::path::Path;
 
-    use aleph_target_build::Architecture;
-    use aleph_target_build::build::{target_architecture, target_platform};
+    use aleph_target::{Architecture, Platform};
 
-    if !target_platform().is_windows() {
+    if !Platform::build_target().is_windows() {
         // This script should do nothing if we're building for windows
         return;
     }
 
     // Whether we should link to WinPixEventRuntime depends on whether we used the no-op shim or not
-    let should_link = if target_platform().is_gnu() {
+    let should_link = if Platform::build_target().is_gnu() {
         cc::Build::new()
             .cpp(true)
             .link_lib_modifier("-bundle")
@@ -63,7 +62,7 @@ fn main() {
     };
 
     if should_link {
-        let arch = match target_architecture() {
+        let arch = match Architecture::build_target() {
             Architecture::X8664 => "x64",
             Architecture::AARCH64 => "ARM64",
             Architecture::Unknown => panic!("Unknown architecture"),
