@@ -27,28 +27,13 @@
 // SOFTWARE.
 //
 
-use aleph_target_build::build::target_platform;
+use aleph_target::Platform;
 
 pub fn add_platform_flags() {
-    if target_platform().is_windows() {
+    if Platform::build_target().is_windows() {
         compile_and_link_windows_resource_file();
         aleph_dx12_agility_sdk::link_agility_symbol_def();
         aleph_dx12_agility_sdk::extract_agility_sdk_binaries();
-    }
-
-    aleph_target_build::build::target_build_config().print_target_cargo_cfg();
-    aleph_target_build::build::target_build_type().print_target_cargo_cfg();
-
-    if target_platform().is_macos() {
-        println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path");
-    }
-
-    if target_platform().is_ios() {
-        println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path/Frameworks");
-    }
-
-    if target_platform().is_linux() {
-        println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
     }
 }
 

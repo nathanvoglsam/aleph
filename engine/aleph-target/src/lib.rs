@@ -27,96 +27,45 @@
 // SOFTWARE.
 //
 
-extern crate aleph_target_build as aleph_target;
+#![cfg_attr(not(feature = "development-build"), windows_subsystem = "windows")]
 
-pub use aleph_target::{
-    Architecture, BuildType, Platform, Profile, get_architecture_from, get_platform_from,
-    recreate_triple,
-};
+mod architecture;
+mod build_config;
+mod build_type;
+mod platform;
 
-pub mod build {
-    ///
-    /// Returns the host platform. Always returns [aleph_target::Platform::Unknown]
-    ///
-    /// # Warning
-    ///
-    /// Doesn't actually work. Simply present so the API matches the 'build-script' version of the
-    /// crate.
-    ///
-    #[inline]
-    pub const fn host_platform() -> aleph_target::Platform {
-        aleph_target::Platform::Unknown
-    }
+mod generated {
+    include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+}
 
-    ///
-    /// Returns the host architecture. Always returns [aleph_target::Architecture::Unknown]
-    ///
-    /// # Warning
-    ///
-    /// Doesn't actually work. Simply present so the API matches the 'build-script' version of the
-    /// crate.
-    ///
-    pub const fn host_architecture() -> aleph_target::Architecture {
-        aleph_target::Architecture::Unknown
-    }
+pub use architecture::Architecture;
+pub use build_config::BuildConfig;
+pub use build_type::BuildType;
+pub use platform::Platform;
 
-    ///
-    /// Returns the target platform
-    ///
-    pub const fn target_platform() -> aleph_target::Platform {
-        if cfg!(target_os = "windows") {
-            if cfg!(target_env = "msvc") {
-                aleph_target::Platform::WindowsMSVC
-            } else if cfg!(target_env = "gnu") {
-                aleph_target::Platform::WindowsGNU
-            } else {
-                aleph_target::Platform::Unknown
-            }
-        } else if cfg!(target_os = "linux") {
-            aleph_target::Platform::Linux
-        } else if cfg!(target_os = "macos") {
-            aleph_target::Platform::MacOS
-        } else if cfg!(target_os = "ios") {
-            aleph_target::Platform::IOS
-        } else {
-            aleph_target::Platform::Unknown
-        }
-    }
-
-    ///
-    /// Returns the target architecture
-    ///
-    pub const fn target_architecture() -> aleph_target::Architecture {
-        if cfg!(target_arch = "x86_64") {
-            aleph_target::Architecture::X8664
-        } else if cfg!(target_arch = "aarch64") {
-            aleph_target::Architecture::AARCH64
-        } else {
-            aleph_target::Architecture::Unknown
-        }
-    }
-
-    ///
-    /// Returns the target build type
-    ///
-    pub const fn target_build_type() -> aleph_target::BuildType {
-        #[allow(unexpected_cfgs)]
-        if cfg!(aleph_target_build_type = "retail") {
-            aleph_target::BuildType::Retail
-        } else {
-            aleph_target::BuildType::Development
-        }
-    }
-
-    ///
-    /// Returns the target build config
-    ///
-    /// # Warning
-    ///
-    /// Only works in a build script
-    ///
-    pub fn target_build_config() -> aleph_target::BuildConfig {
-        #[allow(unexpected_cfgs)]
-        aleph_target::BuildConfig::new(cfg!(aleph_target_debug), cfg!(aleph_target_optimized))
+///
+/// Takes a platform and architecture and produces a rust target triple
+///
+/// Returns None if the triple is not a valid rust target
+///
+pub const fn recreate_triple(platform: Platform, arch: Architecture) -> Option<&'static str> {
+    match arch {
+        Architecture::X8664 => match platform {
+            Platform::WindowsGNU => Some("x86_64-pc-windows-gnu"),
+            Platform::WindowsMSVC => Some("x86_64-pc-windows-msvc"),
+            Platform::Linux => Some("x86_64-unknown-linux-gnu"),
+            Platform::MacOS => Some("x86_64-apple-darwin"),
+            Platform::IOS => Some("x86_64-apple-ios"),
+            Platform::Unknown => None,
+        },
+        Architecture::AARCH64 => match platform {
+            Platform::WindowsGNU => None,
+            Platform::WindowsMSVC => Some("aarch64-pc-windows-msvc"),
+            Platform::Linux => Some("aarch64-unknown-linux-gnu"),
+            Platform::MacOS => Some("aarch64-apple-darwin"),
+            Platform::IOS => Some("aarch64-apple-ios"),
+            Platform::Unknown => None,
+        },
+        Architecture::Unknown => None,
     }
 }

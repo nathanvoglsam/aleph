@@ -29,15 +29,14 @@
 
 use std::process::Command;
 
-use aleph_target::Profile;
-use aleph_target::build::{target_architecture, target_platform};
+use aleph_target::{Architecture, Platform};
 use anyhow::anyhow;
 use clap::{Arg, ArgAction, ArgMatches};
 
 use crate::commands::{ISubcommand, arch_arg, config_arg, platform_arg};
 use crate::project::AlephProject;
 use crate::utils::{
-    BuildPlatform, Target, architecture_from_arg, resolve_absolute_or_root_relative_path,
+    BuildPlatform, Profile, Target, architecture_from_arg, resolve_absolute_or_root_relative_path,
 };
 
 pub struct Build {}
@@ -85,7 +84,7 @@ impl ISubcommand for Build {
             return Err(anyhow!("Invalid native platform \"{}\"", platform.name()));
         }
 
-        let native_build_platform = BuildPlatform::from(target_platform());
+        let native_build_platform = BuildPlatform::from(Platform::host());
         match platform {
             p @ (BuildPlatform::Windows | BuildPlatform::MacOS | BuildPlatform::Linux)
                 if p != native_build_platform =>
@@ -126,7 +125,7 @@ impl Build {
         build_std: bool,
     ) -> anyhow::Result<()> {
         assert_eq!(
-            BuildPlatform::from(target_platform()),
+            BuildPlatform::from(Platform::host()),
             BuildPlatform::Windows,
             "It is only valid to build windows on windows"
         );
@@ -141,7 +140,7 @@ impl Build {
         build_std: bool,
     ) -> anyhow::Result<()> {
         assert_eq!(
-            BuildPlatform::from(target_platform()),
+            BuildPlatform::from(Platform::host()),
             BuildPlatform::MacOS,
             "It is only valid to build macos on macos"
         );
@@ -156,7 +155,7 @@ impl Build {
         build_std: bool,
     ) -> anyhow::Result<()> {
         assert_eq!(
-            BuildPlatform::from(target_platform()),
+            BuildPlatform::from(Platform::host()),
             BuildPlatform::Linux,
             "It is only valid to build linux on linux"
         );
@@ -265,7 +264,7 @@ fn bin_build(profile: Profile, target: Option<&str>, package: &str, build_std: b
 
 fn native_build(profile: Profile, package: &str, build_std: bool) -> Command {
     let target = build_std
-        .then(|| aleph_target::recreate_triple(target_platform(), target_architecture()).unwrap());
+        .then(|| aleph_target::recreate_triple(Platform::host(), Architecture::host()).unwrap());
     bin_build(profile, target, package, build_std)
 }
 
@@ -284,7 +283,7 @@ fn profile_args(cmd: &mut Command, profile: Profile) {
         }
         Profile::Retail => {
             cmd.arg("--profile=retail");
-            cmd.env("ALEPH_BUILD_TYPE", "Retail");
+            cmd.arg("--no-default-features");
         }
     }
 }

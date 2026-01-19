@@ -27,31 +27,45 @@
 // SOFTWARE.
 //
 
-use crate::{Architecture, Platform};
+use std::fmt::Display;
 
-///
-/// Takes a platform and architecture and produces a rust target triple
-///
-/// Returns None if the triple is not a valid rust target
-///
-pub const fn recreate_triple(platform: Platform, arch: Architecture) -> Option<&'static str> {
-    match arch {
-        Architecture::X8664 => match platform {
-            Platform::WindowsGNU => Some("x86_64-pc-windows-gnu"),
-            Platform::WindowsMSVC => Some("x86_64-pc-windows-msvc"),
-            Platform::Linux => Some("x86_64-unknown-linux-gnu"),
-            Platform::MacOS => Some("x86_64-apple-darwin"),
-            Platform::IOS => Some("x86_64-apple-ios"),
-            Platform::Unknown => None,
-        },
-        Architecture::AARCH64 => match platform {
-            Platform::WindowsGNU => None,
-            Platform::WindowsMSVC => Some("aarch64-pc-windows-msvc"),
-            Platform::Linux => Some("aarch64-unknown-linux-gnu"),
-            Platform::MacOS => Some("aarch64-apple-darwin"),
-            Platform::IOS => Some("aarch64-apple-ios"),
-            Platform::Unknown => None,
-        },
-        Architecture::Unknown => None,
+/// Enumeration of all supported build types
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum BuildType {
+    Development,
+    Retail,
+}
+
+impl BuildType {
+    /// Returns the build type the host application was compiled with.
+    pub const fn host() -> Self {
+        if cfg!(feature = "development-build") {
+            BuildType::Development
+        } else {
+            BuildType::Retail
+        }
+    }
+
+    /// Get the build type name. This is a stable, file-system friendly name that could be used in
+    /// a path segment.
+    pub const fn name(self) -> &'static str {
+        match self {
+            BuildType::Development => "development",
+            BuildType::Retail => "retail",
+        }
+    }
+
+    /// Get the build type name as a 'pretty' string intended for display to a user in an interface.
+    pub const fn pretty_name(self) -> &'static str {
+        match self {
+            BuildType::Development => "Development",
+            BuildType::Retail => "Retail",
+        }
+    }
+}
+
+impl Display for BuildType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.pretty_name())
     }
 }

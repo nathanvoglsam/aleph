@@ -52,7 +52,7 @@ fn arch() -> &'static str {
 
 fn main() {
     println!(
-        "cargo:rustc-link-search={}/external/lib/{}/",
+        "cargo:rustc-link-search=native={}/external/lib/{}/",
         std::env!("CARGO_MANIFEST_DIR"),
         arch(),
     );

@@ -42,8 +42,6 @@ build = "build.rs"
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies]
-aleph-target-build = { workspace = true }
-
-[build-dependencies]
-aleph-target-build = { workspace = true }
+[features]
+default = []
+development-build = []

@@ -27,9 +27,69 @@
 // SOFTWARE.
 //
 
-extern crate aleph_target_build as target;
+use std::path::Path;
 
 fn main() {
-    target::build::target_build_config().print_target_cargo_cfg();
-    target::build::target_build_type().print_target_cargo_cfg();
+    use std::fmt::Write;
+
+    let dst = std::env::var("OUT_DIR").unwrap();
+    let dst = Path::new(&dst).join("generated.rs");
+
+    let mut generated = String::new();
+
+    // output the whole target triple
+    let target = std::env::var("TARGET").unwrap();
+
+    // output the target architecture
+    let arch = if target.contains("x86_64") {
+        "X8664"
+    } else if target.contains("aarch64") {
+        "AARCH64"
+    } else {
+        "Unknown"
+    };
+    writeln!(
+        &mut generated,
+        "pub const ARCH: crate::Architecture = crate::Architecture::{};",
+        &arch
+    )
+    .unwrap();
+
+    // output the target platform
+    let platform = if target.contains("pc-windows") {
+        if target.contains("msvc") {
+            "WindowsMSVC"
+        } else if target.contains("gnu") {
+            "WindowsGNU"
+        } else {
+            "Unknown"
+        }
+    } else if target.contains("linux") {
+        "Linux"
+    } else if target.contains("apple-darwin") {
+        "MacOS"
+    } else if target.contains("apple-ios") {
+        "IOS"
+    } else {
+        "Unknown"
+    };
+    writeln!(
+        &mut generated,
+        "pub const PLATFORM: crate::Platform = crate::Platform::{};",
+        &platform
+    )
+    .unwrap();
+
+    // output the build configuration
+    let debug = std::env::var("DEBUG").unwrap() == "true";
+    let optimized = std::env::var("OPT_LEVEL").unwrap() != "0";
+    writeln!(
+        &mut generated,
+        "pub const CONFIG: crate::BuildConfig = crate::BuildConfig::new({debug}, {optimized});"
+    )
+    .unwrap();
+
+    std::fs::write(&dst, &generated).unwrap();
+
+    println!("cargo::rerun-if-changed=src");
 }

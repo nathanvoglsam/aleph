@@ -66,4 +66,4 @@ sdl3-sys = { workspace = true }
 aleph-windows = { workspace = true }
 
 [build-dependencies]
-aleph-target-build = { workspace = true }
+aleph-target = { workspace = true }

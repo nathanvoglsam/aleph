@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-extern crate aleph_target_build as target;
-
 use std::path::{Path, PathBuf};
 
 ///

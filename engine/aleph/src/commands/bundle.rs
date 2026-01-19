@@ -27,14 +27,13 @@
 // SOFTWARE.
 //
 
-use aleph_target::Profile;
-use aleph_target::build::target_platform;
+use aleph_target::Platform;
 use anyhow::anyhow;
 use clap::ArgMatches;
 
 use crate::commands::{ISubcommand, arch_arg, config_arg, platform_arg};
 use crate::project::AlephProject;
-use crate::utils::{BuildPlatform, Target, architecture_from_arg};
+use crate::utils::{BuildPlatform, Profile, Target, architecture_from_arg};
 
 pub struct Bundle {}
 
@@ -79,7 +78,7 @@ impl ISubcommand for Bundle {
             return Err(anyhow!("Invalid native platform \"{}\"", platform.name()));
         }
 
-        let native_build_platform = BuildPlatform::from(target_platform());
+        let native_build_platform = BuildPlatform::from(Platform::host());
         match platform {
             p @ (BuildPlatform::Windows | BuildPlatform::MacOS | BuildPlatform::Linux)
                 if p != native_build_platform =>

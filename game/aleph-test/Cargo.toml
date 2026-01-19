@@ -40,6 +40,11 @@ publish = false
 [package.metadata.aleph]
 configs = ["aleph-test", "@game"]
 
+[features]
+default = ["development-build"]
+development-build = ["aleph-target/development-build"]
+instrumentation = ["aleph-alloc/instrumentation-enabled"]
+
 [dependencies]
 aleph-alloc = { workspace = true, features = ["instrumentation-enabled"] }
 aleph-engine = { workspace = true }
@@ -50,6 +55,7 @@ aleph-device-allocators = { workspace = true }
 aleph-profile = { workspace = true, features = [] }
 aleph-ktx = { workspace = true }
 aleph-mikktspace = { workspace = true }
+aleph-target = { workspace = true, features = [] }
 
 serde = { workspace = true }
 serde_json = { workspace = true }

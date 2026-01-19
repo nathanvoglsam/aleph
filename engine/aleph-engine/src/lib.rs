@@ -53,6 +53,7 @@ use std::path::Path;
 use std::sync::LazyLock;
 
 use log::LevelFilter;
+use target::{Architecture, BuildConfig, BuildType, Platform};
 
 use crate::interfaces::plugin::IPlugin;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
@@ -167,11 +168,11 @@ impl Engine {
     fn log_engine_info() {
         let engine_name = "AlephEngine";
         let engine_version = env!("CARGO_PKG_VERSION");
-        let arch = aleph_target::build::target_architecture().name();
-        let os = aleph_target::build::target_platform().pretty_name();
-        let build = aleph_target::build::target_build_type().pretty_name();
-        let optimized = aleph_target::build::target_build_config().is_optimized();
-        let debug = aleph_target::build::target_build_config().is_debug();
+        let arch = Architecture::host().name();
+        let os = Platform::host().pretty_name();
+        let build = BuildType::host().pretty_name();
+        let optimized = BuildConfig::host().is_optimized();
+        let debug = BuildConfig::host().is_debug();
         log::info!("=== Engine Info ===");
         log::info!("Name       : {}", engine_name);
         log::info!("Version    : {}", engine_version);

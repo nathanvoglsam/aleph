@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-///
-/// Enumeration of all supported build profiles
-///
+use crate::generated;
+
+/// Description of how the host application was compiled.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct BuildConfig {
     pub(crate) debug: bool,
@@ -37,28 +37,40 @@ pub struct BuildConfig {
 }
 
 impl BuildConfig {
-    /// Constructs a new [BuildConfig] from the given parameters
+    /// Returns the build configuration the host application was compiled with.
+    pub const fn host() -> Self {
+        generated::CONFIG
+    }
+
+    /// Constructs a new [`BuildConfig`] from the given parameters.
     pub const fn new(debug: bool, optimized: bool) -> BuildConfig {
         BuildConfig { debug, optimized }
     }
 
-    /// Utility function that will output the build-script configuration to stdout that is used for
-    /// detecting the build type in the 'crate' side of the library.
-    pub fn print_target_cargo_cfg(self) {
-        println!("cargo::rustc-check-cfg=cfg(aleph_target_debug, values())");
-        println!("cargo::rustc-check-cfg=cfg(aleph_target_optimized, values())");
-        if self.debug {
-            println!("cargo:rustc-cfg=aleph_target_debug");
-        }
-        if self.optimized {
-            println!("cargo:rustc-cfg=aleph_target_optimized");
-        }
+    /// Returns the target build config that we're currently building a rust crate for.
+    ///
+    /// When called inside a `build.rs` script this will yield the target build config for the
+    /// current build. This does _not_ return the build config for the build machine itself. This
+    /// returns the platform that the compiled output is being built for.
+    ///
+    /// # Build Script
+    ///
+    /// This is only sane to use within the `build.rs` script. Use outside of build script is likely
+    /// to panic, but may return if someone defines the appropriate env vars to mimic how cargo
+    /// invokes build scripts.
+    #[inline(always)]
+    pub fn build_target() -> Self {
+        let debug = std::env::var("DEBUG").unwrap() == "true";
+        let optimized = std::env::var("OPT_LEVEL").unwrap() != "0";
+        Self::new(debug, optimized)
     }
 
+    /// Returns 'true' if the host application was compiled with debug symbols.
     pub const fn is_debug(self) -> bool {
         self.debug
     }
 
+    /// Returns 'true' if the host application was compiled with optimizations enabled.
     pub const fn is_optimized(self) -> bool {
         self.optimized
     }

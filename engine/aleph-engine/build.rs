@@ -28,9 +28,8 @@
 //
 
 extern crate aleph_compile as compile;
-extern crate aleph_target_build as target;
 
-use target::Platform;
+use aleph_target::Platform;
 
 ///
 /// Main driver for compiling SDL3, handles switching between w/e implementation is needed for the
@@ -42,7 +41,7 @@ fn main() {
     println!("cargo::rerun-if-changed=src");
     println!("cargo::rerun-if-changed={}", deps_install_path.display());
 
-    let target_platform = target::build::target_platform();
+    let target_platform = Platform::build_target();
 
     let bin_path = deps_install_path.join("bin");
     let lib_path = deps_install_path.join("lib");
@@ -57,9 +56,9 @@ fn main() {
     };
 
     match target_platform {
-        Platform::WindowsGNU | Platform::WindowsMSVC | Platform::MacOS => {
+        Platform::WindowsGNU | Platform::WindowsMSVC => {
             println!(
-                "cargo:rustc-link-search=all={}",
+                "cargo:rustc-link-search=native={}",
                 lib_path.canonicalize().unwrap().display()
             );
             println!("cargo:rustc-link-lib=dylib=SDL3");
@@ -68,6 +67,31 @@ fn main() {
                 .expect("Failed to copy SDL3 dll to artifacts dir");
             compile::copy_file_to_target_dir(&dll_path)
                 .expect("Failed to copy SDL3 dll to target dir");
+        }
+        Platform::MacOS => {
+            println!(
+                "cargo:rustc-link-search=native={}",
+                lib_path.canonicalize().unwrap().display()
+            );
+            println!("cargo:rustc-link-lib=static=SDL3");
+
+            // Hand unrolled from the generated pkg-config. These are the private dependencies of
+            // SDL3 that we must link to as well.
+            println!("cargo:rustc-link-lib=framework=CoreMedia");
+            println!("cargo:rustc-link-lib=framework=CoreVideo");
+            println!("cargo:rustc-link-lib=framework=Cocoa");
+            println!("cargo:rustc-link-lib=framework=UniformTypeIdentifiers");
+            println!("cargo:rustc-link-lib=framework=IOKit");
+            println!("cargo:rustc-link-lib=framework=ForceFeedback");
+            println!("cargo:rustc-link-lib=framework=Carbon");
+            println!("cargo:rustc-link-lib=framework=CoreAudio");
+            println!("cargo:rustc-link-lib=framework=AudioToolbox");
+            println!("cargo:rustc-link-lib=framework=AVFoundation");
+            println!("cargo:rustc-link-lib=framework=Foundation");
+            println!("cargo:rustc-link-lib=framework=GameController");
+            println!("cargo:rustc-link-lib=framework=Metal");
+            println!("cargo:rustc-link-lib=framework=QuartzCore");
+            println!("cargo:rustc-link-lib=framework=CoreHaptics");
         }
         Platform::Linux => {
             // Nothing has to be done on linux as the most sane choice is to use the system provided

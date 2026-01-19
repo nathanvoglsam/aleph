@@ -12,6 +12,10 @@ rustflags = ["-C", "target-cpu=haswell"]
 [target.i686-unknown-linux-gnu]
 rustflags = ["-C", "target-cpu=haswell"]
 
+# MacOS
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-mmacosx-version-min=15.0"]
+
 [profile.release]
 debug = true
 

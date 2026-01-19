@@ -29,6 +29,9 @@
 
 use std::fmt::Display;
 
+use crate::generated;
+
+/// Enumeration of all supported platforms
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Platform {
     WindowsGNU,
@@ -40,6 +43,54 @@ pub enum Platform {
 }
 
 impl Platform {
+    /// Returns the platform the host application was compiled for.
+    pub const fn host() -> Self {
+        generated::PLATFORM
+    }
+
+    /// Deduce the platform for a given Rust target triple.
+    #[inline]
+    pub fn from_triple(triple: &str) -> Platform {
+        let target = triple;
+        if target.contains("pc-windows") {
+            if target.contains("msvc") {
+                Platform::WindowsMSVC
+            } else if target.contains("gnu") {
+                Platform::WindowsGNU
+            } else {
+                Platform::Unknown
+            }
+        } else if target.contains("linux") {
+            Platform::Linux
+        } else if target.contains("apple-darwin") {
+            Platform::MacOS
+        } else if target.contains("apple-ios") {
+            Platform::IOS
+        } else {
+            Platform::Unknown
+        }
+    }
+
+    /// Returns the target platform that we're currently building a rust crate for.
+    ///
+    /// When called inside a `build.rs` script this will yield the target platform for the
+    /// current build. This does _not_ return the platform for the build machine itself. This
+    /// returns the platform that the compiled output is being built for.
+    ///
+    /// Under cross compilation [`Platform::host`] and [`Platform::build_target`] will _not_
+    /// match inside a build script.
+    ///
+    /// # Build Script
+    ///
+    /// This is only sane to use within the `build.rs` script. Use outside of build script is likely
+    /// to panic, but may return if someone defines the appropriate env vars to mimic how cargo
+    /// invokes build scripts.
+    #[inline(always)]
+    pub fn build_target() -> Platform {
+        let target = std::env::var("TARGET").unwrap();
+        Self::from_triple(&target)
+    }
+
     pub const fn name(self) -> &'static str {
         match self {
             Platform::WindowsGNU => "windows-gnu",
@@ -60,12 +111,6 @@ impl Platform {
             Platform::IOS => "iOS",
             Platform::Unknown => "Unknown",
         }
-    }
-
-    /// Is this platform any of the win32 (non universal) windows platforms {
-    ///
-    pub const fn is_win32(self) -> bool {
-        matches!(self, Platform::WindowsMSVC | Platform::WindowsGNU)
     }
 
     /// Is this platform any of the windows or universal windows platforms
@@ -105,27 +150,5 @@ impl Platform {
 impl Display for Platform {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.pretty_name())
-    }
-}
-
-#[inline]
-pub fn get_platform_from(triple: &str) -> Platform {
-    let target = triple;
-    if target.contains("pc-windows") {
-        if target.contains("msvc") {
-            Platform::WindowsMSVC
-        } else if target.contains("gnu") {
-            Platform::WindowsGNU
-        } else {
-            Platform::Unknown
-        }
-    } else if target.contains("linux") {
-        Platform::Linux
-    } else if target.contains("apple-darwin") {
-        Platform::MacOS
-    } else if target.contains("apple-ios") {
-        Platform::IOS
-    } else {
-        Platform::Unknown
     }
 }

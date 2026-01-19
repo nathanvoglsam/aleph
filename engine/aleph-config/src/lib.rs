@@ -37,7 +37,7 @@ use aleph_alloc::instrumentation::{
     IAllocationCategory, Instrumented, is_instrumentation_enabled, system,
 };
 use aleph_nstr::NStr;
-use aleph_target::build::{target_architecture, target_build_type, target_platform};
+use aleph_target::{Architecture, BuildType, Platform};
 use camino::{Utf8Path, Utf8PathBuf};
 use thiserror::Error;
 
@@ -255,18 +255,18 @@ impl ConfigRunner {
 
     fn setup_global_environment(context: &qjs::Context) -> Result<(), RunConfigError> {
         // Normalize GNU/MSVC
-        assert!(!target_platform().is_unknown());
-        let p_string = match target_platform() {
-            aleph_target::Platform::WindowsGNU => "windows",
-            aleph_target::Platform::WindowsMSVC => "windows",
-            _ => target_platform().name(),
+        assert!(!Platform::host().is_unknown());
+        let p_string = match Platform::host() {
+            Platform::WindowsGNU => "windows",
+            Platform::WindowsMSVC => "windows",
+            _ => Platform::host().name(),
         };
         let p_string = context.new_string(p_string)?;
 
-        assert!(!target_architecture().is_unknown());
-        let a_string = context.new_string(target_architecture().name())?;
+        assert!(!Architecture::host().is_unknown());
+        let a_string = context.new_string(Architecture::host().name())?;
 
-        let b_string = context.new_string(target_build_type().name())?;
+        let b_string = context.new_string(BuildType::host().name())?;
 
         let env = context.new_object()?;
         context.set_property_str(&env, "platform", p_string)?;

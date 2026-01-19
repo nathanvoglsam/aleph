@@ -1,7 +1,7 @@
-extern crate aleph_target_build as target;
+use aleph_target::Platform;
 
 pub fn main() {
-    let target_platform = target::build::target_platform();
+    let target_platform = Platform::build_target();
     if target_platform.is_ios() {
         println!(
             "cargo:rustc-link-search=framework={}",

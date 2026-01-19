@@ -28,9 +28,8 @@
 //
 
 extern crate aleph_compile as compile;
-extern crate aleph_target_build as target;
 
-use target::Platform;
+use aleph_target::Platform;
 
 ///
 /// Main driver for compiling luajit, handles switching between w/e implementation is needed for the
@@ -49,7 +48,7 @@ fn main() {
         lib_path = deps_install_path.join("lib64");
     }
 
-    let target_platform = target::build::target_platform();
+    let target_platform = Platform::build_target();
     match target_platform {
         Platform::WindowsGNU
         | Platform::WindowsMSVC
@@ -57,7 +56,7 @@ fn main() {
         | Platform::IOS
         | Platform::Linux => {
             println!(
-                "cargo:rustc-link-search=all={}",
+                "cargo:rustc-link-search=native={}",
                 lib_path.canonicalize().unwrap().display()
             );
             println!("cargo::rustc-link-lib=static=qjs");

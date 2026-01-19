@@ -76,7 +76,7 @@ fn main() {
         let src = Path::new(&win32_dll);
         aleph_compile::copy_file_to_artifacts_dir(src).unwrap();
         aleph_compile::copy_file_to_target_dir(src).unwrap();
-        println!("cargo:rustc-link-search=dylib={link_path_full}");
+        println!("cargo:rustc-link-search=native={link_path_full}");
         println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime");
     }
 }

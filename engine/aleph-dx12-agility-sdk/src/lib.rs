@@ -29,8 +29,7 @@
 
 use std::path::{Path, PathBuf};
 
-use aleph_target_build::Architecture;
-use aleph_target_build::build::{target_architecture, target_build_config, target_platform};
+use aleph_target::{Architecture, BuildConfig, Platform};
 
 ///
 /// This function will perform the necessary work to allow rust to export the `D3D12SDKVersion` and
@@ -66,8 +65,8 @@ pub fn link_agility_symbol_def() {
     std::fs::copy(def_location(), &def_file).unwrap();
 
     // Add the linker flag
-    if target_platform().is_windows() {
-        if target_platform().is_msvc() {
+    if Platform::build_target().is_windows() {
+        if Platform::build_target().is_msvc() {
             println!("cargo:rustc-link-arg=/DEF:{}", def_file.display());
         } else {
             println!("cargo:rustc-link-arg={}", def_file.display());
@@ -154,8 +153,8 @@ macro_rules! export_standard_agility_sdk_symbols {
 /// - `x86_64-pc-windows-msvc`
 ///
 pub fn extract_agility_sdk_binaries() {
-    if target_platform().is_windows() {
-        let arch = match target_architecture() {
+    if Platform::build_target().is_windows() {
+        let arch = match Architecture::build_target() {
             Architecture::X8664 => "x64",
             Architecture::AARCH64 => "arm64",
             Architecture::Unknown => panic!("Unknown architecture"),
@@ -171,7 +170,7 @@ pub fn extract_agility_sdk_binaries() {
         aleph_compile::copy_file_to_artifacts_dir(&layers_dll).unwrap();
         aleph_compile::copy_file_to_target_dir(&layers_dll).unwrap();
 
-        if target_build_config().is_debug() {
+        if BuildConfig::build_target().is_debug() {
             let core_pdb = bin_dir.join("D3D12Core.pdb");
             aleph_compile::copy_file_to_artifacts_dir(&core_pdb).unwrap();
             aleph_compile::copy_file_to_target_dir(&core_pdb).unwrap();

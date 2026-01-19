@@ -30,8 +30,7 @@
 use std::collections::{HashMap, HashSet};
 
 use aleph_alloc::{BVec, Blink};
-use aleph_target::build::{target_architecture, target_platform};
-use aleph_target::{Architecture, Platform, Profile};
+use aleph_target::{Architecture, Platform};
 use anyhow::{Context, anyhow};
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::semver::{Version, VersionReq};
@@ -39,7 +38,7 @@ use cargo_metadata::{DependencyKind, Package, TargetKind};
 use once_cell::sync::OnceCell;
 
 use crate::project_schema::ProjectSchema;
-use crate::utils::{Target, find_project_file};
+use crate::utils::{Profile, Target, find_project_file};
 
 /// A tuple of [`Version`] and an unwrapped [cargo_metadata::PackageId]. Unrapping the type to a str
 /// instead of a String allows avoiding extra .clone calls when building the table.
@@ -153,13 +152,13 @@ impl<'a> AlephProject<'a> {
         let mut sdk_path = dot_aleph_path.clone();
         sdk_path.push("sdk");
         sdk_path.push(sdk_platform_name());
-        sdk_path.push(target_architecture().name());
+        sdk_path.push(Architecture::host().name());
 
         let mut dxc_path = sdk_path.clone();
         dxc_path.push("dxc");
         dxc_path.push("bin");
-        if target_platform().is_windows() {
-            let arch = match target_architecture() {
+        if Platform::host().is_windows() {
+            let arch = match Architecture::host() {
                 Architecture::X8664 => "x64",
                 Architecture::AARCH64 => "arm64",
                 Architecture::Unknown => unreachable!(),
@@ -173,7 +172,7 @@ impl<'a> AlephProject<'a> {
         let mut slang_path = sdk_path.clone();
         slang_path.push("slang");
         slang_path.push("bin");
-        if target_platform().is_windows() {
+        if Platform::host().is_windows() {
             slang_path.push("slangc.exe");
         } else {
             slang_path.push("slangc");
@@ -181,7 +180,7 @@ impl<'a> AlephProject<'a> {
 
         let mut ninja_path = sdk_path.clone();
         ninja_path.push("ninja");
-        if target_platform().is_windows() {
+        if Platform::host().is_windows() {
             ninja_path.push("ninja.exe");
         } else {
             ninja_path.push("ninja");
@@ -189,10 +188,10 @@ impl<'a> AlephProject<'a> {
 
         let mut node_path = sdk_path.clone();
         node_path.push("nodejs");
-        if !target_platform().is_windows() {
+        if !Platform::host().is_windows() {
             node_path.push("bin");
         }
-        if target_platform().is_windows() {
+        if Platform::host().is_windows() {
             node_path.push("node.exe");
         } else {
             node_path.push("node");
@@ -633,7 +632,7 @@ impl<'a> AlephProject<'a> {
         let path_env = std::env::var("PATH")?;
 
         if matches!(mode, SearchMode::IncludeSystemPath) {
-            let sep = if target_platform().is_windows() {
+            let sep = if Platform::host().is_windows() {
                 ";"
             } else {
                 ":"
@@ -678,7 +677,7 @@ pub enum SearchMode {
 }
 
 fn sdk_platform_name() -> &'static str {
-    match target_platform() {
+    match Platform::host() {
         Platform::WindowsGNU => "windows",
         Platform::WindowsMSVC => "windows",
         Platform::Linux => "linux",

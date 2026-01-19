@@ -30,7 +30,6 @@
 use std::fmt::{Display, Formatter};
 
 use aleph_alloc::Blink;
-use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Platform};
 use camino::{Utf8Path, Utf8PathBuf};
 
@@ -71,7 +70,7 @@ impl BuildPlatform {
 
     /// Returns the current platform the aleph tool is running on as a [`BuildPlatform`] variant.
     pub fn native() -> BuildPlatform {
-        target_platform().into()
+        Platform::host().into()
     }
 
     pub const fn name(&self) -> &'static str {
@@ -117,7 +116,7 @@ impl Display for BuildPlatform {
 pub fn architecture_from_arg(arg: &str) -> Option<Architecture> {
     let arg = arg.to_lowercase();
     if arg == "native" {
-        Some(target_architecture())
+        Some(Architecture::host())
     } else {
         Architecture::from_name_opt(&arg)
     }
@@ -222,5 +221,56 @@ impl BumpExt for Blink {
     fn alloc_utf8_path(&self, v: &Utf8Path) -> &Utf8Path {
         let v = self.copy_str(v.as_str());
         Utf8Path::new(v)
+    }
+}
+
+/// An enumeration of all the build profiles we support for aleph engine.
+///
+/// # Profiles
+///
+/// Currently we support 3 profiles
+///
+/// - [Profile::Debug]
+///     - Just the default rust 'dev' profile. No optimizations, debug symbols on and all the debug
+///       checks enabled.
+/// - [Profile::Release]
+///     - Just the default rust 'release' profile. Full optimizations, no debug symbols and debug
+///       assertions off.
+/// - [Profile::Retail]
+///     - A custom profile designed for creating the most optimal and compact build we can. It's
+///       based on release but enables full LTO, codegen-units = 1, no incremental build,
+///       panic=abort and will strip the binary. Builds are slow, but should be the fastest running
+///       build. Not intended for regular development, use release.
+///
+/// # Warning
+///
+/// This will not be made available as a build time utility, like [crate::Architecture], as there's
+/// no rust native way to detect the profile. Trying to depend the specific profile violates rust
+/// convention to not couple to the profiles with `#if RELEASE` or `#if DEBUG` style checks, but to
+/// instead depend on feature flags like `cfg!(debug_assertions)`. This prevents code from being
+/// coupled to its build environment (hello C++). Downside is that sometimes we need more
+/// granularity than 'debug' and 'release', we need some stuff in between like 'fully optimized but
+/// with debug checks' or 'super duper slow very optimized build with LTO turned up to max'.
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum Profile {
+    /// The default 'dev' cargo build profile.
+    Debug,
+
+    /// The default 'release' cargo build profile.
+    Release,
+
+    /// Aleph's custom 'retail' cargo build profile with aggressive LTO and optimization settings.
+    Retail,
+}
+
+impl Profile {
+    #[inline]
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name {
+            "debug" => Some(Profile::Debug),
+            "release" => Some(Profile::Release),
+            "retail" => Some(Profile::Retail),
+            _ => None,
+        }
     }
 }

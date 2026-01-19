@@ -30,8 +30,7 @@
 use std::io::Write;
 
 use aleph_alloc::Blink;
-use aleph_target::build::target_platform;
-use aleph_target::{Platform, Profile};
+use aleph_target::Platform;
 use anyhow::anyhow;
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::ArgMatches;
@@ -44,7 +43,7 @@ use crate::shader_system::{
     ShaderModuleDefinition, ShaderModuleDefinitionFile, ShaderProjectContext, ShaderSubproject,
     ShaderTargetLanguage,
 };
-use crate::utils::{BuildPlatform, dunce_utf8, ninja};
+use crate::utils::{BuildPlatform, Profile, dunce_utf8, ninja};
 
 pub struct GenShaderProj {}
 
@@ -126,7 +125,7 @@ impl ToolPaths {
         };
 
         // DXC is only needed on windows
-        if target_platform().is_windows() && dxcompiler_path.is_none() {
+        if Platform::host().is_windows() && dxcompiler_path.is_none() {
             log::error!("Failed to find DXC tool!");
             return Err(anyhow!("Failed to find DXC tool!"));
         }
@@ -523,7 +522,7 @@ fn write_imports(output: &mut impl std::fmt::Write, indent: &str) -> std::fmt::R
 }
 
 fn dxcompiler_library() -> &'static Utf8Path {
-    match target_platform() {
+    match Platform::host() {
         Platform::WindowsGNU => Utf8Path::new("dxcompiler.dll"),
         Platform::WindowsMSVC => Utf8Path::new("dxcompiler.dll"),
         Platform::Linux => Utf8Path::new("libdxcompiler.so"),
@@ -534,7 +533,7 @@ fn dxcompiler_library() -> &'static Utf8Path {
 }
 
 fn slang_executable() -> &'static Utf8Path {
-    match target_platform() {
+    match Platform::host() {
         Platform::WindowsGNU => Utf8Path::new("slangc.exe"),
         Platform::WindowsMSVC => Utf8Path::new("slangc.exe"),
         Platform::Linux => Utf8Path::new("slangc"),

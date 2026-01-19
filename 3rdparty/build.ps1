@@ -17,6 +17,7 @@ cmake -G "Ninja" `
     -DCMAKE_INSTALL_PREFIX="$InstallDirectory" `
     -DCMAKE_BUILD_TYPE="Release" `
     -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE `
+    -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 `
     $ThirdPartyDirectory
 
 cmake --build ./ --config Release

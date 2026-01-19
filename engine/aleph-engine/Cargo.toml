@@ -72,7 +72,7 @@ env_logger = { workspace = true }
 
 [build-dependencies]
 aleph-compile = { workspace = true }
-aleph-target-build = { workspace = true }
+aleph-target = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }
