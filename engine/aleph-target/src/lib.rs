@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-#![cfg_attr(not(feature = "development-build"), windows_subsystem = "windows")]
-
 mod architecture;
 mod build_config;
 mod build_type;

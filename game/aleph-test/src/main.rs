@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![cfg_attr(not(feature = "development-build"), windows_subsystem = "windows")]
+
 #[cfg(target_os = "windows")]
 aleph_dx12_agility_sdk::export_standard_agility_sdk_symbols!();
 
