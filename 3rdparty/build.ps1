@@ -1,4 +1,7 @@
 ## Run from project root: pwsh -ExecutionPolicy Bypass -File ./3rdparty/build.ps1
+##
+## Building tracy also needs this on Fedora:
+## sudo dnf install libxkbcommon-devel wayland-devel wayland-protocols-devel libglvnd-devel dbus-devel
 
 $StartDirectory = Resolve-Path ./
 

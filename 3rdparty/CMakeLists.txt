@@ -10,3 +10,7 @@ if(WIN32 OR APPLE)
     set(SDL_INSTALL ON)
     add_subdirectory("SDL")
 endif()
+
+if(NOT (WIN32 OR APPLE))
+    add_subdirectory("tracy/profiler")
+endif()
