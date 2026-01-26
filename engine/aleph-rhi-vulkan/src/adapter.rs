@@ -68,82 +68,235 @@ impl IGetPlatformInterface for Adapter {
 }
 
 impl Adapter {
-    #[inline]
-    fn get_queue_families(queue_families: &[vk::QueueFamilyProperties]) -> FoundQueueFamilies<'_> {
-        let mut general = None;
-        let mut compute = None;
-        let mut transfer = None;
+    fn select_queue_families(
+        queue_families: &[vk::QueueFamilyProperties],
+    ) -> (
+        [Option<QueueInfo>; 3],
+        BVec<vk::DeviceQueueCreateInfo<'_>, RhiSystem>,
+    ) {
+        // Produce a parallel list from 'queue_families'. Stores how many queues we've allocated
+        // from each family.
+        let mut family_counts = BVec::new_in(RhiSystem::default());
+        family_counts.extend((0..queue_families.len()).map(|_| 0u32));
 
-        for (index, family) in queue_families.iter().enumerate() {
-            let create_info = vk::DeviceQueueCreateInfo::default()
-                .queue_family_index(index as u32)
-                .queue_priorities(&PRIORITIES[0..1]);
+        // Select a queue family for each RHI queue.
+        //
+        // The set of queues available from Vulkan will vary from device to device, and even on the
+        // same device with different drivers. Some devices will have clear and obvious queues for
+        // each use case. Some will have 16 general queues.
+        //
+        // To that end each function will try to find the most specific queue possible before
+        // attempting to fall back to less and less specific queues. We could end up creating 3
+        // general queues if we have to. The underlying queue family is not exposed in the RHI.
+        let queues = [
+            Adapter::select_general_queue_family(&queue_families, &mut family_counts),
+            Adapter::select_compute_queue_family(&queue_families, &mut family_counts),
+            Adapter::select_transfer_queue_family(&queue_families, &mut family_counts),
+        ];
 
-            if general.is_none() && Self::is_general_family(family) {
-                general = Some(QueueFamily {
-                    queue_info: QueueInfo::new(index as u32, family),
-                    create_info,
-                });
-                continue;
-            }
-
-            if compute.is_none() && Self::is_async_compute_family(family) {
-                compute = Some(QueueFamily {
-                    queue_info: QueueInfo::new(index as u32, family),
-                    create_info,
-                });
-                continue;
-            }
-
-            if transfer.is_none() && Self::is_dedicated_transfer_family(family) {
-                transfer = Some(QueueFamily {
-                    queue_info: QueueInfo::new(index as u32, family),
-                    create_info,
-                });
-                continue;
+        // Generate the 'vk::DeviceQueueCreateInfo' we pass to Vulkan.
+        let mut queue_create_infos = BVec::with_capacity_in(3, RhiSystem::default());
+        for (index, &count) in family_counts.iter().enumerate() {
+            // Simply add an entry for any family that isn't empty. Each family must appear only
+            // once in the list.
+            if count > 0 {
+                queue_create_infos.push(
+                    vk::DeviceQueueCreateInfo::default()
+                        .queue_family_index(u32::try_from(index).unwrap())
+                        .queue_priorities(&PRIORITIES[0..count as usize]),
+                );
             }
         }
-
-        FoundQueueFamilies {
-            general,
-            compute,
-            transfer,
-        }
+        (queues, queue_create_infos)
     }
 
-    #[inline]
-    const fn is_general_family(family: &vk::QueueFamilyProperties) -> bool {
-        /// The mask of queue requirements for a general queue
-        const GENERAL_MASK: vk::QueueFlags = vk::QueueFlags::from_raw(
-            vk::QueueFlags::GRAPHICS.as_raw() | vk::QueueFlags::COMPUTE.as_raw(),
+    fn find_queue_family(
+        queue_families: &[vk::QueueFamilyProperties],
+        family_counts: &mut [u32],
+        filter: impl Fn(&vk::QueueFamilyProperties) -> bool,
+    ) -> Option<QueueInfo> {
+        for ((family_index, family), queue_count) in
+            queue_families.iter().enumerate().zip(family_counts)
+        {
+            let queue_index = *queue_count;
+            if filter(family) {
+                if family.queue_count > queue_index {
+                    // Consume a queue from the selected family by incrementing 'queue_count'.
+                    *queue_count = queue_count.checked_add(1).unwrap();
+
+                    log::info!(
+                        "Selected additional queue from family '{}' ({:?}).",
+                        family_index,
+                        family.queue_flags
+                    );
+
+                    return Some(QueueInfo::new(family_index as u32, queue_index, family));
+                } else {
+                    log::warn!(
+                        "Queue family '{}' is exhausted. Failed to make another queue.",
+                        family_index
+                    );
+                }
+            }
+        }
+        None
+    }
+
+    fn select_general_queue_family(
+        queue_families: &[vk::QueueFamilyProperties],
+        family_counts: &mut [u32],
+    ) -> Option<QueueInfo> {
+        log::info!("Searching for 'QueueType::General' queue family.");
+
+        // Vulkan guarantees at least one queue with these properties. graphics + compute +
+        // transfer.
+        if let Some(v) =
+            Self::find_queue_family(queue_families, family_counts, Self::is_general_family)
+        {
+            return Some(v);
+        }
+
+        log::error!("Failed to find a queue for 'QueueType::General'.");
+
+        None
+    }
+
+    fn select_compute_queue_family(
+        queue_families: &[vk::QueueFamilyProperties],
+        family_counts: &mut [u32],
+    ) -> Option<QueueInfo> {
+        log::info!("Searching for 'QueueType::Compute' queue family.");
+
+        // First we look for a dedicated async compute queue by finding compute + transfer +
+        // !graphics.
+        if let Some(v) =
+            Self::find_queue_family(queue_families, family_counts, Self::is_async_compute_family)
+        {
+            return Some(v);
+        }
+
+        log::warn!(
+            "Failed to find a dedicated async-compute queue for 'QueueType::Compute'. Trying fallback."
         );
 
-        // For general
-        family.queue_flags.contains(GENERAL_MASK)
+        // If there's no specific async compute queue we try make a second general queue and use
+        // that for the RHI's "compute" queue.
+        if let Some(v) =
+            Self::find_queue_family(queue_families, family_counts, Self::is_general_family)
+        {
+            return Some(v);
+        }
+
+        log::warn!("Failed to find a fallback general queue for 'QueueType::Compute'.");
+
+        None
     }
 
-    #[inline]
-    const fn is_async_compute_family(family: &vk::QueueFamilyProperties) -> bool {
-        /// The mask of queue requirements for a compute queue
-        const COMPUTE_MASK: vk::QueueFlags =
-            vk::QueueFlags::from_raw(vk::QueueFlags::COMPUTE.as_raw());
+    fn select_transfer_queue_family(
+        queue_families: &[vk::QueueFamilyProperties],
+        family_counts: &mut [u32],
+    ) -> Option<QueueInfo> {
+        log::info!("Searching for 'QueueType::Transfer' queue family.");
 
+        // Some drivers have dedicated queues with only the transfer capability is available. We
+        // want that one as often they're connected to DMA engines.
+        if let Some(v) =
+            Self::find_queue_family(queue_families, family_counts, Self::is_transfer_family)
+        {
+            return Some(v);
+        }
+
+        log::warn!(
+            "Failed to find a dedicated transfer queue for 'QueueType::Transfer'. Trying fallback."
+        );
+
+        // If there's no transfer only queue we try making a second async compute queue instead.
+        // This will always
+        if let Some(v) =
+            Self::find_queue_family(queue_families, family_counts, Self::is_async_compute_family)
+        {
+            return Some(v);
+        }
+
+        log::warn!(
+            "Failed to find a fallback async compute queue for 'QueueType::Transfer'. Trying fallback."
+        );
+
+        if let Some(v) =
+            Self::find_queue_family(queue_families, family_counts, Self::is_general_family)
+        {
+            return Some(v);
+        }
+
+        log::warn!("Failed to find a fallback general queue for 'QueueType::Transfer'.");
+
+        None
+    }
+
+    const fn is_general_family(family: &vk::QueueFamilyProperties) -> bool {
+        family.queue_flags.contains(vk::QueueFlags::GRAPHICS)
+            && family.queue_flags.contains(vk::QueueFlags::COMPUTE)
+            && family.queue_flags.contains(vk::QueueFlags::TRANSFER)
+    }
+
+    const fn is_async_compute_family(family: &vk::QueueFamilyProperties) -> bool {
         // For async compute we specifically want the non graphics queues so check for
         // compute+transfer and no graphics
-        family.queue_flags.contains(COMPUTE_MASK)
+        family.queue_flags.contains(vk::QueueFlags::COMPUTE)
+            && family.queue_flags.contains(vk::QueueFlags::TRANSFER)
             && !family.queue_flags.contains(vk::QueueFlags::GRAPHICS)
     }
 
-    #[inline]
-    const fn is_dedicated_transfer_family(family: &vk::QueueFamilyProperties) -> bool {
-        /// The mask of queue requirements for a transfer queue
-        const TRANSFER_MASK: vk::QueueFlags = vk::QueueFlags::TRANSFER;
-
+    const fn is_transfer_family(family: &vk::QueueFamilyProperties) -> bool {
         // For transfer we specifically want a queue that only supports transfer operations so check
         // for transfer and nothing else
-        family.queue_flags.contains(TRANSFER_MASK)
+        family.queue_flags.contains(vk::QueueFlags::TRANSFER)
             && !family.queue_flags.contains(vk::QueueFlags::GRAPHICS)
             && !family.queue_flags.contains(vk::QueueFlags::COMPUTE)
+    }
+
+    unsafe fn build_queue_objects(queues: &[Option<QueueInfo>; 3], device: &mut Device) {
+        unsafe {
+            let device_loader = &device.device;
+
+            if let Some(info) = queues[0].as_ref() {
+                let family = info.family_index;
+                let index = info.queue_index;
+
+                log::info!("Found queue family '{family}[{index}]' for 'QueueType::General'",);
+
+                let handle = device_loader.get_device_queue(family, index);
+                let queue = Queue::new(handle, device, QueueType::General, info.clone());
+                device.general_queue = Some(queue);
+            } else {
+                log::error!("No queue family found for 'QueueType::General'");
+            }
+
+            if let Some(info) = queues[1].as_ref() {
+                let family = info.family_index;
+                let index = info.queue_index;
+                log::info!("Found queue family '{family}[{index}]' for 'QueueType::Compute'",);
+
+                let handle = device_loader.get_device_queue(family, index);
+                let queue = Queue::new(handle, device, QueueType::Compute, info.clone());
+                device.compute_queue = Some(queue);
+            } else {
+                log::warn!("No queue family found for 'QueueType::Compute'");
+            }
+
+            if let Some(info) = queues[2].as_ref() {
+                let family = info.family_index;
+                let index = info.queue_index;
+
+                log::info!("Found queue family '{family}[{index}]' for 'QueueType::Transfer'",);
+
+                let handle = device_loader.get_device_queue(family, index);
+                let queue = Queue::new(handle, device, QueueType::Transfer, info.clone());
+                device.transfer_queue = Some(queue);
+            } else {
+                log::warn!("No queue family found for 'QueueType::Transfer'");
+            }
+        }
     }
 
     fn inner_request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
@@ -175,8 +328,7 @@ impl Adapter {
                 .instance
                 .get_physical_device_queue_family_properties(self.physical_device)
         };
-        let found_families = Adapter::get_queue_families(&queue_families);
-        let queue_create_infos = found_families.build_create_info_list();
+        let (queues, queue_create_infos) = Self::select_queue_families(&queue_families);
 
         let DeviceInfo {
             features_10,
@@ -231,7 +383,7 @@ impl Adapter {
         };
 
         Ok(new_rhi_object(move |v| {
-            let found_families = found_families;
+            let queues = queues;
             let mut device = Device {
                 this: v.clone(),
                 adapter: self.this.upgrade().unwrap(),
@@ -252,7 +404,7 @@ impl Adapter {
             let allocator = ManuallyDrop::new(GpuAllocator::new(&device));
             device.allocator = Some(allocator);
 
-            unsafe { found_families.build_queue_objects(&mut device) };
+            unsafe { Self::build_queue_objects(&queues, &mut device) };
 
             device
         }))
@@ -287,56 +439,3 @@ impl IAdapter for Adapter {
 // We're just going have a pre-allocated chunk of priorities bigger than we're ever going to
 // need to slice from to send to vulkan. Saves allocating when we don't need to
 static PRIORITIES: [f32; 128] = [1.0f32; 128];
-
-struct FoundQueueFamilies<'a> {
-    general: Option<QueueFamily<'a>>,
-    compute: Option<QueueFamily<'a>>,
-    transfer: Option<QueueFamily<'a>>,
-}
-
-impl<'a> FoundQueueFamilies<'a> {
-    fn build_create_info_list(&self) -> BVec<vk::DeviceQueueCreateInfo<'a>, RhiSystem> {
-        // List to flatten the set of queue create infos into so we can pass it into vkCreateDevice
-        let mut queue_create_infos = BVec::with_capacity_in(4, RhiSystem::default());
-
-        if let Some(info) = self.general.as_ref() {
-            queue_create_infos.push(info.create_info);
-        }
-        if let Some(info) = self.compute.as_ref() {
-            queue_create_infos.push(info.create_info);
-        }
-        if let Some(info) = self.transfer.as_ref() {
-            queue_create_infos.push(info.create_info);
-        }
-
-        queue_create_infos
-    }
-
-    unsafe fn build_queue_objects(&self, device: &mut Device) {
-        unsafe {
-            let device_loader = &device.device;
-
-            if let Some(info) = self.general.as_ref() {
-                let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);
-                let queue = Queue::new(handle, device, QueueType::General, info.queue_info.clone());
-                device.general_queue = Some(queue);
-            }
-            if let Some(info) = self.compute.as_ref() {
-                let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);
-                let queue = Queue::new(handle, device, QueueType::Compute, info.queue_info.clone());
-                device.compute_queue = Some(queue);
-            }
-            if let Some(info) = self.transfer.as_ref() {
-                let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);
-                let queue =
-                    Queue::new(handle, device, QueueType::Transfer, info.queue_info.clone());
-                device.transfer_queue = Some(queue);
-            }
-        }
-    }
-}
-
-struct QueueFamily<'a> {
-    queue_info: QueueInfo,
-    create_info: vk::DeviceQueueCreateInfo<'a>,
-}

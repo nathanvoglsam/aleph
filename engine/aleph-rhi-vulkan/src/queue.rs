@@ -384,15 +384,17 @@ impl IQueue for Queue {
 #[derive(Clone)]
 pub struct QueueInfo {
     pub family_index: u32,
+    pub queue_index: u32,
     pub min_image_transfer_granularity: vk::Extent3D,
     pub _timestamp_valid_bits: u32,
     pub _sparse_binding: bool,
 }
 
 impl QueueInfo {
-    pub fn new(family_index: u32, family: &vk::QueueFamilyProperties) -> Self {
+    pub fn new(family_index: u32, queue_index: u32, family: &vk::QueueFamilyProperties) -> Self {
         Self {
             family_index,
+            queue_index,
             min_image_transfer_granularity: family.min_image_transfer_granularity,
             _timestamp_valid_bits: family.timestamp_valid_bits,
             _sparse_binding: family.queue_flags.contains(vk::QueueFlags::SPARSE_BINDING),
