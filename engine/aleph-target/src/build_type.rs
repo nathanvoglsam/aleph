@@ -62,6 +62,14 @@ impl BuildType {
             BuildType::Retail => "Retail",
         }
     }
+
+    pub const fn is_development(&self) -> bool {
+        matches!(self, BuildType::Development)
+    }
+
+    pub const fn is_retail(&self) -> bool {
+        matches!(self, BuildType::Retail)
+    }
 }
 
 impl Display for BuildType {

@@ -113,7 +113,7 @@ impl Platform {
         }
     }
 
-    /// Is this platform any of the windows or universal windows platforms
+    /// Is this platform any of the windows platforms
     pub const fn is_windows(self) -> bool {
         matches!(self, Platform::WindowsMSVC | Platform::WindowsGNU)
     }
@@ -122,6 +122,7 @@ impl Platform {
         matches!(self, Platform::Linux)
     }
 
+    /// Is this platform any of the apple platforms (ios, macos)
     pub const fn is_apple(self) -> bool {
         matches!(self, Platform::MacOS | Platform::IOS)
     }
@@ -134,10 +135,12 @@ impl Platform {
         matches!(self, Platform::IOS)
     }
 
+    /// Is this platform the 'msvc' based windows platform
     pub const fn is_msvc(self) -> bool {
         matches!(self, Platform::WindowsMSVC)
     }
 
+    /// Is this platform the 'gnu' based windows platform
     pub const fn is_gnu(self) -> bool {
         matches!(self, Platform::WindowsGNU)
     }
