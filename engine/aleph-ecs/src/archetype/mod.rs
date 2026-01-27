@@ -67,8 +67,10 @@ mod index {
 
         /// Returns the first valid ArchetypeIndex, which will be '1'
         pub const fn first() -> ArchetypeIndex {
-            // Safety: uuuh, seems pretty obvious
-            unsafe { Self(NonZeroU32::new_unchecked(1)) }
+            match NonZeroU32::new(1) {
+                None => unreachable!(),
+                Some(v) => Self(v),
+            }
         }
 
         pub const fn inner(&self) -> NonZeroU32 {
@@ -98,8 +100,10 @@ mod index {
 
         /// Returns the first valid ArchetypeEntityIndex, which will be '1'
         pub const fn first() -> ArchetypeEntityIndex {
-            // Safety: uuuh, seems pretty obvious
-            unsafe { Self(NonZeroU32::new_unchecked(1)) }
+            match NonZeroU32::new(1) {
+                None => unreachable!(),
+                Some(v) => Self(v),
+            }
         }
 
         pub const fn inner(&self) -> NonZeroU32 {
