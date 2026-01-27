@@ -32,8 +32,6 @@ fn main() {}
 
 #[cfg(windows)]
 fn main() {
-    use std::path::{Path, PathBuf};
-
     use aleph_compile::deps_path;
     use aleph_target::{Architecture, Platform};
 
@@ -82,8 +80,8 @@ fn main() {
         aleph_compile::copy_file_to_artifacts_dir(&dll_path).unwrap();
         aleph_compile::copy_file_to_target_dir(&dll_path).unwrap();
 
-        let link_path_full = bin_dir.canonicalize().unwrap().display();
-        println!("cargo:rustc-link-search=native={link_path_full}");
+        let link_path_full = bin_dir.canonicalize().unwrap();
+        println!("cargo:rustc-link-search=native={}", link_path_full.display());
         println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime");
     }
 }
