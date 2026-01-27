@@ -23,7 +23,7 @@ cmake -G "Ninja" `
     -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 `
     $ThirdPartyDirectory
 
-cmake --build ./ --config Release
+cmake --build ./ --config Release --parallel
 cmake --install ./ --config Release
 
 Set-Location $StartDirectory

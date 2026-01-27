@@ -29,6 +29,7 @@
 
 use std::path::{Path, PathBuf};
 
+use aleph_compile::deps_path;
 use aleph_target::{Architecture, BuildConfig, Platform};
 
 ///
@@ -66,6 +67,7 @@ pub fn link_agility_symbol_def() {
 
     // Add the linker flag
     if Platform::build_target().is_windows() {
+        println!("cargo::rerun-if-changed={}", pkg_location().display());
         if Platform::build_target().is_msvc() {
             println!("cargo:rustc-link-arg=/DEF:{}", def_file.display());
         } else {
@@ -85,7 +87,9 @@ fn def_location() -> PathBuf {
 /// Internal function which returns the location of the agility SDK .nupkg file.
 ///
 fn pkg_location() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("DirectX12AgilitySDK")
+    let mut path = deps_path();
+    path.extend(["build", "_deps", "d3d12_agility_sdk-src", "build", "native"]);
+    path
 }
 
 ///
@@ -93,7 +97,7 @@ fn pkg_location() -> PathBuf {
 ///
 /// They will be defined with the following values
 ///
-/// - `D3D12SDKVersion` = 614
+/// - `D3D12SDKVersion` = 618
 ///     - This is the version identifier of the SDK version bundled with this crate
 /// - `D3D12SDKPath` = ".\"
 ///     - This allows 'D3D12Core.dll' to be next to the app executable and is compatible with the
@@ -106,8 +110,8 @@ fn pkg_location() -> PathBuf {
 /// #[used]
 /// #[no_mangle]
 /// #[allow(non_upper_case_globals)]
-/// /// Replace 614 with your minimum required SDK version
-/// pub static D3D12SDKVersion: u32 = 614;
+/// /// Replace 618 with your minimum required SDK version
+/// pub static D3D12SDKVersion: u32 = 618;
 ///
 /// #[used]
 /// #[no_mangle]
@@ -125,7 +129,7 @@ macro_rules! export_standard_agility_sdk_symbols {
         #[used]
         #[unsafe(no_mangle)]
         #[allow(non_upper_case_globals)]
-        pub static D3D12SDKVersion: u32 = 614;
+        pub static D3D12SDKVersion: u32 = 618;
 
         #[used]
         #[unsafe(no_mangle)]
