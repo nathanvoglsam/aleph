@@ -681,7 +681,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                     TextureDimension::Texture1D | TextureDimension::Texture2D => 0,
                     TextureDimension::Texture3D => {
                         // Only 3D textures should have this != 0.
-                        source_bytes_per_row * region.dst.extent.depth as usize
+                        source_bytes_per_row * region.dst.extent.height as usize
                     }
                 };
                 let destination_origin = conv::u_offset_to_mtl_origin(&region.dst.origin);
