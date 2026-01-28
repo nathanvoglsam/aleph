@@ -155,7 +155,7 @@ impl Context {
         }
 
         if feature_support.HighestShaderModel().0 < D3D_SHADER_MODEL_6_6.0 {
-            log::error!("Adapter doesn't support Shader Model 6.0");
+            log::error!("Adapter doesn't support Shader Model 6.6");
             failed = true;
         }
 
@@ -165,7 +165,22 @@ impl Context {
         }
 
         if feature_support.MaxSupportedFeatureLevel().0 < D3D_FEATURE_LEVEL_12_1.0 {
-            log::error!("Adapter doesn't support Feature Level 12_0");
+            log::error!("Adapter doesn't support Feature Level 12_1");
+            failed = true;
+        }
+
+        if !feature_support.UnrestrictedBufferTextureCopyPitchSupported() {
+            log::error!("Adapter doesn't support 'UnrestrictedBufferTextureCopyPitchSupported'");
+            failed = true;
+        }
+
+        if !feature_support.UnalignedBlockTexturesSupported() {
+            log::error!("Adapter doesn't support 'UnalignedBlockTexturesSupported'");
+            failed = true;
+        }
+
+        if !feature_support.RelaxedFormatCastingSupported() {
+            log::error!("Adapter doesn't support 'RelaxedFormatCastingSupported'");
             failed = true;
         }
 
