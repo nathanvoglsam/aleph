@@ -30,7 +30,7 @@
 
 [package]
 name = "aleph-label"
-version = "1.0.0"
+version = "0.1.0"
 authors.workspace = true
 description = "A generic mechanism for user defined identifier types"
 license.workspace = true

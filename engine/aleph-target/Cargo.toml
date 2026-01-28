@@ -29,7 +29,7 @@
 
 [package]
 name = "aleph-target"
-version = "2.0.0"
+version = "0.1.0"
 authors.workspace = true
 description = "Library for compile time platform detection"
 license.workspace = true

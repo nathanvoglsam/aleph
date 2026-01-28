@@ -30,7 +30,7 @@
 
 [package]
 name = "aleph-dx12-agility-sdk"
-version = "1.711.3"
+version = "0.1.0"
 authors.workspace = true
 description = "Build Script Utilities for the DX12 Agility SDK"
 license.workspace = true

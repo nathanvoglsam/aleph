@@ -30,7 +30,7 @@
 
 [package]
 name = "aleph-compile"
-version = "1.0.0"
+version = "0.1.0"
 authors.workspace = true
 description = "Utilities used by aleph build scripts"
 license.workspace = true
@@ -42,6 +42,3 @@ edition.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
-
-[dependencies]
-aleph-target = { workspace = true }

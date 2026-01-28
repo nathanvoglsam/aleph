@@ -30,7 +30,7 @@
 
 [package]
 name = "aleph-vk-format"
-version = "1.0.0+145"
+version = "0.1.0+145"
 authors.workspace = true
 description = "A standalone description of VkFormat with some utility methods attached"
 license.workspace = true
