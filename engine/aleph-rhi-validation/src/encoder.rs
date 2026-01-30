@@ -473,25 +473,10 @@ impl<T: ?Sized> ValidationEncoder<T> {
             region.src.offset
         );
         assert!(
-            region.src.extent.width > 0,
-            "extent.width ({}) must be > 0",
-            region.src.extent.width
-        );
-        assert!(
-            region.src.extent.height > 0,
-            "extent.height ({}) must be > 0",
-            region.src.extent.height
-        );
-        assert!(
-            region.src.extent.depth > 0,
-            "extent.depth ({}) must be > 0",
-            region.src.extent.depth
-        );
-        assert!(
-            region.src.row_pitch >= region.src.extent.width,
+            region.src.row_pitch >= region.dst.extent.width,
             "row_pitch ({}) must be >= extent.width ({})",
             region.src.row_pitch,
-            region.src.extent.width
+            region.dst.extent.width
         );
     }
 

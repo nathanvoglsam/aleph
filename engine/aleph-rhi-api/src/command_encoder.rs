@@ -660,9 +660,6 @@ pub struct ImageDataLayout {
     /// than the actual width of the texture. This should always be _at least_ equal to
     /// `extent.width`.
     pub row_pitch: u32,
-
-    /// The extents of the image data in texels.
-    pub extent: Extent3D,
 }
 
 /// A description of a buffer to texture copy operation

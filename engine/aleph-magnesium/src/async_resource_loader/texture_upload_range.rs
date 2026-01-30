@@ -228,11 +228,6 @@ impl WantedTextureRows {
             src: rhi::ImageDataLayout {
                 offset: self.buffer_offset as u64,
                 row_pitch: self.region_size.row_pitch,
-                extent: rhi::Extent3D {
-                    width: self.region_size.width,
-                    height: self.region_size.height,
-                    depth: self.region_size.depth,
-                },
             },
             dst: rhi::TextureCopyInfo {
                 mip_level: self.level,

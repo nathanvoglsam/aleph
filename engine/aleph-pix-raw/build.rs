@@ -81,7 +81,10 @@ fn main() {
         aleph_compile::copy_file_to_target_dir(&dll_path).unwrap();
 
         let link_path_full = bin_dir.canonicalize().unwrap();
-        println!("cargo:rustc-link-search=native={}", link_path_full.display());
+        println!(
+            "cargo:rustc-link-search=native={}",
+            link_path_full.display()
+        );
         println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime");
     }
 }

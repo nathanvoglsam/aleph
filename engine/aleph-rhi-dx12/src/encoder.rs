@@ -668,9 +668,9 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             // Translate the source layout description to D3D12's 'subresource footprint'
             let footprint = unsafe { &mut src_location.Anonymous.PlacedFootprint };
             footprint.Offset = region.src.offset;
-            footprint.Footprint.Width = region.src.extent.width;
-            footprint.Footprint.Height = region.src.extent.height;
-            footprint.Footprint.Depth = region.src.extent.depth;
+            footprint.Footprint.Width = region.dst.extent.width;
+            footprint.Footprint.Height = region.dst.extent.height;
+            footprint.Footprint.Depth = region.dst.extent.depth;
             footprint.Footprint.RowPitch = region.src.row_pitch * bytes_per_element;
 
             unsafe {

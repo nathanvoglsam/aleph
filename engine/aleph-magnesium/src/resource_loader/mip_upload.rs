@@ -160,7 +160,6 @@ impl MipUploadDesc {
                     .as_level(level)
                     .with_aligned_pitch(self.pitch_align)
                     .upload_row_texels(),
-                extent,
             },
             dst: rhi::TextureCopyInfo {
                 mip_level: level,
