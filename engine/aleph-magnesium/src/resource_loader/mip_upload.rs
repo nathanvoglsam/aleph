@@ -55,8 +55,8 @@ use crate::resource_loader::upload_buffer::{IUploadBuffer, UploadBuffer};
 /// Whole mip levels must be provided when using this type. Partial or streaming uploads are not
 /// supported by this interface.
 pub struct MipUploadDesc {
-    /// The alignment, in bytes, we are aligning our row_stride to for each level.
-    pub(crate) stride_align: u32,
+    /// The alignment, in bytes, we are aligning our row_pitch to for each level.
+    pub(crate) pitch_align: u32,
 
     /// The buffer that our image levels have been populated in ready for upload to the GPU.
     pub buffer: SmallBox<dyn IUploadBuffer, S8>,
@@ -69,25 +69,25 @@ impl MipUploadDesc {
     /// Constructs a new instance from the given device and desc by allocating a whole new upload
     /// buffer with space for the requested mips of the described texture.
     ///
-    /// Takes a 'stride_align' value that specifies the alignment, in bytes, that each row of our
-    /// upload data will be aligned to. The 'stride_align' value will be taken as
-    /// `max(stride_align, 1)`.
+    /// Takes a 'pitch_align' value that specifies the alignment, in bytes, that each row of our
+    /// upload data will be aligned to. The 'pitch_align' value will be taken as
+    /// `max(pitch_align, 1)`.
     pub fn new_owned<T: SingleTextureDesc>(
         device: &dyn rhi::IDevice,
         desc: &T,
-        stride_align: u32,
+        pitch_align: u32,
         base_level: u32,
         num_levels: u32,
     ) -> Result<Self, rhi::BufferCreateError> {
-        let stride_align = stride_align.max(1); // Clamp to >0
+        let pitch_align = pitch_align.max(1); // Clamp to >0
 
         let (data, total_size) =
-            LevelOffsets::new_for_desc(desc, stride_align, base_level, num_levels);
+            LevelOffsets::new_for_desc(desc, pitch_align, base_level, num_levels);
 
         let buffer = UploadBuffer::new_owned(device, total_size as u64)?;
 
         let out = Self {
-            stride_align,
+            pitch_align,
             buffer: buffer.into_smallbox(),
             data,
         };
@@ -99,16 +99,16 @@ impl MipUploadDesc {
     pub fn new_in_bump_arena<T: PhysicalTextureDesc>(
         bump: &UploadBumpAllocator,
         desc: &T,
-        stride_align: u32,
+        pitch_align: u32,
         base_level: u32,
         num_levels: u32,
     ) -> Result<Self, rhi::BufferCreateError> {
         assert!(bump.usage().contains(rhi::ResourceUsageFlags::COPY_SOURCE));
 
-        let stride_align = stride_align.max(1); // Clamp to >0
+        let pitch_align = pitch_align.max(1); // Clamp to >0
 
         let (data, total_size) =
-            LevelOffsets::new_for_desc(desc, stride_align, base_level, num_levels);
+            LevelOffsets::new_for_desc(desc, pitch_align, base_level, num_levels);
 
         let buffer = unsafe {
             let block = bump
@@ -119,19 +119,19 @@ impl MipUploadDesc {
         };
 
         let out = Self {
-            stride_align,
+            pitch_align,
             buffer: buffer.into_smallbox(),
             data,
         };
         Ok(out)
     }
 
-    /// The configured 'stride_align' value for this upload desc.
+    /// The configured 'pitch_align' value for this upload desc.
     ///
     /// Specifies the alignment, in bytes, for each row of our upload data. Is used to derive
     /// 'row_pitch' in [`rhi::ImageDataLayout`].
-    pub const fn stride_align(&self) -> u32 {
-        self.stride_align
+    pub const fn pitch_align(&self) -> u32 {
+        self.pitch_align
     }
 }
 
@@ -158,7 +158,7 @@ impl MipUploadDesc {
                 offset: src_offset,
                 row_pitch: desc
                     .as_level(level)
-                    .with_aligned_stride(self.stride_align)
+                    .with_aligned_pitch(self.pitch_align)
                     .upload_row_texels(),
                 extent,
             },
@@ -212,7 +212,7 @@ impl LevelOffsets {
     /// mip level overlaps.
     pub fn new_for_desc<T: SingleTextureDesc>(
         desc: &T,
-        stride_align: u32,
+        pitch_align: u32,
         base_level: u32,
         num_levels: u32,
     ) -> (Self, usize) {
@@ -225,7 +225,7 @@ impl LevelOffsets {
             level_offsets.push(total_size);
             total_size += desc
                 .as_level(level)
-                .with_aligned_stride(stride_align)
+                .with_aligned_pitch(pitch_align)
                 .upload_bytes();
             total_size = total_size.next_multiple_of(512);
         }

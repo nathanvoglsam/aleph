@@ -35,6 +35,7 @@ use aleph_alloc::offset_allocator::Allocation;
 
 use crate::async_resource_loader::{AsyncResourceLoader, FlushError, TextureLoadHandle};
 use crate::internal::async_resource_loader::MgAsyncLdrSystem;
+use crate::resource::texture::physical::PhysicalTextureLayout;
 
 pub struct TextureUploadRange<'a, C: Send + 'static> {
     /// Back-reference to the resource loader this range is allocated from.
@@ -161,9 +162,15 @@ pub struct WantedTextureRows {
     /// The range of rows we want data to be copied into 'data'.
     pub(crate) wanted_rows: Range<u32>,
 
-    /// An associated buffer -> texture copy region that will correctly upload the rows this struct
-    /// encapsulates.
-    pub(crate) region: rhi::BufferToTextureCopyRegion,
+    /// Offset into the sub-allocated upload block where the data begins. Used to materialize the
+    /// copy region.
+    pub(crate) buffer_offset: u32,
+
+    /// Describes the offset in the destination texture that the texture data will be copied in to.
+    pub(crate) region_offset: rhi::UOffset3D,
+
+    /// Describes the size of the texture region we're uploading in this block.
+    pub(crate) region_size: PhysicalTextureLayout,
 
     /// Target buffer that we should write the requested rows into. The first row should be written
     /// starting at `data[0]`.
@@ -202,13 +209,47 @@ impl WantedTextureRows {
         self.wanted_rows.start..self.wanted_rows.end
     }
 
-    /// The extent of the dst mip level that data should be provided for.
-    ///
-    /// Typically, you should only need [`WantedTextureRows::num_wanted_rows`] and
-    /// [`WantedTextureRows::wanted_rows`] to derive what data should be uploaded. This is provided
-    /// for convenience.
-    pub const fn wanted_extent(&self) -> rhi::Extent3D {
-        self.region.dst.extent
+    /// Returns a [`PhysicalTextureLayout`] that describes the memory layout of the upload region
+    /// that self closes over.
+    pub const fn wanted_physical_desc(&self) -> PhysicalTextureLayout {
+        PhysicalTextureLayout {
+            width: self.region_size.width,
+            height: self.region_size.height,
+            depth: self.region_size.depth,
+            row_pitch: self.region_size.row_pitch,
+            format: self.region_size.format,
+        }
+    }
+
+    /// Returns a [`rhi::BufferToTextureCopyRegion`] that encodes the correct parameters to perform
+    /// a buffer->texture copy operation from the upload buffer into the destination texture object.
+    pub const fn copy_region(&self) -> rhi::BufferToTextureCopyRegion {
+        rhi::BufferToTextureCopyRegion {
+            src: rhi::ImageDataLayout {
+                offset: self.buffer_offset as u64,
+                row_pitch: self.region_size.row_pitch,
+                extent: rhi::Extent3D {
+                    width: self.region_size.width,
+                    height: self.region_size.height,
+                    depth: self.region_size.depth,
+                },
+            },
+            dst: rhi::TextureCopyInfo {
+                mip_level: self.level,
+                array_layer: 0,
+                aspect: rhi::TextureCopyAspect::Color,
+                origin: rhi::UOffset3D {
+                    x: self.region_offset.x,
+                    y: self.region_offset.y,
+                    z: self.region_offset.z,
+                },
+                extent: rhi::Extent3D {
+                    width: self.region_size.width,
+                    height: self.region_size.height,
+                    depth: self.region_size.depth,
+                },
+            },
+        }
     }
 
     /// Get a slice over the upload memory owned by self.

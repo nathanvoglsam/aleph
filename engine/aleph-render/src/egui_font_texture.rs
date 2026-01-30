@@ -75,7 +75,7 @@ impl EguiFontTexture {
 
             let mut data = MipUploadDesc::new_owned(renderer.device(), &desc, 0, 0, 1).unwrap();
 
-            let physical_desc = desc.with_stride(0);
+            let physical_desc = desc.with_pitch(0);
             let size = physical_desc.upload_bytes();
             let dst = &mut data.buffer.bytes_mut()[0..size];
             dst.copy_from_slice(&self.font_texture.bytes[0..size]);

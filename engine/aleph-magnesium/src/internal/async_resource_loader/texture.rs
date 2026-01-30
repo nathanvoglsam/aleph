@@ -34,7 +34,7 @@ use rhi::TextureDimension;
 use crate::async_resource_loader::texture_upload_range::WantedTextureRows;
 use crate::internal::async_resource_loader::MgAsyncLdrSystem;
 use crate::internal::async_resource_loader::upload_memory_manager::UploadMemoryManager;
-use crate::resource::texture::physical::PhysicalTextureDesc;
+use crate::resource::texture::physical::{PhysicalTextureDesc, PhysicalTextureLayout};
 use crate::resource::texture::simple::{SimpleTextureDesc, SimpleTextureLayout};
 use crate::resource::texture::single::SingleTextureDesc;
 
@@ -84,7 +84,7 @@ impl<C> TextureLoadState<C> {
     pub fn build_wanted_rows(
         &mut self,
         upload_memory_manager: &UploadMemoryManager,
-        stride_align: u32,
+        pitch_align: u32,
         mut num_bytes: u64,
         granularity: rhi::Extent3D,
     ) -> BVec<WantedTextureRows, MgAsyncLdrSystem> {
@@ -106,7 +106,7 @@ impl<C> TextureLoadState<C> {
 
             // Query the storage size of the texture at the current mip level.
             let level_layout = self.layout.as_level(mip_i as u32);
-            let level_physical_layout = level_layout.with_aligned_stride(stride_align);
+            let level_physical_layout = level_layout.with_aligned_pitch(pitch_align);
 
             // Remap the input 'min_image_granularity' to the more restrictive form we require for
             // our upload interface. How we handle our remapping depends on whether we're making a
@@ -220,28 +220,20 @@ impl<C> TextureLoadState<C> {
             let extent_x = level_layout.width;
             let extent_y = end_y - origin_y;
             let extent_z = end_z - origin_z;
-            let extent = rhi::Extent3D::new(extent_x, extent_y, extent_z);
-
-            let region = rhi::BufferToTextureCopyRegion {
-                src: rhi::ImageDataLayout {
-                    offset: aligned_offset as u64,
-                    row_pitch: level_physical_layout.upload_row_texels(),
-                    extent,
-                },
-                dst: rhi::TextureCopyInfo {
-                    mip_level: mip_i as u32,
-                    array_layer: 0,
-                    aspect: rhi::TextureCopyAspect::Color,
-                    origin,
-                    extent,
-                },
-            };
 
             wanted_rows.push(WantedTextureRows {
                 allocation,
                 level: mip_i as u32,
                 wanted_rows: level_state.rows_submitted..level_state.rows_allocated,
-                region,
+                buffer_offset: aligned_offset,
+                region_offset: origin,
+                region_size: PhysicalTextureLayout {
+                    width: extent_x,
+                    height: extent_y,
+                    depth: extent_z,
+                    row_pitch: level_physical_layout.upload_row_texels(),
+                    format: self.layout.format,
+                },
                 data,
             });
         }

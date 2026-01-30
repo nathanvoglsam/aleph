@@ -91,7 +91,7 @@ impl QueuedCopyManager {
         let mut submitted_queue = self.queue.borrow_mut();
 
         let mut regions = BVec::new_in(system());
-        regions.extend(range.wanted.iter().map(|v| v.region.clone()));
+        regions.extend(range.wanted.iter().map(|v| v.copy_region()));
 
         // We _must_ use mem::take() on the allocation field to leave it in the 'is_fail' state.
         // This sentinel signals that the upload has been submitted and prevents the drop

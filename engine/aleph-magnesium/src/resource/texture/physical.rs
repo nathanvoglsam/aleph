@@ -32,7 +32,7 @@ use crate::resource::texture::single::SingleTextureDesc;
 
 /// Interface exposed by some struct that provides a physical description of a texture. This
 /// interface is used for describing the in-memory layout of some matrix of texels. This includes
-/// a 'row_stride'.
+/// a 'row_pitch'.
 ///
 /// The expected use case is for buffer->texture uploads.
 ///
@@ -42,7 +42,7 @@ pub trait PhysicalTextureDesc: SingleTextureDesc {
     /// in memory, separate from the logical width defined by `width`.
     ///
     /// Must be >= `width`.
-    fn row_stride(&self) -> u32;
+    fn row_pitch(&self) -> u32;
 
     /// Make a [`PhysicalTextureLayout`] from self.
     fn as_physical_layout(&self) -> PhysicalTextureLayout {
@@ -50,7 +50,7 @@ pub trait PhysicalTextureDesc: SingleTextureDesc {
             width: self.width(),
             height: self.height(),
             depth: self.depth(),
-            row_stride: self.row_stride(),
+            row_pitch: self.row_pitch(),
             format: self.format(),
         }
     }
@@ -60,22 +60,22 @@ pub trait PhysicalTextureDesc: SingleTextureDesc {
     ///
     /// # Warning
     ///
-    /// Takes the row stride as `max(self.row_stride, self.width)`.
+    /// Takes the row stride as `max(self.row_pitch, self.width)`.
     #[inline]
     fn upload_row_bytes(&self) -> usize {
         self.upload_row_texels() as usize * self.format().bytes_per_element() as usize
     }
 
     /// Returns the number of _texels_ consumed by a single row of texels, including padding to
-    /// row_stride.
+    /// row_pitch.
     #[inline]
     fn upload_row_texels(&self) -> u32 {
-        const_max(self.row_stride(), self.width())
+        const_max(self.row_pitch(), self.width())
     }
 
     /// Returns the number of bytes needed to store the given mip level in an upload buffer.
     ///
-    /// This will calculate the size as (self.row_stride) * height.max(1) * depth.max(1).
+    /// This will calculate the size as (self.row_pitch) * height.max(1) * depth.max(1).
     #[inline]
     fn upload_bytes(&self) -> usize {
         let bytes_per_row = self.upload_row_bytes();
@@ -108,8 +108,8 @@ impl SingleTextureDesc for PhysicalTextureLayout {
 
 impl PhysicalTextureDesc for PhysicalTextureLayout {
     #[inline]
-    fn row_stride(&self) -> u32 {
-        self.row_stride
+    fn row_pitch(&self) -> u32 {
+        self.row_pitch
     }
 }
 
@@ -133,7 +133,7 @@ pub struct PhysicalTextureLayout {
     /// in memory, separate from the logical width defined by `width`.
     ///
     /// Must be >= `width`.
-    pub row_stride: u32,
+    pub row_pitch: u32,
 
     /// The pixel format of the texture.
     pub format: rhi::Format,

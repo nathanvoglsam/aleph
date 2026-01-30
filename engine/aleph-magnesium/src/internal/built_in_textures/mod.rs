@@ -46,7 +46,7 @@ pub fn create_smaa_area_texture(resource_builder: &mut ImmediateResourceBuilder)
 
     let mut data = MipUploadDesc::new_owned(resource_builder.device, &desc, 0, 0, 1).unwrap();
 
-    let physical_desc = desc.with_stride(0);
+    let physical_desc = desc.with_pitch(0);
     let num_rows = desc.num_rows();
     let row_bytes = desc.row_bytes();
     let row_bytes_padded = physical_desc.upload_row_bytes();
@@ -75,7 +75,7 @@ pub fn create_smaa_search_texture(
 
     let mut data = MipUploadDesc::new_owned(resource_builder.device, &desc, 0, 0, 1).unwrap();
 
-    let physical_desc = desc.with_stride(0);
+    let physical_desc = desc.with_pitch(0);
     let num_rows = desc.num_rows();
     let row_bytes = desc.row_bytes();
     let row_bytes_padded = physical_desc.upload_row_bytes();

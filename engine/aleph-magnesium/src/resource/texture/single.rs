@@ -57,28 +57,28 @@ pub trait SingleTextureDesc {
         }
     }
 
-    /// Produces a new [`PhysicalTextureLayout`] from self, adopting the given 'row_stride' value.
+    /// Produces a new [`PhysicalTextureLayout`] from self, adopting the given 'row_pitch' value.
     ///
-    /// The final value of 'row_stride' in the output will be taken as `max(self.width, row_stride)`
-    fn with_stride(&self, row_stride: u32) -> PhysicalTextureLayout {
+    /// The final value of 'row_pitch' in the output will be taken as `max(self.width, row_pitch)`
+    fn with_pitch(&self, row_pitch: u32) -> PhysicalTextureLayout {
         PhysicalTextureLayout {
             width: SingleTextureDesc::width(self),
             height: SingleTextureDesc::height(self),
             depth: SingleTextureDesc::depth(self),
-            row_stride: const_max(row_stride, SingleTextureDesc::width(self)),
+            row_pitch: const_max(row_pitch, SingleTextureDesc::width(self)),
             format: SingleTextureDesc::format(self),
         }
     }
 
-    /// Produces a new [`PhysicalTextureLayout`] from self, deriving a 'row_stride' that is aligned
-    /// to 'stride_align' bytes.
+    /// Produces a new [`PhysicalTextureLayout`] from self, deriving a 'row_pitch' that is aligned
+    /// to 'pitch_align' bytes.
     ///
-    /// The value for 'stride_align' will be taken as `max(1, stride_align)`.
-    fn with_aligned_stride(&self, stride_align: u32) -> PhysicalTextureLayout {
-        let stride_align = const_max(1, stride_align); // Clamp to > 0
-        let stride_align_texels = const_max(1, stride_align / self.format().bytes_per_element());
-        let row_stride = self.width().next_multiple_of(stride_align_texels);
-        self.with_stride(row_stride)
+    /// The value for 'pitch_align' will be taken as `max(1, pitch_align)`.
+    fn with_aligned_pitch(&self, pitch_align: u32) -> PhysicalTextureLayout {
+        let pitch_align = const_max(1, pitch_align); // Clamp to > 0
+        let pitch_align_texels = const_max(1, pitch_align / self.format().bytes_per_element());
+        let row_pitch = self.width().next_multiple_of(pitch_align_texels);
+        self.with_pitch(row_pitch)
     }
 
     /// Calculates the number of texels along the 'x' dimension.

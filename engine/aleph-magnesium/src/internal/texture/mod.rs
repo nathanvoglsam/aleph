@@ -179,7 +179,7 @@ pub fn validate_mip_data_for_immediate_upload<T: SimpleTextureDesc>(
         let level = data.data.base_level as u32 + i as u32;
         let bytes = desc
             .as_level(level)
-            .with_aligned_stride(data.stride_align)
+            .with_aligned_pitch(data.pitch_align)
             .upload_bytes();
 
         // Keep the larger of the existing highest offset or our new offset if it is larger.

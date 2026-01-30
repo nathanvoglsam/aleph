@@ -307,7 +307,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
     pub fn allocate_range_for_texture_load(
         &self,
         handle: TextureLoadHandle,
-        stride_align: u32,
+        pitch_align: u32,
         num_bytes: u64,
     ) -> Result<TextureUploadRange<'_, C>, AllocateRangeError> {
         assert_ne!(num_bytes, 0);
@@ -367,7 +367,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         // upload in this block.
         let wanted = load.build_wanted_rows(
             &self.upload_memory_manager,
-            stride_align,
+            pitch_align,
             num_bytes,
             self.min_image_granularity,
         );
