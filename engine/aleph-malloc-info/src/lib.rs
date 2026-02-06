@@ -47,7 +47,7 @@ mod linux {
     pub fn get_allocated_bytes() -> usize {
         unsafe {
             let stats = libc::mallinfo2();
-            stats.uordblks
+            stats.uordblks + stats.hblkhd
         }
     }
 }
