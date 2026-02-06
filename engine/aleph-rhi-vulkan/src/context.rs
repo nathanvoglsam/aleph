@@ -37,6 +37,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::arc::new_rhi_object;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use aleph_rhi_impl_utils::str_from_ptr;
+use ash::khr::wayland_surface::Instance;
 use ash::vk;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 
@@ -414,11 +415,14 @@ impl IContext for Context {
                         ..Default::default()
                     };
 
-                    self.surface_loaders
-                        .wayland
-                        .as_ref()
-                        .unwrap()
-                        .create_wayland_surface(&create_info, GLOBAL)
+                    match self.surface_loaders.wayland.as_ref() {
+                        None => {
+                            panic!(
+                                "Wayland surface provided without support for VK_KHR_wayland_surface"
+                            );
+                        }
+                        Some(v) => v.create_wayland_surface(&create_info, GLOBAL),
+                    }
                 }
 
                 #[cfg(any(
@@ -435,11 +439,12 @@ impl IContext for Context {
                         ..Default::default()
                     };
 
-                    self.surface_loaders
-                        .xlib
-                        .as_ref()
-                        .unwrap()
-                        .create_xlib_surface(&create_info, GLOBAL)
+                    match self.surface_loaders.xlib.as_ref() {
+                        None => {
+                            panic!("Xlib surface provided without support for VK_KHR_xlib_surface");
+                        }
+                        Some(v) => v.create_xlib_surface(&create_info, GLOBAL),
+                    }
                 }
 
                 #[cfg(any(
@@ -456,11 +461,12 @@ impl IContext for Context {
                         ..Default::default()
                     };
 
-                    self.surface_loaders
-                        .xcb
-                        .as_ref()
-                        .unwrap()
-                        .create_xcb_surface(&create_info, GLOBAL)
+                    match self.surface_loaders.xcb.as_ref() {
+                        None => {
+                            panic!("Xcb surface provided without support for VK_KHR_xcb_surface");
+                        }
+                        Some(v) => v.create_xcb_surface(&create_info, GLOBAL),
+                    }
                 }
 
                 #[cfg(target_os = "macos")]

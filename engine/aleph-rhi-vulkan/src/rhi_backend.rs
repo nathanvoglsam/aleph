@@ -143,16 +143,38 @@ impl VulkanLoader {
             .map(|v| v.as_ptr())
             .collect();
 
-        // Select the set of extensions that we want to load
+        // Get the set of all extensions available, including from the layers we are going to use.
         let ext_sets = get_supported_extension_sets(entry, &supported_layers);
-        let wanted_extensions = get_wanted_extensions(debug);
-        let supported_extensions =
-            strip_unsupported_extensions(&ext_sets, wanted_extensions.clone());
-        check_all_extensions_supported(&wanted_extensions, &supported_extensions)?;
-        let extensions: Vec<_> = supported_extensions
+        dbg!(&ext_sets);
+
+        // Get the set of extensions we want to try and load
+        let required_extensions = get_required_extensions(debug);
+        let wsi_extensions = get_wsi_extensions();
+        dbg!(&required_extensions);
+        dbg!(&wsi_extensions);
+
+        {
+            let supported = strip_unsupported_extensions(&ext_sets, required_extensions.clone());
+            dbg!(&supported);
+
+            check_all_extensions_supported(&required_extensions, &supported)?;
+        }
+
+        let wsi_supported = strip_unsupported_extensions(&ext_sets, wsi_extensions);
+        dbg!(&wsi_supported);
+        if wsi_supported.is_empty() {
+            // If no WSI extensions are available we're in a sad place
+            log::error!("The Vulkan instance does not support any WSI extensions we know of");
+            return Err(ContextCreateError::MissingRequiredFeatures);
+        }
+
+        let required_iter = required_extensions.iter().copied();
+        let wsi_iter = wsi_supported.iter().copied();
+        let loaded_extensions: Vec<_> = required_iter.chain(wsi_iter).collect();
+        let loaded_extensions_abi: Vec<_> = loaded_extensions
             .iter()
             .copied()
-            .map(|v| v.as_ptr())
+            .map(CStr::as_ptr)
             .collect();
 
         // Fill out InstanceCreateInfo for creating a vulkan instance
@@ -164,7 +186,7 @@ impl VulkanLoader {
         let app_info = app_and_engine_info();
         let create_info = vk::InstanceCreateInfo::default()
             .application_info(&app_info)
-            .enabled_extension_names(&extensions)
+            .enabled_extension_names(&loaded_extensions_abi)
             .enabled_layer_names(&layers)
             .flags(flags);
 
@@ -200,7 +222,7 @@ impl VulkanLoader {
         };
 
         let extensions =
-            Self::load_instance_extensions(entry, &instance_loader, &supported_extensions);
+            Self::load_instance_extensions(entry, &instance_loader, &loaded_extensions);
 
         Ok((instance_loader, extensions))
     }
@@ -350,10 +372,23 @@ impl VulkanLoader {
     }
 }
 
-fn get_wanted_extensions(debug: bool) -> Vec<&'static CStr> {
+fn get_required_extensions(debug: bool) -> Vec<&'static CStr> {
     // Get surface extensions
     // Push the base surface extension
     let mut extensions = vec![ash::khr::surface::NAME];
+
+    // Add the debug extension if requested
+    if debug {
+        extensions.push(ash::ext::debug_utils::NAME);
+    }
+
+    extensions
+}
+
+fn get_wsi_extensions() -> Vec<&'static CStr> {
+    // Get surface extensions
+    // Push the base surface extension
+    let mut extensions = vec![];
 
     // Push all possible WSI extensions for the underlying platform
     if cfg!(all(unix, not(target_os = "macos"), not(target_os = "ios"))) {
@@ -380,11 +415,6 @@ fn get_wanted_extensions(debug: bool) -> Vec<&'static CStr> {
         extensions.push(ash::mvk::ios_surface::NAME);
         extensions.push(ash::ext::metal_surface::NAME);
         extensions.push(ash::khr::portability_enumeration::NAME);
-    }
-
-    // Add the debug extension if requested
-    if debug {
-        extensions.push(ash::ext::debug_utils::NAME);
     }
 
     extensions
