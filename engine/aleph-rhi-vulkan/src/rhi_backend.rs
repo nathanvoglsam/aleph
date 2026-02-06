@@ -145,23 +145,17 @@ impl VulkanLoader {
 
         // Get the set of all extensions available, including from the layers we are going to use.
         let ext_sets = get_supported_extension_sets(entry, &supported_layers);
-        dbg!(&ext_sets);
 
         // Get the set of extensions we want to try and load
         let required_extensions = get_required_extensions(debug);
         let wsi_extensions = get_wsi_extensions();
-        dbg!(&required_extensions);
-        dbg!(&wsi_extensions);
 
         {
             let supported = strip_unsupported_extensions(&ext_sets, required_extensions.clone());
-            dbg!(&supported);
-
             check_all_extensions_supported(&required_extensions, &supported)?;
         }
 
         let wsi_supported = strip_unsupported_extensions(&ext_sets, wsi_extensions);
-        dbg!(&wsi_supported);
         if wsi_supported.is_empty() {
             // If no WSI extensions are available we're in a sad place
             log::error!("The Vulkan instance does not support any WSI extensions we know of");
