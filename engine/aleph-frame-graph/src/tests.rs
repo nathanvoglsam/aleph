@@ -152,7 +152,7 @@ pub fn test_builder() {
     let context = PinBoard::new();
     context.publish(512usize);
     unsafe {
-        graph.execute(0, &import_bundle, encoder.as_mut(), &context);
+        graph.execute(0, &import_bundle, &mut encoder, &context);
     }
 }
 
@@ -272,7 +272,7 @@ pub fn test_handle_equality() {
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(imported_resource, &mock_buffer);
     unsafe {
-        graph.execute(0, &import_bundle, encoder.as_mut(), &());
+        graph.execute(0, &import_bundle, &mut encoder, &());
     }
 }
 
@@ -390,7 +390,7 @@ pub fn test_usage_collection() {
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(imported_resource, &mock_buffer);
     unsafe {
-        graph.execute(0, &import_bundle, encoder.as_mut(), &());
+        graph.execute(0, &import_bundle, &mut encoder, &());
     }
 }
 
@@ -662,7 +662,7 @@ pub fn test_usage_schedule() {
     import_bundle.add_resource(import_buffer, &mock_buffer);
     import_bundle.add_resource(import_texture, &mock_texture);
     unsafe {
-        graph.execute(0, &import_bundle, encoder.as_mut(), &());
+        graph.execute(0, &import_bundle, &mut encoder, &());
     }
 }
 
@@ -917,7 +917,7 @@ pub fn test_usage_schedule_exec_dependency() {
     import_bundle.add_resource(import_buffer, &mock_buffer);
     import_bundle.add_resource(import_texture, &mock_texture);
     unsafe {
-        graph.execute(0, &import_bundle, encoder.as_mut(), &());
+        graph.execute(0, &import_bundle, &mut encoder, &());
     }
 }
 

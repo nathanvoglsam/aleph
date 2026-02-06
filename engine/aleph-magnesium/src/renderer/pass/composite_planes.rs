@@ -112,20 +112,23 @@ pub fn pass(
                 )
                 .unwrap();
 
-            encoder.begin_rendering(&rhi::BeginRenderingInfo {
-                layer_count: 1,
-                extent: dst_desc.get_extent_2d(),
-                color_attachments: &[rhi::RenderingColorAttachmentInfo {
-                    image_view: dst_view,
-                    image_layout: rhi::ImageLayout::ColorAttachment,
-                    load_op: rhi::AttachmentLoadOp::Clear(rhi::ColorClearValue::Int(0)),
-                    store_op: rhi::AttachmentStoreOp::Store,
-                }],
-                depth_stencil_attachment: None,
-                allow_uav_writes: false,
-            });
-            encoder.bind_graphics_pipeline(&state.pipeline);
-            encoder.set_viewports(&[rhi::Viewport {
+            let mut render = encoder.begin_rendering(
+                &rhi::BeginRenderingInfo {
+                    layer_count: 1,
+                    extent: dst_desc.get_extent_2d(),
+                    color_attachments: &[rhi::RenderingColorAttachmentInfo {
+                        image_view: dst_view,
+                        image_layout: rhi::ImageLayout::ColorAttachment,
+                        load_op: rhi::AttachmentLoadOp::Clear(rhi::ColorClearValue::Int(0)),
+                        store_op: rhi::AttachmentStoreOp::Store,
+                    }],
+                    depth_stencil_attachment: None,
+                    allow_uav_writes: false,
+                },
+                nstr!("CompositePlanes::render_pass"),
+            );
+            render.bind_graphics_pipeline(&state.pipeline);
+            render.set_viewports(&[rhi::Viewport {
                 x: 0.0,
                 y: 0.0,
                 width: dst_desc.width as _,
@@ -133,7 +136,7 @@ pub fn pass(
                 min_depth: 0.0,
                 max_depth: 1.0,
             }]);
-            encoder.set_scissor_rects(&[rhi::Rect {
+            render.set_scissor_rects(&[rhi::Rect {
                 x: 0,
                 y: 0,
                 w: dst_desc.width,
@@ -170,19 +173,15 @@ pub fn pass(
                     .update_parameter_block(block_layout, block, 0, &params);
 
                 let level = 0.0f32;
-                encoder.set_push_constant_block(bytemuck::bytes_of(&level));
+                render.set_push_constant_block(bytemuck::bytes_of(&level));
 
-                encoder.bind_parameter_blocks(
-                    state.layout.binding_signature.as_ref(),
-                    rhi::PipelineBindPoint::Graphics,
-                    0,
-                    &[block],
-                );
+                render.bind_parameter_blocks(state.layout.binding_signature.as_ref(), 0, &[block]);
 
-                encoder.draw(3, 1, 0, 0);
+                render.draw(3, 1, 0, 0);
             }
 
-            encoder.end_rendering();
+            // End the compute pass explicitly
+            drop(render);
         }
     });
 

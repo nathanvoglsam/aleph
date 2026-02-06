@@ -66,9 +66,7 @@ impl IGetPlatformInterface for CommandList {
 unsafe impl Send for CommandList {}
 
 impl ICommandList for CommandList {
-    fn begin_general<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError> {
+    fn begin_general(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         if matches!(self.list_type, QueueType::General) {
             // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
             Ok(self.begin()?)
@@ -79,9 +77,7 @@ impl ICommandList for CommandList {
         }
     }
 
-    fn begin_compute<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError> {
+    fn begin_compute(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         if matches!(self.list_type, QueueType::General | QueueType::Compute) {
             // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
             Ok(self.begin()?)
@@ -92,16 +88,14 @@ impl ICommandList for CommandList {
         }
     }
 
-    fn begin_transfer<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError> {
+    fn begin_transfer(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
         Ok(self.begin()?)
     }
 }
 
 impl CommandList {
-    fn begin<'a>(&'a mut self) -> Result<Box<Encoder<'a>>, CommandListBeginError> {
+    fn begin(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         match self.state {
             ListState::Empty => {
                 // Open the command list for recording with no bound pipeline so we can attach it to
@@ -127,7 +121,7 @@ impl CommandList {
                 let _buffer = self.buffer;
                 let _context = self._device.context.clone();
                 let _device = self._device.clone();
-                let encoder = Encoder::<'a> {
+                let encoder = Encoder::<'_> {
                     _parent: self,
                     _buffer,
                     _context,
@@ -136,7 +130,10 @@ impl CommandList {
                     bound_compute_pipeline: None,
                     arena: Blink::new_in(BlinkAlloc::new_in(RhiSystem::default())),
                 };
-                Ok(Box::new(encoder))
+                let encoder = Box::new(encoder);
+
+                // Safety: This isn't unsound/unsafe
+                unsafe { Ok(CommandEncoder::from_abi(encoder)) }
             }
             ListState::Open => Err(CommandListBeginError::InvalidCommandListState),
             ListState::Closed => Err(CommandListBeginError::InvalidCommandListState),

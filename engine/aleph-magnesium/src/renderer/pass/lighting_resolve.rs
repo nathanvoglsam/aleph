@@ -168,18 +168,17 @@ pub fn pass(
             ];
             device.update_parameter_block(block_layout, block, 0, &params);
 
-            encoder.bind_compute_pipeline(&state.pipeline);
-            encoder.bind_parameter_blocks(
-                state.binding_signature.as_ref(),
-                rhi::PipelineBindPoint::Compute,
-                0,
-                &[block],
-            );
+            let mut compute = encoder.begin_compute(nstr!("DeferredLightingPass::compute_pass"));
+            compute.bind_compute_pipeline(&state.pipeline);
+            compute.bind_parameter_blocks(state.binding_signature.as_ref(), 0, &[block]);
 
             let gbuffer0_desc = device.get_texture_desc(gbuffer0);
             let group_count_x = gbuffer0_desc.width.div_ceil(8);
             let group_count_y = gbuffer0_desc.height.div_ceil(8);
-            encoder.dispatch(group_count_x, group_count_y, 1);
+            compute.dispatch(group_count_x, group_count_y, 1);
+
+            // End the compute pass explicitly
+            drop(compute);
         }
     });
 }

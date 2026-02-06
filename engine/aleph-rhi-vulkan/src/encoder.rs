@@ -63,8 +63,8 @@ impl<'a> IGetPlatformInterface for Encoder<'a> {
     }
 }
 
-impl<'a> IGeneralEncoder for Encoder<'a> {
-    unsafe fn bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
+impl<'a> ICommandEncoderAbi for Encoder<'a> {
+    unsafe fn __bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
         unsafe {
             let concrete = GraphicsPipeline::get_owned(pipeline);
 
@@ -81,7 +81,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn bind_vertex_buffers(
+    unsafe fn __bind_vertex_buffers(
         &mut self,
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
@@ -108,7 +108,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn bind_index_buffer(
+    unsafe fn __bind_index_buffer(
         &mut self,
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
@@ -130,7 +130,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
+    unsafe fn __set_viewports(&mut self, viewports: &[Viewport]) {
         {
             let mut new_viewports = BVec::with_capacity_in(viewports.len(), self.arena.allocator());
             for v in viewports {
@@ -155,7 +155,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
+    unsafe fn __set_scissor_rects(&mut self, rects: &[Rect]) {
         {
             let mut new_rects = BVec::with_capacity_in(rects.len(), self.arena.allocator());
             for v in rects {
@@ -177,7 +177,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn set_push_constant_block(&mut self, data: &[u8]) {
+    unsafe fn __set_push_constant_block(&mut self, data: &[u8]) {
         let pipeline = self
             .bound_graphics_pipeline
             .as_deref()
@@ -196,7 +196,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
+    unsafe fn __begin_rendering(&mut self, info: &BeginRenderingInfo) {
         {
             let mut color_attachments =
                 BVec::with_capacity_in(info.color_attachments.len(), self.arena.allocator());
@@ -303,13 +303,13 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn end_rendering(&mut self) {
+    unsafe fn __end_rendering(&mut self) {
         unsafe {
             self._device.device.cmd_end_rendering(self._buffer);
         }
     }
 
-    unsafe fn draw(
+    unsafe fn __draw(
         &mut self,
         vertex_count: u32,
         instance_count: u32,
@@ -327,7 +327,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn draw_indexed(
+    unsafe fn __draw_indexed(
         &mut self,
         index_count: u32,
         instance_count: u32,
@@ -346,10 +346,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             )
         }
     }
-}
 
-impl<'a> IComputeEncoder for Encoder<'a> {
-    unsafe fn bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
+    unsafe fn __bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
         let concrete = ComputePipeline::get_owned(pipeline);
 
         // Binds the pipeline
@@ -366,7 +364,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         self.bound_compute_pipeline = Some(concrete);
     }
 
-    unsafe fn bind_parameter_blocks(
+    unsafe fn __bind_parameter_blocks(
         &mut self,
         binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
@@ -390,7 +388,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn push_parameters(
+    unsafe fn __push_parameters(
         &mut self,
         binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
@@ -427,7 +425,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
+    unsafe fn __dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
         unsafe {
             self._device.device.cmd_dispatch(
                 self._buffer,
@@ -437,10 +435,8 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             );
         }
     }
-}
 
-impl<'a> ITransferEncoder for Encoder<'a> {
-    unsafe fn resource_barrier(
+    unsafe fn __resource_barrier(
         &mut self,
         global_barriers: &[GlobalBarrier],
         buffer_barriers: &[BufferBarrier],
@@ -534,7 +530,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn copy_buffer_regions(
+    unsafe fn __copy_buffer_regions(
         &mut self,
         src: &BufferHandle,
         dst: &BufferHandle,
@@ -566,7 +562,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn copy_buffer_to_texture(
+    unsafe fn __copy_buffer_to_texture(
         &mut self,
         src: &BufferHandle,
         dst: &TextureHandle,
@@ -615,7 +611,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn copy_texture_regions(
+    unsafe fn __copy_texture_regions(
         &mut self,
         src: &TextureHandle,
         dst: &TextureHandle,
@@ -673,7 +669,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
+    unsafe fn __close(&mut self) -> Result<(), CommandListCloseError> {
         match self._parent.state {
             ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
             ListState::Open => unsafe {
@@ -689,7 +685,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
+    unsafe fn __set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
         if let Some(loader) = self._device.debug_loader.as_ref() {
             let color: [f32; 4] = color.into();
             let info = vk::DebugUtilsLabelEXT::default()
@@ -702,7 +698,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn begin_event(&mut self, color: Color, message: &aleph_nstr::NStr) {
+    unsafe fn __begin_event(&mut self, color: Color, message: &aleph_nstr::NStr) {
         if let Some(loader) = self._device.debug_loader.as_ref() {
             let color: [f32; 4] = color.into();
             let info = vk::DebugUtilsLabelEXT::default()
@@ -715,7 +711,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn end_event(&mut self) {
+    unsafe fn __end_event(&mut self) {
         if let Some(loader) = self._device.debug_loader.as_ref() {
             unsafe { loader.cmd_end_debug_utils_label(self._buffer) }
         }

@@ -36,6 +36,7 @@ use std::cell::{Cell, RefCell};
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 use aleph_any::AnyArc;
+use aleph_nstr::nstr;
 use thiserror::Error;
 
 use crate::async_resource_loader::buffer_upload_range::BufferUploadRange;
@@ -554,6 +555,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
                 .inspect_err(|err| log::error!("{}", err))
                 .map_err(|_| FlushError::CommandRecordingFailure)?;
 
+            let mut transfer = encoder.begin_transfer(nstr!("AsyncResourceLoader::flush"));
+
             let mut buffer_barriers: BVec<_, MgAsyncLdrSystem> = BVec::new_in(system());
             let mut texture_barriers: BVec<_, MgAsyncLdrSystem> = BVec::new_in(system());
 
@@ -571,7 +574,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
                         };
 
                         // Record the copy command
-                        encoder.copy_buffer_regions(
+                        transfer.copy_buffer_regions(
                             &self.upload_memory_manager.buffer,
                             &load.buffer,
                             &[block.region.clone()],
@@ -634,7 +637,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
                             // Issue singular barriers for resource initialization as batching them
                             // is not worth the effort as they're rare. The before scope is empty
                             // so they should be fine.
-                            encoder.resource_barrier(
+                            transfer.resource_barrier(
                                 &[],
                                 &[],
                                 &[rhi::TextureBarrier {
@@ -652,7 +655,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
                         }
 
                         // Record the copy commands
-                        encoder.copy_buffer_to_texture(
+                        transfer.copy_buffer_to_texture(
                             &self.upload_memory_manager.buffer,
                             &load.texture,
                             &block.regions,
@@ -713,7 +716,10 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
 
             // Finally after all queued copies are recorded we issue all the barriers we have
             // deferred from the recording loop.
-            encoder.resource_barrier(&[], &buffer_barriers, &texture_barriers);
+            transfer.resource_barrier(&[], &buffer_barriers, &texture_barriers);
+
+            // End the transfer encoder
+            drop(transfer);
 
             encoder
                 .close()

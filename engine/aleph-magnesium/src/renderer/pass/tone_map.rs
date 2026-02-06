@@ -127,18 +127,17 @@ pub fn pass(
             ];
             device.update_parameter_block(block_layout.as_ref(), block, 0, &params);
 
-            encoder.bind_compute_pipeline(&pipeline);
-            encoder.bind_parameter_blocks(
-                binding_signature.as_ref(),
-                rhi::PipelineBindPoint::Compute,
-                0,
-                &[block],
-            );
+            let mut compute = encoder.begin_compute(nstr!("TonemapPass::compute_pass"));
+            compute.bind_compute_pipeline(&pipeline);
+            compute.bind_parameter_blocks(binding_signature.as_ref(), 0, &[block]);
 
             let input_desc = device.get_texture_desc(input);
             let group_count_x = input_desc.width.div_ceil(8);
             let group_count_y = input_desc.height.div_ceil(8);
-            encoder.dispatch(group_count_x, group_count_y, 1);
+            compute.dispatch(group_count_x, group_count_y, 1);
+
+            // End the compute pass explicitly
+            drop(compute);
         }
     });
 

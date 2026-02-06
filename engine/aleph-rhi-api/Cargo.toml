@@ -41,6 +41,10 @@ edition.workspace = true
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
+[features]
+default = []
+markers = []
+
 [dependencies]
 aleph-any = { workspace = true }
 aleph-nstr = { workspace = true }

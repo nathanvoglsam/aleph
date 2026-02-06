@@ -31,39 +31,417 @@ use aleph_nstr::NStr;
 
 use crate::*;
 
-/// # Safety
-///
-/// All the functions that are part of this API have preconditions that I need to document. They
-/// mostly mirror Vulkan's requirements so check those for now.
-///
-/// TODO: DOCS
-#[allow(clippy::missing_safety_doc)]
-pub trait IGeneralEncoder: IComputeEncoder {
-    unsafe fn bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle);
+#[repr(transparent)]
+pub struct CommandEncoder<'a>(Box<dyn ICommandEncoderAbi + 'a>);
 
-    unsafe fn bind_vertex_buffers(
+impl<'a> CommandEncoder<'a> {
+    /// Internal function that must be made available for backends to construct instances of this
+    /// type.
+    ///
+    /// Do not use.
+    #[doc(hidden)]
+    pub unsafe fn from_abi(v: Box<dyn ICommandEncoderAbi + 'a>) -> Self {
+        Self(v)
+    }
+
+    /// Internal function that must be made available for backends.
+    ///
+    /// Do not use.
+    #[doc(hidden)]
+    pub unsafe fn into_abi(self) -> Box<dyn ICommandEncoderAbi + 'a> {
+        // Safety: the transmute is safe because repr(transparent).
+        unsafe {
+            // Copy and forget the box out of 'self' so we don't run the drop impl.
+            let v: Box<dyn ICommandEncoderAbi + 'a> = std::mem::transmute_copy(&self.0);
+            std::mem::forget(self);
+            v
+        }
+    }
+
+    #[inline]
+    pub unsafe fn begin_rendering(
+        &mut self,
+        info: &BeginRenderingInfo,
+        debug_name: &NStr,
+    ) -> RenderEncoder<'_> {
+        if cfg!(feature = "markers") {
+            unsafe {
+                self.0.__begin_event(Color::GREEN, debug_name);
+            }
+        }
+        unsafe {
+            self.0.__begin_rendering(info);
+        }
+
+        RenderEncoder(self.0.as_mut())
+    }
+
+    #[inline]
+    pub unsafe fn begin_compute(&mut self, debug_name: &NStr) -> ComputeEncoder<'_> {
+        if cfg!(feature = "markers") {
+            unsafe {
+                self.0.__begin_event(Color::BLUE, debug_name);
+            }
+        }
+
+        ComputeEncoder(self.0.as_mut())
+    }
+
+    #[inline]
+    pub unsafe fn begin_transfer(&mut self, debug_name: &NStr) -> TransferEncoder<'_> {
+        if cfg!(feature = "markers") {
+            unsafe {
+                self.0.__begin_event(Color::MAGENTA, debug_name);
+            }
+        }
+
+        TransferEncoder(self.0.as_mut())
+    }
+
+    #[inline(always)]
+    pub unsafe fn resource_barrier(
+        &mut self,
+        memory_barriers: &[GlobalBarrier],
+        buffer_barriers: &[BufferBarrier],
+        texture_barriers: &[TextureBarrier],
+    ) {
+        unsafe {
+            self.0
+                .__resource_barrier(memory_barriers, buffer_barriers, texture_barriers)
+        }
+    }
+
+    #[inline(always)]
+    pub unsafe fn close(self) -> Result<(), CommandListCloseError> {
+        unsafe {
+            let mut inner = Self::into_abi(self);
+            inner.__close()
+        }
+    }
+
+    #[inline]
+    pub fn debug_zone(&mut self, color: Color, message: &NStr, f: impl FnOnce(&mut Self)) {
+        unsafe {
+            if cfg!(feature = "markers") {
+                self.0.__begin_event(color, message);
+            }
+
+            f(self);
+
+            if cfg!(feature = "markers") {
+                self.0.__end_event();
+            }
+        }
+    }
+}
+
+impl<'a> Drop for CommandEncoder<'a> {
+    fn drop(&mut self) {
+        // Safety: lmao. realistically we're only as safe as the commands we recorded so the safety
+        //         contract is on the commands.
+        unsafe {
+            self.0.__close().unwrap();
+        }
+    }
+}
+
+#[repr(transparent)]
+pub struct RenderEncoder<'a>(&'a mut dyn ICommandEncoderAbi);
+
+impl<'a> RenderEncoder<'a> {
+    #[inline(always)]
+    pub unsafe fn bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
+        unsafe { self.0.__bind_graphics_pipeline(pipeline) }
+    }
+
+    #[inline(always)]
+    pub unsafe fn bind_vertex_buffers(
+        &mut self,
+        first_binding: u32,
+        bindings: &[InputAssemblyBufferBinding],
+    ) {
+        unsafe { self.0.__bind_vertex_buffers(first_binding, bindings) }
+    }
+
+    #[inline(always)]
+    pub unsafe fn bind_index_buffer(
+        &mut self,
+        index_type: IndexType,
+        binding: &InputAssemblyBufferBinding,
+    ) {
+        unsafe { self.0.__bind_index_buffer(index_type, binding) }
+    }
+
+    #[inline(always)]
+    pub unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
+        unsafe { self.0.__set_viewports(viewports) }
+    }
+
+    #[inline(always)]
+    pub unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
+        unsafe { self.0.__set_scissor_rects(rects) }
+    }
+
+    #[inline(always)]
+    pub unsafe fn bind_parameter_blocks(
+        &mut self,
+        binding_signature: &dyn IBindingSignature,
+        first_block: u32,
+        blocks: &[ParameterBlockHandle],
+    ) {
+        unsafe {
+            self.0.__bind_parameter_blocks(
+                binding_signature,
+                PipelineBindPoint::Graphics,
+                first_block,
+                blocks,
+            )
+        }
+    }
+
+    #[inline(always)]
+    pub unsafe fn push_parameters(
+        &mut self,
+        binding_signature: &dyn IBindingSignature,
+        block: u32,
+        base: u32,
+        writes: &[ParameterWrite],
+    ) {
+        unsafe {
+            self.0.__push_parameters(
+                binding_signature,
+                PipelineBindPoint::Graphics,
+                block,
+                base,
+                writes,
+            )
+        }
+    }
+
+    #[inline(always)]
+    pub unsafe fn set_push_constant_block(&mut self, data: &[u8]) {
+        unsafe { self.0.__set_push_constant_block(data) }
+    }
+
+    #[inline(always)]
+    pub unsafe fn draw(
+        &mut self,
+        vertex_count: u32,
+        instance_count: u32,
+        first_vertex: u32,
+        first_instance: u32,
+    ) {
+        unsafe {
+            self.0
+                .__draw(vertex_count, instance_count, first_vertex, first_instance)
+        }
+    }
+
+    #[inline(always)]
+    pub unsafe fn draw_indexed(
+        &mut self,
+        index_count: u32,
+        instance_count: u32,
+        first_index: u32,
+        first_instance: u32,
+        vertex_offset: i32,
+    ) {
+        unsafe {
+            self.0.__draw_indexed(
+                index_count,
+                instance_count,
+                first_index,
+                first_instance,
+                vertex_offset,
+            )
+        }
+    }
+}
+
+impl<'a> Drop for RenderEncoder<'a> {
+    #[inline(always)]
+    fn drop(&mut self) {
+        unsafe {
+            self.0.__end_rendering();
+            if cfg!(feature = "markers") {
+                self.0.__end_event();
+            }
+        }
+    }
+}
+
+#[repr(transparent)]
+pub struct ComputeEncoder<'a>(&'a mut dyn ICommandEncoderAbi);
+
+impl<'a> ComputeEncoder<'a> {
+    #[inline(always)]
+    pub unsafe fn bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
+        unsafe { self.0.__bind_compute_pipeline(pipeline) }
+    }
+
+    #[inline(always)]
+    pub unsafe fn bind_parameter_blocks(
+        &mut self,
+        binding_signature: &dyn IBindingSignature,
+        first_block: u32,
+        blocks: &[ParameterBlockHandle],
+    ) {
+        unsafe {
+            self.0.__bind_parameter_blocks(
+                binding_signature,
+                PipelineBindPoint::Compute,
+                first_block,
+                blocks,
+            )
+        }
+    }
+
+    #[inline(always)]
+    pub unsafe fn push_parameters(
+        &mut self,
+        binding_signature: &dyn IBindingSignature,
+        block: u32,
+        base: u32,
+        writes: &[ParameterWrite],
+    ) {
+        unsafe {
+            self.0.__push_parameters(
+                binding_signature,
+                PipelineBindPoint::Compute,
+                block,
+                base,
+                writes,
+            )
+        }
+    }
+
+    #[inline(always)]
+    pub unsafe fn set_push_constant_block(&mut self, data: &[u8]) {
+        unsafe { self.0.__set_push_constant_block(data) }
+    }
+
+    #[inline(always)]
+    pub unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
+        unsafe {
+            self.0
+                .__dispatch(group_count_x, group_count_y, group_count_z)
+        }
+    }
+
+    #[inline(always)]
+    pub unsafe fn resource_barrier(
+        &mut self,
+        memory_barriers: &[GlobalBarrier],
+        buffer_barriers: &[BufferBarrier],
+        texture_barriers: &[TextureBarrier],
+    ) {
+        unsafe {
+            self.0
+                .__resource_barrier(memory_barriers, buffer_barriers, texture_barriers)
+        }
+    }
+}
+
+impl<'a> Drop for ComputeEncoder<'a> {
+    #[inline(always)]
+    fn drop(&mut self) {
+        if cfg!(feature = "markers") {
+            unsafe {
+                self.0.__end_event();
+            }
+        }
+    }
+}
+
+#[repr(transparent)]
+pub struct TransferEncoder<'a>(&'a mut dyn ICommandEncoderAbi);
+
+impl<'a> TransferEncoder<'a> {
+    #[inline(always)]
+    pub unsafe fn copy_buffer_regions(
+        &mut self,
+        src: &BufferHandle,
+        dst: &BufferHandle,
+        regions: &[BufferCopyRegion],
+    ) {
+        unsafe { self.0.__copy_buffer_regions(src, dst, regions) }
+    }
+
+    #[inline(always)]
+    pub unsafe fn copy_buffer_to_texture(
+        &mut self,
+        src: &BufferHandle,
+        dst: &TextureHandle,
+        regions: &[BufferToTextureCopyRegion],
+    ) {
+        unsafe { self.0.__copy_buffer_to_texture(src, dst, regions) }
+    }
+
+    #[inline(always)]
+    pub unsafe fn copy_texture_regions(
+        &mut self,
+        src: &TextureHandle,
+        dst: &TextureHandle,
+        regions: &[TextureToTextureCopyInfo],
+    ) {
+        unsafe { self.0.__copy_texture_regions(src, dst, regions) }
+    }
+
+    #[inline(always)]
+    pub unsafe fn resource_barrier(
+        &mut self,
+        memory_barriers: &[GlobalBarrier],
+        buffer_barriers: &[BufferBarrier],
+        texture_barriers: &[TextureBarrier],
+    ) {
+        unsafe {
+            self.0
+                .__resource_barrier(memory_barriers, buffer_barriers, texture_barriers)
+        }
+    }
+}
+
+impl<'a> Drop for TransferEncoder<'a> {
+    #[inline(always)]
+    fn drop(&mut self) {
+        if cfg!(feature = "markers") {
+            unsafe {
+                self.0.__end_event();
+            }
+        }
+    }
+}
+
+/// The internal ABI/API that a backend should implement for a command encoder.
+///
+/// This is not expected to be used directly. Use [`CommandEncoder`] along with [`RenderEncoder`],
+/// [`ComputeEncoder`], and [`TransferEncoder`]. Those expose the intended public API.
+pub trait ICommandEncoderAbi: Send {
+    unsafe fn __bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle);
+
+    unsafe fn __bind_vertex_buffers(
         &mut self,
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
     );
 
-    unsafe fn bind_index_buffer(
+    unsafe fn __bind_index_buffer(
         &mut self,
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
     );
 
-    unsafe fn set_viewports(&mut self, viewports: &[Viewport]);
+    unsafe fn __set_viewports(&mut self, viewports: &[Viewport]);
 
-    unsafe fn set_scissor_rects(&mut self, rects: &[Rect]);
+    unsafe fn __set_scissor_rects(&mut self, rects: &[Rect]);
 
-    unsafe fn set_push_constant_block(&mut self, data: &[u8]);
+    unsafe fn __set_push_constant_block(&mut self, data: &[u8]);
 
-    unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo);
+    unsafe fn __begin_rendering(&mut self, info: &BeginRenderingInfo);
 
-    unsafe fn end_rendering(&mut self);
+    unsafe fn __end_rendering(&mut self);
 
-    unsafe fn draw(
+    unsafe fn __draw(
         &mut self,
         vertex_count: u32,
         instance_count: u32,
@@ -71,7 +449,7 @@ pub trait IGeneralEncoder: IComputeEncoder {
         first_instance: u32,
     );
 
-    unsafe fn draw_indexed(
+    unsafe fn __draw_indexed(
         &mut self,
         index_count: u32,
         instance_count: u32,
@@ -79,19 +457,10 @@ pub trait IGeneralEncoder: IComputeEncoder {
         first_instance: u32,
         vertex_offset: i32,
     );
-}
 
-/// # Safety
-///
-/// All the functions that are part of this API have preconditions that I need to document. They
-/// mostly mirror Vulkan's requirements so check those for now.
-///
-/// TODO: DOCS
-#[allow(clippy::missing_safety_doc)]
-pub trait IComputeEncoder: ITransferEncoder {
-    unsafe fn bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle);
+    unsafe fn __bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle);
 
-    unsafe fn bind_parameter_blocks(
+    unsafe fn __bind_parameter_blocks(
         &mut self,
         binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
@@ -99,7 +468,7 @@ pub trait IComputeEncoder: ITransferEncoder {
         blocks: &[ParameterBlockHandle],
     );
 
-    unsafe fn push_parameters(
+    unsafe fn __push_parameters(
         &mut self,
         binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
@@ -108,87 +477,43 @@ pub trait IComputeEncoder: ITransferEncoder {
         writes: &[ParameterWrite],
     );
 
-    unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
-}
+    unsafe fn __dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
 
-/// # Safety
-///
-/// All the functions that are part of this API have preconditions that I need to document. They
-/// mostly mirror Vulkan's requirements so check those for now.
-///
-/// TODO: DOCS
-#[allow(clippy::missing_safety_doc)]
-pub trait ITransferEncoder: IGetPlatformInterface + Send {
-    unsafe fn resource_barrier(
+    unsafe fn __resource_barrier(
         &mut self,
         memory_barriers: &[GlobalBarrier],
         buffer_barriers: &[BufferBarrier],
         texture_barriers: &[TextureBarrier],
     );
 
-    unsafe fn copy_buffer_regions(
+    unsafe fn __copy_buffer_regions(
         &mut self,
         src: &BufferHandle,
         dst: &BufferHandle,
         regions: &[BufferCopyRegion],
     );
 
-    unsafe fn copy_buffer_to_texture(
+    unsafe fn __copy_buffer_to_texture(
         &mut self,
         src: &BufferHandle,
         dst: &TextureHandle,
         regions: &[BufferToTextureCopyRegion],
     );
 
-    unsafe fn copy_texture_regions(
+    unsafe fn __copy_texture_regions(
         &mut self,
         src: &TextureHandle,
         dst: &TextureHandle,
         regions: &[TextureToTextureCopyInfo],
     );
 
-    unsafe fn close(&mut self) -> Result<(), CommandListCloseError>;
+    unsafe fn __close(&mut self) -> Result<(), CommandListCloseError>;
 
-    ///
-    /// Emits an instantaneous 'marker' on this command list, with the given message and message
-    /// color.
-    ///
-    /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
-    /// instance is created and the required backend facilities are present (i.e. Vulkan may not
-    /// always expose the `VK_EXT_debug_utils` extension).
-    ///
-    /// # Safety
-    ///
-    /// TODO investigate
-    ///
-    unsafe fn set_marker(&mut self, color: Color, message: &NStr);
+    unsafe fn __set_marker(&mut self, color: Color, message: &NStr);
 
-    ///
-    /// Marks the beginning of a new event on this command list, with the given message and message
-    /// color.
-    ///
-    /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
-    /// instance is created and the required backend facilities are present (i.e. Vulkan may not
-    /// always expose the `VK_EXT_debug_utils` extension).
-    ///
-    /// # Safety
-    ///
-    /// TODO investigate
-    ///
-    unsafe fn begin_event(&mut self, color: Color, message: &NStr);
+    unsafe fn __begin_event(&mut self, color: Color, message: &NStr);
 
-    ///
-    /// Marks the end of an event on this command list
-    ///
-    /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
-    /// instance is created and the required backend facilities are present (i.e. Vulkan may not
-    /// always expose the `VK_EXT_debug_utils` extension).
-    ///
-    /// # Safety
-    ///
-    /// TODO investigate
-    ///
-    unsafe fn end_event(&mut self);
+    unsafe fn __end_event(&mut self);
 }
 
 /// Enum flags for barrier commands for specifying queue ownership transition behavior.

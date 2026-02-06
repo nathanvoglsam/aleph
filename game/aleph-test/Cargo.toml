@@ -42,8 +42,8 @@ configs = ["aleph-test", "@game"]
 
 [features]
 default = ["development-build"]
-development-build = ["aleph-target/development-build"]
-instrumentation = ["aleph-alloc/instrumentation-enabled"]
+development-build = ["aleph-engine/development-build"]
+instrumentation = ["aleph-engine/instrumentation"]
 
 [dependencies]
 aleph-alloc = { workspace = true, features = [] }

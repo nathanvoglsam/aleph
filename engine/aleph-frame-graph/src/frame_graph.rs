@@ -145,7 +145,7 @@ impl<A: PassArgs> FrameGraph<A> {
         &mut self,
         frame_index: usize,
         import_bundle: &ImportBundle,
-        encoder: &mut dyn IGeneralEncoder,
+        encoder: &mut CommandEncoder,
         args: &A::Args<'_>,
     ) {
         // TODO: parallel encode
@@ -178,128 +178,126 @@ impl<A: PassArgs> FrameGraph<A> {
             linear_descriptor_pool: linear_descriptor_pool.as_ref(),
         };
 
-        unsafe {
-            encoder.begin_event(Color::BLUE, nstr!("FrameGraph::execute"));
-        }
+        encoder.debug_zone(Color::CYAN, nstr!("FrameGraph::execute"), |encoder| {
+            let mut graph_channel = GraphChannel {
+                has_global_or_buffer_barrier: false,
+                global_barrier: GlobalBarrier::default(),
+                texture_objects: BVec::new_in(system()),
+                texture_barriers: BVec::new_in(system()),
+            };
+            for bundle in self.execution_bundles.iter() {
+                let mut has_memory_barrier =
+                    std::mem::take(&mut graph_channel.has_global_or_buffer_barrier);
+                let mut memory_barrier = std::mem::take(&mut graph_channel.global_barrier);
 
-        let mut graph_channel = GraphChannel {
-            has_global_or_buffer_barrier: false,
-            global_barrier: GlobalBarrier::default(),
-            texture_objects: BVec::new_in(system()),
-            texture_barriers: BVec::new_in(system()),
-        };
-        for bundle in self.execution_bundles.iter() {
-            let mut has_memory_barrier =
-                std::mem::take(&mut graph_channel.has_global_or_buffer_barrier);
-            let mut memory_barrier = std::mem::take(&mut graph_channel.global_barrier);
-
-            let mut texture_barriers = Vec::new();
-            texture_barriers.extend(graph_channel.texture_barriers.drain(..));
-            let barriers = unsafe { bundle.barriers.as_ref() };
-            for &barrier in barriers {
-                let node = &self.ir_nodes[barrier];
-                match node {
-                    IRNode::RenderPass(_) => unreachable!(),
-                    IRNode::Barrier(v) => {
-                        memory_barrier.before_sync |= v.before_sync;
-                        memory_barrier.before_access |= v.before_access;
-                        memory_barrier.after_sync |= v.after_sync;
-                        memory_barrier.after_access |= v.after_access;
-                        has_memory_barrier = true;
+                let mut texture_barriers = Vec::new();
+                texture_barriers.extend(graph_channel.texture_barriers.drain(..));
+                let barriers = unsafe { bundle.barriers.as_ref() };
+                for &barrier in barriers {
+                    let node = &self.ir_nodes[barrier];
+                    match node {
+                        IRNode::RenderPass(_) => unreachable!(),
+                        IRNode::Barrier(v) => {
+                            memory_barrier.before_sync |= v.before_sync;
+                            memory_barrier.before_access |= v.before_access;
+                            memory_barrier.after_sync |= v.after_sync;
+                            memory_barrier.after_access |= v.after_access;
+                            has_memory_barrier = true;
+                        }
+                        IRNode::LayoutChange(v) => {
+                            let root_id = v.resource_id.root;
+                            let texture = transient_bundle
+                                .get_resource(root_id)
+                                .or_else(|| import_bundle.get_resource(root_id))
+                                .unwrap();
+                            let texture = match texture {
+                                ResourceVariant::Buffer(v) => {
+                                    let desc = self.device.get_buffer_desc(v);
+                                    let name = desc.name.unwrap_or("Unnamed Buffer");
+                                    panic!(
+                                        "ResourceVariant for resource '{name}' is not a 'Texture'"
+                                    );
+                                }
+                                ResourceVariant::Texture(v) => v,
+                            };
+                            texture_barriers.push(TextureBarrier {
+                                texture: Some(texture),
+                                subresource_range: v.subresource_range.clone(),
+                                before_sync: v.before_sync,
+                                after_sync: v.after_sync,
+                                before_access: v.before_access,
+                                after_access: v.after_access,
+                                before_layout: v.before_layout,
+                                after_layout: v.after_layout,
+                                queue_transition: None,
+                            });
+                        }
                     }
-                    IRNode::LayoutChange(v) => {
-                        let root_id = v.resource_id.root;
-                        let texture = transient_bundle
-                            .get_resource(root_id)
-                            .or_else(|| import_bundle.get_resource(root_id))
-                            .unwrap();
-                        let texture = match texture {
-                            ResourceVariant::Buffer(v) => {
-                                let desc = self.device.get_buffer_desc(v);
-                                let name = desc.name.unwrap_or("Unnamed Buffer");
-                                panic!("ResourceVariant for resource '{name}' is not a 'Texture'");
-                            }
-                            ResourceVariant::Texture(v) => v,
-                        };
-                        texture_barriers.push(TextureBarrier {
-                            texture: Some(texture),
-                            subresource_range: v.subresource_range.clone(),
-                            before_sync: v.before_sync,
-                            after_sync: v.after_sync,
-                            before_access: v.before_access,
-                            after_access: v.after_access,
-                            before_layout: v.before_layout,
-                            after_layout: v.after_layout,
-                            queue_transition: None,
+                }
+
+                if !texture_barriers.is_empty() || has_memory_barrier {
+                    let memory_barrier = if has_memory_barrier {
+                        std::slice::from_ref(&memory_barrier)
+                    } else {
+                        &[]
+                    };
+                    unsafe {
+                        encoder.resource_barrier(memory_barrier, &[], &texture_barriers);
+                    }
+                }
+
+                // Clear the texture objects from the graph channel now that we've issued the
+                // barriers
+                graph_channel.texture_objects.clear();
+
+                let passes = unsafe { bundle.passes.as_ref() };
+                for &pass in passes {
+                    let node = &self.ir_nodes[pass];
+                    debug_assert!(node.is_render_pass());
+
+                    let render_pass = node.render_pass();
+                    let render_pass = &mut self.render_passes[render_pass];
+
+                    // If the render pass has requested it doesn't need to be executed then we just
+                    // skip calling it.
+                    if render_pass.skip {
+                        continue;
+                    }
+
+                    unsafe {
+                        encoder.debug_zone(Color::RED, render_pass.name.as_ref(), |encoder| {
+                            aleph_profile::scope_named!(
+                                "FrameGraphPass",
+                                render_pass.name.as_ref()
+                            );
+
+                            render_pass
+                                .pass
+                                .execute(encoder, &mut graph_channel, &resources, args);
                         });
                     }
                 }
             }
 
-            if !texture_barriers.is_empty() || has_memory_barrier {
-                let memory_barrier = if has_memory_barrier {
-                    std::slice::from_ref(&memory_barrier)
-                } else {
-                    &[]
-                };
-                unsafe {
-                    encoder.resource_barrier(memory_barrier, &[], &texture_barriers);
-                }
-            }
+            {
+                let has_memory_barrier = graph_channel.has_global_or_buffer_barrier;
+                let memory_barrier = graph_channel.global_barrier;
 
-            // Clear the texture objects from the graph channel now that we've issued the barriers
-            graph_channel.texture_objects.clear();
+                let mut texture_barriers = Vec::new();
+                texture_barriers.extend(graph_channel.texture_barriers.drain(..));
 
-            let passes = unsafe { bundle.passes.as_ref() };
-            for &pass in passes {
-                let node = &self.ir_nodes[pass];
-                debug_assert!(node.is_render_pass());
-
-                let render_pass = node.render_pass();
-                let render_pass = &mut self.render_passes[render_pass];
-
-                // If the render pass has requested it doesn't need to be executed then we just
-                // skip calling it.
-                if render_pass.skip {
-                    continue;
-                }
-
-                unsafe {
-                    encoder.begin_event(Color::GREEN, render_pass.name.as_ref());
-                    {
-                        aleph_profile::scope_named!("FrameGraphPass", render_pass.name.as_ref());
-
-                        render_pass
-                            .pass
-                            .execute(encoder, &mut graph_channel, &resources, args);
+                if !texture_barriers.is_empty() || has_memory_barrier {
+                    let memory_barrier = if has_memory_barrier {
+                        std::slice::from_ref(&memory_barrier)
+                    } else {
+                        &[]
+                    };
+                    unsafe {
+                        encoder.resource_barrier(memory_barrier, &[], &texture_barriers);
                     }
-                    encoder.end_event();
                 }
             }
-        }
-
-        {
-            let has_memory_barrier = graph_channel.has_global_or_buffer_barrier;
-            let memory_barrier = graph_channel.global_barrier;
-
-            let mut texture_barriers = Vec::new();
-            texture_barriers.extend(graph_channel.texture_barriers.drain(..));
-
-            if !texture_barriers.is_empty() || has_memory_barrier {
-                let memory_barrier = if has_memory_barrier {
-                    std::slice::from_ref(&memory_barrier)
-                } else {
-                    &[]
-                };
-                unsafe {
-                    encoder.resource_barrier(memory_barrier, &[], &texture_barriers);
-                }
-            }
-        }
-
-        unsafe {
-            encoder.end_event();
-        }
+        });
 
         self.deletion_pools[frame_index]
             .descriptor_pools

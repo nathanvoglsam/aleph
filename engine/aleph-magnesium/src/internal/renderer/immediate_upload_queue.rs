@@ -30,6 +30,7 @@
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 use aleph_any::AnyArc;
+use aleph_nstr::nstr;
 use smallbox::SmallBox;
 use smallbox::space::S8;
 
@@ -65,7 +66,7 @@ impl ImmediateUploadQueue {
         &mut self,
         last_uses: &mut LastUseTracker,
         deletion_bundle: &mut DeletionBundle,
-        cmd: &mut dyn rhi::IGeneralEncoder,
+        cmd: &mut rhi::CommandEncoder,
         bpool: &BufferObjectStore,
         tpool: &TextureObjectStore,
     ) {
@@ -136,6 +137,8 @@ impl ImmediateUploadQueue {
             cmd.resource_barrier(actual_memory_barriers, &[], &before_texture_barriers);
         }
 
+        let mut transfer = unsafe { cmd.begin_transfer(nstr!("ImmediateUploadQueue::uploads")) };
+
         // This is where we perform our actual upload copies. We will copy as much data from the
         // upload source as will fit into the destination buffer, then push the src buffer into
         // the deletion bundle. As a result it remains alive long enough for the command to execute
@@ -169,7 +172,7 @@ impl ImmediateUploadQueue {
                         dst_offset: 0,
                         size,
                     };
-                    cmd.copy_buffer_regions(src, dst, &[region]);
+                    transfer.copy_buffer_regions(src, dst, &[region]);
 
                     last_uses.buffers.insert(
                         buffer_upload.target,
@@ -201,7 +204,7 @@ impl ImmediateUploadQueue {
                         ));
                     }
 
-                    cmd.copy_buffer_to_texture(src, dst, &regions);
+                    transfer.copy_buffer_to_texture(src, dst, &regions);
                     regions.clear();
 
                     last_uses.textures.insert(

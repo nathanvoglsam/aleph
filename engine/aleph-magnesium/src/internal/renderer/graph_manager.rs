@@ -159,7 +159,7 @@ impl GraphManager {
         config: &RendererConfig,
         frame_index: usize,
         import_bundle: &ImportBundle,
-        encoder: &mut dyn rhi::IGeneralEncoder,
+        encoder: &mut rhi::CommandEncoder,
         args: &GraphArgsLayout,
     ) {
         unsafe {

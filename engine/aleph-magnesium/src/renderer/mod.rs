@@ -368,7 +368,7 @@ impl Renderer {
                 self.immediate_upload_queue.record_upload_commands(
                     &mut last_uses,
                     &mut delete_bundle,
-                    cmd.as_mut(),
+                    &mut cmd,
                     &self.buffer_object_store,
                     &self.texture_object_store,
                 );
@@ -377,7 +377,7 @@ impl Renderer {
                 // non-frame-graph resources. This will issue a barrier on any dirty resources,
                 // making any preceding writes visible to the frame graph render passes.
                 last_uses.flush_for_read_in_frame_graph(
-                    cmd.as_mut(),
+                    &mut cmd,
                     &self.buffer_object_store,
                     &self.texture_object_store,
                 );
@@ -404,7 +404,7 @@ impl Renderer {
                     &self.config,
                     frame.frame_index,
                     &import_bundle,
-                    cmd.as_mut(),
+                    &mut cmd,
                     &args,
                 );
 

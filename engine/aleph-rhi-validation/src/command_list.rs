@@ -45,10 +45,9 @@ crate::impl_platform_interface_passthrough!(ValidationCommandList);
 unsafe impl Send for ValidationCommandList {}
 
 impl ICommandList for ValidationCommandList {
-    fn begin_general<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError> {
+    fn begin_general(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         let inner = self.inner.begin_general()?;
+        let inner = unsafe { inner.into_abi() }; // Safety: this is a-okay
         let encoder = Box::new(ValidationEncoder {
             inner,
             bound_graphics_pipeline: None,
@@ -56,14 +55,15 @@ impl ICommandList for ValidationCommandList {
             list_type: QueueType::General,
             render_pass_open: false,
         });
-        let encoder: Box<dyn IGeneralEncoder + 'a> = encoder;
-        Ok(encoder)
+        let encoder: Box<dyn ICommandEncoderAbi + '_> = encoder;
+
+        // Safety: This isn't unsound/unsafe
+        unsafe { Ok(CommandEncoder::from_abi(encoder)) }
     }
 
-    fn begin_compute<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError> {
+    fn begin_compute(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         let inner = self.inner.begin_compute()?;
+        let inner = unsafe { inner.into_abi() }; // Safety: this is a-okay
         let encoder = Box::new(ValidationEncoder {
             inner,
             bound_graphics_pipeline: None,
@@ -71,14 +71,15 @@ impl ICommandList for ValidationCommandList {
             list_type: QueueType::Compute,
             render_pass_open: false,
         });
-        let encoder: Box<dyn IComputeEncoder + 'a> = encoder;
-        Ok(encoder)
+        let encoder: Box<dyn ICommandEncoderAbi + '_> = encoder;
+
+        // Safety: This isn't unsound/unsafe
+        unsafe { Ok(CommandEncoder::from_abi(encoder)) }
     }
 
-    fn begin_transfer<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError> {
+    fn begin_transfer(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         let inner = self.inner.begin_transfer()?;
+        let inner = unsafe { inner.into_abi() }; // Safety: this is a-okay
         let encoder = Box::new(ValidationEncoder {
             inner,
             bound_graphics_pipeline: None,
@@ -86,7 +87,9 @@ impl ICommandList for ValidationCommandList {
             list_type: QueueType::Transfer,
             render_pass_open: false,
         });
-        let encoder: Box<dyn ITransferEncoder + 'a> = encoder;
-        Ok(encoder)
+        let encoder: Box<dyn ICommandEncoderAbi + '_> = encoder;
+
+        // Safety: This isn't unsound/unsafe
+        unsafe { Ok(CommandEncoder::from_abi(encoder)) }
     }
 }

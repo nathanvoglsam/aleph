@@ -187,27 +187,30 @@ pub fn pass(
             let depth_buffer_dsv = rhi::ImageView::get_dsv_for(device, depth_buffer).unwrap();
 
             // Begin a render pass targeting our back buffer
-            encoder.begin_rendering(&rhi::BeginRenderingInfo {
-                layer_count: 1,
-                extent: extent.clone(),
-                color_attachments: &[
-                    rhi::RenderingColorAttachmentInfo::new(gbuffer0_rtv)
-                        .clear(rhi::ColorClearValue::Int(0x00000000))
-                        .store(),
-                    rhi::RenderingColorAttachmentInfo::new(gbuffer1_rtv)
-                        .clear(rhi::ColorClearValue::Int(0x00000000))
-                        .store(),
-                    rhi::RenderingColorAttachmentInfo::new(gbuffer2_rtv)
-                        .clear(rhi::ColorClearValue::Int(0x00000000))
-                        .store(),
-                ],
-                depth_stencil_attachment: Some(
-                    &rhi::RenderingDepthStencilAttachmentInfo::new(depth_buffer_dsv)
-                        .depth_clear(0.0)
-                        .depth_store(),
-                ),
-                allow_uav_writes: false,
-            });
+            let mut render = encoder.begin_rendering(
+                &rhi::BeginRenderingInfo {
+                    layer_count: 1,
+                    extent: extent.clone(),
+                    color_attachments: &[
+                        rhi::RenderingColorAttachmentInfo::new(gbuffer0_rtv)
+                            .clear(rhi::ColorClearValue::Int(0x00000000))
+                            .store(),
+                        rhi::RenderingColorAttachmentInfo::new(gbuffer1_rtv)
+                            .clear(rhi::ColorClearValue::Int(0x00000000))
+                            .store(),
+                        rhi::RenderingColorAttachmentInfo::new(gbuffer2_rtv)
+                            .clear(rhi::ColorClearValue::Int(0x00000000))
+                            .store(),
+                    ],
+                    depth_stencil_attachment: Some(
+                        &rhi::RenderingDepthStencilAttachmentInfo::new(depth_buffer_dsv)
+                            .depth_clear(0.0)
+                            .depth_store(),
+                    ),
+                    allow_uav_writes: false,
+                },
+                nstr!("MainGBufferPass::render_pass"),
+            );
 
             let objects = scene.get_storage_ref::<StaticMesh>().unwrap();
             let (transforms, _meshes) = objects.as_slice_ref();
@@ -256,11 +259,10 @@ pub fn pass(
                 })
             };
 
-            encoder.bind_graphics_pipeline(&current_material_state.pipeline);
+            render.bind_graphics_pipeline(&current_material_state.pipeline);
 
-            encoder.bind_parameter_blocks(
+            render.bind_parameter_blocks(
                 current_material_state.binding_signature.as_ref(),
-                rhi::PipelineBindPoint::Graphics,
                 0,
                 &[global_block],
             );
@@ -280,14 +282,13 @@ pub fn pass(
                     current_material_instance,
                     material_block,
                 );
-            encoder.bind_parameter_blocks(
+            render.bind_parameter_blocks(
                 current_material_state.binding_signature.as_ref(),
-                rhi::PipelineBindPoint::Graphics,
                 1,
                 &[material_block],
             );
 
-            encoder.set_viewports(&[rhi::Viewport {
+            render.set_viewports(&[rhi::Viewport {
                 x: 0.0,
                 y: 0.0,
                 width: extent.width as _,
@@ -296,7 +297,7 @@ pub fn pass(
                 max_depth: 1.0,
             }]);
 
-            encoder.set_scissor_rects(&[rhi::Rect {
+            render.set_scissor_rects(&[rhi::Rect {
                 x: 0,
                 y: 0,
                 w: extent.width,
@@ -334,9 +335,9 @@ pub fn pass(
                             })
                         };
 
-                        encoder.bind_graphics_pipeline(&current_material_state.pipeline);
+                        render.bind_graphics_pipeline(&current_material_state.pipeline);
 
-                        encoder.set_viewports(&[rhi::Viewport {
+                        render.set_viewports(&[rhi::Viewport {
                             x: 0.0,
                             y: 0.0,
                             width: extent.width as _,
@@ -345,7 +346,7 @@ pub fn pass(
                             max_depth: 1.0,
                         }]);
 
-                        encoder.set_scissor_rects(&[rhi::Rect {
+                        render.set_scissor_rects(&[rhi::Rect {
                             x: 0,
                             y: 0,
                             w: extent.width,
@@ -369,9 +370,8 @@ pub fn pass(
                             current_material_instance,
                             material_block,
                         );
-                    encoder.bind_parameter_blocks(
+                    render.bind_parameter_blocks(
                         current_material_state.binding_signature.as_ref(),
-                        rhi::PipelineBindPoint::Graphics,
                         1,
                         &[material_block],
                     );
@@ -382,8 +382,8 @@ pub fn pass(
                 let vtx = vtx.handle().unwrap();
                 let idx = args.buffer_pool.get_ref(command.idx).unwrap();
                 let idx = idx.handle().unwrap();
-                encoder.bind_vertex_buffers(0, &[rhi::InputAssemblyBufferBinding::new(vtx)]);
-                encoder.bind_index_buffer(
+                render.bind_vertex_buffers(0, &[rhi::InputAssemblyBufferBinding::new(vtx)]);
+                render.bind_index_buffer(
                     rhi::IndexType::U32,
                     &rhi::InputAssemblyBufferBinding::new(idx),
                 );
@@ -399,19 +399,19 @@ pub fn pass(
                         rhi::BufferWrite::cbv_offset(uniform_buffer, m.device_offset as u64, 256)
                             .into(),
                     ];
-                encoder.push_parameters(
+                render.push_parameters(
                     current_material_state.binding_signature.as_ref(),
-                    rhi::PipelineBindPoint::Graphics,
                     2,
                     0,
                     &params,
                 );
 
                 let idx_count = device.get_buffer_desc(idx).size / 4;
-                encoder.draw_indexed(idx_count as u32, 1, 0, 0, 0);
+                render.draw_indexed(idx_count as u32, 1, 0, 0, 0);
             }
 
-            encoder.end_rendering();
+            // End the render pass explicitly
+            drop(render);
 
             device.unmap_buffer(uniform_buffer).unwrap();
         }

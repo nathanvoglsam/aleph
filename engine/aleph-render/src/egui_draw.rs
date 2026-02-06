@@ -164,26 +164,24 @@ pub fn pass(
             let image_view = rhi::ImageView::get_rtv_for(device, render_target).unwrap();
 
             // Begin a render pass targeting our back buffer
-            encoder.begin_rendering(&rhi::BeginRenderingInfo {
-                layer_count: 1,
-                extent: extent.clone(),
-                color_attachments: &[rhi::RenderingColorAttachmentInfo {
-                    image_view,
-                    image_layout: rhi::ImageLayout::ColorAttachment,
-                    load_op: rhi::AttachmentLoadOp::Clear(rhi::ColorClearValue::Int(0)),
-                    store_op: rhi::AttachmentStoreOp::Store,
-                }],
-                depth_stencil_attachment: None,
-                allow_uav_writes: false,
-            });
-
-            encoder.bind_graphics_pipeline(&state.pipeline);
-            encoder.bind_parameter_blocks(
-                state.layout.binding_signature.as_ref(),
-                rhi::PipelineBindPoint::Graphics,
-                0,
-                &[block],
+            let mut render = encoder.begin_rendering(
+                &rhi::BeginRenderingInfo {
+                    layer_count: 1,
+                    extent: extent.clone(),
+                    color_attachments: &[rhi::RenderingColorAttachmentInfo {
+                        image_view,
+                        image_layout: rhi::ImageLayout::ColorAttachment,
+                        load_op: rhi::AttachmentLoadOp::Clear(rhi::ColorClearValue::Int(0)),
+                        store_op: rhi::AttachmentStoreOp::Store,
+                    }],
+                    depth_stencil_attachment: None,
+                    allow_uav_writes: false,
+                },
+                nstr!("EguiPass::render_pass"),
             );
+
+            render.bind_graphics_pipeline(&state.pipeline);
+            render.bind_parameter_blocks(state.layout.binding_signature.as_ref(), 0, &[block]);
 
             //
             // Push screen size via root constants
@@ -193,19 +191,19 @@ pub fn pass(
             let width_points = width_pixels / pixels_per_point;
             let height_points = height_pixels / pixels_per_point;
             let size = Vec2::new(width_points, height_points);
-            encoder.set_push_constant_block(size.as_byte_slice());
+            render.set_push_constant_block(size.as_byte_slice());
 
             //
             // Bind the vertex and index buffers to render with
             //
-            encoder.bind_vertex_buffers(
+            render.bind_vertex_buffers(
                 0,
                 &[rhi::InputAssemblyBufferBinding {
                     buffer: vtx_buffer,
                     offset: 0,
                 }],
             );
-            encoder.bind_index_buffer(
+            render.bind_index_buffer(
                 rhi::IndexType::U32,
                 &rhi::InputAssemblyBufferBinding {
                     buffer: idx_buffer,
@@ -216,7 +214,7 @@ pub fn pass(
             //
             // Set the viewport state, we're going to be rendering to the whole frame
             //
-            encoder.set_viewports(&[rhi::Viewport {
+            render.set_viewports(&[rhi::Viewport {
                 x: 0.0,
                 y: 0.0,
                 width: extent.width as _,
@@ -240,7 +238,7 @@ pub fn pass(
                     idx_alloc.allocate_objects_copy(i_slice).unwrap();
 
                     record_job_commands(
-                        encoder,
+                        &mut render,
                         job,
                         extent.clone(),
                         pixels_per_point,
@@ -253,7 +251,8 @@ pub fn pass(
                 }
             }
 
-            encoder.end_rendering();
+            // Explicitly end the render pass
+            drop(render);
 
             device.unmap_buffer(vtx_buffer).unwrap();
             device.unmap_buffer(idx_buffer).unwrap();
@@ -264,7 +263,7 @@ pub fn pass(
 }
 
 unsafe fn record_job_commands(
-    encoder: &mut dyn rhi::IGeneralEncoder,
+    encoder: &mut rhi::RenderEncoder,
     job: &aleph_egui::ClippedPrimitive,
     swap_extent: rhi::Extent2D,
     pixels_per_point: f32,

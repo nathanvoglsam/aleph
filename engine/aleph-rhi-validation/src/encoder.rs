@@ -57,22 +57,22 @@ impl<'a, T: IGetPlatformInterface + ?Sized + 'a> IGetPlatformInterface for Valid
     }
 }
 
-impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder<T> {
-    unsafe fn bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
+impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationEncoder<T> {
+    unsafe fn __bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
         assert!(
             matches!(self.list_type, QueueType::General),
             "Called a general command on a non-general capable command list"
         );
         let pipeline = ValidationGraphicsPipeline::get_owned(pipeline);
         unsafe {
-            self.inner.bind_graphics_pipeline(&pipeline.inner);
+            self.inner.__bind_graphics_pipeline(&pipeline.inner);
         }
 
         // We need to know if/what pipeline is bound for validation purposes
         self.bound_graphics_pipeline = Some(pipeline);
     }
 
-    unsafe fn bind_vertex_buffers(
+    unsafe fn __bind_vertex_buffers(
         &mut self,
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
@@ -89,10 +89,13 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
                 .map(get_as_unwrapped::input_assembly_buffer_binding),
         );
 
-        unsafe { self.inner.bind_vertex_buffers(first_binding, &new_bindings) }
+        unsafe {
+            self.inner
+                .__bind_vertex_buffers(first_binding, &new_bindings)
+        }
     }
 
-    unsafe fn bind_index_buffer(
+    unsafe fn __bind_index_buffer(
         &mut self,
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
@@ -104,28 +107,28 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
 
         let binding = get_as_unwrapped::input_assembly_buffer_binding(binding);
 
-        unsafe { self.inner.bind_index_buffer(index_type, &binding) }
+        unsafe { self.inner.__bind_index_buffer(index_type, &binding) }
     }
 
-    unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
+    unsafe fn __set_viewports(&mut self, viewports: &[Viewport]) {
         assert!(
             matches!(self.list_type, QueueType::General),
             "Called a general command on a non-general capable command list"
         );
 
-        unsafe { self.inner.set_viewports(viewports) }
+        unsafe { self.inner.__set_viewports(viewports) }
     }
 
-    unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
+    unsafe fn __set_scissor_rects(&mut self, rects: &[Rect]) {
         assert!(
             matches!(self.list_type, QueueType::General),
             "Called a general command on a non-general capable command list"
         );
 
-        unsafe { self.inner.set_scissor_rects(rects) }
+        unsafe { self.inner.__set_scissor_rects(rects) }
     }
 
-    unsafe fn set_push_constant_block(&mut self, data: &[u8]) {
+    unsafe fn __set_push_constant_block(&mut self, data: &[u8]) {
         assert!(
             matches!(self.list_type, QueueType::General),
             "Called a general command on a non-general capable command list"
@@ -145,10 +148,10 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
 
         Self::validate_push_constant_data_buffer(data, block);
 
-        unsafe { self.inner.set_push_constant_block(data) }
+        unsafe { self.inner.__set_push_constant_block(data) }
     }
 
-    unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
+    unsafe fn __begin_rendering(&mut self, info: &BeginRenderingInfo) {
         assert!(
             matches!(self.list_type, QueueType::General),
             "Called a general command on a non-general capable command list"
@@ -182,10 +185,10 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
 
         self.render_pass_open = true;
 
-        unsafe { self.inner.begin_rendering(&info) }
+        unsafe { self.inner.__begin_rendering(&info) }
     }
 
-    unsafe fn end_rendering(&mut self) {
+    unsafe fn __end_rendering(&mut self) {
         assert!(
             matches!(self.list_type, QueueType::General),
             "Called a general command on a non-general capable command list"
@@ -196,13 +199,13 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
         );
 
         unsafe {
-            self.inner.end_rendering();
+            self.inner.__end_rendering();
         }
 
         self.render_pass_open = false;
     }
 
-    unsafe fn draw(
+    unsafe fn __draw(
         &mut self,
         vertex_count: u32,
         instance_count: u32,
@@ -216,11 +219,11 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
 
         unsafe {
             self.inner
-                .draw(vertex_count, instance_count, first_vertex, first_instance)
+                .__draw(vertex_count, instance_count, first_vertex, first_instance)
         }
     }
 
-    unsafe fn draw_indexed(
+    unsafe fn __draw_indexed(
         &mut self,
         index_count: u32,
         instance_count: u32,
@@ -234,7 +237,7 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
         );
 
         unsafe {
-            self.inner.draw_indexed(
+            self.inner.__draw_indexed(
                 index_count,
                 instance_count,
                 first_index,
@@ -243,10 +246,8 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             )
         }
     }
-}
 
-impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder<T> {
-    unsafe fn bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
+    unsafe fn __bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
         assert!(
             matches!(self.list_type, QueueType::General | QueueType::Compute),
             "Called a compute command on a non-compute capable command list"
@@ -255,14 +256,14 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
         let pipeline = ValidationComputePipeline::get_owned(pipeline);
 
         unsafe {
-            self.inner.bind_compute_pipeline(&pipeline.inner);
+            self.inner.__bind_compute_pipeline(&pipeline.inner);
         }
 
         // We need to know if/what pipeline is bound for validation purposes
         self.bound_compute_pipeline = Some(pipeline);
     }
 
-    unsafe fn bind_parameter_blocks(
+    unsafe fn __bind_parameter_blocks(
         &mut self,
         binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
@@ -284,7 +285,7 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
                     .map(|&v| v.into_raw::<ParameterBlock>().as_ref().inner.unwrap()),
             );
 
-            self.inner.bind_parameter_blocks(
+            self.inner.__bind_parameter_blocks(
                 binding_signature,
                 bind_point,
                 first_block,
@@ -293,7 +294,7 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
         }
     }
 
-    unsafe fn push_parameters(
+    unsafe fn __push_parameters(
         &mut self,
         binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
@@ -317,7 +318,7 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
         let new_writes = unsafe { get_as_unwrapped::parameter_writes(writes) };
 
         unsafe {
-            self.inner.push_parameters(
+            self.inner.__push_parameters(
                 binding_signature_inner,
                 bind_point,
                 block,
@@ -327,7 +328,7 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
         }
     }
 
-    unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
+    unsafe fn __dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
         assert!(
             matches!(self.list_type, QueueType::General | QueueType::Compute),
             "Called a compute command on a non-compute command list"
@@ -335,13 +336,11 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
 
         unsafe {
             self.inner
-                .dispatch(group_count_x, group_count_y, group_count_z)
+                .__dispatch(group_count_x, group_count_y, group_count_z)
         }
     }
-}
 
-impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncoder<T> {
-    unsafe fn resource_barrier(
+    unsafe fn __resource_barrier(
         &mut self,
         global_barriers: &[GlobalBarrier],
         buffer_barriers: &[BufferBarrier],
@@ -376,7 +375,7 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         }
 
         unsafe {
-            self.inner.resource_barrier(
+            self.inner.__resource_barrier(
                 global_barriers,
                 &new_buffer_barriers,
                 &new_texture_barriers,
@@ -384,7 +383,7 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         }
     }
 
-    unsafe fn copy_buffer_regions(
+    unsafe fn __copy_buffer_regions(
         &mut self,
         src: &BufferHandle,
         dst: &BufferHandle,
@@ -392,10 +391,10 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
     ) {
         let src = &ValidationBuffer::get(src).inner;
         let dst = &ValidationBuffer::get(dst).inner;
-        unsafe { self.inner.copy_buffer_regions(src, dst, regions) }
+        unsafe { self.inner.__copy_buffer_regions(src, dst, regions) }
     }
 
-    unsafe fn copy_buffer_to_texture(
+    unsafe fn __copy_buffer_to_texture(
         &mut self,
         src: &BufferHandle,
         dst: &TextureHandle,
@@ -411,11 +410,11 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         let dst = get_as_unwrapped::texture(dst);
 
         unsafe {
-            self.inner.copy_buffer_to_texture(src, dst, regions);
+            self.inner.__copy_buffer_to_texture(src, dst, regions);
         }
     }
 
-    unsafe fn copy_texture_regions(
+    unsafe fn __copy_texture_regions(
         &mut self,
         src: &TextureHandle,
         dst: &TextureHandle,
@@ -425,23 +424,23 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         let src = get_as_unwrapped::texture(src);
         let dst = get_as_unwrapped::texture(dst);
 
-        unsafe { self.inner.copy_texture_regions(src, dst, regions) }
+        unsafe { self.inner.__copy_texture_regions(src, dst, regions) }
     }
 
-    unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
-        unsafe { self.inner.close() }
+    unsafe fn __close(&mut self) -> Result<(), CommandListCloseError> {
+        unsafe { self.inner.__close() }
     }
 
-    unsafe fn set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
-        unsafe { self.inner.set_marker(color, message) }
+    unsafe fn __set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
+        unsafe { self.inner.__set_marker(color, message) }
     }
 
-    unsafe fn begin_event(&mut self, color: Color, message: &aleph_nstr::NStr) {
-        unsafe { self.inner.begin_event(color, message) }
+    unsafe fn __begin_event(&mut self, color: Color, message: &aleph_nstr::NStr) {
+        unsafe { self.inner.__begin_event(color, message) }
     }
 
-    unsafe fn end_event(&mut self) {
-        unsafe { self.inner.end_event() }
+    unsafe fn __end_event(&mut self) {
+        unsafe { self.inner.__end_event() }
     }
 }
 

@@ -39,34 +39,34 @@ impl IGetPlatformInterface for NullEncoder {
     }
 }
 
-impl IGeneralEncoder for NullEncoder {
-    unsafe fn bind_graphics_pipeline(&mut self, _pipeline: &GraphicsPipelineHandle) {}
+impl ICommandEncoderAbi for NullEncoder {
+    unsafe fn __bind_graphics_pipeline(&mut self, _pipeline: &GraphicsPipelineHandle) {}
 
-    unsafe fn bind_vertex_buffers(
+    unsafe fn __bind_vertex_buffers(
         &mut self,
         _first_binding: u32,
         _bindings: &[InputAssemblyBufferBinding],
     ) {
     }
 
-    unsafe fn bind_index_buffer(
+    unsafe fn __bind_index_buffer(
         &mut self,
         _index_type: IndexType,
         _binding: &InputAssemblyBufferBinding,
     ) {
     }
 
-    unsafe fn set_viewports(&mut self, _viewports: &[Viewport]) {}
+    unsafe fn __set_viewports(&mut self, _viewports: &[Viewport]) {}
 
-    unsafe fn set_scissor_rects(&mut self, _rects: &[Rect]) {}
+    unsafe fn __set_scissor_rects(&mut self, _rects: &[Rect]) {}
 
-    unsafe fn set_push_constant_block(&mut self, _data: &[u8]) {}
+    unsafe fn __set_push_constant_block(&mut self, _data: &[u8]) {}
 
-    unsafe fn begin_rendering(&mut self, _info: &BeginRenderingInfo) {}
+    unsafe fn __begin_rendering(&mut self, _info: &BeginRenderingInfo) {}
 
-    unsafe fn end_rendering(&mut self) {}
+    unsafe fn __end_rendering(&mut self) {}
 
-    unsafe fn draw(
+    unsafe fn __draw(
         &mut self,
         _vertex_count: u32,
         _instance_count: u32,
@@ -75,7 +75,7 @@ impl IGeneralEncoder for NullEncoder {
     ) {
     }
 
-    unsafe fn draw_indexed(
+    unsafe fn __draw_indexed(
         &mut self,
         _index_count: u32,
         _instance_count: u32,
@@ -84,12 +84,10 @@ impl IGeneralEncoder for NullEncoder {
         _vertex_offset: i32,
     ) {
     }
-}
 
-impl IComputeEncoder for NullEncoder {
-    unsafe fn bind_compute_pipeline(&mut self, _pipeline: &ComputePipelineHandle) {}
+    unsafe fn __bind_compute_pipeline(&mut self, _pipeline: &ComputePipelineHandle) {}
 
-    unsafe fn bind_parameter_blocks(
+    unsafe fn __bind_parameter_blocks(
         &mut self,
         _binding_signature: &dyn IBindingSignature,
         _bind_point: PipelineBindPoint,
@@ -98,7 +96,7 @@ impl IComputeEncoder for NullEncoder {
     ) {
     }
 
-    unsafe fn push_parameters(
+    unsafe fn __push_parameters(
         &mut self,
         _binding_signature: &dyn IBindingSignature,
         _bind_point: PipelineBindPoint,
@@ -109,11 +107,10 @@ impl IComputeEncoder for NullEncoder {
         todo!()
     }
 
-    unsafe fn dispatch(&mut self, _group_count_x: u32, _group_count_y: u32, _group_count_z: u32) {}
-}
+    unsafe fn __dispatch(&mut self, _group_count_x: u32, _group_count_y: u32, _group_count_z: u32) {
+    }
 
-impl ITransferEncoder for NullEncoder {
-    unsafe fn resource_barrier(
+    unsafe fn __resource_barrier(
         &mut self,
         _global_barriers: &[GlobalBarrier],
         _buffer_barriers: &[BufferBarrier],
@@ -121,7 +118,7 @@ impl ITransferEncoder for NullEncoder {
     ) {
     }
 
-    unsafe fn copy_buffer_regions(
+    unsafe fn __copy_buffer_regions(
         &mut self,
         _src: &BufferHandle,
         _dst: &BufferHandle,
@@ -129,7 +126,7 @@ impl ITransferEncoder for NullEncoder {
     ) {
     }
 
-    unsafe fn copy_buffer_to_texture(
+    unsafe fn __copy_buffer_to_texture(
         &mut self,
         _src: &BufferHandle,
         _dst: &TextureHandle,
@@ -137,7 +134,7 @@ impl ITransferEncoder for NullEncoder {
     ) {
     }
 
-    unsafe fn copy_texture_regions(
+    unsafe fn __copy_texture_regions(
         &mut self,
         _src: &TextureHandle,
         _dst: &TextureHandle,
@@ -145,13 +142,13 @@ impl ITransferEncoder for NullEncoder {
     ) {
     }
 
-    unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
+    unsafe fn __close(&mut self) -> Result<(), CommandListCloseError> {
         Ok(())
     }
 
-    unsafe fn set_marker(&mut self, _color: Color, _message: &aleph_nstr::NStr) {}
+    unsafe fn __set_marker(&mut self, _color: Color, _message: &aleph_nstr::NStr) {}
 
-    unsafe fn begin_event(&mut self, _color: Color, _message: &aleph_nstr::NStr) {}
+    unsafe fn __begin_event(&mut self, _color: Color, _message: &aleph_nstr::NStr) {}
 
-    unsafe fn end_event(&mut self) {}
+    unsafe fn __end_event(&mut self) {}
 }

@@ -46,6 +46,11 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [package.metadata.aleph]
 configs = ["core", "rhi"]
 
+[features]
+default = []
+development-build = ["aleph-target/development-build", "aleph-rhi-api/markers"]
+instrumentation = ["aleph-alloc/instrumentation-enabled"]
+
 [dependencies]
 aleph-alloc = { workspace = true }
 aleph-object-system = { workspace = true }

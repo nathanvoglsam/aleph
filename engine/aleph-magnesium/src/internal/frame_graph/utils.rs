@@ -31,6 +31,8 @@
 //! full-screen-triangle draws. Typcially used for fullscreen pass style shaders that are
 //! implemented as pixel shaders instead of compute.
 
+use aleph_nstr::nstr;
+
 pub struct FullscreenTriangleInfo<'a> {
     pub dst_view: rhi::ImageView,
     pub pipeline: &'a rhi::GraphicsPipelineHandle,
@@ -47,24 +49,27 @@ pub struct FullscreenTriangleBindInfo<'a> {
 }
 
 pub unsafe fn draw_fullscreen_triangle(
-    encoder: &mut dyn rhi::IGeneralEncoder,
+    encoder: &mut rhi::CommandEncoder,
     info: &FullscreenTriangleInfo,
 ) {
     unsafe {
-        encoder.begin_rendering(&rhi::BeginRenderingInfo {
-            layer_count: 1,
-            extent: info.extent,
-            color_attachments: &[rhi::RenderingColorAttachmentInfo {
-                image_view: info.dst_view,
-                image_layout: rhi::ImageLayout::ColorAttachment,
-                load_op: info.load_op.clone(), // We write the whole texture
-                store_op: rhi::AttachmentStoreOp::Store,
-            }],
-            depth_stencil_attachment: None,
-            allow_uav_writes: false,
-        });
-        encoder.bind_graphics_pipeline(info.pipeline);
-        encoder.set_viewports(&[rhi::Viewport {
+        let mut render = encoder.begin_rendering(
+            &rhi::BeginRenderingInfo {
+                layer_count: 1,
+                extent: info.extent,
+                color_attachments: &[rhi::RenderingColorAttachmentInfo {
+                    image_view: info.dst_view,
+                    image_layout: rhi::ImageLayout::ColorAttachment,
+                    load_op: info.load_op.clone(), // We write the whole texture
+                    store_op: rhi::AttachmentStoreOp::Store,
+                }],
+                depth_stencil_attachment: None,
+                allow_uav_writes: false,
+            },
+            nstr!("DrawFullscreenTriangle::render_pass"),
+        );
+        render.bind_graphics_pipeline(info.pipeline);
+        render.set_viewports(&[rhi::Viewport {
             x: 0.0,
             y: 0.0,
             width: info.extent.width as _,
@@ -72,27 +77,24 @@ pub unsafe fn draw_fullscreen_triangle(
             min_depth: 0.0,
             max_depth: 1.0,
         }]);
-        encoder.set_scissor_rects(&[rhi::Rect {
+        render.set_scissor_rects(&[rhi::Rect {
             x: 0,
             y: 0,
             w: info.extent.width,
             h: info.extent.height,
         }]);
 
-        encoder.bind_parameter_blocks(
+        render.bind_parameter_blocks(
             info.bindings.binding_signature,
-            rhi::PipelineBindPoint::Graphics,
             info.bindings.first_blocks,
             info.bindings.blocks,
         );
 
         if let Some(data) = info.bindings.constant_block {
-            encoder.set_push_constant_block(data);
+            render.set_push_constant_block(data);
         }
 
-        encoder.draw(3, 1, 0, 0);
-
-        encoder.end_rendering();
+        render.draw(3, 1, 0, 0);
     }
 }
 

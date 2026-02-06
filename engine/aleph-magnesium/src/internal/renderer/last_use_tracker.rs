@@ -65,7 +65,7 @@ impl LastUseTracker {
     /// a last-use-tracker.
     pub unsafe fn flush_for_read_in_frame_graph(
         &mut self,
-        cmd: &mut dyn rhi::IGeneralEncoder,
+        cmd: &mut rhi::CommandEncoder,
         bpool: &BufferObjectStore,
         tpool: &TextureObjectStore,
     ) {

@@ -33,17 +33,11 @@ use thiserror::Error;
 use crate::*;
 
 pub trait ICommandList: IAny + IGetPlatformInterface + Send {
-    fn begin_general<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError>;
+    fn begin_general(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError>;
 
-    fn begin_compute<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError>;
+    fn begin_compute(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError>;
 
-    fn begin_transfer<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError>;
+    fn begin_transfer(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError>;
 }
 
 pub struct CommandListDesc<'a> {
