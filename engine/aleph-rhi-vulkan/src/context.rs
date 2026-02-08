@@ -37,7 +37,6 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::arc::new_rhi_object;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use aleph_rhi_impl_utils::str_from_ptr;
-use ash::khr::wayland_surface::Instance;
 use ash::vk;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 
