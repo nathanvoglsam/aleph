@@ -101,6 +101,7 @@ impl<T, H: HandleType, A: Allocator> GenArena<T, H, A> {
     ///
     /// This is very likely to ever happen. Any object of non-trivial size will likely trigger OOM
     /// before that many objects could even be constructed.
+    #[inline]
     pub fn alloc(&mut self, data: T) -> H {
         let index = u32::try_from(self.objects.len()).expect("Too many objects!");
         let handle = self.handles.alloc(index);
@@ -110,7 +111,7 @@ impl<T, H: HandleType, A: Allocator> GenArena<T, H, A> {
         handle
     }
 
-    /// Retreive a reference to an object identified by the provided handle. This may return
+    /// Retrieve a reference to an object identified by the provided handle. This may return
     /// [`None`] if the handle is no longer valid, such as if the object was removed from the pool
     /// with [`GenArena::free`].
     ///
@@ -124,6 +125,7 @@ impl<T, H: HandleType, A: Allocator> GenArena<T, H, A> {
     /// to the generation value the handle stores. The probability of this happening is
     /// astronomically low. The results are still sound w.r.t. Rust's safety rules too, so it's
     /// not unsafe to allow this to happen.
+    #[inline]
     pub fn get_ref(&self, handle: H) -> Option<&T> {
         let handle = handle.to_bare_handle();
         if let Some(index) = self.handles.get(handle) {
@@ -133,7 +135,7 @@ impl<T, H: HandleType, A: Allocator> GenArena<T, H, A> {
         }
     }
 
-    /// Retreive a reference to an object identified by the provided handle. This may return
+    /// Retrieve a reference to an object identified by the provided handle. This may return
     /// [`None`] if the handle is no longer valid, such as if the object was removed from the pool
     /// with [`GenArena::free`].
     ///
@@ -147,6 +149,7 @@ impl<T, H: HandleType, A: Allocator> GenArena<T, H, A> {
     /// to the generation value the handle stores. The probability of this happening is
     /// astronomically low. The results are still sound w.r.t. Rust's safety rules too, so it's
     /// not unsafe to allow this to happen.
+    #[inline]
     pub fn get_mut(&mut self, handle: H) -> Option<&mut T> {
         let handle = handle.to_bare_handle();
         if let Some(index) = self.handles.get(handle) {
@@ -237,6 +240,42 @@ impl<T, H: HandleType, A: Allocator> GenArena<T, H, A> {
         let back_references = self.back_references.drain(..);
         let objects = self.objects.drain(..);
         back_references.zip(objects)
+    }
+
+    /// Returns the dense list of live objects stored in the object pool.
+    #[inline]
+    pub fn objects_ref(&self) -> &[T] {
+        self.objects.as_slice()
+    }
+
+    /// Returns the dense list of live objects stored in the object pool.
+    #[inline]
+    pub fn objects_mut(&mut self) -> &mut [T] {
+        self.objects.as_mut_slice()
+    }
+
+    /// Returns the dense list of live objects stored in the object pool, along with the associated
+    /// handle back references.
+    ///
+    /// # Details
+    ///
+    /// For any `i`: `back_references[i] -> objects[i]`.
+    #[inline]
+    pub fn objects_and_handles_ref(&self) -> (&[T], &[H]) {
+        (self.objects.as_slice(), self.back_references.as_slice())
+    }
+
+    /// Returns the dense list of live objects stored in the object pool, along with the associated
+    /// handle back references.
+    ///
+    /// # Details
+    ///
+    /// For any `i`: `back_references[i] -> objects[i]`.
+    ///
+    /// We explicitly do _not_ hand out `&mut [H]` to discourage misuse.
+    #[inline]
+    pub fn objects_and_handles_mut(&mut self) -> (&mut [T], &[H]) {
+        (self.objects.as_mut_slice(), self.back_references.as_slice())
     }
 }
 
