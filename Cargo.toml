@@ -45,6 +45,7 @@ members = [
     "engine/aleph-engine",
     "engine/aleph-engine-build",
     "engine/aleph-frame-graph",
+    "engine/aleph-gen-arena",
     "engine/aleph-gpu-allocator",
     "engine/aleph-hibitset",
     "engine/aleph-identity-hasher",
@@ -217,6 +218,7 @@ aleph-ecs = { path = "./engine/aleph-ecs", version = "0.1" }
 aleph-engine = { path = "./engine/aleph-engine", version = "0.1" }
 aleph-engine-build = { path = "./engine/aleph-engine-build", version = "0.1" }
 aleph-frame-graph = { path = "./engine/aleph-frame-graph", version = "0.1" }
+aleph-gen-arena = { path = "./engine/aleph-gen-arena", version = "0.1" }
 aleph-gpu-allocator = { path = "./engine/aleph-gpu-allocator", version = "0.1" }
 aleph-hibitset = { path = "./engine/aleph-hibitset", version = "0.1" }
 aleph-identity-hasher = { path = "./engine/aleph-identity-hasher", version = "0.1" }
