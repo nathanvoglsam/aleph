@@ -27,24 +27,10 @@
 // SOFTWARE.
 //
 
-//!
-//! Utils used by numerous tests in a shared module to reduce code duplication
-//!
+mod handle;
+mod handle_pool;
+mod object_pool;
 
-/// Shorthand wrapper over an [`std::rc::Rc`] that we use to track if objects stored inside
-/// containers are being dropped correctly. We don't care about what's being stored, only that the
-/// reference count is maintained correctly.
-#[cfg(test)]
-#[derive(Clone)]
-pub struct DropCanary(std::rc::Rc<()>);
-
-#[cfg(test)]
-impl DropCanary {
-    pub fn new() -> Self {
-        Self(std::rc::Rc::new(()))
-    }
-
-    pub fn strong_count(&self) -> usize {
-        std::rc::Rc::strong_count(&self.0)
-    }
-}
+pub use handle::{Generation, Handle, HandleFields, HandleId, HandleType, RawHandle};
+pub use handle_pool::{HandleFreeError, HandlePool};
+pub use object_pool::GenArena;

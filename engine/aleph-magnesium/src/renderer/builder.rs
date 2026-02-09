@@ -126,7 +126,7 @@ impl RendererBuilder {
             format: rhi::Format::Bgra8UnormSrgb,
             width: surface.extent.width,
             height: surface.extent.height,
-            present_mode: rhi::PresentationMode::Mailbox,
+            present_mode: rhi::PresentationMode::Fifo,
             buffer_count: 3,
             present_queue: rhi::QueueType::General,
         };

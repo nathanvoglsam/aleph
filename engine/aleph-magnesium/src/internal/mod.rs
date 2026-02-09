@@ -31,13 +31,9 @@ pub mod async_resource_loader;
 pub mod buffer;
 pub mod built_in_textures;
 pub mod frame_graph;
-pub mod handle;
-pub mod handle_pool;
 pub mod material_instance;
-pub mod object_pool;
 pub mod renderer;
 pub mod shaders;
-pub mod test_utils;
 pub mod texture;
 pub mod utils;
 

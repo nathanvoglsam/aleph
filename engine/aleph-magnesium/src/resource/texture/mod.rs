@@ -31,7 +31,8 @@ pub mod physical;
 pub mod simple;
 pub mod single;
 
-use crate::internal::handle::{Handle, make_handle_id};
+use aleph_gen_arena::{Handle, make_handle_id};
+
 use crate::internal::texture::{TextureObject, TextureObjectStore};
 
 make_handle_id!(Texture);

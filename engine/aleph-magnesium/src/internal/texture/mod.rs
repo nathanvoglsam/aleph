@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
+use aleph_gen_arena::GenArena;
+
 use crate::internal::Magnesium;
-use crate::internal::object_pool::ObjectPool;
 use crate::resource::texture::physical::PhysicalTextureDesc;
 use crate::resource::texture::simple::SimpleTextureDesc;
 use crate::resource::texture::single::SingleTextureDesc;
@@ -38,14 +39,14 @@ use crate::resource_loader::mip_upload::{LevelOffsets, MipUploadDesc};
 /// Manager that owns the texture object pool, and any other resources directly associated with
 /// our pooled texture resources.
 pub struct TextureObjectStore {
-    pub pool: ObjectPool<TextureObject, TextureHandle, MgTexSystem>,
+    pub pool: GenArena<TextureObject, TextureHandle, MgTexSystem>,
 }
 
 impl TextureObjectStore {
     /// Constructs a new, empty object store
     pub fn new() -> Self {
         Self {
-            pool: ObjectPool::new_in(),
+            pool: GenArena::new_in(),
         }
     }
 

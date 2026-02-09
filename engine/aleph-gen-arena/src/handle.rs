@@ -251,6 +251,7 @@ impl<T: HandleId> HandleType for Handle<T> {
     }
 }
 
+#[macro_export]
 macro_rules! make_handle_id {
     ($name: ident) => {
         #[derive(
@@ -264,11 +265,10 @@ macro_rules! make_handle_id {
         )]
         pub struct $name;
 
-        impl $crate::internal::handle::HandleId for $name {
+        impl $crate::HandleId for $name {
             fn name() -> &'static str {
                 stringify!($name)
             }
         }
     };
 }
-pub(crate) use make_handle_id;

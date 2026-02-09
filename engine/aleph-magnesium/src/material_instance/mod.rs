@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::internal::handle::{Handle, make_handle_id};
+use aleph_gen_arena::{Handle, make_handle_id};
+
 use crate::internal::material_instance::{MaterialInstanceObject, MaterialInstanceStore};
 use crate::material::Material;
 use crate::material::binding::MaterialBinding;

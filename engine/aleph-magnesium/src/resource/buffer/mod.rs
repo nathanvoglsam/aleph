@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
+use aleph_gen_arena::{Handle, make_handle_id};
+
 use crate::internal::buffer::{BufferObject, BufferObjectStore};
-use crate::internal::handle::{Handle, make_handle_id};
 
 make_handle_id!(Buffer);
 pub type BufferHandle = Handle<Buffer>;

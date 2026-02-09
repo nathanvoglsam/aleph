@@ -27,22 +27,23 @@
 // SOFTWARE.
 //
 
+use aleph_gen_arena::GenArena;
+
 use crate::async_resource_loader::{BufferLoadHandle, TextureLoadHandle};
 use crate::internal::async_resource_loader::MgAsyncLdrSystem;
 use crate::internal::async_resource_loader::buffer::BufferLoadState;
 use crate::internal::async_resource_loader::texture::TextureLoadState;
-use crate::internal::object_pool::ObjectPool;
 
 pub struct RequestStates<C> {
-    pub buffers: ObjectPool<BufferLoadState<C>, BufferLoadHandle, MgAsyncLdrSystem>,
-    pub textures: ObjectPool<TextureLoadState<C>, TextureLoadHandle, MgAsyncLdrSystem>,
+    pub buffers: GenArena<BufferLoadState<C>, BufferLoadHandle, MgAsyncLdrSystem>,
+    pub textures: GenArena<TextureLoadState<C>, TextureLoadHandle, MgAsyncLdrSystem>,
 }
 
 impl<C> RequestStates<C> {
     pub fn new() -> Self {
         Self {
-            buffers: ObjectPool::new_in(),
-            textures: ObjectPool::new_in(),
+            buffers: GenArena::new_in(),
+            textures: GenArena::new_in(),
         }
     }
 }

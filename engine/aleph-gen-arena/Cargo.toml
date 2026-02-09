@@ -29,45 +29,20 @@
 
 
 [package]
-name = "aleph-magnesium"
+name = "aleph-gen-arena"
 version = "0.1.0"
 authors.workspace = true
-description = "A games focused 3D renderer library"
+description = "A generic generational arena"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-magnesium/"
+documentation = "https://docs.rs/aleph-gen-arena/"
 edition.workspace = true
-
-[package.metadata.aleph]
-shaders = { modules = ["aleph-magnesium"] }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
 aleph-alloc = { workspace = true }
-aleph-device-allocators = { workspace = true }
-aleph-any = { workspace = true }
-aleph-atomic-borrow = { workspace = true }
-aleph-frame-graph = { workspace = true }
-aleph-gen-arena = { workspace = true }
-aleph-hibitset = { workspace = true }
-aleph-identity-hasher = { workspace = true }
-aleph-math = { workspace = true }
-aleph-pin-board = { workspace = true }
-aleph-rhi-api = { workspace = true }
-aleph-shader-db = { workspace = true }
-aleph-profile = { workspace = true }
-aleph-nstr = { workspace = true }
-aleph-object-system = { workspace = true }
-aleph-vk-format = { workspace = true }
 
-log = { workspace = true }
-crossbeam = { workspace = true }
-bytemuck = { workspace = true }
-thiserror = { workspace = true }
 allocator-api2 = { workspace = true }
-rayon = { workspace = true }
-arrayvec = { workspace = true }
-smallbox = { workspace = true }
-parking_lot = { workspace = true }
+thiserror = { workspace = true }

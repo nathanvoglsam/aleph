@@ -30,10 +30,10 @@
 use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
+use aleph_gen_arena::HandleType;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 
-use crate::internal::handle::HandleType;
 use crate::internal::renderer::gpu_data_layouts::{CameraLayout, ModelLayout};
 use crate::material::{Material, MaterialId};
 use crate::material_instance::MaterialInstanceReader;

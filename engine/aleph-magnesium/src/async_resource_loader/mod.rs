@@ -36,6 +36,7 @@ use std::cell::{Cell, RefCell};
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 use aleph_any::AnyArc;
+use aleph_gen_arena::{Handle, make_handle_id};
 use aleph_nstr::nstr;
 use thiserror::Error;
 
@@ -54,7 +55,6 @@ use crate::internal::async_resource_loader::submission_manager::SubmissionManage
 use crate::internal::async_resource_loader::texture::TextureLoadState;
 use crate::internal::async_resource_loader::upload_memory_manager::UploadMemoryManager;
 use crate::internal::buffer::make_standard_buffer_desc;
-use crate::internal::handle::{Handle, make_handle_id};
 use crate::internal::texture::make_standard_texture_desc;
 use crate::resource::texture::simple::SimpleTextureDesc;
 

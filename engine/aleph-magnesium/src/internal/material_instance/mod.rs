@@ -31,9 +31,9 @@ use std::sync::Arc;
 
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
+use aleph_gen_arena::GenArena;
 
 use crate::internal::Magnesium;
-use crate::internal::object_pool::ObjectPool;
 use crate::material::Material;
 use crate::material::binding::MaterialBinding;
 use crate::material_instance::{MaterialInstanceHandle, MaterialInstancePoolAccessor};
@@ -41,14 +41,14 @@ use crate::material_instance::{MaterialInstanceHandle, MaterialInstancePoolAcces
 /// Manager that owns the material instance pool, and any other resources directly associated with
 /// our pooled material instance resources.
 pub struct MaterialInstanceStore {
-    pub pool: ObjectPool<MaterialInstanceObject, MaterialInstanceHandle, MgMatInstSystem>,
+    pub pool: GenArena<MaterialInstanceObject, MaterialInstanceHandle, MgMatInstSystem>,
 }
 
 impl MaterialInstanceStore {
     /// Constructs a new, empty store
     pub fn new() -> Self {
         Self {
-            pool: ObjectPool::new_in(),
+            pool: GenArena::new_in(),
         }
     }
 

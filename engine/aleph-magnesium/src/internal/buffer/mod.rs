@@ -27,21 +27,22 @@
 // SOFTWARE.
 //
 
+use aleph_gen_arena::GenArena;
+
 use crate::internal::Magnesium;
-use crate::internal::object_pool::ObjectPool;
 use crate::resource::buffer::{BufferHandle, BufferPoolAccessor};
 
 /// Manager that owns the buffer object pool, and any other resources directly associated with
 /// our pooled buffer resources.
 pub struct BufferObjectStore {
-    pub pool: ObjectPool<BufferObject, BufferHandle, MgBufSystem>,
+    pub pool: GenArena<BufferObject, BufferHandle, MgBufSystem>,
 }
 
 impl BufferObjectStore {
     /// Constructs a new, empty object store
     pub fn new() -> Self {
         Self {
-            pool: ObjectPool::new_in(),
+            pool: GenArena::new_in(),
         }
     }
 

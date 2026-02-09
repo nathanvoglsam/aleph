@@ -31,11 +31,11 @@ use aleph_alloc::BVec;
 use aleph_alloc::allocator_global_handle::AllocatorGlobalHandle;
 use allocator_api2::alloc::{Allocator, Global};
 
-use crate::internal::handle::{HandleType, RawHandle};
-use crate::internal::handle_pool::HandlePool;
+use crate::handle::{HandleType, RawHandle};
+use crate::handle_pool::HandlePool;
 
 /// A generic generational arena based object pool. Can store objects of type 'T' and associate them
-/// with a generational handle value, allowing them to be retreived with that handle. The handle
+/// with a generational handle value, allowing them to be retrieved with that handle. The handle
 /// will become invalid if the object is later removed from the pool, preventing access to unrelated
 /// objects that happen to reuse the slot the handle refers to.
 ///
@@ -45,7 +45,7 @@ use crate::internal::handle_pool::HandlePool;
 ///
 /// This combines [`HandlePool`] with the object managing logic to construct a complete generational
 /// arena implementation.
-pub struct ObjectPool<T, H = RawHandle, A: Allocator = Global> {
+pub struct GenArena<T, H = RawHandle, A: Allocator = Global> {
     /// Backing storage for the object pool. Uses a swap'n'pop scheme for allocating and freeing
     /// new objects as they are needed.
     objects: BVec<T, A>,
@@ -62,7 +62,7 @@ pub struct ObjectPool<T, H = RawHandle, A: Allocator = Global> {
     handles: HandlePool<A>,
 }
 
-impl<T, H: HandleType> ObjectPool<T, H, Global> {
+impl<T, H: HandleType> GenArena<T, H, Global> {
     /// Constructs a new, empty object pool backed by the global allocator
     #[allow(unused)]
     pub fn new() -> Self {
@@ -74,7 +74,7 @@ impl<T, H: HandleType> ObjectPool<T, H, Global> {
     }
 }
 
-impl<T, H: HandleType, A: AllocatorGlobalHandle> ObjectPool<T, H, A> {
+impl<T, H: HandleType, A: AllocatorGlobalHandle> GenArena<T, H, A> {
     /// Constructs a new, empty object pool backed by a custom allocator that implements
     /// [`AllocatorGlobalHandle`].
     ///
@@ -89,10 +89,10 @@ impl<T, H: HandleType, A: AllocatorGlobalHandle> ObjectPool<T, H, A> {
     }
 }
 
-impl<T, H: HandleType, A: Allocator> ObjectPool<T, H, A> {
+impl<T, H: HandleType, A: Allocator> GenArena<T, H, A> {
     /// Insert the given object of type 'T' into the pool, returning a handle that identifies that
     /// object in the pool. The object may be queried again from the pool with
-    /// [`ObjectPool::get_ref`] or [`ObjectPool::get_mut`].
+    /// [`GenArena::get_ref`] or [`GenArena::get_mut`].
     ///
     /// # Panics
     ///
@@ -112,7 +112,7 @@ impl<T, H: HandleType, A: Allocator> ObjectPool<T, H, A> {
 
     /// Retreive a reference to an object identified by the provided handle. This may return
     /// [`None`] if the handle is no longer valid, such as if the object was removed from the pool
-    /// with [`ObjectPool::free`].
+    /// with [`GenArena::free`].
     ///
     /// In general\*, it should not be possible this function to return a reference to an object
     /// other than object that the handle was created with.
@@ -135,7 +135,7 @@ impl<T, H: HandleType, A: Allocator> ObjectPool<T, H, A> {
 
     /// Retreive a reference to an object identified by the provided handle. This may return
     /// [`None`] if the handle is no longer valid, such as if the object was removed from the pool
-    /// with [`ObjectPool::free`].
+    /// with [`GenArena::free`].
     ///
     /// In general\*, it should not be possible this function to return a reference to an object
     /// other than object that the handle was created with.
@@ -167,7 +167,7 @@ impl<T, H: HandleType, A: Allocator> ObjectPool<T, H, A> {
     ///
     /// # The asterisk
     ///
-    /// See [`ObjectPool::get_ref`].
+    /// See [`GenArena::get_ref`].
     pub fn free(&mut self, handle: H) -> Option<T> {
         let handle = handle.to_bare_handle();
         if let Some(index) = self.handles.get(handle) {
@@ -242,13 +242,29 @@ impl<T, H: HandleType, A: Allocator> ObjectPool<T, H, A> {
 
 #[cfg(test)]
 mod tests {
-    use crate::internal::handle::RawHandle;
-    use crate::internal::object_pool::ObjectPool;
-    use crate::internal::test_utils::DropCanary;
+    use crate::{GenArena, RawHandle};
+
+    /// Shorthand wrapper over an [`std::rc::Rc`] that we use to track if objects stored inside
+    /// containers are being dropped correctly. We don't care about what's being stored, only that the
+    /// reference count is maintained correctly.
+    #[cfg(test)]
+    #[derive(Clone)]
+    pub struct DropCanary(std::rc::Rc<()>);
+
+    #[cfg(test)]
+    impl DropCanary {
+        pub fn new() -> Self {
+            Self(std::rc::Rc::new(()))
+        }
+
+        pub fn strong_count(&self) -> usize {
+            std::rc::Rc::strong_count(&self.0)
+        }
+    }
 
     #[test]
     pub fn test_object_pool_alloc_free() {
-        let mut pool = ObjectPool::new();
+        let mut pool = GenArena::new();
 
         let canary = DropCanary::new();
         let handle: RawHandle = pool.alloc(canary.clone());
@@ -262,7 +278,7 @@ mod tests {
 
     #[test]
     pub fn test_object_pool_drop_alloc_data() {
-        let mut pool = ObjectPool::new();
+        let mut pool = GenArena::new();
 
         let canary = DropCanary::new();
         let _handle: RawHandle = pool.alloc(canary.clone());
@@ -276,7 +292,7 @@ mod tests {
 
     #[test]
     pub fn test_object_pool_double_drop() {
-        let mut pool = ObjectPool::new();
+        let mut pool = GenArena::new();
 
         let canary = DropCanary::new();
         let handle: RawHandle = pool.alloc(canary.clone());
