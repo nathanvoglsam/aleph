@@ -56,35 +56,9 @@ impl IGetPlatformInterface for CommandList {
 }
 
 impl ICommandList for CommandList {
-    fn begin_general<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError> {
+    fn begin_general(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         if matches!(self.list_type, QueueType::General) {
-            match self.state {
-                ListState::Empty => {
-                    self.state = ListState::Open;
-
-                    let _context = self._device.context.clone();
-                    let _device = self._device.clone();
-                    let list = self.objects.list.clone();
-                    let encoder = Encoder::<'a> {
-                        _parent: self,
-                        _context,
-                        _device,
-                        objects: EncoderObjects { list },
-                        active: ActiveEncoder::None,
-                        bound_graphics_pipeline: None,
-                        bound_compute_pipeline: None,
-                        bound_index_buffer: None,
-                        bound_graphics_pipeline_state: Default::default(),
-                        bound_compute_pipeline_state: Default::default(),
-                        arena: Blink::new(),
-                    };
-                    Ok(Box::new(encoder))
-                }
-                ListState::Open => Err(CommandListBeginError::InvalidCommandListState),
-                ListState::Closed => Err(CommandListBeginError::InvalidCommandListState),
-            }
+            self.begin()
         } else {
             Err(CommandListBeginError::InvalidEncoderType(
                 QueueType::General,
@@ -92,20 +66,18 @@ impl ICommandList for CommandList {
         }
     }
 
-    fn begin_compute<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError> {
-        Err(CommandListBeginError::InvalidEncoderType(
-            QueueType::Compute,
-        ))
+    fn begin_compute(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
+        if matches!(self.list_type, QueueType::Compute | QueueType::General) {
+            self.begin()
+        } else {
+            Err(CommandListBeginError::InvalidEncoderType(
+                QueueType::Compute,
+            ))
+        }
     }
 
-    fn begin_transfer<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError> {
-        Err(CommandListBeginError::InvalidEncoderType(
-            QueueType::Transfer,
-        ))
+    fn begin_transfer(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
+        self.begin()
     }
 }
 
@@ -137,6 +109,37 @@ impl CommandList {
         });
 
         Ok(out)
+    }
+
+    fn begin(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
+        match self.state {
+            ListState::Empty => {
+                self.state = ListState::Open;
+
+                let _context = self._device.context.clone();
+                let _device = self._device.clone();
+                let list = self.objects.list.clone();
+                let encoder = Encoder::<'_> {
+                    _parent: self,
+                    _context,
+                    _device,
+                    objects: EncoderObjects { list },
+                    active: ActiveEncoder::None,
+                    bound_graphics_pipeline: None,
+                    bound_compute_pipeline: None,
+                    bound_index_buffer: None,
+                    bound_graphics_pipeline_state: Default::default(),
+                    bound_compute_pipeline_state: Default::default(),
+                    arena: Blink::new(),
+                };
+                let encoder = Box::new(encoder);
+
+                // Safety: This isn't unsound/unsafe
+                unsafe { Ok(CommandEncoder::from_abi(encoder)) }
+            }
+            ListState::Open => Err(CommandListBeginError::InvalidCommandListState),
+            ListState::Closed => Err(CommandListBeginError::InvalidCommandListState),
+        }
     }
 }
 

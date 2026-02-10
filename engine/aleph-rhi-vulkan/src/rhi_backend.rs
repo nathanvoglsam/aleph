@@ -309,8 +309,8 @@ impl VulkanLoader {
                 config.log_level = mvk::ConfigLogLevel::NONE;
             }
             config.use_metal_argument_buffers = mvk::UseMetalArgumentBuffers::DESCRIPTOR_INDEXING;
-            config.specialized_queue_families = 1;
-            config.synchronous_queue_submits = 0;
+            config.specialized_queue_families = 0;
+            config.synchronous_queue_submits = 1;
 
             // Safety: If the cstr inside isn't valid even though we just got it from the runtime
             //         we're hosed so assume it's good.

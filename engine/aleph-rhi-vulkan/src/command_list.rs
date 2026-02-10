@@ -68,8 +68,7 @@ unsafe impl Send for CommandList {}
 impl ICommandList for CommandList {
     fn begin_general(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         if matches!(self.list_type, QueueType::General) {
-            // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
-            Ok(self.begin()?)
+            self.begin()
         } else {
             Err(CommandListBeginError::InvalidEncoderType(
                 QueueType::General,
@@ -79,8 +78,7 @@ impl ICommandList for CommandList {
 
     fn begin_compute(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         if matches!(self.list_type, QueueType::General | QueueType::Compute) {
-            // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
-            Ok(self.begin()?)
+            self.begin()
         } else {
             Err(CommandListBeginError::InvalidEncoderType(
                 QueueType::Compute,
@@ -89,8 +87,7 @@ impl ICommandList for CommandList {
     }
 
     fn begin_transfer(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
-        Ok(self.begin()?)
+        self.begin()
     }
 }
 

@@ -80,8 +80,8 @@ impl<'a> IGetPlatformInterface for Encoder<'a> {
     }
 }
 
-impl<'a> IGeneralEncoder for Encoder<'a> {
-    unsafe fn bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
+impl<'a> ICommandEncoderAbi for Encoder<'a> {
+    unsafe fn __bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
         let encoder = self.active.get_render();
 
         let concrete = GraphicsPipeline::get_owned(pipeline);
@@ -104,7 +104,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         self.bound_graphics_pipeline = Some(concrete);
     }
 
-    unsafe fn bind_vertex_buffers(
+    unsafe fn __bind_vertex_buffers(
         &mut self,
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
@@ -137,7 +137,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn bind_index_buffer(
+    unsafe fn __bind_index_buffer(
         &mut self,
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
@@ -152,7 +152,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         self.bound_index_buffer = Some(binding);
     }
 
-    unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
+    unsafe fn __set_viewports(&mut self, viewports: &[Viewport]) {
         if viewports.is_empty() {
             return; // If we don't provide any viewports we just bail
         }
@@ -174,7 +174,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
+    unsafe fn __set_scissor_rects(&mut self, rects: &[Rect]) {
         if rects.is_empty() {
             return; // If we don't provide any scissor rects we just bail
         }
@@ -196,7 +196,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn set_push_constant_block(&mut self, data: &[u8]) {
+    unsafe fn __set_push_constant_block(&mut self, data: &[u8]) {
         let encoder = self.active.get_render();
 
         // This command can't work without a bound pipeline, we need the pipeline layout so we can
@@ -224,7 +224,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         set_bytes_fn(bytes, block_bytes.len(), index);
     }
 
-    unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
+    unsafe fn __begin_rendering(&mut self, info: &BeginRenderingInfo) {
         autoreleasepool(|_| {
             let mtl_desc = MTLRenderPassDescriptor::new();
 
@@ -327,13 +327,13 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         })
     }
 
-    unsafe fn end_rendering(&mut self) {
+    unsafe fn __end_rendering(&mut self) {
         autoreleasepool(|_| {
             self.active.end_render();
         })
     }
 
-    unsafe fn draw(
+    unsafe fn __draw(
         &mut self,
         vertex_count: u32,
         instance_count: u32,
@@ -359,7 +359,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn draw_indexed(
+    unsafe fn __draw_indexed(
         &mut self,
         index_count: u32,
         instance_count: u32,
@@ -391,10 +391,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             );
         }
     }
-}
 
-impl<'a> IComputeEncoder for Encoder<'a> {
-    unsafe fn bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
+    unsafe fn __bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
         self.active.test_begin_compute(&self.objects.list);
         let encoder = self.active.get_compute();
 
@@ -405,7 +403,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         self.bound_compute_pipeline = Some(concrete);
     }
 
-    unsafe fn bind_parameter_blocks(
+    unsafe fn __bind_parameter_blocks(
         &mut self,
         binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
@@ -516,7 +514,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn push_parameters(
+    unsafe fn __push_parameters(
         &mut self,
         binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
@@ -598,7 +596,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
+    unsafe fn __dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
         self.active.test_begin_compute(&self.objects.list);
         let encoder = self.active.get_compute();
 
@@ -616,10 +614,8 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             pipeline.workgroup_size,
         );
     }
-}
 
-impl<'a> ITransferEncoder for Encoder<'a> {
-    unsafe fn resource_barrier(
+    unsafe fn __resource_barrier(
         &mut self,
         global_barriers: &[GlobalBarrier],
         buffer_barriers: &[BufferBarrier],
@@ -636,7 +632,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn copy_buffer_regions(
+    unsafe fn __copy_buffer_regions(
         &mut self,
         src: &BufferHandle,
         dst: &BufferHandle,
@@ -661,7 +657,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn copy_buffer_to_texture(
+    unsafe fn __copy_buffer_to_texture(
         &mut self,
         src: &BufferHandle,
         dst: &TextureHandle,
@@ -702,7 +698,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn copy_texture_regions(
+    unsafe fn __copy_texture_regions(
         &mut self,
         src: &TextureHandle,
         dst: &TextureHandle,
@@ -734,7 +730,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
+    unsafe fn __close(&mut self) -> Result<(), CommandListCloseError> {
         match self._parent.state {
             ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
             ListState::Open => {
@@ -746,11 +742,11 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn set_marker(&mut self, _color: Color, _message: &aleph_nstr::NStr) {
+    unsafe fn __set_marker(&mut self, _color: Color, _message: &aleph_nstr::NStr) {
         // TODO: this
     }
 
-    unsafe fn begin_event(&mut self, _color: Color, message: &aleph_nstr::NStr) {
+    unsafe fn __begin_event(&mut self, _color: Color, message: &aleph_nstr::NStr) {
         autoreleasepool(|_| {
             self.objects
                 .list
@@ -758,7 +754,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         })
     }
 
-    unsafe fn end_event(&mut self) {
+    unsafe fn __end_event(&mut self) {
         autoreleasepool(|_| {
             self.objects.list.popDebugGroup();
         })
