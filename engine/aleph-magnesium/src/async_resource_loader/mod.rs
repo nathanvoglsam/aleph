@@ -58,9 +58,11 @@ use crate::internal::buffer::make_standard_buffer_desc;
 use crate::internal::texture::make_standard_texture_desc;
 use crate::resource::texture::simple::SimpleTextureDesc;
 
+pub struct BufferLoad;
 make_handle_id!(BufferLoad);
 pub type BufferLoadHandle = Handle<BufferLoad>;
 
+pub struct TextureLoad;
 make_handle_id!(TextureLoad);
 pub type TextureLoadHandle = Handle<TextureLoad>;
 

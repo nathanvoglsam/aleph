@@ -33,6 +33,7 @@ use crate::internal::material_instance::{MaterialInstanceObject, MaterialInstanc
 use crate::material::Material;
 use crate::material::binding::MaterialBinding;
 
+pub struct MaterialInstance;
 make_handle_id!(MaterialInstance);
 pub type MaterialInstanceHandle = Handle<MaterialInstance>;
 

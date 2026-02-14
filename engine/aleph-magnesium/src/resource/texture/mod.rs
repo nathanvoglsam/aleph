@@ -35,6 +35,7 @@ use aleph_gen_arena::{Handle, make_handle_id};
 
 use crate::internal::texture::{TextureObject, TextureObjectStore};
 
+pub struct Texture;
 make_handle_id!(Texture);
 pub type TextureHandle = Handle<Texture>;
 

@@ -31,6 +31,7 @@ use aleph_gen_arena::{Handle, make_handle_id};
 
 use crate::internal::buffer::{BufferObject, BufferObjectStore};
 
+pub struct Buffer;
 make_handle_id!(Buffer);
 pub type BufferHandle = Handle<Buffer>;
 

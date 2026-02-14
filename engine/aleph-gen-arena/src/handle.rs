@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-use std::fmt::{Debug, Formatter};
-use std::hash::Hash;
 use std::marker::PhantomData;
 use std::num::NonZeroU64;
 
@@ -79,7 +77,7 @@ impl RawHandle {
     }
 
     /// Utility for implementing debug on newtype wrappers using the newtype's name
-    pub fn debug_newtype(&self, f: &mut Formatter<'_>, name: &str) -> std::fmt::Result {
+    pub fn debug_newtype(&self, f: &mut std::fmt::Formatter<'_>, name: &str) -> std::fmt::Result {
         let fields = self.to_fields();
         f.debug_struct(name)
             .field("generation", &fields.generation)
@@ -88,8 +86,8 @@ impl RawHandle {
     }
 }
 
-impl Debug for RawHandle {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl std::fmt::Debug for RawHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.debug_newtype(f, "Handle")
     }
 }
@@ -214,7 +212,7 @@ pub trait HandleType: Copy + Clone {
 /// Needs all the other traits so the derives work on [`Handle`]. This should only be implemented
 /// on ZST structs like `struct Thing;` anyway. It's highly recommended to use [`make_handle_id!`]
 /// to do this for you.
-pub trait HandleId: Copy + Clone + Ord + PartialOrd + Eq + PartialEq + Hash {
+pub trait HandleId {
     fn name() -> &'static str;
 }
 
@@ -223,15 +221,89 @@ pub trait HandleId: Copy + Clone + Ord + PartialOrd + Eq + PartialEq + Hash {
 ///
 /// [`HandleId`] must be implemented on the generic argument. It is highly recommended that you use
 /// [`make_handle_id!`] to create the handle IDs.
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 #[repr(transparent)]
 pub struct Handle<T: HandleId> {
     pub(crate) handle: RawHandle,
     pub(crate) phantom: PhantomData<T>,
 }
 
-impl<T: HandleId> Debug for Handle<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<T: HandleId> Copy for Handle<T> {}
+
+impl<T: HandleId> Clone for Handle<T> {
+    #[inline(always)]
+    fn clone(&self) -> Self {
+        Self {
+            handle: self.handle.clone(),
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<T: HandleId> Ord for Handle<T> {
+    #[inline(always)]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.handle.cmp(&other.handle)
+    }
+
+    #[inline(always)]
+    fn max(self, other: Self) -> Self {
+        let h = self.handle.max(other.handle);
+        Self {
+            handle: h,
+            phantom: PhantomData,
+        }
+    }
+
+    #[inline(always)]
+    fn min(self, other: Self) -> Self {
+        let h = self.handle.min(other.handle);
+        Self {
+            handle: h,
+            phantom: PhantomData,
+        }
+    }
+
+    #[inline(always)]
+    fn clamp(self, min: Self, max: Self) -> Self {
+        let h = self.handle.clamp(min.handle, max.handle);
+        Self {
+            handle: h,
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<T: HandleId> PartialOrd for Handle<T> {
+    #[inline(always)]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.handle.partial_cmp(&other.handle)
+    }
+}
+
+impl<T: HandleId> Eq for Handle<T> {}
+
+impl<T: HandleId> PartialEq for Handle<T> {
+    #[inline(always)]
+    fn eq(&self, other: &Self) -> bool {
+        self.handle.eq(&other.handle)
+    }
+
+    #[inline(always)]
+    fn ne(&self, other: &Self) -> bool {
+        self.handle.ne(&other.handle)
+    }
+}
+
+impl<T: HandleId> std::hash::Hash for Handle<T> {
+    #[inline(always)]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.handle.hash(state);
+    }
+}
+
+impl<T: HandleId> std::fmt::Debug for Handle<T> {
+    #[inline(always)]
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.handle.debug_newtype(f, T::name())
     }
 }
@@ -241,7 +313,7 @@ impl<T: HandleId> HandleType for Handle<T> {
     unsafe fn from_bare_handle(from: RawHandle) -> Self {
         Self {
             handle: from,
-            phantom: Default::default(),
+            phantom: PhantomData,
         }
     }
 
@@ -254,17 +326,6 @@ impl<T: HandleId> HandleType for Handle<T> {
 #[macro_export]
 macro_rules! make_handle_id {
     ($name: ident) => {
-        #[derive(
-            ::core::marker::Copy,
-            ::core::clone::Clone,
-            ::core::cmp::Ord,
-            ::core::cmp::PartialOrd,
-            ::core::cmp::Eq,
-            ::core::cmp::PartialEq,
-            ::core::hash::Hash,
-        )]
-        pub struct $name;
-
         impl $crate::HandleId for $name {
             fn name() -> &'static str {
                 stringify!($name)
