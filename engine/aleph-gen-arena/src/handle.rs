@@ -53,7 +53,7 @@ impl RawHandle {
     /// Coerces any handle with a '0' generation to all zeroes to encode a null handle using the
     /// NonZeroU64 niche. An input [`HandleFields`] with a '0' generation will discard the other IDs
     /// to emit this null reference.
-    pub const unsafe fn from_fields(v: HandleFields) -> Option<Self> {
+    pub const fn from_fields(v: HandleFields) -> Option<Self> {
         // Coerce the zero generation to a null handle
         if v.generation.0 == 0 {
             None

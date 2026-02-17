@@ -190,9 +190,8 @@ impl<A: Allocator> HandlePool<A> {
                 slot_index,
             };
 
-            // SAFETY: Generation will always be non-zero as zero is a dead generation. This means
-            //         the handle will always be non-zero and so will never be 'None'.
-            let handle = unsafe { RawHandle::from_fields(fields).unwrap_unchecked() };
+            // I hope the optimizer sees through this and skips the 'if generation == 0'
+            let handle = RawHandle::from_fields(fields).unwrap();
             dst.push(handle);
         }
     }
