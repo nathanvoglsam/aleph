@@ -29,20 +29,18 @@
 
 
 [package]
-name = "aleph-object-system"
+name = "aleph-init-list"
 version = "0.1.0"
 authors.workspace = true
-description = "A object type-id system more compatible with FFI"
+description = "A generic system for creating lists of items during the init phase of an application"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-object-system/"
+documentation = "https://docs.rs/aleph-init-list/"
 edition.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-uuid = { workspace = true }
-aleph-nstr = { workspace = true }
-ctor = { workspace = true }
-aleph-init-list = { workspace = true }
+allocator-api2 = { workspace = true }
+crossbeam = { workspace = true }
