@@ -35,14 +35,13 @@ use std::ptr::NonNull;
 use aleph_alloc::alloc::Allocator;
 use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BBox, BHashMap, BVec};
-use aleph_object_system::ObjectDescription;
-use aleph_object_system::uuid::Uuid;
 
+use crate::component::{COMPONENTS, ComponentId};
 use crate::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
-    ComponentQueryItem, ComponentRegistry, ComponentSource, EcsSystem, EntityId, EntityLayout,
-    EntityLayoutBuf, EntityLocation, EntityStorage, IntoComponentSource, IntoOneComponentSource,
-    QueryMut, QueryRef, ReadOnlyComponentQuery, UnsafeComponentSource, UnsafeQuery,
+    ComponentQueryItem, ComponentSource, EcsSystem, EntityId, EntityLayout, EntityLayoutBuf,
+    EntityLocation, EntityStorage, IntoComponentSource, IntoOneComponentSource, QueryMut, QueryRef,
+    ReadOnlyComponentQuery, TypeDescription, UnsafeComponentSource, UnsafeQuery,
 };
 
 ///
@@ -123,7 +122,7 @@ pub struct World {
     pub(crate) options: WorldOptions,
 
     /// Holds all the components that have been registered with the World
-    pub(crate) component_registry: ComponentRegistry,
+    pub(crate) types: BVec<&'static TypeDescription, EcsSystem>,
 
     /// Holds all the entity slots. This handles ID allocation and maps the IDs to their archetype
     pub(crate) entities: EntityStorage,
@@ -151,7 +150,9 @@ impl World {
 
     ///
     pub fn new(options: WorldOptions) -> std::io::Result<Self> {
-        let component_registry = ComponentRegistry::new();
+        let mut types = BVec::new_in(system());
+        types.extend(COMPONENTS.iter().copied());
+
         let entities = EntityStorage::new(options.entity_capacity)?;
 
         let archetypes = BVec::new_in(system());
@@ -163,7 +164,7 @@ impl World {
 
         let out = Self {
             options,
-            component_registry,
+            types,
             entities,
             archetype_map,
             archetypes,
@@ -181,11 +182,6 @@ impl World {
     /// Returns if there are no entities in the `World`
     pub const fn is_empty(&self) -> bool {
         self.entities.is_empty()
-    }
-
-    /// Register's a rust component type with this ECS world so that it can be used as a component
-    pub fn register<T: Component>(&mut self) -> ObjectDescription {
-        self.component_registry.register::<T>()
     }
 
     /// Add a new entity to the world directly into the target archetype declared on the generic
@@ -325,7 +321,7 @@ impl World {
         // successfully transferred into the archetype
         unsafe {
             let data = NonNull::from(&component);
-            if self.add_component_dynamic(entity, &T::ID, data.cast()) {
+            if self.add_component_dynamic(entity, T::DESC.id, data.cast()) {
                 std::mem::forget(component);
                 true
             } else {
@@ -338,7 +334,7 @@ impl World {
     ///
     /// Returns true if the component is successfully removed, otherwise returns false.
     pub fn remove_component<T: Component>(&mut self, entity: EntityId) -> bool {
-        unsafe { self.remove_component_dynamic(entity, &T::ID) }
+        unsafe { self.remove_component_dynamic(entity, T::DESC.id) }
     }
 
     /// Erases the entity with the ID from the ECS.
@@ -371,7 +367,7 @@ impl World {
 
     /// Returns whether the specified component has the component `T`.
     pub fn has_component<T: Component>(&self, entity: EntityId) -> bool {
-        self.has_component_dynamic(entity, &T::ID)
+        self.has_component_dynamic(entity, T::DESC.id)
     }
 
     #[inline]
@@ -447,18 +443,6 @@ impl World {
 /// Implementations for the underlying FFI friendly API
 ///
 impl World {
-    /// The function provides the raw implementation of adding to the component registry using an
-    /// arbitrary [`ObjectDescription`].
-    ///
-    /// # Safety
-    ///
-    /// This function is unsafe because there is no way to guarantee that the memory layout provided
-    /// is valid for the provided ID. It is possible to provide the ID for a rust type but give an
-    /// incorrect size and trigger UB.
-    pub unsafe fn register_dynamic(&mut self, description: &ObjectDescription) -> bool {
-        unsafe { self.component_registry.register_dynamic(description) }
-    }
-
     /// This function provides the raw implementation of adding a component to an existing entity.
     ///
     /// # Safety
@@ -469,7 +453,7 @@ impl World {
     pub unsafe fn add_component_dynamic(
         &mut self,
         entity: EntityId,
-        component: &Uuid,
+        component: ComponentId,
         data: NonNull<u8>,
     ) -> bool {
         // Lookup the entity location by the provided ID, returning false if the ID is invalid
@@ -516,7 +500,11 @@ impl World {
     ///
     /// Marked unsafe until the function is proven to be safe, as it currently ambiguous whether
     /// this is safe to call.
-    pub unsafe fn remove_component_dynamic(&mut self, entity: EntityId, component: &Uuid) -> bool {
+    pub unsafe fn remove_component_dynamic(
+        &mut self,
+        entity: EntityId,
+        component: ComponentId,
+    ) -> bool {
         // Lookup the entity location by the provided ID, returning false if the ID is invalid
         let location = if let Some(location) = self.entities.lookup(entity) {
             location
@@ -556,7 +544,7 @@ impl World {
     /// This function provides a raw, untyped interface for looking up an individual component for
     /// a given entity.
     #[inline]
-    pub fn has_component_dynamic(&self, entity: EntityId, component: &Uuid) -> bool {
+    pub fn has_component_dynamic(&self, entity: EntityId, component: ComponentId) -> bool {
         if let Some(location) = self.entities.lookup(entity) {
             self.archetypes[location.archetype.get_index()]
                 .entity_layout()
@@ -572,12 +560,12 @@ impl World {
     fn follow_archetype_link_remove(
         &mut self,
         source: ArchetypeIndex,
-        component: &Uuid,
+        component: ComponentId,
     ) -> Option<ArchetypeIndex> {
         let source = source.get_index();
 
         // First check for an existing link in the graph
-        if let Some(edge) = self.archetype_edges[source].get_mut(component)
+        if let Some(edge) = self.archetype_edges[source].get_mut(&component)
             && let Some(index) = edge.remove
         {
             return Some(index);
@@ -593,13 +581,13 @@ impl World {
         let source_layout =
             EntityLayoutBuf::from_layout_in(self.archetypes[source].entity_layout(), system());
         let mut destination_layout = source_layout;
-        if !destination_layout.remove_component_type(*component) {
+        if !destination_layout.remove_component_type(component) {
             return None;
         }
 
         // Lookup the archetype and update the graph edge in source
         let index = self.find_or_create_archetype(destination_layout);
-        let edge = self.archetype_edges[source].entry(*component).or_default();
+        let edge = self.archetype_edges[source].entry(component).or_default();
         edge.remove = Some(index);
 
         Some(index)
@@ -608,12 +596,12 @@ impl World {
     fn follow_archetype_link_add(
         &mut self,
         source: ArchetypeIndex,
-        component: &Uuid,
+        component: ComponentId,
     ) -> Option<ArchetypeIndex> {
         let source = source.get_index();
 
         // First check for an existing link in the graph
-        if let Some(edge) = self.archetype_edges[source].get_mut(component)
+        if let Some(edge) = self.archetype_edges[source].get_mut(&component)
             && let Some(index) = edge.add
         {
             return Some(index);
@@ -629,13 +617,13 @@ impl World {
         let source_layout =
             EntityLayoutBuf::from_layout_in(self.archetypes[source].entity_layout(), system());
         let mut destination_layout = source_layout;
-        if destination_layout.add_component_type(*component) {
+        if destination_layout.add_component_type(component) {
             return None;
         }
 
         // Lookup the archetype and update the graph edge in source
         let index = self.find_or_create_archetype(destination_layout);
-        let edge = self.archetype_edges[source].entry(*component).or_default();
+        let edge = self.archetype_edges[source].entry(component).or_default();
         edge.add = Some(index);
 
         Some(index)
@@ -651,7 +639,7 @@ impl World {
             // 'ArchetypeIndex::new' checks if the index would be larger than max_archetypes
 
             let capacity = self.options.archetype_capacity;
-            let archetype = Archetype::new(capacity, &layout, &self.component_registry);
+            let archetype = Archetype::new(capacity, &layout, &self.types);
             let archetype_edges = ComponentIdMap::with_hasher_in(Default::default(), system());
 
             self.archetype_map

@@ -46,7 +46,7 @@ mod transform {
         /// precision would be wasted here so f32 is chosen instead.
         pub scale: aleph_math::Vec3,
     }
-    object_system::unsafe_impl_iobject!(Transform, "01922c0e-dde9-72f0-b62f-dd9748e29f92");
+    ecs::register_component!(Transform);
 }
 
 mod transform_history {
@@ -65,7 +65,7 @@ mod transform_history {
     pub struct TransformHistory {
         pub previous: Transform,
     }
-    object_system::unsafe_impl_iobject!(TransformHistory, "01928a60-e332-7912-bc4a-fe6b44b7ac12");
+    ecs::register_component!(TransformHistory);
 }
 
 mod camera {
@@ -87,7 +87,7 @@ mod camera {
         /// projection so there is no far plane to specify.
         pub z_near: f32,
     }
-    object_system::unsafe_impl_iobject!(Camera, "01922c0e-dde9-72f0-b62f-dd78b074ed54");
+    ecs::register_component!(Camera);
 }
 
 mod lights {
@@ -100,7 +100,7 @@ mod lights {
         /// The intensity of the light in lumens
         pub intensity: f32,
     }
-    object_system::unsafe_impl_iobject!(PointLight, "01922c0e-dde9-72f0-b62f-dd8a96c3f21c");
+    ecs::register_component!(PointLight);
 }
 
 mod static_mesh {
@@ -117,7 +117,7 @@ mod static_mesh {
         pub idx: BufferHandle,
         pub material_instance: MaterialInstanceHandle,
     }
-    object_system::unsafe_impl_iobject!(StaticMesh, "01923c3a-624e-7100-b97a-50e9baaa5ca0");
+    ecs::register_component!(StaticMesh);
 }
 
 pub use camera::Camera;

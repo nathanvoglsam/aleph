@@ -29,22 +29,20 @@
 
 use std::sync::Arc;
 
-use object_system::unsafe_impl_iobject;
-
-use crate::World;
+use crate::{World, register_component};
 
 #[derive(Clone, Default, PartialEq, Debug)]
 struct Position {
     pub x: f32,
     pub y: f32,
 }
-unsafe_impl_iobject!(Position, "01922977-e48a-7f00-83a5-d78e50e77567");
+register_component!(Position);
 
 #[derive(Clone, PartialEq, Debug)]
 struct BigComponent {
     pub data: [u8; 64],
 }
-unsafe_impl_iobject!(BigComponent, "019395de-d02d-7702-89c1-6bdeb67bb7ce");
+register_component!(BigComponent);
 
 impl Position {
     pub fn new(x: f32, y: f32) -> Self {
@@ -57,7 +55,7 @@ struct Scale {
     pub x: f32,
     pub y: f32,
 }
-unsafe_impl_iobject!(Scale, "01922978-21d5-7c83-aa72-025c9daae51c");
+register_component!(Scale);
 
 impl Scale {
     pub fn new(x: f32, y: f32) -> Self {
@@ -69,7 +67,7 @@ impl Scale {
 struct Mesh {
     pub a: usize,
 }
-unsafe_impl_iobject!(Mesh, "01922978-231e-7381-b173-6ecff48c4774");
+register_component!(Mesh);
 
 impl Mesh {
     pub fn new(a: usize) -> Self {
@@ -79,15 +77,11 @@ impl Mesh {
 
 #[derive(Default, Debug)]
 struct Dropper(Arc<()>);
-unsafe_impl_iobject!(Dropper, "01922979-2550-7d31-b91a-6c05bab9bb3b");
+register_component!(Dropper);
 
 #[test]
 fn extend_test_vec() {
     let mut world = World::new(Default::default()).unwrap();
-
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
 
     let ids = world.extend((
         vec![Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
@@ -122,10 +116,6 @@ fn extend_test_vec() {
 fn extend_test_vec_large() {
     let mut world = World::new(Default::default()).unwrap();
 
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
-
     let positions: Vec<_> = (0..20_000)
         .enumerate()
         .map(|(i, _)| Position::new(1.0 * i as f32, 2.0 * i as f32))
@@ -155,10 +145,6 @@ fn extend_test_vec_large() {
 fn extend_test_vec_larger() {
     let mut world = World::new(Default::default()).unwrap();
 
-    world.register::<BigComponent>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
-
     let components: Vec<_> = (0..20_000)
         .map(|_| BigComponent { data: [56; 64] })
         .collect();
@@ -180,10 +166,6 @@ fn extend_test_vec_larger() {
 #[test]
 fn extend_test_vec_larger_extend_one() {
     let mut world = World::new(Default::default()).unwrap();
-
-    world.register::<BigComponent>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
 
     let components: Vec<_> = (0..20_000)
         .map(|_| BigComponent { data: [56; 64] })
@@ -209,10 +191,6 @@ fn extend_test_vec_larger_extend_one() {
 #[test]
 fn extend_test_array() {
     let mut world = World::new(Default::default()).unwrap();
-
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
 
     let ids = world.extend((
         [Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
@@ -247,10 +225,6 @@ fn extend_test_array() {
 fn extend_test_one() {
     let mut world = World::new(Default::default()).unwrap();
 
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
-
     let mut ids = Vec::new();
     ids.push(world.extend_one((Position::new(1.0, 2.0), Scale::new(5.0, 6.0))));
     ids.push(world.extend_one((Position::new(3.0, 4.0), Scale::new(7.0, 8.0))));
@@ -284,10 +258,6 @@ fn extend_test_one() {
 fn extend_test_non_matched_sizes() {
     let mut world = World::new(Default::default()).unwrap();
 
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
-
     let _ids = world.extend((
         vec![Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
         vec![Scale::new(5.0, 6.0)],
@@ -298,10 +268,6 @@ fn extend_test_non_matched_sizes() {
 #[should_panic]
 fn extend_test_duplicate_components() {
     let mut world = World::new(Default::default()).unwrap();
-
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
 
     let _ids = world.extend((
         vec![Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
@@ -314,20 +280,12 @@ fn extend_test_duplicate_components() {
 fn extend_test_duplicate_components_2() {
     let mut world = World::new(Default::default()).unwrap();
 
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
-
     let _id = world.extend_one((Position::new(1.0, 2.0), Position::new(5.0, 6.0)));
 }
 
 #[test]
 fn remove_entity_array() {
     let mut world = World::new(Default::default()).unwrap();
-
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
 
     let ids_a = world.extend((
         [Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
@@ -414,10 +372,6 @@ fn remove_entity_array() {
 fn remove_component_test() {
     let mut world = World::new(Default::default()).unwrap();
 
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
-
     let ids = world.extend((
         [Position::default(), Position::default()],
         [Scale::default(), Scale::default()],
@@ -437,10 +391,6 @@ fn remove_component_test() {
 fn add_component_test() {
     let mut world = World::new(Default::default()).unwrap();
 
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
-
     let ids = world.extend((
         [Position::default(), Position::default()],
         [Scale::default(), Scale::default()],
@@ -455,11 +405,6 @@ fn add_component_test() {
 #[test]
 fn drop_test() {
     let mut world = World::new(Default::default()).unwrap();
-
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
-    world.register::<Dropper>();
 
     let counter = Arc::new(());
 
@@ -490,10 +435,6 @@ fn drop_test() {
 #[test]
 fn query_test() {
     let mut world = World::new(Default::default()).unwrap();
-
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
 
     let scale_ids = world.extend((
         [Position::new(1.0, 2.0), Position::new(3.0, 4.0)],

@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_object_system as object_system;
+pub extern crate aleph_init_list as init_list;
+pub extern crate aleph_nstr as nstr;
+pub extern crate ctor;
 
 mod archetype;
 mod component;
@@ -42,12 +44,13 @@ pub use self::component::component_query::{
     ComponentQuery, ComponentQueryItem, ComponentRead, ComponentWrite, Fetch,
     ReadOnlyComponentQuery,
 };
-pub use self::component::component_registry::ComponentRegistry;
 pub use self::component::component_source::{
     CheckedSource, ComponentSource, IntoComponentSource, IntoOneComponentSource,
     OneComponentSource, UnsafeComponentSource, UnsafeComponentSourceEntry,
 };
-pub use self::component::{Component, ComponentIdMap};
+pub use self::component::{
+    Component, ComponentId, ComponentIdMap, TypeDescription, register_component_type,
+};
 pub use self::entity::entity_layout::{EntityLayout, EntityLayoutBuf};
 pub use self::entity::entity_storage::{
     EntityEntry, EntityEntryData, EntityFreeListLink, EntityLocation, EntityStorage,

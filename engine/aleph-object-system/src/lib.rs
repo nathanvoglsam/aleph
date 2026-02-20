@@ -34,13 +34,15 @@ pub extern crate uuid;
 
 mod registry;
 
+use std::collections::HashMap;
 use std::mem::{ManuallyDrop, needs_drop};
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use aleph_nstr::NStr;
-pub use registry::*;
+
+use crate::registry::{__UNSAFE_REGISTRY_HEAD, assert_no_duplicate_ids_registered};
 
 /// This trait represents the capability of a type to interact with the 'object system'
 pub unsafe trait IObject: Sized {
@@ -294,6 +296,26 @@ impl<T: IObject> DerefMut for Object<T> {
     }
 }
 
+/// # Warning
+///
+/// Do not use this. This is only public for macros to consume. Please use [`TYPES`] instead.
+#[doc(hidden)]
+pub fn __push_entry(node: &'static init_list::ListItem<&'static ObjectDescription>) {
+    __UNSAFE_REGISTRY_HEAD.push_entry(node);
+}
+
+/// A lazily initialized table of all types registered into the object system.
+pub static TYPES: LazyLock<HashMap<uuid::Uuid, &'static ObjectDescription>> = LazyLock::new(|| {
+    // We don't care if someone's sealed the list before, only that it has been sealed.
+    let _ = __UNSAFE_REGISTRY_HEAD.seal();
+    assert_no_duplicate_ids_registered();
+    HashMap::from_iter(__UNSAFE_REGISTRY_HEAD.iter().copied().map(|v| (v.id, v)))
+});
+
+/// Type alias made available for macros.
+#[doc(hidden)]
+pub type ListEntry = init_list::ListItem<&'static ObjectDescription>;
+
 /// This macro can be used to implement [`IObject`] on an object as a shorthand compared to manually
 /// implementing it directly. This will correctly generate a (mostly) safe implementation of
 /// [`IObject`] for the given type.
@@ -331,7 +353,7 @@ macro_rules! unsafe_impl_iobject {
             const fn __internal_register_node_scope() -> bool {
                 #[$crate::ctor::ctor(crate_path = $crate::ctor)]
                 fn internal_register_t() {
-                    $crate::__UNSAFE_REGISTRY_HEAD.push_entry(<$t>::__internal_node());
+                    $crate::__push_entry(<$t>::__internal_node());
                 }
                 true
             }

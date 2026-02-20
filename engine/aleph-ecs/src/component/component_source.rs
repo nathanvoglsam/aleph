@@ -30,8 +30,7 @@
 use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::NonNull;
 
-use object_system::uuid::Uuid;
-
+use crate::component::ComponentId;
 use crate::{Component, EcsSystem, EntityId, EntityLayoutBuf};
 
 #[repr(C)]
@@ -65,7 +64,7 @@ impl UnsafeComponentSource {
 #[repr(C)]
 pub struct UnsafeComponentSourceEntry {
     /// The 'id' of the component type that is stored in this pair.
-    pub id: Uuid,
+    pub id: ComponentId,
 
     /// An array of the component type identified by `id`. It is the user's responsibility to ensure
     /// the pointer is valid when it is read.
@@ -147,7 +146,7 @@ macro_rules! impl_component_source_for_tuple {
 
                 let components = [
                     $($crate::UnsafeComponentSourceEntry {
-                        id: $crate::object_system::object_id::<$t>(),
+                        id: <$t as $crate::Component>::DESC.id,
                         ptr: ::std::ptr::NonNull::new($t.as_ptr() as *mut std::mem::MaybeUninit<$t>).unwrap().cast::<u8>(),
                     }),+
                 ];
@@ -168,7 +167,7 @@ macro_rules! impl_component_source_for_tuple {
 
                 let components = [
                     $($crate::UnsafeComponentSourceEntry {
-                        id: $crate::object_system::object_id::<$t>(),
+                        id: <$t as $crate::Component>::DESC.id,
                         ptr: ::std::ptr::NonNull::new($t.as_ptr() as *mut std::mem::MaybeUninit<$t>).unwrap().cast::<u8>(),
                     }),+
                 ];
@@ -189,7 +188,7 @@ macro_rules! impl_component_source_for_tuple {
 
                 let components = [
                     $($crate::UnsafeComponentSourceEntry {
-                        id: $crate::object_system::object_id::<$t>(),
+                        id: <$t as $crate::Component>::DESC.id,
                         ptr: ::std::ptr::NonNull::from($t).cast::<u8>(),
                     }),+
                 ];

@@ -35,7 +35,8 @@ use std::ops::Deref;
 use aleph_alloc::alloc::{Allocator, Global};
 use aleph_alloc::vec::IntoIter as BIntoIter;
 use aleph_alloc::{BBox, BVec};
-use aleph_object_system::uuid::Uuid;
+
+use crate::component::ComponentId;
 
 ///
 /// A wrapper over a slice of an EntityLayoutBuf
@@ -43,7 +44,7 @@ use aleph_object_system::uuid::Uuid;
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Debug, Hash)]
 pub struct EntityLayout {
-    components: [Uuid],
+    components: [ComponentId],
 }
 
 impl EntityLayout {
@@ -55,11 +56,11 @@ impl EntityLayout {
     /// It is up to the caller to check the constraints documented on [EntityLayout::from_inner].
     ///
     #[inline]
-    pub unsafe fn from_inner_unchecked(components: &[Uuid]) -> &Self {
+    pub unsafe fn from_inner_unchecked(components: &[ComponentId]) -> &Self {
         unsafe {
             // SAFETY: EntityLayout is just a wrapper of [ComponentTypeId],
             // therefore converting &[ComponentTypeId] to &EntityLayout is safe.
-            &*(components as *const [Uuid] as *const EntityLayout)
+            &*(components as *const [ComponentId] as *const EntityLayout)
         }
     }
 
@@ -74,7 +75,7 @@ impl EntityLayout {
     ///
     /// If these requirements are not met then the function will return None.
     #[inline]
-    pub fn from_inner(components: &[Uuid]) -> Option<&Self> {
+    pub fn from_inner(components: &[ComponentId]) -> Option<&Self> {
         // First we check if the given list is sorted
         let is_sorted = components.windows(2).all(|w| w[0] <= w[1]);
         if !is_sorted {
@@ -97,7 +98,7 @@ impl EntityLayout {
 
     /// A utility that returns an empty EntityLayout. That is, a layout with no components.
     pub fn empty() -> &'static EntityLayout {
-        static EMPTY: [Uuid; 0] = [];
+        static EMPTY: [ComponentId; 0] = [];
 
         // SAFETY: The list is empty so there is nothing to actually check so this is safe.
         unsafe { Self::from_inner_unchecked(&EMPTY) }
@@ -105,14 +106,14 @@ impl EntityLayout {
 
     /// Returns whether the given component type is present in the `EntityLayout`.
     #[inline]
-    pub fn contains_component_type(&self, id: &Uuid) -> bool {
-        self.components.binary_search(id).is_ok()
+    pub fn contains_component_type(&self, id: ComponentId) -> bool {
+        self.components.binary_search(&id).is_ok()
     }
 
     /// Returns the index of the component type in the `EntityLayout`, if it exists in the layout
     #[inline]
-    pub fn index_of_component_type(&self, id: &Uuid) -> Option<usize> {
-        self.components.binary_search(id).ok()
+    pub fn index_of_component_type(&self, id: ComponentId) -> Option<usize> {
+        self.components.binary_search(&id).ok()
     }
 
     /// Returns if the `EntityLayoutBuf` has no member component types.
@@ -140,7 +141,7 @@ impl EntityLayout {
         let mut self_iter = self.iter().copied();
 
         // Need to hold onto the current component to check between iterations over the other set.
-        let mut current: Uuid = self_iter.next().unwrap();
+        let mut current: ComponentId = self_iter.next().unwrap();
 
         // Now to check if every element of self can be found inside other
         for other_item in other.iter().copied() {
@@ -175,7 +176,7 @@ impl EntityLayout {
         }
 
         // Check if any of the IDs in self exist in other
-        for id in self.iter() {
+        for &id in self.iter() {
             // If we find id in other we have proven self is not disjoint from other.
             if other.contains_component_type(id) {
                 return false;
@@ -188,13 +189,13 @@ impl EntityLayout {
 
     /// An iterator over the components in this layout
     #[inline]
-    pub fn iter(&'_ self) -> impl Iterator<Item = &'_ Uuid> + '_ {
+    pub fn iter(&'_ self) -> impl Iterator<Item = &'_ ComponentId> + '_ {
         self.components.iter()
     }
 
     /// Returns the wrapped slice directly
     #[inline]
-    pub fn as_inner(&self) -> &[Uuid] {
+    pub fn as_inner(&self) -> &[ComponentId] {
         &self.components
     }
 }
@@ -224,7 +225,7 @@ impl EntityLayout {
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct EntityLayoutBuf<A: Allocator = Global> {
-    components: BVec<Uuid, A>,
+    components: BVec<ComponentId, A>,
 }
 
 impl<A: Allocator + Default> Default for EntityLayoutBuf<A> {
@@ -282,7 +283,7 @@ impl<A: Allocator> EntityLayoutBuf<A> {
     ///
     /// Returns true if the component is already present in the `EntityLayoutBuf`, and false if it is not.
     #[inline]
-    pub fn add_component_type(&mut self, id: Uuid) -> bool {
+    pub fn add_component_type(&mut self, id: ComponentId) -> bool {
         match self.components.binary_search(&id) {
             Ok(_) => true,
             Err(index) => {
@@ -297,7 +298,7 @@ impl<A: Allocator> EntityLayoutBuf<A> {
     /// Returns true if the component was present in the `EntityLayoutBuf` and was removed, or false if
     /// the component was not present in the `EntityLayoutBuf`.
     #[inline]
-    pub fn remove_component_type(&mut self, id: Uuid) -> bool {
+    pub fn remove_component_type(&mut self, id: ComponentId) -> bool {
         match self.components.binary_search(&id) {
             Ok(index) => {
                 self.components.remove(index);
@@ -312,7 +313,7 @@ impl<A: Allocator + Clone> EntityLayoutBuf<A> {
     #[inline]
     pub fn into_boxed_slice(&self) -> BBox<EntityLayout, A> {
         let v = self.components.clone().into_boxed_slice();
-        let (v, a) = BBox::<[Uuid], A>::into_raw_with_allocator(v);
+        let (v, a) = BBox::<[ComponentId], A>::into_raw_with_allocator(v);
         let v = v as *mut EntityLayout;
         unsafe { BBox::<_, A>::from_raw_in(v, a) }
     }
@@ -345,9 +346,9 @@ impl<A: Allocator> Borrow<EntityLayout> for EntityLayoutBuf<A> {
 }
 
 impl<A: Allocator> IntoIterator for EntityLayoutBuf<A> {
-    type Item = Uuid;
+    type Item = ComponentId;
 
-    type IntoIter = BIntoIter<Uuid, A>;
+    type IntoIter = BIntoIter<ComponentId, A>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -355,19 +356,19 @@ impl<A: Allocator> IntoIterator for EntityLayoutBuf<A> {
     }
 }
 
-impl FromIterator<Uuid> for EntityLayoutBuf<Global> {
+impl FromIterator<ComponentId> for EntityLayoutBuf<Global> {
     #[inline]
-    fn from_iter<T: IntoIterator<Item = Uuid>>(iter: T) -> Self {
+    fn from_iter<T: IntoIterator<Item = ComponentId>>(iter: T) -> Self {
         let mut components = BVec::from_iter(iter);
         components.sort();
         Self { components }
     }
 }
 
-impl<A: Allocator> TryFrom<BVec<Uuid, A>> for EntityLayoutBuf<A> {
+impl<A: Allocator> TryFrom<BVec<ComponentId, A>> for EntityLayoutBuf<A> {
     type Error = ();
 
-    fn try_from(components: BVec<Uuid, A>) -> Result<Self, Self::Error> {
+    fn try_from(components: BVec<ComponentId, A>) -> Result<Self, Self::Error> {
         if EntityLayout::from_inner(&components).is_some() {
             Ok(Self { components })
         } else {

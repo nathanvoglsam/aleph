@@ -89,7 +89,7 @@ impl<T: Component> ComponentQuery for &T {
 
     #[inline]
     fn add_to_layout(layout: &mut EntityLayoutBuf<EcsSystem>) {
-        if layout.add_component_type(T::ID) {
+        if layout.add_component_type(T::DESC.id) {
             panic!("Trying to lookup the same component multiple times within the same query");
         }
     }
@@ -109,7 +109,7 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentRead<T> {
     unsafe fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
         unsafe {
             let ptr = archetype
-                .get_component_ptr(entity, &T::ID)
+                .get_component_ptr(entity, T::DESC.id)
                 .unwrap()
                 .cast::<T>();
             Self(ptr)
@@ -136,7 +136,7 @@ impl<T: Component> ComponentQuery for &mut T {
 
     #[inline]
     fn add_to_layout(layout: &mut EntityLayoutBuf<EcsSystem>) {
-        if layout.add_component_type(T::ID) {
+        if layout.add_component_type(T::DESC.id) {
             panic!("Trying to lookup the same component multiple times within the same query");
         }
     }
@@ -152,7 +152,7 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentWrite<T> {
     unsafe fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
         unsafe {
             let ptr = archetype
-                .get_component_ptr(entity, &T::ID)
+                .get_component_ptr(entity, T::DESC.id)
                 .unwrap()
                 .cast::<T>();
             Self(ptr)

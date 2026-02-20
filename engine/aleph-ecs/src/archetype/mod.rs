@@ -34,13 +34,10 @@ use std::ptr::NonNull;
 use aleph_alloc::alloc::{Allocator, Global};
 use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BBox, BVec};
-use aleph_object_system::ObjectDescription;
-use aleph_object_system::uuid::Uuid;
 
 pub use crate::archetype::index::{ArchetypeEntityIndex, ArchetypeIndex};
-use crate::{
-    ComponentRegistry, EcsSystem, EntityId, EntityLayout, EntityLayoutBuf, UnsafeComponentSource,
-};
+use crate::component::{ComponentId, TypeDescription};
+use crate::{EcsSystem, EntityId, EntityLayout, EntityLayoutBuf, UnsafeComponentSource};
 
 mod index {
     use std::num::NonZeroU32;
@@ -122,7 +119,7 @@ pub struct ComponentStorage {
     pub data: AlignedByteBuffer<EcsSystem>,
 
     /// A description of the type being stored
-    pub desc: ObjectDescription,
+    pub desc: &'static TypeDescription,
 }
 
 // TODO: State system based on linked list described here: https://ajmmertens.medium.com/why-storing-state-machines-in-ecs-is-a-bad-idea-742de7a18e59
@@ -215,7 +212,11 @@ impl Archetype {
 
 /// Internal implementations
 impl Archetype {
-    pub(crate) fn new(capacity: u32, layout: &EntityLayout, registry: &ComponentRegistry) -> Self {
+    pub(crate) fn new(
+        capacity: u32,
+        layout: &EntityLayout,
+        types: &[&'static TypeDescription],
+    ) -> Self {
         assert_ne!(capacity, 0);
         assert_ne!(layout.len(), 0);
 
@@ -226,11 +227,8 @@ impl Archetype {
 
         // Create a virtual memory reservation for each component's storage
         let mut storages = BVec::new_in(system());
-        storages.extend(layout.iter().map(|v| {
-            let desc = registry
-                .lookup(v)
-                .expect("Tried to create an archetype with an unregistered component type")
-                .clone();
+        storages.extend(layout.iter().map(|&v| {
+            let desc = types[v.0 as usize];
             ComponentStorage {
                 data: AlignedByteBuffer::new_in(desc.align, system()),
                 desc,
@@ -334,7 +332,7 @@ impl Archetype {
     pub(crate) unsafe fn copy_component_data_into_slot(
         &mut self,
         slot: ArchetypeEntityIndex,
-        component_type: &Uuid,
+        component_type: ComponentId,
         data: NonNull<u8>,
     ) {
         // Get the index of the type inside the archetype and lookup the size of the type
@@ -362,7 +360,7 @@ impl Archetype {
     pub(crate) unsafe fn drop_component_in_slot(
         &mut self,
         slot: ArchetypeEntityIndex,
-        component_type: &Uuid,
+        component_type: ComponentId,
     ) {
         let type_index = self.storage_indices.get(component_type).unwrap();
         let type_size = self.storages[type_index].desc.size;
@@ -384,7 +382,7 @@ impl Archetype {
     pub(crate) unsafe fn get_component_ptr(
         &self,
         slot: ArchetypeEntityIndex,
-        component_type: &Uuid,
+        component_type: ComponentId,
     ) -> Option<NonNull<u8>> {
         let slot = slot.get_index();
 
@@ -545,7 +543,7 @@ impl Archetype {
         // Copy the entity ID slot across
         self.entity_ids[new_index.get_index()] = source.entity_ids[target.get_index()];
 
-        for (source_index, source_id) in self.entity_layout.iter().enumerate() {
+        for (source_index, &source_id) in self.entity_layout.iter().enumerate() {
             // Get the size of the component to copy
             let type_size = self.storages[source_index].desc.size;
 
@@ -636,13 +634,13 @@ impl Drop for Archetype {
 
 #[repr(C)]
 struct ComponentMapper {
-    table: BVec<(Uuid, usize), EcsSystem>,
+    table: BVec<(ComponentId, usize), EcsSystem>,
 }
 
 impl ComponentMapper {
-    fn get(&self, component_id: &Uuid) -> Option<usize> {
+    fn get(&self, component_id: ComponentId) -> Option<usize> {
         for v in self.table.iter() {
-            if v.0 == *component_id {
+            if v.0 == component_id {
                 return Some(v.1);
             }
         }
