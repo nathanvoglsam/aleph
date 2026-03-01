@@ -27,16 +27,15 @@
 // SOFTWARE.
 //
 
-use std::alloc::{Layout, handle_alloc_error};
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
-use aleph_alloc::alloc::{Allocator, Global};
 use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BBox, BVec};
 
 pub use crate::archetype::index::{ArchetypeEntityIndex, ArchetypeIndex};
-use crate::component::{ComponentId, TypeDescription};
+use crate::component::{ComponentDescription, ComponentId};
+use crate::internal::column::Column;
 use crate::{EcsSystem, EntityId, EntityLayout, EntityLayoutBuf, UnsafeComponentSource};
 
 mod index {
@@ -116,10 +115,10 @@ mod index {
 #[repr(C)]
 pub struct ComponentStorage {
     /// Pointer to the start of the virtual memory region that stores a given type of component
-    pub data: AlignedByteBuffer<EcsSystem>,
+    pub data: Column<EcsSystem>,
 
     /// A description of the type being stored
-    pub desc: &'static TypeDescription,
+    pub desc: &'static ComponentDescription,
 }
 
 // TODO: State system based on linked list described here: https://ajmmertens.medium.com/why-storing-state-machines-in-ecs-is-a-bad-idea-742de7a18e59
@@ -215,7 +214,7 @@ impl Archetype {
     pub(crate) fn new(
         capacity: u32,
         layout: &EntityLayout,
-        types: &[&'static TypeDescription],
+        types: &[&'static ComponentDescription],
     ) -> Self {
         assert_ne!(capacity, 0);
         assert_ne!(layout.len(), 0);
@@ -230,7 +229,7 @@ impl Archetype {
         storages.extend(layout.iter().map(|&v| {
             let desc = types[v.0 as usize];
             ComponentStorage {
-                data: AlignedByteBuffer::new_in(desc.align, system()),
+                data: Column::new_in(desc.type_layout().unwrap(), system()),
                 desc,
             }
         }));
@@ -276,7 +275,7 @@ impl Archetype {
             for storage in self.storages.iter_mut() {
                 storage
                     .data
-                    .grow(new_allocated as usize * storage.desc.size);
+                    .grow_to_fit(new_allocated as usize * storage.desc.size);
             }
             self.allocated = new_allocated;
         }
@@ -647,68 +646,3 @@ impl ComponentMapper {
         None
     }
 }
-
-pub struct AlignedByteBuffer<A: Allocator = Global> {
-    buffer: NonNull<u8>,
-    align: usize,
-    len: usize,
-    allocator: A,
-}
-
-impl<A: Allocator> AlignedByteBuffer<A> {
-    pub const fn new_in(align: usize, allocator: A) -> Self {
-        Self {
-            buffer: NonNull::dangling(),
-            align,
-            len: 0,
-            allocator,
-        }
-    }
-
-    pub const fn get(&self) -> Option<NonNull<u8>> {
-        if self.len > 0 {
-            Some(self.buffer)
-        } else {
-            None
-        }
-    }
-
-    pub fn grow(&mut self, new_size: usize) {
-        assert!(new_size > self.len);
-
-        let new_layout = Layout::from_size_align(new_size, self.align).unwrap();
-        if self.len == 0 {
-            let buffer = match self.allocator.allocate(new_layout) {
-                Ok(v) => v,
-                Err(_) => handle_alloc_error(new_layout),
-            };
-
-            self.len = new_size;
-            self.buffer = buffer.cast();
-        } else {
-            let old_layout = self.layout();
-            let buffer = unsafe {
-                match self.allocator.grow(self.buffer, old_layout, new_layout) {
-                    Ok(v) => v,
-                    Err(_) => handle_alloc_error(new_layout),
-                }
-            };
-
-            self.len = new_size;
-            self.buffer = buffer.cast();
-        }
-    }
-
-    fn layout(&self) -> Layout {
-        Layout::from_size_align(self.len, self.align).unwrap()
-    }
-}
-
-impl<A: Allocator> Drop for AlignedByteBuffer<A> {
-    fn drop(&mut self) {
-        unsafe { self.allocator.deallocate(self.buffer, self.layout()) }
-    }
-}
-
-unsafe impl<A: Allocator> Send for AlignedByteBuffer<A> {}
-unsafe impl<A: Allocator> Sync for AlignedByteBuffer<A> {}

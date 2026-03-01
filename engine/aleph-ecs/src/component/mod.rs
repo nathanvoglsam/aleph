@@ -30,44 +30,38 @@
 pub mod component_query;
 pub mod component_source;
 
+use std::alloc::{Layout, LayoutError};
 use std::mem::needs_drop;
 use std::ptr::NonNull;
 use std::sync::LazyLock;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use aleph_alloc::instrumentation::system;
 use aleph_alloc::nstr::NStr;
-use aleph_alloc::{BHashMap, BVec};
-use init_list::{InitList, ListItem};
-
-use crate::EcsSystem;
 
 ///
 /// This trait needs to be implemented by any type that wishes to be used as a component
 ///
-pub unsafe trait Component: Send + Sync + 'static {
+pub unsafe trait Component: Sized + Send + Sync + 'static {
     /// A name that can be used to identify the type implementing [`Component`]. This name is not
     /// guaranteed to uniquely identify the type, only the ID may do that. This name should only
     /// be used for logging or other human visible use cases.
     const NAME: &'static NStr;
 
-    /// A static reference to an [`TypeDescription`] instance that describes the [`Component`].
-    const DESC: &'static LazyLock<TypeDescription>;
+    /// A static reference to an [`ComponentDescription`] instance that describes the [`Component`].
+    const DESC: &'static LazyLock<ComponentDescription>;
+
+    const SIZE: usize;
 }
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct ComponentId(pub(crate) u32);
 
-/// A type alias for a configuration of `std::hash::HashMap` that efficiently uses `ComponentTypeId`
-/// as a key. This alias is special as it skips hashing the `ComponentTypeId` and uses that id
-/// directly as the key.
-pub type ComponentIdMap<T> = BHashMap<ComponentId, T, EcsSystem>;
-
 /// FFI portable type description table. Contains all the information exposed by [`Component`]
 /// wrapped in a neat little struct that can be safely sent across FFI boundaries.
+#[derive(Clone, Hash, Debug)]
 #[repr(C)]
-pub struct TypeDescription {
+pub struct ComponentDescription {
     /// The auto-increment assigned ID.
     pub id: ComponentId,
 
@@ -85,7 +79,7 @@ pub struct TypeDescription {
     pub destructor: Option<unsafe extern "C" fn(NonNull<()>, count: u64)>,
 }
 
-impl TypeDescription {
+impl ComponentDescription {
     pub fn new<T: Sized>(name: &'static NStr) -> Self {
         unsafe extern "C" fn object_destructor<T: Sized>(this: NonNull<()>, count: u64) {
             unsafe {
@@ -118,6 +112,10 @@ impl TypeDescription {
             },
         }
     }
+
+    pub const fn type_layout(&self) -> Result<Layout, LayoutError> {
+        Layout::from_size_align(self.size, self.align)
+    }
 }
 
 #[macro_export]
@@ -126,15 +124,13 @@ macro_rules! register_component {
         impl $t {
             #[doc(hidden)]
             const fn __internal_component_type_desc()
-            -> &'static ::std::sync::LazyLock<$crate::TypeDescription> {
-                fn make() -> $crate::TypeDescription {
-                    $crate::TypeDescription::new::<$t>($crate::nstr::nstr!(concat!(
-                        module_path!(),
-                        "::",
-                        stringify!($t)
-                    )))
+            -> &'static ::std::sync::LazyLock<$crate::component::ComponentDescription> {
+                fn make() -> $crate::component::ComponentDescription {
+                    $crate::component::ComponentDescription::new::<$t>($crate::nstr::nstr!(
+                        concat!(module_path!(), "::", stringify!($t))
+                    ))
                 }
-                static TYPE_DESC: ::std::sync::LazyLock<$crate::TypeDescription> =
+                static TYPE_DESC: ::std::sync::LazyLock<$crate::component::ComponentDescription> =
                     ::std::sync::LazyLock::new(make);
                 &TYPE_DESC
             }
@@ -142,10 +138,10 @@ macro_rules! register_component {
         impl $t {
             #[doc(hidden)]
             const fn __internal_component_node() -> &'static $crate::init_list::ListItem<
-                &'static ::std::sync::LazyLock<$crate::TypeDescription>,
+                &'static ::std::sync::LazyLock<$crate::component::ComponentDescription>,
             > {
                 static ENTRY: $crate::init_list::ListItem<
-                    &'static ::std::sync::LazyLock<$crate::TypeDescription>,
+                    &'static ::std::sync::LazyLock<$crate::component::ComponentDescription>,
                 > = $crate::init_list::ListItem::new(<$t>::__internal_component_type_desc());
                 &ENTRY
             }
@@ -161,49 +157,12 @@ macro_rules! register_component {
                 true
             }
         }
-        unsafe impl $crate::Component for $t {
+        unsafe impl $crate::component::Component for $t {
             const NAME: &'static $crate::nstr::NStr =
                 $crate::nstr::nstr!(concat!(module_path!(), "::", stringify!($t)));
-            const DESC: &'static ::std::sync::LazyLock<$crate::TypeDescription> =
+            const DESC: &'static ::std::sync::LazyLock<$crate::component::ComponentDescription> =
                 <$t>::__internal_component_type_desc();
+            const SIZE: usize = ::std::mem::size_of::<$t>();
         }
     };
 }
-
-/// A lazily initialized table of all types registered into the object system.
-pub static COMPONENTS: LazyLock<BVec<&'static TypeDescription, EcsSystem>> = LazyLock::new(|| {
-    // We don't care if someone's sealed the list before, only that it has been sealed.
-    let _ = __UNSAFE_COMPONENT_REGISTRY_HEAD.seal();
-
-    // Pull all the type descriptions into a list
-    let mut list = BVec::new_in(system());
-    for t in __UNSAFE_COMPONENT_REGISTRY_HEAD.iter().copied() {
-        list.push(LazyLock::force(t));
-    }
-
-    // Sort by the ID
-    list.sort_by_key(|v| v.id);
-
-    // Assert that there are no duplicates, and the list is fully dense.
-    //
-    // COMPONENTS[i] should now map to a type with ID i.
-    for (i, t) in list.iter().enumerate() {
-        assert_eq!(i, t.id.0 as usize);
-    }
-
-    list
-});
-
-/// INTERNAL
-///
-/// DO NOT USE
-#[doc(hidden)]
-pub unsafe fn register_component_type(node: &'static ListItem<&'static LazyLock<TypeDescription>>) {
-    __UNSAFE_COMPONENT_REGISTRY_HEAD.push_entry(node);
-}
-
-/// This is the head of the object system registry. All objects that interact with the object system
-/// will push an entry onto this list during the static init phase.
-#[doc(hidden)]
-static __UNSAFE_COMPONENT_REGISTRY_HEAD: InitList<&'static LazyLock<TypeDescription>> =
-    InitList::new();

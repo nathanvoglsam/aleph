@@ -29,7 +29,8 @@
 
 use std::ptr::NonNull;
 
-use crate::{Archetype, ArchetypeEntityIndex, Component, EcsSystem, EntityLayoutBuf};
+use crate::component::Component;
+use crate::{Archetype, ArchetypeEntityIndex, EcsSystem, EntityLayoutBuf};
 
 pub trait ComponentQuery: Send + Sync {
     type Fetch: for<'a> Fetch<'a>;

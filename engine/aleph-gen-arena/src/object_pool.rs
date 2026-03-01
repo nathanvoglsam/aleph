@@ -90,6 +90,18 @@ impl<T, H: HandleType, A: AllocatorGlobalHandle> GenArena<T, H, A> {
 }
 
 impl<T, H: HandleType, A: Allocator> GenArena<T, H, A> {
+    /// Returns the number of live objects stored in the arena.
+    #[inline(always)]
+    pub fn len(&self) -> usize {
+        self.objects.len()
+    }
+
+    /// Returns 'true' if the arena contains no live objects.
+    #[inline(always)]
+    pub fn is_empty(&self) -> bool {
+        self.objects.is_empty()
+    }
+
     /// Insert the given object of type 'T' into the pool, returning a handle that identifies that
     /// object in the pool. The object may be queried again from the pool with
     /// [`GenArena::get_ref`] or [`GenArena::get_mut`].
@@ -105,7 +117,7 @@ impl<T, H: HandleType, A: Allocator> GenArena<T, H, A> {
     pub fn alloc(&mut self, data: T) -> H {
         let index = u32::try_from(self.objects.len()).expect("Too many objects!");
         let handle = self.handles.alloc(index);
-        let handle = unsafe { H::from_bare_handle(handle) };
+        let handle = H::from_bare_handle(handle);
         self.objects.push(data);
         self.back_references.push(handle);
         handle
@@ -229,7 +241,7 @@ impl<T, H: HandleType, A: Allocator> GenArena<T, H, A> {
     /// None of the handles yielded by the iterator will be valid, as all handles are immediately
     /// invalidated before returning the iterator to the caller.
     pub fn drain(&mut self) -> impl Iterator<Item = (H, T)> + '_ {
-        // This shouldn't be possible
+        // It shouldn't be possible for these lengths to not match
         assert_eq!(self.objects.len(), self.back_references.len());
 
         // First we clear the handles. None of the handles we emit when iterating will be valid, but

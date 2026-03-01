@@ -36,12 +36,13 @@ use aleph_alloc::alloc::Allocator;
 use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BBox, BHashMap, BVec};
 
-use crate::component::{COMPONENTS, ComponentId};
+use crate::component::{Component, ComponentDescription, ComponentId};
+use crate::internal::component::{COMPONENTS, ComponentIdMap};
 use crate::{
-    Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
-    ComponentQueryItem, ComponentSource, EcsSystem, EntityId, EntityLayout, EntityLayoutBuf,
-    EntityLocation, EntityStorage, IntoComponentSource, IntoOneComponentSource, QueryMut, QueryRef,
-    ReadOnlyComponentQuery, TypeDescription, UnsafeComponentSource, UnsafeQuery,
+    Archetype, ArchetypeEntityIndex, ArchetypeIndex, ComponentQuery, ComponentQueryItem,
+    ComponentSource, EcsSystem, EntityId, EntityLayout, EntityLayoutBuf, EntityLocation,
+    EntityStorage, IntoComponentSource, IntoOneComponentSource, QueryMut, QueryRef,
+    ReadOnlyComponentQuery, UnsafeComponentSource, UnsafeQuery,
 };
 
 ///
@@ -122,7 +123,7 @@ pub struct World {
     pub(crate) options: WorldOptions,
 
     /// Holds all the components that have been registered with the World
-    pub(crate) types: BVec<&'static TypeDescription, EcsSystem>,
+    pub(crate) types: BVec<&'static ComponentDescription, EcsSystem>,
 
     /// Holds all the entity slots. This handles ID allocation and maps the IDs to their archetype
     pub(crate) entities: EntityStorage,

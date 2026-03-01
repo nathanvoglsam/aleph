@@ -66,6 +66,25 @@ impl RawHandle {
         }
     }
 
+    /// Constructs a (maybe) dangling handle. This effectively a default, non-null handle.
+    ///
+    /// # Note
+    ///
+    /// While 'dangling' implies the handle is invalid, it is possible for the handle to sometimes
+    /// be valid and point to a live arena entry. If the slot this points to happens to have the
+    /// same generation then the handle will be able to fetch that entity.
+    ///
+    /// This is not unsound or unsafe in any way. Handles are just data.
+    pub const fn dangling() -> RawHandle {
+        match Self::from_fields(HandleFields {
+            generation: Generation::new_live(),
+            slot_index: 0,
+        }) {
+            None => unreachable!(),
+            Some(v) => v,
+        }
+    }
+
     /// Unwraps the handle to its individual fields.
     pub const fn to_fields(&self) -> HandleFields {
         let generation = (self.0.get() >> 32) & 0xFFFFFFFF;
@@ -94,7 +113,7 @@ impl std::fmt::Debug for RawHandle {
 
 impl HandleType for RawHandle {
     #[inline(always)]
-    unsafe fn from_bare_handle(from: RawHandle) -> Self {
+    fn from_bare_handle(from: RawHandle) -> Self {
         from
     }
 
@@ -195,15 +214,16 @@ impl Generation {
 /// in generic code.
 pub trait HandleType: Copy + Clone {
     /// Takes a bare handle and wraps it into our newtype wrapper.
-    ///
-    /// # Safety
-    ///
-    /// There's no direct unsoundness caused by this interface, but logically this is similar to
-    /// casting a pointer. To discourage people discarding handle's type information
-    unsafe fn from_bare_handle(from: RawHandle) -> Self;
+    fn from_bare_handle(from: RawHandle) -> Self;
 
     /// Converts a wrapped handle back into the inner raw handle.
     fn to_bare_handle(self) -> RawHandle;
+
+    /// Constructs a dangling newtype handle. See [`RawHandle::dangling`].
+    #[inline(always)]
+    fn dangling() -> Self {
+        Self::from_bare_handle(RawHandle::dangling())
+    }
 }
 
 /// Trait used for constraining the types used with [`Handle`]. We require a type that at least
@@ -310,7 +330,7 @@ impl<T: HandleId> std::fmt::Debug for Handle<T> {
 
 impl<T: HandleId> HandleType for Handle<T> {
     #[inline(always)]
-    unsafe fn from_bare_handle(from: RawHandle) -> Self {
+    fn from_bare_handle(from: RawHandle) -> Self {
         Self {
             handle: from,
             phantom: PhantomData,

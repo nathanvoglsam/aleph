@@ -45,4 +45,5 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-nstr = { workspace = true }
 aleph-init-list = { workspace = true }
 aleph-alloc = { workspace = true }
+aleph-gen-arena = { workspace = true }
 ctor = { workspace = true }

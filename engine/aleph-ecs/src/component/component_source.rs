@@ -30,8 +30,8 @@
 use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ptr::NonNull;
 
-use crate::component::ComponentId;
-use crate::{Component, EcsSystem, EntityId, EntityLayoutBuf};
+use crate::component::{Component, ComponentId};
+use crate::{EcsSystem, EntityId, EntityLayoutBuf};
 
 #[repr(C)]
 pub struct UnsafeComponentSource {
@@ -135,22 +135,21 @@ pub unsafe trait OneComponentSource {
     fn with_unsafe_source<Out>(&self, callback: impl FnOnce(UnsafeComponentSource) -> Out) -> Out;
 }
 
-#[macro_export]
 macro_rules! impl_component_source_for_tuple {
     ($($t: ident), *) => {
         #[allow(non_snake_case)]
-        unsafe impl<$($t: $crate::Component),+> $crate::ComponentSource for $crate::CheckedSource<($(::std::vec::Vec<::std::mem::ManuallyDrop<$t>>,)+)> {
+        unsafe impl<$($t: Component),+> ComponentSource for CheckedSource<($(::std::vec::Vec<::std::mem::ManuallyDrop<$t>>,)+)> {
             #[inline]
-            fn with_unsafe_source<Out>(&self, callback: impl ::std::ops::FnOnce($crate::UnsafeComponentSource) -> Out) -> Out {
+            fn with_unsafe_source<Out>(&self, callback: impl ::std::ops::FnOnce(UnsafeComponentSource) -> Out) -> Out {
                 let ($($t,)+) = &self.0;
 
                 let components = [
-                    $($crate::UnsafeComponentSourceEntry {
-                        id: <$t as $crate::Component>::DESC.id,
+                    $(UnsafeComponentSourceEntry {
+                        id: <$t as Component>::DESC.id,
                         ptr: ::std::ptr::NonNull::new($t.as_ptr() as *mut std::mem::MaybeUninit<$t>).unwrap().cast::<u8>(),
                     }),+
                 ];
-                let unsafe_source = $crate::UnsafeComponentSource{
+                let unsafe_source = UnsafeComponentSource{
                     count: self.0.0.len().try_into().unwrap(),
                     ids: ::std::option::Option::None,
                     components: ::std::ptr::NonNull::from(&components),
@@ -160,18 +159,18 @@ macro_rules! impl_component_source_for_tuple {
         }
 
         #[allow(non_snake_case)]
-        unsafe impl<$($t: $crate::Component),+ ,const SIZE: usize> $crate::ComponentSource for $crate::CheckedSource::<($([::std::mem::ManuallyDrop<$t>; SIZE],)+)> {
+        unsafe impl<$($t: Component),+ ,const SIZE: usize> ComponentSource for CheckedSource::<($([::std::mem::ManuallyDrop<$t>; SIZE],)+)> {
             #[inline]
-            fn with_unsafe_source<Out>(&self, callback: impl ::std::ops::FnOnce($crate::UnsafeComponentSource) -> Out) -> Out {
+            fn with_unsafe_source<Out>(&self, callback: impl ::std::ops::FnOnce(UnsafeComponentSource) -> Out) -> Out {
                 let ($($t,)+) = &self.0;
 
                 let components = [
-                    $($crate::UnsafeComponentSourceEntry {
-                        id: <$t as $crate::Component>::DESC.id,
+                    $(UnsafeComponentSourceEntry {
+                        id: <$t as Component>::DESC.id,
                         ptr: ::std::ptr::NonNull::new($t.as_ptr() as *mut std::mem::MaybeUninit<$t>).unwrap().cast::<u8>(),
                     }),+
                 ];
-                let unsafe_source = $crate::UnsafeComponentSource{
+                let unsafe_source = UnsafeComponentSource{
                     count: SIZE as u32,
                     ids: ::std::option::Option::None,
                     components: ::std::ptr::NonNull::from(&components),
@@ -181,18 +180,18 @@ macro_rules! impl_component_source_for_tuple {
         }
 
         #[allow(non_snake_case)]
-        unsafe impl<$($t: $crate::Component),+> $crate::OneComponentSource for $crate::CheckedSource<($(::std::mem::ManuallyDrop<$t>,)+)> {
+        unsafe impl<$($t: Component),+> OneComponentSource for CheckedSource<($(::std::mem::ManuallyDrop<$t>,)+)> {
             #[inline]
-            fn with_unsafe_source<Out>(&self, callback: impl ::std::ops::FnOnce($crate::UnsafeComponentSource) -> Out) -> Out {
+            fn with_unsafe_source<Out>(&self, callback: impl ::std::ops::FnOnce(UnsafeComponentSource) -> Out) -> Out {
                 let ($($t,)+) = &self.0;
 
                 let components = [
-                    $($crate::UnsafeComponentSourceEntry {
-                        id: <$t as $crate::Component>::DESC.id,
+                    $(UnsafeComponentSourceEntry {
+                        id: <$t as Component>::DESC.id,
                         ptr: ::std::ptr::NonNull::from($t).cast::<u8>(),
                     }),+
                 ];
-                let unsafe_source = $crate::UnsafeComponentSource{
+                let unsafe_source = UnsafeComponentSource{
                     count: 1,
                     ids: ::std::option::Option::None,
                     components: ::std::ptr::NonNull::from(&components),
@@ -203,12 +202,11 @@ macro_rules! impl_component_source_for_tuple {
     }
 }
 
-#[macro_export]
 macro_rules! impl_into_component_source_for_tuple {
     ($($t: ident), *) => {
         #[allow(non_snake_case)]
-        unsafe impl<$($t: $crate::Component),+> $crate::IntoComponentSource for ($(::std::vec::Vec<$t>,)+) {
-            type Source = $crate::CheckedSource::<($(::std::vec::Vec<::std::mem::ManuallyDrop<$t>>,)+)>;
+        unsafe impl<$($t: Component),+> IntoComponentSource for ($(::std::vec::Vec<$t>,)+) {
+            type Source = CheckedSource::<($(::std::vec::Vec<::std::mem::ManuallyDrop<$t>>,)+)>;
 
             fn into_component_source(self) -> Self::Source {
                 let len = self.0.len();
@@ -233,13 +231,13 @@ macro_rules! impl_into_component_source_for_tuple {
                     };
                 )+
 
-                $crate::CheckedSource(($($t,)+))
+                CheckedSource(($($t,)+))
             }
         }
 
         #[allow(non_snake_case)]
-        unsafe impl<$($t: $crate::Component),+ , const SIZE: usize> $crate::IntoComponentSource for ($([$t; SIZE],)+) {
-            type Source = $crate::CheckedSource::<($([::std::mem::ManuallyDrop<$t>; SIZE],)+)>;
+        unsafe impl<$($t: Component),+ , const SIZE: usize> IntoComponentSource for ($([$t; SIZE],)+) {
+            type Source = CheckedSource::<($([::std::mem::ManuallyDrop<$t>; SIZE],)+)>;
 
             fn into_component_source(self) -> Self::Source {
                 assert!(SIZE < (u32::MAX - 1) as usize);
@@ -251,13 +249,13 @@ macro_rules! impl_into_component_source_for_tuple {
                     let $t: [::std::mem::ManuallyDrop<$t>; SIZE] = $t.map(|v| ::std::mem::ManuallyDrop::new(v));
                 )+
 
-                $crate::CheckedSource(($($t,)+))
+                CheckedSource(($($t,)+))
             }
         }
 
         #[allow(non_snake_case)]
-        unsafe impl<$($t: $crate::Component),+> $crate::IntoOneComponentSource for ($($t,)+) {
-            type Source = $crate::CheckedSource::<($(::std::mem::ManuallyDrop<$t>,)+)>;
+        unsafe impl<$($t: Component),+> IntoOneComponentSource for ($($t,)+) {
+            type Source = CheckedSource::<($(::std::mem::ManuallyDrop<$t>,)+)>;
 
             fn into_one_component_source(self) -> Self::Source {
                 let ($($t,)+) = self;
@@ -266,7 +264,7 @@ macro_rules! impl_into_component_source_for_tuple {
                     let $t: ::std::mem::ManuallyDrop<$t> = ::std::mem::ManuallyDrop::new($t);
                 )+
 
-                $crate::CheckedSource(($($t,)+))
+                CheckedSource(($($t,)+))
             }
         }
     };
