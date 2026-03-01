@@ -34,8 +34,8 @@ use aleph_alloc::BHashSet;
 
 use crate::EcsSystem;
 use crate::component::{Component, ComponentId};
-use crate::entity2::EntityHandle;
-use crate::world2::World;
+use crate::entity::EntityHandle;
+use crate::world::World;
 
 // =================================================================================================
 // Traits

@@ -43,6 +43,7 @@ use aleph_pin_board::ScopedParamBoard;
 use aleph_shader_db::ArchivedShaderDatabase;
 use interfaces::any::{AnyArc, QueryInterface, declare_interfaces};
 use interfaces::components::{self, Camera, Transform, TransformHistory};
+use interfaces::ecs::world::query::{Read, Write};
 use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::*;
@@ -165,7 +166,9 @@ impl IPlugin for PluginRender {
 
                 render_scene.clear();
 
-                let query = world.0.query::<(&Transform, &components::StaticMesh)>();
+                let query = world
+                    .0
+                    .query::<(Read<Transform>, Read<components::StaticMesh>)>();
                 for (_id, (t, m)) in query {
                     render_scene.push(
                         RenderTransform {
@@ -183,7 +186,7 @@ impl IPlugin for PluginRender {
 
                 board.scope(|board| {
                     // Find the first camera object in the scene and make that the active camera.
-                    let mut query = world.0.query::<(&Transform, &Camera)>();
+                    let mut query = world.0.query::<(Read<Transform>, Read<Camera>)>();
                     let (_, (t, c)) = query.next().unwrap();
                     let camera_info = CameraInfo {
                         position: t.position.to_single(),
@@ -254,7 +257,9 @@ impl IPlugin for PluginRender {
                 CoreStage::Render.into(),
                 make_label!("render::capture_previous_transform"),
                 move |mut world: ResMut<WorldResource>| {
-                    for (_id, (t, h)) in world.0.query_mut::<(&Transform, &mut TransformHistory)>()
+                    for (_id, (t, h)) in world
+                        .0
+                        .query_mut::<(Read<Transform>, Write<TransformHistory>)>()
                     {
                         h.previous = t.clone();
                     }

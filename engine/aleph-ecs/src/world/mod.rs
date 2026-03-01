@@ -27,709 +27,1132 @@
 // SOFTWARE.
 //
 
-use std::marker::PhantomData;
+pub mod insertion;
+pub mod query;
+#[cfg(test)]
+mod tests;
+
 use std::mem::MaybeUninit;
-use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
-use aleph_alloc::alloc::Allocator;
 use aleph_alloc::instrumentation::system;
-use aleph_alloc::{BBox, BHashMap, BVec};
+use aleph_alloc::{BBox, BHashMap, BHashSet, BVec};
 
-use crate::component::{Component, ComponentDescription, ComponentId};
+use crate::EcsSystem;
+use crate::archetype::Archetype;
+use crate::component::{Component, ComponentId};
+use crate::entity::{EntityHandle, EntityHandleArena, EntityLocation};
 use crate::internal::component::{COMPONENTS, ComponentIdMap};
-use crate::{
-    Archetype, ArchetypeEntityIndex, ArchetypeIndex, ComponentQuery, ComponentQueryItem,
-    ComponentSource, EcsSystem, EntityId, EntityLayout, EntityLayoutBuf, EntityLocation,
-    EntityStorage, IntoComponentSource, IntoOneComponentSource, QueryMut, QueryRef,
-    ReadOnlyComponentQuery, UnsafeComponentSource, UnsafeQuery,
+use crate::internal::component_index::{ComponentArchetypeRecord, ComponentIndex};
+use crate::type_layout::{TypeLayout, TypeLayoutBuf};
+use crate::world::insertion::{
+    ComponentInsertionInfo, EntityInsertionInfo, RustEntityInsertionInfo, SingleEntityInsertionInfo,
+};
+use crate::world::query::{
+    ComponentQuery, ComponentQueryItem, Fetch, QueryMut, QueryRef, ReadOnlyComponentQuery,
+    UnsafeQuery,
 };
 
-///
-/// This struct packages the options for creating a `World`. The purpose is to provide an easy to
-/// use "default options" via `Default::default()`.
-///
-#[repr(C)]
-#[derive(Clone)]
-pub struct WorldOptions {
-    /// The maximum number of entities that can ever be allocated at one time in the ECS.
-    pub entity_capacity: u32,
-
-    /// The maximum number of entities that can ever be allocated within a single archetype at
-    /// one time.
-    pub archetype_capacity: u32,
-}
-
-impl Default for WorldOptions {
-    fn default() -> Self {
-        Self {
-            // 1,048,576
-            entity_capacity: 1024 * 1024,
-
-            // 524,288
-            archetype_capacity: 1024 * 512,
-        }
-    }
-}
-
-///
-/// # Implementation Details
-///
-/// The `World` consists of a collection of individual data structures that together form the whole
-/// solution for storing entities and their components. These data structures are:
-///
-/// - A hash table that stores the set of registered component types and maps from the component
-///   type's registered ID to the type's description (name, size, alignment, drop_fn, etc).
-/// - A free-list based object pool for allocating entity IDs. Reuse of entity slots is made safe
-///   with the use of a generational index.
-/// - A hash table that maps entity layouts to an index in a set of arrays which form SoA storage
-///   for all archetypes within the world. The SoA storage splits the archetype into two pieces:
-///     - The core archetype data structure that handles the storage of the component data
-///     - A set of graph edges that forms a graph from archetypes to other archetypes for
-///       accelerating entity shape transitions.
-///
-/// ## Archetype
-///
-/// See [`Archetype`] for more detailed documentation.
-///
-/// ## Archetype Graph
-///
-/// The world also pairs archetypes with a set of links to other archetypes with similar layouts.
-/// These links, taken together with all other archetypes, form a graph of all the archetypes. The
-/// edges of the graph are defined by the addition or removal of a single component type to the
-/// source archetype's layout. This forms a graph of neighbouring archetypes joined by the
-/// transformation to the source layout required to create the destination layout.
-///
-/// This graph structure accelerates adding and removing components from entities. Changing an
-/// entity's shape requires moving it to the archetype of the target shape. Without this graph, in
-/// order to add/remove a component from an entity, it would be necessary to:
-///   - Allocate a new [`EntityLayoutBuf`], which requires a heap allocation.
-///   - Add the new component type to this [`EntityLayoutBuf`] so we know the layout of the
-///     destination archetype.
-///   - Use the layout to lookup the destination archetype, which requires a hash table lookup which
-///     means we need to hash the layout.
-///
-/// This will need to done **for every individual entity transformation**. This would add insane
-/// amounts of overhead.
-///
-/// By maintaining this graph it means we can add and remove components from entities without any
-/// of the above work by simply following the correct link in the graph. Going from an archetype
-/// with layout (A, B, C) to (A, B, C, D) we simply follow the edge for adding component D in the
-/// graph. This reduces finding destination archetypes to chains of hash table lookups
-/// (with a much smaller key to hash) without any heap allocations required.
-///
 pub struct World {
-    /// Configuration options the world was created with
-    pub(crate) options: WorldOptions,
-
     /// Holds all the components that have been registered with the World
-    pub(crate) types: BVec<&'static ComponentDescription, EcsSystem>,
+    pub(crate) components: ComponentIndex,
 
     /// Holds all the entity slots. This handles ID allocation and maps the IDs to their archetype
-    pub(crate) entities: EntityStorage,
-
-    /// Map that maps an entity layout to the index inside the archetypes list
-    pub(crate) archetype_map:
-        BHashMap<BBox<EntityLayout, EcsSystem>, Option<ArchetypeIndex>, EcsSystem>,
+    pub(crate) entities: EntityHandleArena,
 
     /// The list of all archetypes in the ECS world
     pub(crate) archetypes: BVec<Archetype, EcsSystem>,
 
+    /// Map that maps an entity layout to the index inside the archetypes list
+    pub(crate) archetype_map: BHashMap<BBox<TypeLayout, EcsSystem>, usize, EcsSystem>,
+
     /// Holds the edges of the archetype graph. Maps component ID to the links.
-    pub(crate) archetype_edges: BVec<ComponentIdMap<ArchetypeEdge>, EcsSystem>,
+    pub(crate) archetype_add_edges: BVec<ComponentIdMap<usize>, EcsSystem>,
+
+    /// Holds the edges of the archetype graph. Maps component ID to the links.
+    pub(crate) archetype_del_edges: BVec<ComponentIdMap<usize>, EcsSystem>,
 }
 
 ///
 /// Implementations for the rust friendly interface
 ///
 impl World {
-    /// Maximum number of individual archetypes the world is allowed to store.
+    /// Constructs a new, empty ECS world.
     ///
-    /// This is more than you would ever need in practice. However a hard cap on the number of
-    /// archetypes means we can skip overflow checks.
-    pub const MAX_ARCHETYPES: usize = 16_777_216;
+    /// All Rust component types declared using [`crate::register_component_type`] will be
+    /// automatically registered with the ECS world. Any dynamically registered component types are
+    /// only usable with the world they were registered from.
+    pub fn new() -> Self {
+        let mut components = ComponentIndex::new();
+        COMPONENTS.iter().enumerate().for_each(|(i, v)| {
+            assert_eq!(i, v.id.0 as usize);
+            components.push(v);
+        });
 
-    ///
-    pub fn new(options: WorldOptions) -> std::io::Result<Self> {
-        let mut types = BVec::new_in(system());
-        types.extend(COMPONENTS.iter().copied());
+        let entities = EntityHandleArena::new_in();
 
-        let entities = EntityStorage::new(options.entity_capacity)?;
-
-        let archetypes = BVec::new_in(system());
-        let archetype_edges = BVec::new_in(system());
-
-        // Creates the table that maps entity layouts to archetypes. Maps the empty layout to 0.
+        let mut archetypes = BVec::with_capacity_in(1, system());
         let mut archetype_map = BHashMap::new_in(system());
-        archetype_map.insert(EntityLayoutBuf::new_in(system()).into_boxed_slice(), None);
+        let mut archetype_add_edges = BVec::with_capacity_in(1, system());
+        let mut archetype_del_edges = BVec::with_capacity_in(1, system());
+
+        archetypes.push(Archetype::new(&components, TypeLayout::empty()));
+        archetype_map.insert(TypeLayoutBuf::new_in(system()).into_boxed_slice(), 0);
+        archetype_add_edges.push(Default::default());
+        archetype_del_edges.push(Default::default());
 
         let out = Self {
-            options,
-            types,
+            components,
             entities,
             archetype_map,
             archetypes,
-            archetype_edges,
+            archetype_add_edges,
+            archetype_del_edges,
         };
 
-        Ok(out)
+        out
     }
 
     /// Returns the number of entities allocated in the `World`
-    pub const fn len(&self) -> usize {
+    #[inline(always)]
+    pub fn len(&self) -> usize {
         self.entities.len()
     }
 
     /// Returns if there are no entities in the `World`
-    pub const fn is_empty(&self) -> bool {
+    #[inline(always)]
+    pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
 
-    /// Add a new entity to the world directly into the target archetype declared on the generic
-    /// component source provided.
+    /// Spawn an empty entity into the world.
     ///
-    /// This is a specialization of [`World::extend`] that excepts a constrained [`ComponentSource`]
-    /// that only contains components for a single entity. This allows us to return a single ID
-    /// instead of a list.
-    pub fn extend_one<T: IntoOneComponentSource>(&mut self, source: T) -> EntityId {
-        let source = source.into_one_component_source();
-        ComponentSource::with_unsafe_source(&source, |mut source| unsafe {
-            let mut id = MaybeUninit::uninit();
-            source.ids = Some(NonNull::from(&mut id));
-
-            self.extend_unsafe(&source);
-
-            id.assume_init()
-        })
+    /// The resulting entity will have no components, but the handle will be a valid handle.
+    #[inline]
+    pub fn spawn_entity(&mut self) -> EntityHandle {
+        let row = self.archetypes[0].allocate_entities(1);
+        let handle = self.entities.alloc(EntityLocation { archetype: 0, row });
+        self.archetypes[0].entity_handles[row] = handle;
+        handle
     }
 
-    /// A specialization of [`World::extend`] that does not yield the IDs of the created entities.
+    /// Performs a raw, fully dynamically typed bulk insertion operation.
     ///
-    /// Useful if you don't need them and want to avoid allocating the list for returning them.
-    pub fn extend_discard<T: IntoComponentSource>(&mut self, source: T) {
-        let source = source.into_component_source();
-        source.with_unsafe_source(|source| unsafe {
-            self.extend_unsafe(&source);
-        })
-    }
-
-    /// A specialization of [`World::extend`] that takes an allocator. The returned list will
-    /// contain the IDs of the created entities, but this list will be backed by the given
-    /// allocator.
+    /// A table is formed by `types`. Each entry in `types` is a column. The rows a formed by the
+    /// individual component items stored in each of our columns.
     ///
-    /// Useful if you have an arena handy and want cheap allocation.
-    pub fn extend_in<T: IntoComponentSource, A: Allocator>(
+    /// As a whole, this table the input data for a collection of new entities to be spawned and
+    /// initialized in the ECS world. The columns provide data for each component type, while the
+    /// rows provide the data for each component to be added to a spawned entity.
+    ///
+    /// The types in `types` are dynamic. They declare their type as a `ComponentId`, and associate
+    /// it with a type-erased pointer. For each column the attached pointer should be valid for
+    /// `size_of(component) * count` bytes. The values stored in each column are _moved_ into the
+    /// ECS.
+    ///
+    /// For a safe, Rust interface use [`World::insert`] or [`World::bulk_insert`].
+    ///
+    /// # Safety
+    ///
+    /// There are a few requirements the caller must satisfy for to not invoke UB.
+    ///
+    /// - Each 'ptr' in the list of types must be valid to read `size_of(component) * count` bytes.
+    /// - The data copied from 'ptr' must represent a valid instance of some `T` if the component
+    ///   is a Rust type. Garbage bytes could be re-interpreted and laundered as a `T`.
+    ///   - This requirement is not relevant if the component type is _not_ a Rust type. Rust
+    ///     considers foreign types as bags of bytes.
+    /// - If 'out_ptr' is not `None`, it must be valid to write for `count` [`EntityHandle`]
+    ///   objects.
+    pub unsafe fn raw_bulk_insert(
         &mut self,
-        source: T,
-        a: A,
-    ) -> BVec<EntityId, A> {
-        let source = source.into_component_source();
-        source.with_unsafe_source(|mut source| unsafe {
-            let mut ids = BVec::with_capacity_in(source.count as usize, a);
-            source.ids = Some(NonNull::new_unchecked(
-                ids.spare_capacity_mut().as_mut_ptr(),
-            ));
+        count: usize,
+        types: &[ComponentInsertionInfo],
+        out_handles: Option<NonNull<EntityHandle>>,
+    ) {
+        if count == 0 {
+            return;
+        }
 
-            self.extend_unsafe(&source);
-
-            ids.set_len(source.count as usize);
-            ids
-        })
+        unsafe {
+            self.generic_bulk_insert(count, types, out_handles);
+        }
     }
 
-    /// Extends the world by adding a set of entities directly into a target archetype. Takes a
-    /// generic component source which contains a buffer of each component type that can be copied
-    /// directly into the archetype's buffers. The archetype is known based on the set of components
-    /// the [`ComponentSource`] declares it to contain.
-    pub fn extend<T: IntoComponentSource>(&mut self, source: T) -> Vec<EntityId> {
-        let source = source.into_component_source();
-        source.with_unsafe_source(|mut source| unsafe {
-            let mut ids = Vec::with_capacity(source.count as usize);
-            source.ids = Some(NonNull::new_unchecked(
-                ids.spare_capacity_mut().as_mut_ptr(),
-            ));
+    /// A special case of [`World::bulk_insert`] that initializes exactly one entity.
+    ///
+    /// An extra generic constraint is added so that arrays of components can't be provided.
+    ///
+    /// This function allows skipping the heap allocation needed to return a dynamic number of
+    /// entity IDs.
+    pub fn insert<T: RustEntityInsertionInfo + SingleEntityInsertionInfo>(
+        &mut self,
+        types: T,
+    ) -> EntityHandle {
+        debug_assert_eq!(types.count(), 1);
 
-            self.extend_unsafe(&source);
-
-            ids.set_len(source.count as usize);
-            ids
-        })
+        let mut out_handle = MaybeUninit::uninit();
+        unsafe {
+            self.generic_bulk_insert(1, types, Some(NonNull::from_mut(&mut out_handle).cast()));
+            out_handle.assume_init()
+        }
     }
 
-    /// Extends the world by adding a set of entities directly into a target archetype. Takes a
-    /// generic component source which contains a buffer of each component type that can be copied
-    /// directly into the archetype's buffers. The archetype is known based on the set of components
-    /// the [`ComponentSource`] declares it to contain.
-    pub unsafe fn extend_unsafe(&mut self, source: &UnsafeComponentSource) {
-        let mut layout = EntityLayoutBuf::with_capacity_in(source.components.len(), system());
-        unsafe { source.fill_layout(&mut layout) };
+    /// A Rusty, safe extension of [`World::raw_bulk_insert`].
+    ///
+    /// This uses a collection of marker traits and other unsafe internals to expose a safe version
+    /// of the raw bulk insertion API.
+    ///
+    /// This interface ensures all requirements of the unsafe internals are followed.
+    pub fn bulk_insert<T: RustEntityInsertionInfo>(&mut self, types: T) -> Vec<EntityHandle> {
+        let count = types.count();
+        if count == 0 {
+            return Vec::new();
+        }
 
-        assert!(
-            !layout.is_empty(),
-            "Tried to insert entity with 0 components"
-        );
+        let mut out_handles = Vec::with_capacity(count);
+        let out_handles_ptr = out_handles.spare_capacity_mut();
+        unsafe {
+            self.generic_bulk_insert(
+                count,
+                types,
+                Some(NonNull::from_mut(out_handles_ptr).cast()),
+            );
+            out_handles.set_len(count);
+        }
 
-        // Locate the archetype and allocate space in the archetype for the new entities
-        let archetype_index = self.find_or_create_archetype(layout);
-        let archetype = &mut self.archetypes[archetype_index.get_index()];
-        let archetype_entity_base = archetype.allocate_entities(source.count);
+        out_handles
+    }
 
-        // Copy the component data into the archetype buffers
-        unsafe { archetype.unsafe_copy_from_source(archetype_entity_base, source) };
+    /// Returns `true` if the given entity is both live, and has a component of the given type.
+    ///
+    /// This is the fully dynamic interface. See [`World::has_component`] for the generic based
+    /// version.
+    #[inline]
+    pub fn raw_has_component(&self, entity: EntityHandle, component: ComponentId) -> bool {
+        // Lookup the entity, return None if the entity handle isn't live.
+        if let Some(location) = self.entities.get_ref(entity) {
+            // Then lookup for the resolved location
+            self.entity_has_component(location.archetype, component)
+                .is_some()
+        } else {
+            false
+        }
+    }
 
-        // Allocate the entity IDs and write them into the output slice
-        if let Some(out_ids) = source.ids {
-            for i in 0..source.count {
-                // Calculate the final EntityLocation
-                let entity = archetype_entity_base.inner().saturating_add(i);
-                let entity = ArchetypeEntityIndex::new(entity);
-                let location = EntityLocation {
-                    archetype: archetype_index,
-                    entity,
+    /// Returns `true` if the given entity is both live, and has a component of type `T`.
+    #[inline]
+    pub fn has_component<T: Component>(&self, entity: EntityHandle) -> bool {
+        self.raw_has_component(entity, T::DESC.id)
+    }
+
+    /// Returns `Some(ptr)` if the given entity is both live, and has a component of the given type.
+    /// `ptr` will point to a component of the requested type.
+    ///
+    /// See [`World::get_component_ref`] or [`World::get_component_mut`] for a safer, generic
+    /// interface.
+    #[inline]
+    pub fn raw_get_component(
+        &self,
+        entity: EntityHandle,
+        component: ComponentId,
+    ) -> Option<NonNull<u8>> {
+        // Lookup the entity, return None if the entity handle isn't live.
+        let location = self.entities.get_ref(entity)?;
+
+        // Then grab the component pointer
+        self.entity_get_component(location.archetype, location.row, component)
+    }
+
+    /// Returns `Some(ref)` if the given entity is both live, and has a component of the given type.
+    /// `ref` will refer to the component of type `T` associated with the entity.
+    #[inline]
+    pub fn get_component_ref<T: Component>(&self, entity: EntityHandle) -> Option<&T> {
+        let ptr = self.raw_get_component(entity, T::DESC.id)?;
+
+        // Safety: The pointer should be valid for a single T, if raw_get_component is implemented
+        //         correctly. We have an appropriate borrow to hand out a &T.
+        unsafe { Some(ptr.cast::<T>().as_ref()) }
+    }
+
+    /// Returns `Some(ref)` if the given entity is both live, and has a component of the given type.
+    /// `ref` will refer to the component of type `T` associated with the entity.
+    #[inline]
+    pub fn get_component_mut<T: Component>(&mut self, entity: EntityHandle) -> Option<&T> {
+        let ptr = self.raw_get_component(entity, T::DESC.id)?;
+
+        // Safety: The pointer should be valid for a single T, if raw_get_component is implemented
+        //         correctly. We have an appropriate borrow to hand out a &T.
+        unsafe { Some(ptr.cast::<T>().as_mut()) }
+    }
+
+    /// Find the index in the archetype table where the archetype for the given type layout can be
+    /// found.
+    ///
+    /// May return `None` if that archetype does not exist yet. An archetype is only created once
+    /// an entity with that shape is created.
+    #[inline]
+    pub fn get_archetype_index(&self, type_layout: &TypeLayout) -> Option<&usize> {
+        self.archetype_map.get(type_layout)
+    }
+
+    /// # Safety
+    ///
+    /// This has the same safety issues as [`World::raw_bulk_insert`]. The data referred to
+    /// 'src_ptr' must be a valid instance of the component type. This is only required for Rust
+    /// types, but the type is dynamic so we can't prove it.
+    ///
+    /// Additionally, this function assumes 'src_ptr' is valid to read for `size_of(component)`
+    /// bytes.
+    #[inline]
+    pub unsafe fn raw_add_component(
+        &mut self,
+        entity: EntityHandle,
+        component: ComponentId,
+        src_ptr: NonNull<u8>,
+    ) -> Option<()> {
+        unsafe {
+            self.generic_add_component(entity, component, |dst_ptr, dst_size| {
+                dst_ptr.copy_from_nonoverlapping(src_ptr, dst_size)
+            })
+        }
+    }
+
+    #[inline]
+    pub fn add_component<T: Component>(&mut self, entity: EntityHandle, v: T) -> Result<(), T> {
+        // Wrap in manually drop as the component will be type erased and moved into another
+        // storage. We don't want to drop it after it's been moved.
+        let mut slot = MaybeUninit::uninit();
+        slot.write(v);
+
+        let src_fn = |dst_ptr: NonNull<u8>, _: usize| unsafe {
+            let src_ptr = NonNull::from(&slot);
+            let dst_ptr = dst_ptr.cast::<MaybeUninit<T>>();
+            dst_ptr.copy_from_nonoverlapping(src_ptr, 1);
+        };
+        unsafe {
+            match self.generic_add_component(entity, T::DESC.id, src_fn) {
+                None => {
+                    // If the add operation fails by returning `None` it means we failed in a way
+                    // where the component 'v' is still valid. We pass it back out to the caller so
+                    // they may do something with it (very likely drop it).
+                    Err(slot.assume_init())
+                }
+                Some(_) => Ok(()),
+            }
+        }
+    }
+
+    /// # Safety
+    ///
+    /// If a 'dst_ptr' is non-null, 'dst_ptr' must be valid to write `size_of(component)` bytes.
+    #[inline]
+    pub unsafe fn raw_remove_component(
+        &mut self,
+        entity: EntityHandle,
+        component: ComponentId,
+        dst_ptr: Option<NonNull<u8>>,
+    ) -> Option<()> {
+        match dst_ptr {
+            None => unsafe {
+                // A type can't be inferred, so just stub it out with a basic function.
+                let dst_fn: Option<fn(NonNull<u8>, usize)> = None;
+                self.generic_remove_component(entity, component, dst_fn)
+            },
+            Some(dst_ptr) => unsafe {
+                let dst_fn = move |src_ptr: NonNull<u8>, src_size: usize| {
+                    dst_ptr.copy_from_nonoverlapping(src_ptr, src_size);
+                };
+                self.generic_remove_component(entity, component, Some(dst_fn))
+            },
+        }
+    }
+
+    #[inline]
+    pub fn remove_component<T: Component>(&mut self, entity: EntityHandle) -> Option<T> {
+        let mut v = MaybeUninit::<T>::uninit();
+        let dst_ptr = NonNull::from(&mut v);
+
+        let dst_fn = move |src_ptr: NonNull<u8>, _: usize| unsafe {
+            let src_ptr = src_ptr.cast::<MaybeUninit<T>>();
+            dst_ptr.copy_from_nonoverlapping(src_ptr, 1);
+        };
+
+        unsafe {
+            self.generic_remove_component(entity, T::DESC.id, Some(dst_fn))?;
+            Some(v.assume_init())
+        }
+    }
+
+    /// Given a handle 'entity', remove that entity from the world. This will drop all the
+    /// components and invalidate the handle.
+    pub fn remove_entity(&mut self, entity: EntityHandle) -> Option<()> {
+        let location = self.entities.free(entity)?;
+
+        unsafe {
+            // location.archetype should never be out of bounds
+            let archetype = self
+                .archetypes
+                .get_mut(location.archetype)
+                .unwrap_unchecked();
+
+            for c in archetype.type_layout.iter().copied() {
+                // an archetype should never have a component that isn't registered with the world
+                let type_info = self.components.get(c).unwrap_unchecked();
+
+                // and a component should never not know of the archetype and the column it's in.
+                let column = type_info
+                    .archetypes
+                    .get(&location.archetype)
+                    .unwrap_unchecked()
+                    .column;
+
+                // only need to drop the component if there's a destructor to call
+                if let Some(drop) = type_info.desc.destructor {
+                    // column should never be out of bounds
+                    let column = archetype.columns.get_mut(column).unwrap_unchecked();
+
+                    // location.row should never be out of bounds
+                    let row = column.get_at_index(location.row).unwrap_unchecked();
+
+                    // finally, we can drop.
+                    drop(row.cast(), 1);
+                }
+            }
+        }
+
+        if let Some(moved) = self.archetypes[location.archetype].remove_entity(location.row) {
+            // Patch the location of the moved entity if a swap-remove operation was performed.
+            unsafe {
+                self.entities.get_mut(moved).unwrap_unchecked().row = location.row;
+            }
+        }
+
+        Some(())
+    }
+
+    pub fn query_one<Q: ReadOnlyComponentQuery>(
+        &self,
+        entity: EntityHandle,
+    ) -> Option<ComponentQueryItem<'_, Q>> {
+        let location = self.entities.get_ref(entity)?;
+
+        // We check if the entity matches the query.
+        for c in Q::query_info() {
+            let entity_has = self.components[c.id]
+                .archetypes
+                .get(&location.archetype)
+                .is_some();
+            match (entity_has, c.required) {
+                (true, true) => {}
+                (false, false) => {}
+                _ => return None,
+            }
+        }
+
+        unsafe {
+            let fetch =
+                Q::Fetch::create_at(self, location.archetype, location.row).unwrap_unchecked();
+            Some(fetch.get())
+        }
+    }
+
+    pub fn query_one_mut<Q: ComponentQuery>(
+        &mut self,
+        entity: EntityHandle,
+    ) -> Option<ComponentQueryItem<'_, Q>> {
+        // First verify the entity is live before we do our more expensive validation
+        let location = self.entities.get_ref(entity)?;
+
+        // Mutable queries must ensure that each component ID is only referenced once within a
+        // single query. There's no compile time machinery to prevent adding two write bounds on
+        // the same component. Without this validation it would be possible to construct aliasing
+        // mutable references, which would be instant UB.
+        //
+        // I have yet to find a good way to validate this at compile time, unfortunately, so we're
+        // going to have to do it at runtime for now.
+        //
+        // We make a pragmatic choice to use a 64 element, stack allocated buffer to do the
+        // duplicate checks. We should not heap allocate here. Rust isn't capable of right-sizing
+        // the buffer currently so this is the best we can do. It's likely 64 components is enough
+        // for any sane use of this function, and avoiding a heap allocation is worth the
+        // limitation.
+        //
+        // We then produce a 'TypeLayout' using the validated path. This provides exactly the
+        // validation we need.
+        {
+            let mut components = [ComponentId(0); 64];
+
+            let mut count = 0;
+            for (i, v) in Q::query_info().enumerate() {
+                count = usize::max(count, i);
+                let i = components
+                    .get_mut(i)
+                    .expect("Must have less than 64 query items");
+                *i = v.id;
+            }
+
+            let components = &mut components[0..=count];
+            components.sort_unstable();
+            let _layout = TypeLayout::from_inner(&components)
+                .expect("Must be no duplicate components referenced in query");
+        }
+
+        // We check if the entity matches the query. We don't need to filter archetypes because we
+        // know the one we're looking for, instead we need to check if the archetype matches the
+        // query to determine if we can yield a value or not.
+        //
+        // So instead of the set operations we just check the archetype
+        for c in Q::query_info() {
+            let entity_has = self.components[c.id]
+                .archetypes
+                .get(&location.archetype)
+                .is_some();
+            match (entity_has, c.required) {
+                (true, true) => {}
+                (false, false) => {}
+                _ => return None,
+            }
+        }
+
+        // Safety: It's a bug for any of the indices to be wrong so we can assume they're valid here
+        //         as they all come from within the ECS world. The other constraint, on mutable
+        //         references, is checked above.
+        unsafe {
+            let fetch =
+                Q::Fetch::create_at(self, location.archetype, location.row).unwrap_unchecked();
+            Some(fetch.get())
+        }
+    }
+
+    pub fn query<Q: ReadOnlyComponentQuery>(&self) -> QueryRef<'_, Q> {
+        let matches = self.find_query_matches::<Q>();
+
+        unsafe {
+            QueryRef::<Q> {
+                world: self,
+                inner: UnsafeQuery::new(matches.into_iter()),
+            }
+        }
+    }
+
+    pub fn query_mut<Q: ComponentQuery>(&mut self) -> QueryMut<'_, Q> {
+        let matches = self.find_query_matches::<Q>();
+
+        unsafe {
+            QueryMut::<Q> {
+                world: self,
+                inner: UnsafeQuery::new(matches.into_iter()),
+            }
+        }
+    }
+}
+
+impl World {
+    fn push_new_archetype(&mut self, layout: &TypeLayout) -> Option<usize> {
+        // Verify that each type in the layout actually exists before we do anything. We don't want
+        // to find this out halfway through and leave the world in a bad state.
+        for &c in layout {
+            self.components.get(c)?;
+        }
+
+        // Construct a new archetype and insert it into the list of archetypes.
+        let new_archetype = Archetype::new(&self.components, layout);
+        let new_index = self.archetypes.len();
+        self.archetypes.push(new_archetype);
+
+        // Insert an entry into the archetype map so you can look up the archetype by the
+        // type layout.
+        let boxed_layout = TypeLayoutBuf::from_layout_in(layout, system());
+        let boxed_layout = boxed_layout.into_boxed_slice();
+        self.archetype_map.insert(boxed_layout, new_index);
+
+        // Register the archetype with each component in the component index, providing the column
+        // index of the components.
+        for (c, t) in layout.iter().copied().enumerate() {
+            self.components[t]
+                .archetypes
+                .insert(new_index, ComponentArchetypeRecord { column: c });
+        }
+
+        self.archetype_add_edges.push(Default::default());
+        self.archetype_del_edges.push(Default::default());
+
+        Some(new_index)
+    }
+
+    #[inline(always)]
+    fn entity_has_component(
+        &self,
+        archetype: usize,
+        component: ComponentId,
+    ) -> Option<&ComponentArchetypeRecord> {
+        let component_info = self.components.get(component)?;
+        component_info.archetypes.get(&archetype)
+    }
+
+    #[inline(always)]
+    fn entity_get_component(
+        &self,
+        archetype: usize,
+        row: usize,
+        component: ComponentId,
+    ) -> Option<NonNull<u8>> {
+        let arch = self.archetypes.get(archetype)?;
+        let column = self.entity_has_component(archetype, component)?.column;
+        let ptr = arch.columns[column].get_at_index(row)?;
+        Some(ptr)
+    }
+
+    #[inline]
+    fn copy_component_from_to_archetype(
+        &mut self,
+        src_archetype: usize,
+        src_row: usize,
+        dst_archetype: usize,
+        dst_row: usize,
+        component: ComponentId,
+    ) -> Option<()> {
+        let component_info = self.components.get(component)?;
+
+        let src_column = component_info.archetypes.get(&src_archetype)?.column;
+        let dst_column = component_info.archetypes.get(&dst_archetype)?.column;
+
+        let [src_archetype, dst_archetype] = self
+            .archetypes
+            .get_disjoint_mut([src_archetype, dst_archetype])
+            .ok()?;
+
+        let src_ptr = src_archetype.columns[src_column].get_at_index(src_row)?;
+        let dst_ptr = dst_archetype.columns[dst_column].get_at_index(dst_row)?;
+
+        // Safety: Implementation should guarantee that if all of the above operations succeed then
+        //         this access is valid
+        unsafe {
+            dst_ptr.copy_from_nonoverlapping(src_ptr, component_info.desc.size);
+        }
+
+        Some(())
+    }
+
+    /// Returns a [`HashSet`] of archetype indices that match a given filter.
+    ///
+    /// Only archetypes that have a column for every component ID in the given list will be returned
+    /// in the set.
+    fn find_archetypes_with_components(
+        &self,
+        components: &[ComponentId],
+    ) -> BHashSet<usize, EcsSystem> {
+        let mut matches = BHashSet::new_in(system());
+
+        // We first seed the matches with all archetypes that contain the first component in the
+        // list. We want the intersection of 'archetypes' for each component types so we start with
+        // simply the set for the first component.
+        let mut iter = components.iter();
+        if let Some(&first) = iter.next() {
+            for (&a, _) in self.components[first].archetypes.iter() {
+                matches.insert(a);
+            }
+        }
+
+        // We then iterate the remaining components in the filter and only retain archetypes that
+        // also contain each component type.
+        //
+        // The end result will have 'matches' contain indices for all archetypes that contain at
+        // least every component in the input filter.
+        for &rest in iter {
+            matches.retain(|a| self.components[rest].archetypes.contains_key(a));
+        }
+
+        matches
+    }
+
+    /// Attempts to follow an 'add' component edge in the archetype graph, returning the archetype
+    /// index pointing to the matching archetype.
+    ///
+    /// This will construct missing edges using a more expensive fallback path if the edge hasn't
+    /// been formed yet.
+    ///
+    /// If the archetype doesn't exist yet this will create a new, empty archetype containing all
+    /// components from the source archetype plus the additional component provided by the caller.
+    fn follow_add_component_edge(
+        &mut self,
+        src_archetype_index: usize,
+        component: ComponentId,
+    ) -> Option<usize> {
+        // First we try the graph, looking if there is an existing edge for adding the given
+        // component type.
+        match self.archetype_add_edges[src_archetype_index]
+            .get(&component)
+            .copied()
+        {
+            None => {
+                // If the edge hasn't been formed we must build a type layout (allocates) and
+                // look the archetype up in the map.
+                //
+                // The slow-path requires us to materialize the dst layout so we can find it in
+                // the archetype map.
+                let mut dst_layout: TypeLayoutBuf<EcsSystem> = TypeLayoutBuf::from_layout_in(
+                    self.archetypes[src_archetype_index].type_layout(),
+                    system(),
+                );
+                dst_layout.add_component_type(component);
+
+                let idx = match self.archetype_map.get(dst_layout.as_ref()) {
+                    None => {
+                        // If we get here it's even more dire. The archetype doesn't exist yet
+                        // so we have to make it.
+                        //
+                        // This is the worst possible case. It is, however, extremely rare.
+                        self.push_new_archetype(&dst_layout)?
+                    }
+                    Some(&v) => v,
                 };
 
-                // Allocate the ID
-                let id = self.entities.create(location);
-                archetype.update_entity_id(entity, id);
+                // In any case the index is missing from the graph so we add it. We also update
+                // the del_edges side while we're here.
+                self.archetype_add_edges[src_archetype_index].insert(component, idx);
+                self.archetype_del_edges[idx].insert(component, src_archetype_index);
 
-                unsafe { *out_ids.add(i as usize).as_mut() = MaybeUninit::new(id) };
+                Some(idx)
+            }
+            v => v,
+        }
+    }
+
+    /// Attempts to follow a 'del' component edge in the archetype graph, returning the archetype
+    /// index pointing to the matching archetype.
+    ///
+    /// This will construct missing edges using a more expensive fallback path if the edge hasn't
+    /// been formed yet.
+    ///
+    /// If the archetype doesn't exist yet this will create a new, empty archetype containing all
+    /// components from the source archetype plus the additional component provided by the caller.
+    fn follow_del_component_edge(
+        &mut self,
+        src_archetype_index: usize,
+        component: ComponentId,
+    ) -> Option<usize> {
+        // First we try the graph, looking if there is an existing edge for adding the given
+        // component type.
+        match self.archetype_del_edges[src_archetype_index]
+            .get(&component)
+            .copied()
+        {
+            None => {
+                // If the edge hasn't been formed we must build a type layout (allocates) and
+                // look the archetype up in the map.
+                //
+                // The slow-path requires us to materialize the dst layout so we can find it in
+                // the archetype map.
+                let mut dst_layout: TypeLayoutBuf<EcsSystem> = TypeLayoutBuf::from_layout_in(
+                    &self.archetypes[src_archetype_index].type_layout,
+                    system(),
+                );
+                dst_layout.remove_component_type(component);
+
+                let idx = match self.archetype_map.get(dst_layout.as_ref()) {
+                    None => {
+                        // If we get here it's even more dire. The archetype doesn't exist yet
+                        // so we have to make it.
+                        //
+                        // This is the worst possible case. It is, however, extremely rare.
+                        self.push_new_archetype(&dst_layout)?
+                    }
+                    Some(&v) => v,
+                };
+
+                // In any case the index is missing from the graph so we add it. We also update
+                // the add_edges side while we're here.
+                self.archetype_del_edges[src_archetype_index].insert(component, idx);
+                self.archetype_add_edges[idx].insert(component, src_archetype_index);
+
+                Some(idx)
+            }
+            v => v,
+        }
+    }
+
+    /// Given some set of component ids in 'types', validate that each type exists
+    fn find_archetype_for_component_set(
+        &mut self,
+        types: impl ExactSizeIterator<Item = ComponentId>,
+    ) -> Option<usize> {
+        // Use a stack allocated buffer for low numbers of components. This saves allocating
+        // by using the stack for scratch space.
+        let mut indices_stack = [ComponentId(0); 32];
+
+        // If there's too many component types we fall back to a heap allocation for our
+        // layout scratch space.
+        let mut indices_heap: BVec<_, EcsSystem> = BVec::new_in(system());
+
+        let indices = if types.len() <= indices_stack.len() {
+            // Take a sub-slice of the stack space to use as scratch space.
+            let indices_stack = &mut indices_stack[0..types.len()];
+
+            // Copy the IDs for each component in the input set into the scratch space. Both slices
+            // will be the same length.
+            indices_stack.iter_mut().zip(types).for_each(|(dst, src)| {
+                *dst = src;
+            });
+
+            indices_stack
+        } else {
+            // Copy the IDs from the info into the heap indices list.
+            indices_heap.extend(types);
+            indices_heap.as_mut_slice()
+        };
+
+        // Then sort the IDs to make it a valid TypeLayout (almost).
+        indices.sort_unstable();
+
+        // Then finally we can convert to a 'TypeLayout'. We can't use the unchecked version
+        // because we still need to assert there aren't any duplicates.
+        let layout = TypeLayout::from_inner(&indices)?;
+
+        let archetype_index = match self.get_archetype_index(layout) {
+            None => {
+                let new_index = self.push_new_archetype(layout)?;
+                new_index
+            }
+            Some(&index) => index,
+        };
+
+        Some(archetype_index)
+    }
+
+    /// # Safety
+    ///
+    /// This has the same safety issues as [`World::raw_bulk_insert`]. The data referred to
+    /// 'src_ptr' must be a valid instance of the component type. This is only required for Rust
+    /// types, but the type is dynamic so we can't prove it.
+    ///
+    /// Additionally, this function assumes 'src_ptr' is valid to read for `size_of(component)`
+    /// bytes.
+    unsafe fn generic_add_component(
+        &mut self,
+        entity: EntityHandle,
+        component: ComponentId,
+        src_fn: impl FnOnce(NonNull<u8>, usize),
+    ) -> Option<()> {
+        // Get the physical location of the entity so we know where to copy from.
+        //
+        // Bail if the entity handle isn't valid.
+        let src_location = self.entities.get_ref(entity).cloned()?;
+        let src_archetype = src_location.archetype;
+        let src_row = src_location.row;
+
+        // Grab the metadata for the component we're adding.
+        //
+        // Bail if the component id isn't valid.
+        let component_info = self.components.get(component)?;
+        let component_size = component_info.desc.size;
+
+        if let Some(dst_ptr) = self.entity_get_component(src_archetype, src_row, component) {
+            // If the entity already contains a component of the given type we overwrite the
+            // existing component.
+            unsafe {
+                // We're overwriting an existing component so we drop the old one before replacing
+                // it with the new one.
+                if let Some(destructor) = component_info.desc.destructor {
+                    destructor(dst_ptr.cast(), 1);
+                }
+                src_fn(dst_ptr, component_size);
             }
         } else {
-            for i in 0..source.count {
-                // Calculate the final EntityLocation
-                let entity = archetype_entity_base.inner().saturating_add(i);
-                let entity = ArchetypeEntityIndex::new(entity);
-                let location = EntityLocation {
-                    archetype: archetype_index,
-                    entity,
-                };
+            // If the entity does not already have a component of the given type then we must add
+            // it by moving the entity to a different archetype.
+            //
+            // We use the archetype graph to efficiently find the destination archetype.
+            let dst_archetype = self.follow_add_component_edge(src_archetype, component)?;
 
-                // Allocate the ID
-                let id = self.entities.create(location);
-                archetype.update_entity_id(entity, id);
-            }
-        }
-    }
+            // Allocate space in the destination archetype
+            //
+            // Then write the ID so the row knows the handle that points to it.
+            let dst_row = self.archetypes[dst_archetype].allocate_entities(1);
+            self.archetypes[dst_archetype].entity_handles[dst_row] = entity;
 
-    /// Adds the given component to the entity pointed to by the provided ID.
-    ///
-    /// If the component already existed on the entity then original component will be left
-    /// unchanged and the provided component object will be dropped.
-    ///
-    /// Returns true if the component is successfully inserted, otherwise returns false.
-    pub fn add_component<T: Component>(&mut self, entity: EntityId, component: T) -> bool {
-        // Perform the call, using mem::forget to not drop the component if ownership was
-        // successfully transferred into the archetype
-        unsafe {
-            let data = NonNull::from(&component);
-            if self.add_component_dynamic(entity, T::DESC.id, data.cast()) {
-                std::mem::forget(component);
-                true
-            } else {
-                false
-            }
-        }
-    }
-
-    /// Removes the specified component from the provided entity.
-    ///
-    /// Returns true if the component is successfully removed, otherwise returns false.
-    pub fn remove_component<T: Component>(&mut self, entity: EntityId) -> bool {
-        unsafe { self.remove_component_dynamic(entity, T::DESC.id) }
-    }
-
-    /// Erases the entity with the ID from the ECS.
-    ///
-    /// Returns true if the operation was successful, otherwise returns false.
-    ///
-    /// If the ID is invalid then this function does nothing and returns false.
-    pub fn remove_entity(&mut self, entity: EntityId) -> bool {
-        if let Some(location) = self.entities.lookup(entity) {
-            let archetype = &mut self.archetypes[location.archetype.get_index()];
-
-            // Remove the entity from the archetype, patching the `EntityLocation` if an entity
-            // needed to be moved to keep the archetype storage dense.
-            unsafe {
-                if let Some(needs_update) = archetype.remove_entity::<true>(location.entity) {
-                    let entry = self.entities.lookup_entry_mut(needs_update).unwrap();
-                    let entry = entry.data.location.as_mut().unwrap();
-                    entry.entity = location.entity;
+            // Copy all the existing components from the source archetype into the destination
+            for i in 0..self.archetypes[src_archetype].type_layout.len() {
+                let c = self.archetypes[src_archetype].type_layout.as_inner()[i];
+                // Safety: The list of conditions is long...
+                //
+                // - src and dst must be different archetypes
+                // - src and dst archetypes must have initialized components of type c
+                // - src and dst row must be initialized and valid for access
+                // - c must be valid component
+                //
+                // These are either explicitly checked or implicitly enforced by the implementation.
+                unsafe {
+                    self.copy_component_from_to_archetype(
+                        src_archetype,
+                        src_row,
+                        dst_archetype,
+                        dst_row,
+                        c,
+                    )
+                    .unwrap_unchecked();
                 }
             }
 
-            // Free's the entity ID slot (handles generation increment to invalidate the old IDs)
-            self.entities.destroy(entity);
+            // Now that the entity has been fully moved to the destination archetype we remove it
+            // from the source archetype.
+            //
+            // We _don't_ drop any of the components because they were _moved_.
+            if let Some(moved) = self.archetypes[src_archetype].remove_entity(src_row) {
+                // Patch the location of the moved entity if a swap-remove operation was performed.
+                unsafe {
+                    self.entities.get_mut(moved).unwrap_unchecked().row = src_row;
+                }
+            }
 
-            true
-        } else {
-            false
-        }
-    }
-
-    /// Returns whether the specified component has the component `T`.
-    pub fn has_component<T: Component>(&self, entity: EntityId) -> bool {
-        self.has_component_dynamic(entity, T::DESC.id)
-    }
-
-    #[inline]
-    pub fn query_one<Q: ReadOnlyComponentQuery>(
-        &self,
-        entity: EntityId,
-    ) -> Option<ComponentQueryItem<'_, Q::QueryType>> {
-        use crate::component::component_query::Fetch;
-
-        if let Some(location) = self.entities.lookup(entity) {
-            let archetype = &self.archetypes[location.archetype.get_index()];
-            // Safety: We are guaranteed exclusive access by taking the self as mut, so we can't
-            //         break aliasing rules. Otherwise the entity lookup has performed all the
-            //         bounds checks we need so this is safe.
+            // Copy the new component into the destination from the source data provided by the
+            // caller.
             unsafe {
-                let fetch =
-                    <Q::QueryType as ComponentQuery>::Fetch::create_at(archetype, location.entity);
-                Some(fetch.get())
+                let dst_ptr = self
+                    .entity_get_component(dst_archetype, dst_row, component)
+                    .unwrap_unchecked();
+                src_fn(dst_ptr, component_size);
             }
-        } else {
-            None
-        }
-    }
 
-    #[inline]
-    pub fn query_one_mut<Q: ComponentQuery>(
-        &mut self,
-        entity: EntityId,
-    ) -> Option<ComponentQueryItem<'_, Q>> {
-        use crate::component::component_query::Fetch;
-
-        if let Some(location) = self.entities.lookup(entity) {
-            let archetype = &self.archetypes[location.archetype.get_index()];
-
-            // Safety: We are guaranteed exclusive access by taking the self as mut, so we can't
-            //         break aliasing rules. Otherwise the entity lookup has performed all the
-            //         bounds checks we need so this is safe.
+            // And, finally, patch the location of the entity that we added the component to.
             unsafe {
-                let fetch = Q::Fetch::create_at(archetype, location.entity);
-                Some(fetch.get())
+                let location = self.entities.get_mut(entity).unwrap_unchecked();
+                location.archetype = dst_archetype;
+                location.row = dst_row;
             }
+        }
+
+        Some(())
+    }
+
+    unsafe fn generic_remove_component(
+        &mut self,
+        entity: EntityHandle,
+        component: ComponentId,
+        dst_fn: Option<impl FnOnce(NonNull<u8>, usize)>,
+    ) -> Option<()> {
+        // Get the physical location of the entity so we know where to copy from.
+        //
+        // Bail if the entity handle isn't valid.
+        let src_location = self.entities.get_ref(entity).cloned()?;
+        let src_archetype = src_location.archetype;
+        let src_row = src_location.row;
+
+        // Grab the metadata for the component we're removing.
+        //
+        // Bail if the component id isn't valid.
+        let component_info = self.components.get(component)?;
+        let component_size = component_info.desc.size;
+        let component_drop = component_info.desc.destructor;
+
+        // Lookup the component in the archetype it is currently found in. If this fails then
+        let src_ptr = self.entity_get_component(src_archetype, src_row, component)?;
+
+        let dst_archetype = self.follow_del_component_edge(src_archetype, component)?;
+        debug_assert_ne!(src_archetype, dst_archetype);
+
+        // Allocate space in the destination archetype
+        //
+        // Then write the ID so the row knows the handle that points to it.
+        let dst_row = self.archetypes[dst_archetype].allocate_entities(1);
+        self.archetypes[dst_archetype].entity_handles[dst_row] = entity;
+
+        // Copy all components, except for the component we're removing. This is done by using the
+        // dst layout which is guaranteed to a subset of the src layout.
+        for i in 0..self.archetypes[dst_archetype].type_layout.len() {
+            let c = self.archetypes[dst_archetype].type_layout.as_inner()[i];
+            // Safety: The list of conditions is long...
+            //
+            // - src and dst must be different archetypes
+            // - src and dst archetypes must have initialized components of type c
+            // - src and dst row must be initialized and valid for access
+            // - c must be valid component
+            //
+            // These are either explicitly checked or implicitly enforced by the implementation.
+            unsafe {
+                self.copy_component_from_to_archetype(
+                    src_archetype,
+                    src_row,
+                    dst_archetype,
+                    dst_row,
+                    c,
+                )
+                .unwrap_unchecked();
+            }
+        }
+
+        if let Some(dst_fn) = dst_fn {
+            dst_fn(src_ptr, component_size);
         } else {
-            None
+            unsafe {
+                // We're removing the component and not handing it to the caller so we must call
+                // drop on it ourselves.
+                if let Some(destructor) = component_drop {
+                    destructor(src_ptr.cast(), 1);
+                }
+            }
         }
-    }
 
-    /// Constructs a safe query that can only access components immutably
-    pub fn query<Q: ReadOnlyComponentQuery>(&self) -> QueryRef<'_, Q::QueryType> {
-        QueryRef {
-            inner: Self::query_unchecked::<Q::QueryType>(NonNull::from(self)),
-            phantom: PhantomData,
+        // Now that the entity has been fully moved to the destination archetype we remove it
+        // from the source archetype.
+        //
+        // We _don't_ drop any of the components because they were _moved_.
+        if let Some(moved) = self.archetypes[src_archetype].remove_entity(src_row) {
+            // Patch the location of the moved entity if a swap-remove operation was performed.
+            unsafe {
+                self.entities.get_mut(moved).unwrap_unchecked().row = src_row;
+            }
         }
-    }
 
-    /// Constructs a safe query that can access components mutably but requires an exclusive borrow
-    /// of the world
-    pub fn query_mut<Q: ComponentQuery>(&mut self) -> QueryMut<'_, Q> {
-        QueryMut {
-            inner: Self::query_unchecked::<Q>(NonNull::from(self)),
-            phantom: PhantomData,
+        // And, finally, patch the location of the entity that we added the component to.
+        unsafe {
+            let location = self.entities.get_mut(entity).unwrap_unchecked();
+            location.archetype = dst_archetype;
+            location.row = dst_row;
         }
+
+        Some(())
     }
 
-    /// Constructs an unsafe query that does not constrain lifetime access soundness of the returned
-    /// query items. Using this query is very unsafe to use ([`UnsafeQuery::next`] is unsafe) but
-    /// allows for the caller to do their own borrow checking.
-    pub fn query_unchecked<Q: ComponentQuery>(this: NonNull<Self>) -> UnsafeQuery<Q> {
-        UnsafeQuery::new(this)
-    }
-}
-
-///
-/// Implementations for the underlying FFI friendly API
-///
-impl World {
-    /// This function provides the raw implementation of adding a component to an existing entity.
-    ///
     /// # Safety
     ///
-    /// This function assumes the bytes provided for initializing the component encode a valid bit
-    /// pattern for the component type. It also assumes that it takes ownership of the object it
-    /// points to and that drop is not called on the underlying object.
-    pub unsafe fn add_component_dynamic(
-        &mut self,
-        entity: EntityId,
-        component: ComponentId,
-        data: NonNull<u8>,
-    ) -> bool {
-        // Lookup the entity location by the provided ID, returning false if the ID is invalid
-        let location = if let Some(location) = self.entities.lookup(entity) {
-            location
-        } else {
-            return false;
-        };
-
-        // Lookup the archetype to copy the entity from
-        let source_archetype_index = location.archetype;
-
-        // Find the destination archetype, returning false if the source and destination are the
-        // same.
-        let destination_archetype_index = if let Some(index) =
-            self.follow_archetype_link_add(source_archetype_index, component)
-        {
-            index
-        } else {
-            return false;
-        };
-
-        unsafe {
-            // Move the entity into the destination archetype
-            let new_index = self.move_entity_to_archetype::<false>(
-                entity,
-                source_archetype_index,
-                destination_archetype_index,
-            );
-
-            self.archetypes[destination_archetype_index.get_index()]
-                .copy_component_data_into_slot(new_index, component, data);
-        }
-
-        true
-    }
-
-    /// This function provides the raw implementation of removing a component from an entity.
+    /// There are a few requirements the caller must satisfy for to not invoke UB.
     ///
-    /// Returns true if the component existed on the entity and was removed, otherwise returns
-    /// false.
-    ///
-    /// # Safety
-    ///
-    /// Marked unsafe until the function is proven to be safe, as it currently ambiguous whether
-    /// this is safe to call.
-    pub unsafe fn remove_component_dynamic(
-        &mut self,
-        entity: EntityId,
-        component: ComponentId,
-    ) -> bool {
-        // Lookup the entity location by the provided ID, returning false if the ID is invalid
-        let location = if let Some(location) = self.entities.lookup(entity) {
-            location
-        } else {
-            return false;
-        };
-
-        // Lookup the archetype to copy the entity from
-        let source_archetype_index = location.archetype;
-
-        // Find the destination archetype, returning false if the source and destination are the
-        // same.
-        let destination_archetype_index = if let Some(index) =
-            self.follow_archetype_link_remove(source_archetype_index, component)
-        {
-            index
-        } else {
-            return false;
-        };
-
-        unsafe {
-            // Move the entity into the destination archetype
-            self.move_entity_to_archetype::<false>(
-                entity,
-                source_archetype_index,
-                destination_archetype_index,
-            );
-
-            // Manually drop the component we're removing
-            self.archetypes[source_archetype_index.get_index()]
-                .drop_component_in_slot(location.entity, component);
-
-            true
-        }
-    }
-
-    /// This function provides a raw, untyped interface for looking up an individual component for
-    /// a given entity.
+    /// - Each 'ptr' in the list of types must be valid to read `size_of(component) * count` bytes.
+    /// - The data copied from 'ptr' must represent a valid instance of some `T` if the component
+    ///   is a Rust type. Garbage bytes could be re-interpreted and laundered as a `T`.
+    ///   - This requirement is not relevant if the component type is _not_ a Rust type. Rust
+    ///     considers foreign types as bags of bytes.
+    /// - If 'out_ptr' is not `None`, it must be valid to write for `count` [`EntityHandle`]
+    ///   objects.
     #[inline]
-    pub fn has_component_dynamic(&self, entity: EntityId, component: ComponentId) -> bool {
-        if let Some(location) = self.entities.lookup(entity) {
-            self.archetypes[location.archetype.get_index()]
-                .entity_layout()
-                .contains_component_type(component)
-        } else {
-            false
-        }
-    }
-}
-
-/// Private function implementations
-impl World {
-    fn follow_archetype_link_remove(
+    unsafe fn generic_bulk_insert(
         &mut self,
-        source: ArchetypeIndex,
-        component: ComponentId,
-    ) -> Option<ArchetypeIndex> {
-        let source = source.get_index();
-
-        // First check for an existing link in the graph
-        if let Some(edge) = self.archetype_edges[source].get_mut(&component)
-            && let Some(index) = edge.remove
-        {
-            return Some(index);
+        count: usize,
+        info: impl EntityInsertionInfo,
+        out_handles: Option<NonNull<EntityHandle>>,
+    ) {
+        if count == 0 {
+            return;
         }
 
-        // If we get here then we failed to find an existing link so we'll need to lookup the target
-        // archetype by layout, which requires an allocation to build the layout to lookup with.
+        // Check if attempting to allocate info.count additional entities will exhaust the capacity
+        // of the handle arena.
+        let new_entity_count = self.entities.len().saturating_add(count);
+        assert!(new_entity_count <= u32::MAX as usize, "Too many entities!");
+
+        let archetype_index = self
+            .find_archetype_for_component_set(info.types())
+            .expect("Insertion info can't contain duplicate component channels");
+
+        // Allocate space for 'info.count' additional entities in the destination archetype.
         //
-        // At least we'll only ever need to do this once
+        // 'base_index' is the index of the first entity, with 'info.count' new entities after
+        // this index forming the full set to initialize.
+        let base_row = self.archetypes[archetype_index].allocate_entities(count);
 
-        // Create the destination layout, returning None if the component we're following a link
-        // for doesn't change the layout (i.e trying to go from src->src).
-        let source_layout =
-            EntityLayoutBuf::from_layout_in(self.archetypes[source].entity_layout(), system());
-        let mut destination_layout = source_layout;
-        if !destination_layout.remove_component_type(component) {
-            return None;
+        // Initialize the components (each type, for each new entity) by copying from the source
+        // data into the appropriate column.
+        unsafe {
+            info.copy_into_columns(self, archetype_index, base_row, count);
         }
 
-        // Lookup the archetype and update the graph edge in source
-        let index = self.find_or_create_archetype(destination_layout);
-        let edge = self.archetype_edges[source].entry(component).or_default();
-        edge.remove = Some(index);
+        // Once we've copied the component data we allocate entity handles for each new entity and
+        // update the id back-reference entries in the archetype.
+        let ids = &mut self.archetypes[archetype_index].entity_handles;
+        match out_handles {
+            None => {
+                let mut row = base_row;
+                for id in &mut ids[base_row..] {
+                    *id = self.entities.alloc(EntityLocation {
+                        archetype: archetype_index,
+                        row,
+                    });
 
-        Some(index)
-    }
-
-    fn follow_archetype_link_add(
-        &mut self,
-        source: ArchetypeIndex,
-        component: ComponentId,
-    ) -> Option<ArchetypeIndex> {
-        let source = source.get_index();
-
-        // First check for an existing link in the graph
-        if let Some(edge) = self.archetype_edges[source].get_mut(&component)
-            && let Some(index) = edge.add
-        {
-            return Some(index);
-        }
-
-        // If we get here then we failed to find an existing link so we'll need to lookup the target
-        // archetype by layout, which requires an allocation to build the layout to lookup with.
-        //
-        // At least we'll only ever need to do this once
-
-        // Create the destination layout, returning None if the component we're following a link
-        // for doesn't change the layout (i.e trying to go from src->src).
-        let source_layout =
-            EntityLayoutBuf::from_layout_in(self.archetypes[source].entity_layout(), system());
-        let mut destination_layout = source_layout;
-        if destination_layout.add_component_type(component) {
-            return None;
-        }
-
-        // Lookup the archetype and update the graph edge in source
-        let index = self.find_or_create_archetype(destination_layout);
-        let edge = self.archetype_edges[source].entry(component).or_default();
-        edge.add = Some(index);
-
-        Some(index)
-    }
-
-    fn find_or_create_archetype(&mut self, layout: EntityLayoutBuf<EcsSystem>) -> ArchetypeIndex {
-        if let Some(archetype) = self.archetype_map.get(layout.as_ref()).cloned() {
-            archetype.expect("Tried to lookup the empty archetype")
-        } else {
-            let archetype_index = self.archetypes.len();
-            let archetype_index = NonZeroU32::new(1 + archetype_index as u32).unwrap();
-            let archetype_index = ArchetypeIndex::new(archetype_index);
-            // 'ArchetypeIndex::new' checks if the index would be larger than max_archetypes
-
-            let capacity = self.options.archetype_capacity;
-            let archetype = Archetype::new(capacity, &layout, &self.types);
-            let archetype_edges = ComponentIdMap::with_hasher_in(Default::default(), system());
-
-            self.archetype_map
-                .insert(layout.into_boxed_slice(), Some(archetype_index));
-            self.archetypes.push(archetype);
-            self.archetype_edges.push(archetype_edges);
-            archetype_index
-        }
-    }
-
-    /// # Safety
-    ///
-    /// This function doesn't check what components intersect from the source and destination
-    /// archetypes. If dest is a superset of source then this will leave some component's data
-    /// uninitialized.
-    ///
-    /// To use this safely the data must be initialized manually outside this function in a higher
-    /// level wrapper.
-    unsafe fn move_entity_to_archetype<const DROP: bool>(
-        &mut self,
-        target: EntityId,
-        source_index: ArchetypeIndex,
-        dest_index: ArchetypeIndex,
-    ) -> ArchetypeEntityIndex {
-        // Use our split_at_mut wrapper to get access to both archetypes mutably
-        //
-        // Unfortunately this has to be vendored into each function to satisfy the borrow checker
-        let (source, dest) = {
-            let source: usize = source_index.get_index();
-            let dest: usize = dest_index.get_index();
-            // Handles all cases: <, >, and ==. Will panic from underflow in the == case as that
-            // would lead to mutable aliasing.
-            if source < dest {
-                // Select the pivot based on the lowest of the two indices and split the array
-                let pivot = source.checked_add(1).unwrap();
-                let (l, r) = self.archetypes.split_at_mut(pivot);
-
-                // Rebase the destination index in the second of the splits
-                let dest = dest.checked_sub(pivot).unwrap();
-
-                // Get the references to the target indices
-                (&mut l[source], &mut r[dest])
-            } else {
-                // Select the pivot based on the lowest of the two indices and split the array
-                let pivot = dest.checked_add(1).unwrap();
-                let (l, r) = self.archetypes.split_at_mut(pivot);
-
-                // Rebase the source index in the second of the splits
-                let source = source.checked_sub(pivot).unwrap();
-
-                // Get the references to the target indices
-                (&mut l[source], &mut r[dest])
+                    row += 1;
+                }
             }
+            Some(mut out_handles) => {
+                let mut row = base_row;
+                for id in &mut ids[base_row..] {
+                    *id = self.entities.alloc(EntityLocation {
+                        archetype: archetype_index,
+                        row,
+                    });
+
+                    unsafe {
+                        out_handles.write(*id);
+                        out_handles = out_handles.add(1);
+                    }
+
+                    row += 1;
+                }
+            }
+        }
+    }
+
+    fn find_query_matches<Q: ComponentQuery>(&self) -> BHashSet<usize, EcsSystem> {
+        let mut matches = [ComponentId(0); 64];
+        let mut required = [ComponentId(0); 64];
+        let mut denied = [ComponentId(0); 64];
+
+        let (required, denied) = {
+            let mut matches_count = 0;
+            let mut required_count = 0;
+            let mut denied_count = 0;
+            for v in Q::query_info() {
+                matches[matches_count] = v.id;
+                matches_count += 1;
+                if v.required {
+                    required[required_count] = v.id;
+                    required_count += 1;
+                } else {
+                    denied[required_count] = v.id;
+                    denied_count += 1;
+                }
+            }
+
+            // This validates that we don't match the same component multiple times in the query.
+            //
+            // If we didn't check this we could make aliasing mutable references (UB).
+            let matches = &mut matches[0..matches_count];
+            matches.sort_unstable();
+            let _matches_layout = TypeLayout::from_inner(&matches)
+                .expect("Must be no duplicate components referenced in query");
+
+            // Now we can make the required and denied subset layouts.
+            //
+            // These don't need to be de-duplicated or sorted!
+            let required = &mut required[0..required_count];
+            let denied = &mut denied[0..denied_count];
+
+            (required, denied)
         };
 
-        unsafe {
-            // Allocate space for the entity in the destination archetype and construct the new
-            // location while updating the entity slot
-            let entry = self.entities.lookup_entry_mut(target).unwrap();
-            let old_index = entry.data.location.unwrap().entity;
-            let new_index = dest.copy_from_archetype(old_index, source);
-            entry.data.location = Some(EntityLocation {
-                archetype: dest_index,
-                entity: new_index,
-            });
+        let mut required_archetypes = self.find_archetypes_with_components(required);
+        let denied_archetypes = self.find_archetypes_with_components(denied);
+        required_archetypes.retain(|v| !denied_archetypes.contains(v));
 
-            // Remove the entity from the previous archetype without dropping the components as they
-            // were moved
-            if let Some(needs_update) = source.remove_entity::<DROP>(old_index) {
-                let entry = self.entities.lookup_entry_mut(needs_update).unwrap();
-                let entry = entry.data.location.as_mut().unwrap();
-                entry.entity = old_index;
-            }
-
-            new_index
-        }
+        required_archetypes
     }
 }
 
-///
-/// The structure that holds the links to other archetypes based on whether a specific component is
-/// added or removed
-///
-#[repr(C)]
-#[derive(Clone, Copy, Hash, Debug, Default)]
-pub struct ArchetypeEdge {
-    /// Links to the archetype to move to if the specific component is added
-    pub add: Option<ArchetypeIndex>,
-
-    /// Links to the archetype to move to if the specific component is removed
-    pub remove: Option<ArchetypeIndex>,
+impl Drop for World {
+    fn drop(&mut self) {
+        // Walk through all the columns for all the archetypes and drop any components that are
+        // still left alive in the world when it was dropped.
+        for archetype in self.archetypes.iter_mut() {
+            let count = archetype.len();
+            for (column, &component) in archetype.type_layout.iter().enumerate() {
+                let type_info = &self.components[component];
+                if let Some(drop) = type_info.desc.destructor {
+                    if let Some(column) = archetype.columns[column].get() {
+                        unsafe {
+                            drop(column.cast(), count as u64);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

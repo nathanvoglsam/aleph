@@ -30,8 +30,8 @@
 use std::sync::Arc;
 
 use crate::register_component;
-use crate::world2::World;
-use crate::world2::query::{Read, Write};
+use crate::world::World;
+use crate::world::query::{Read, Write};
 
 #[derive(Clone, Default, PartialEq, Debug)]
 struct Position {

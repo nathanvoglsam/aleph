@@ -27,96 +27,39 @@
 // SOFTWARE.
 //
 
-//!
-//! Most structures in this module are repr(C) for FFI reasons
-//!
+use aleph_gen_arena::{GenArena, Handle, make_handle_id};
 
-pub mod entity_layout;
-pub mod entity_storage;
+use crate::EcsSystem;
 
-use std::num::NonZeroU32;
+/// Type tag used with [`Handle`] to create a unique 'entity handle' type.
+pub struct Entity;
+make_handle_id!(Entity);
 
-use crate::Generation;
+/// Alias for [`Handle`] with the [`Entity`] tag. In general, use this instead of [`Handle`]
+/// directly.
+pub type EntityHandle = Handle<Entity>;
 
+/// Specialized alias of [`GenArena`] that provides an arena for our entity handles.
+pub type EntityHandleArena = GenArena<EntityLocation, EntityHandle, EcsSystem>;
+
+/// Fully describes the storage location of a specific entity within an ECS world.
 ///
-/// This index wrapper represents an index into an `EntityStorage`.
+/// An entity is uniquely identified simply by the archetype and row.
 ///
-/// This is used to better document the purpose of various indexes that would've otherwise been
-/// plain `u32` fields.
+/// # Stability
 ///
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub struct EntityIndex(pub NonZeroU32);
+/// In general, this is _not_ a stable reference to a specific entity. Only an [`EntityHandle`] can
+/// be used to identify the same entity instance. An ECS world may move the physical location of an
+/// entity as part of its lifecycle. It may move between archetypes, or move within an archetype as
+/// entities are added or removed.
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct EntityLocation {
+    /// Index into the archetype set that the entity is currently found in. This is also a 'type id'
+    /// of sorts.
+    pub archetype: usize,
 
-///
-/// This represents an ID that refers to a specific entity.
-///
-/// # Info
-///
-/// Needs to be 8 byte aligned as this should have the same size and alignment as a u64
-///
-#[repr(C)]
-#[repr(align(8))]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub struct EntityId {
-    /// The generation of the slot in the entity list when this ID was allocated
-    pub generation: Generation,
-
-    /// The index inside the entity list this ID was allocated to
-    pub index: Option<EntityIndex>,
-}
-
-impl EntityId {
-    pub const fn null() -> Self {
-        Self {
-            generation: Generation::new(),
-            index: None,
-        }
-    }
-
-    /// Returns whether this entity reference is a null reference.
-    pub const fn is_null(self) -> bool {
-        self.generation.is_dead() && self.index.is_none()
-    }
-}
-
-impl From<u64> for EntityId {
-    /// Theoretically this whole thing should compile to a no-op as we're just manually spelling out
-    /// the semantics of something that could be implemented with a mem::transmute.
-    ///
-    /// No point adding extra unsafe if it can be avoided
-    #[inline]
-    fn from(v: u64) -> Self {
-        // Extract the high 32 bits of the u64 id, which we use as the entity index
-        let first = v >> 32 & 0xFFFFFFFF;
-        let first = first as u32;
-
-        // Extract the low 32 bits of the u64 id, which we use as the generation
-        let second = v & 0xFFFFFFFF;
-        let second = second as u32;
-
-        Self {
-            generation: Generation::from_raw(second),
-            index: NonZeroU32::new(first).map(EntityIndex),
-        }
-    }
-}
-
-impl From<EntityId> for u64 {
-    /// Theoretically this whole thing should compile to a no-op as we're just manually spelling out
-    /// the semantics of something that could be implemented with a mem::transmute.
-    ///
-    /// No point adding extra unsafe if it can be avoided
-    #[inline]
-    fn from(v: EntityId) -> Self {
-        // Convert the generation index into the low 32 bits of a u64
-        let first = v.generation.into_inner() as u64;
-
-        // Convert the entity index into the high 32 bits of a u64
-        let second = v.index.map(|v| v.0.get()).unwrap_or(0) as u64;
-        let second = second << 32;
-
-        // Combine the two haves to create a whole u64 id and return it
-        first | second
-    }
+    /// The row inside the linked archetype that the entity can be found. This is used in
+    /// conjunction with the archetype index to find the exact location of all the entity's
+    /// components.
+    pub row: usize,
 }

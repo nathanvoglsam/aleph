@@ -32,41 +32,14 @@ pub extern crate aleph_nstr as nstr;
 extern crate core;
 pub extern crate ctor;
 
-mod archetype;
-pub mod archetype2;
+pub mod archetype;
 pub mod component;
-mod entity;
-pub mod entity2;
+pub mod entity;
 mod internal;
-mod query;
 pub mod type_layout;
-mod world;
-pub mod world2;
+pub mod world;
 
-mod utils;
-
-pub use self::archetype::{Archetype, ArchetypeEntityIndex, ArchetypeIndex};
-pub use self::component::component_query::{
-    ComponentQuery, ComponentQueryItem, ComponentRead, ComponentWrite, Fetch,
-    ReadOnlyComponentQuery,
-};
-pub use self::component::component_source::{
-    CheckedSource, ComponentSource, IntoComponentSource, IntoOneComponentSource,
-    OneComponentSource, UnsafeComponentSource, UnsafeComponentSourceEntry,
-};
-pub use self::entity::entity_layout::{EntityLayout, EntityLayoutBuf};
-pub use self::entity::entity_storage::{
-    EntityEntry, EntityEntryData, EntityFreeListLink, EntityLocation, EntityStorage,
-};
-pub use self::entity::{EntityId, EntityIndex};
 pub use self::internal::component::register_component_type;
-pub use self::query::query_filter::QueryFilter;
-pub use self::query::{QueryMut, QueryRef, UnsafeQuery};
-pub use self::utils::Generation;
-pub use self::world::{World, WorldOptions};
-
-#[cfg(test)]
-mod tests;
 
 pub struct Ecs;
 aleph_alloc::new_alloc_category!(Ecs, "01996aaa-df23-7790-ad3f-47f1b2420ee2");

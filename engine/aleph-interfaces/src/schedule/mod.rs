@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use ecs::World;
+use ecs::world::World;
 use label::{Label, make_label};
 use object_system::unsafe_impl_iobject;
 

@@ -30,7 +30,7 @@
 use std::any::{Any, TypeId};
 use std::collections::{BTreeMap, BTreeSet};
 
-use interfaces::ecs::{World, WorldOptions};
+use interfaces::ecs::world::World;
 use interfaces::schedule::CoreStage;
 use interfaces::scheduler::{Schedule, SystemSchedule, TypedTable};
 
@@ -87,8 +87,6 @@ impl PluginRegistryBuilder {
         schedule.add_stage(CoreStage::PostUpdate.into(), SystemSchedule::default());
         schedule.add_stage(CoreStage::Render.into(), SystemSchedule::default());
 
-        let world = Box::new(World::new(WorldOptions::default())).unwrap();
-
         // Package up the final registry with the computed execution orders
         let mut registry = PluginRegistry {
             plugins: self.plugins,
@@ -98,7 +96,7 @@ impl PluginRegistryBuilder {
             exit_order,
             schedule: Some(Box::new(schedule)),
             resources: Some(Box::new(TypedTable::default())),
-            world: Some(Box::new(world)),
+            world: Some(Box::new(World::new())),
             platform: PlatformSDL3::new(),
             rhi: Rhi::new(),
         };

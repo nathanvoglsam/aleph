@@ -34,7 +34,7 @@ use aleph_alloc::BVec;
 use aleph_alloc::alloc::Allocator;
 
 use crate::component::{Component, ComponentId};
-use crate::world2::World;
+use crate::world::World;
 
 /// Abstract interface for copying data into an archetype's columns. This is used for bulk insertion
 /// operations.

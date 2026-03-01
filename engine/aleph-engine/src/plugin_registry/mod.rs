@@ -29,7 +29,7 @@
 
 use aleph_config::{ConfigRunner, RunConfigError};
 pub use interfaces::any;
-use interfaces::ecs::World;
+use interfaces::ecs::world::World;
 use interfaces::plugin::CoreRefs;
 use interfaces::schedule::WorldResource;
 use interfaces::scheduler::{Schedule, Stage, TypedTable};

@@ -27,9 +27,6 @@
 // SOFTWARE.
 //
 
-pub mod component_query;
-pub mod component_source;
-
 use std::alloc::{Layout, LayoutError};
 use std::mem::needs_drop;
 use std::ptr::NonNull;

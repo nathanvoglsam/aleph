@@ -29,7 +29,9 @@
 
 use aleph_engine::any::AnyArc;
 use aleph_engine::interfaces::components::{Camera, Transform};
-use aleph_engine::interfaces::ecs::{EntityId, World};
+use aleph_engine::interfaces::ecs::entity::EntityHandle;
+use aleph_engine::interfaces::ecs::world::World;
+use aleph_engine::interfaces::ecs::world::query::{Read, Write};
 use aleph_engine::interfaces::math::{Rotor3, ToDouble, Vec3};
 use aleph_engine::interfaces::platform::{GamepadAxis, IFrameTimer, IGamepadsAccessor};
 
@@ -38,14 +40,14 @@ pub struct FreeCamera {
     gamepad: AnyArc<dyn IGamepadsAccessor>,
     l_dir: f32,
     u_dir: f32,
-    camera: EntityId,
+    camera: EntityHandle,
 }
 
 impl FreeCamera {
     pub fn new(
         frame_timer: AnyArc<dyn IFrameTimer>,
         gamepad: AnyArc<dyn IGamepadsAccessor>,
-        camera: EntityId,
+        camera: EntityHandle,
     ) -> Self {
         Self {
             frame_timer,
@@ -61,7 +63,7 @@ impl FreeCamera {
 
         if let Some(state) = self.gamepad.get_active_controller_state() {
             let (transform, _camera) = world
-                .query_one_mut::<(&mut Transform, &Camera)>(self.camera)
+                .query_one_mut::<(Write<Transform>, Read<Camera>)>(self.camera)
                 .unwrap();
 
             let l = state.axis(GamepadAxis::RightX);

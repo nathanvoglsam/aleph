@@ -121,7 +121,7 @@ impl IPlugin for PluginGameLogic {
             },
         );
 
-        let camera = world.extend_one((
+        let camera = world.insert((
             Transform {
                 position: DVec3::zero(),
                 rotation: Rotor3::identity(),
@@ -200,7 +200,7 @@ impl IPlugin for PluginGameLogic {
             rotation: Rotor3::identity(),
             scale: Vec3::one() * 2.0,
         };
-        let throbber = world.extend_one((
+        let throbber = world.insert((
             transform.clone(),
             TransformHistory {
                 previous: transform,

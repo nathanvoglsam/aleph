@@ -30,7 +30,7 @@
 use std::any::{TypeId, type_name};
 
 use any::IAny;
-use ecs::World;
+use ecs::world::World;
 use scheduler::{Schedule, TypedTable};
 
 use crate::any::AnyArc;

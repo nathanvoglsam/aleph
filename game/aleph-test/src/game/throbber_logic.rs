@@ -29,17 +29,19 @@
 
 use aleph_engine::any::AnyArc;
 use aleph_engine::interfaces::components::{StaticMesh, Transform};
-use aleph_engine::interfaces::ecs::{EntityId, World};
+use aleph_engine::interfaces::ecs::entity::EntityHandle;
+use aleph_engine::interfaces::ecs::world::World;
+use aleph_engine::interfaces::ecs::world::query::{Read, Write};
 use aleph_engine::interfaces::math::{DVec3, Rotor3};
 use aleph_engine::interfaces::platform::IFrameTimer;
 
 pub struct ThrobberLogic {
     frame_timer: AnyArc<dyn IFrameTimer>,
-    throbber: EntityId,
+    throbber: EntityHandle,
 }
 
 impl ThrobberLogic {
-    pub fn new(frame_timer: AnyArc<dyn IFrameTimer>, throbber: EntityId) -> Self {
+    pub fn new(frame_timer: AnyArc<dyn IFrameTimer>, throbber: EntityHandle) -> Self {
         Self {
             frame_timer,
             throbber,
@@ -51,7 +53,7 @@ impl ThrobberLogic {
 
         let y = (elapsed * 0.5).sin() * 10.0;
         let (transform, _) = world
-            .query_one_mut::<(&mut Transform, &StaticMesh)>(self.throbber)
+            .query_one_mut::<(Write<Transform>, Read<StaticMesh>)>(self.throbber)
             .unwrap();
         transform.position = DVec3::new(0.0, y, -5.0);
         transform.rotation = Rotor3::from_rotation_xz(elapsed as f32);
