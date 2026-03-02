@@ -48,6 +48,7 @@ pub struct DeviceInfo {
     pub features_12: vk::PhysicalDeviceVulkan12Features<'static>,
     pub features_13: vk::PhysicalDeviceVulkan13Features<'static>,
     pub portability_features: vk::PhysicalDevicePortabilitySubsetFeaturesKHR<'static>,
+    pub memory_properties: vk::PhysicalDeviceMemoryProperties2<'static>,
 }
 
 impl DeviceInfo {
@@ -91,6 +92,7 @@ impl DeviceInfo {
             features_12: CreateProfile::minimum(),
             features_13: CreateProfile::minimum(),
             portability_features: Default::default(),
+            memory_properties: Default::default(),
         }
     }
 
@@ -118,6 +120,7 @@ impl DeviceInfo {
             features_12,
             features_13,
             portability_features,
+            memory_properties,
         } = &mut out;
 
         // Unconditionally required properties
@@ -155,6 +158,9 @@ impl DeviceInfo {
             instance.get_physical_device_features2(physical_device, &mut features);
             features.features
         };
+        unsafe {
+            instance.get_physical_device_memory_properties2(physical_device, memory_properties);
+        }
 
         // Null the p_next chain pointers to avoid leaving the dangling references. They can't be
         // *used* without unsafe but better be careful.
@@ -172,6 +178,7 @@ impl DeviceInfo {
         self.features_12.p_next = std::ptr::null_mut();
         self.features_13.p_next = std::ptr::null_mut();
         self.portability_features.p_next = std::ptr::null_mut();
+        self.memory_properties.p_next = std::ptr::null_mut();
     }
 }
 

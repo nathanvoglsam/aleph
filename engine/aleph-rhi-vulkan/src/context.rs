@@ -161,6 +161,14 @@ impl Context {
                 let dv_patch = vk::version_patch(device_info.properties_10.driver_version);
                 log::info!("Driver Version : {dv_major}.{dv_minor}.{dv_patch}");
             }
+
+            let memory_properties = &device_info.memory_properties.memory_properties;
+            let num_heaps = memory_properties.memory_heap_count;
+            let heaps = &memory_properties.memory_heaps[0..num_heaps as usize];
+            for (i, heap) in heaps.iter().enumerate() {
+                let size_mb = heap.size / 1024 / 1024;
+                log::info!("Memory Heap[{}]: {}MB {:?}", i, size_mb, heap.flags);
+            }
         }
     }
 
