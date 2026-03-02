@@ -31,7 +31,7 @@ use std::sync::Arc;
 
 use crate::register_component;
 use crate::world::World;
-use crate::world::query::{Read, Write};
+use crate::world::query::{Has, Read, Write};
 
 #[derive(Clone, Default, PartialEq, Debug)]
 struct Position {
@@ -599,4 +599,54 @@ fn is_world_send_and_sync() {
     }
     let world = World::new();
     let _nothing = the_send_sync_filter::<World>(world);
+}
+
+#[test]
+fn remove_matching_test() {
+    let mut world = World::new();
+
+    // Counter. Use an arc so we can snoop on when components are dropped via Dropper.
+    let counter = Arc::new(());
+
+    let ps_ids = world.bulk_insert((
+        [Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
+        [Scale::new(5.0, 6.0), Scale::new(7.0, 8.0)],
+        [Dropper(counter.clone()), Dropper(counter.clone())],
+    ));
+
+    let pm_ids = world.bulk_insert((
+        [Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
+        [Mesh::new(9), Mesh::new(10)],
+        [Dropper(counter.clone()), Dropper(counter.clone())],
+    ));
+
+    assert_eq!(Arc::strong_count(&counter), 5);
+    assert_eq!(ps_ids.len(), 2);
+    assert_eq!(pm_ids.len(), 2);
+    assert_eq!(world.len(), 4);
+
+    for &id in &ps_ids {
+        assert!(world.is_live(id));
+    }
+
+    for &id in &pm_ids {
+        assert!(world.is_live(id));
+    }
+
+    world.remove_matching::<Has<Scale>>();
+
+    assert_eq!(world.len(), 2);
+    assert_eq!(Arc::strong_count(&counter), 3);
+
+    for &id in &ps_ids {
+        assert!(!world.is_live(id));
+    }
+
+    for &id in &pm_ids {
+        assert!(world.is_live(id));
+    }
+
+    drop(world);
+
+    assert_eq!(Arc::strong_count(&counter), 1);
 }

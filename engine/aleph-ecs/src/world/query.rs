@@ -115,6 +115,13 @@ pub struct Read<T>(PhantomData<T>);
 /// Query parameter that declares a query wants to write the given component type `T`.
 pub struct Write<T>(PhantomData<T>);
 
+/// Special query parameter that provides a positive bound on a component type. Use this to query
+/// for entities that have the component type `T` but where you don't care to read that component
+/// itself.
+///
+/// Data for component `T` can not be accessed through this type.
+pub struct Has<T>(PhantomData<T>);
+
 /// Special query parameter that provides a negative bound on a component type. Use this to query
 /// for entities that _do not_ have the component type `T`.
 ///
@@ -188,6 +195,21 @@ impl<T: Component> ComponentQuery for Write<T> {
         })
     }
 }
+
+impl<T: Component> ComponentQuery for Has<T> {
+    type Fetch = NoFetch<T>;
+
+    #[inline]
+    fn query_info() -> impl Iterator<Item = ComponentQueryInfo> {
+        std::iter::once(ComponentQueryInfo {
+            id: T::DESC.id,
+            required: true,
+            mutable: false,
+        })
+    }
+}
+
+unsafe impl<T: Component> ReadOnlyComponentQuery for Has<T> {}
 
 impl<T: Component> ComponentQuery for Not<T> {
     type Fetch = NoFetch<T>;

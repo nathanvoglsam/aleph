@@ -263,13 +263,27 @@ impl Archetype {
         }
     }
 
+    /// Clear the archetype of all entities, returning length to 0.
+    ///
+    /// Does not free any memory, the capacity of all internal buffers remains unchanged.
+    pub fn clear(&mut self) {
+        self.len = 0;
+        self.entity_handles.clear();
+    }
+
     /// Find the minimum, padded value for 'capacity' that is valid for 'count' number of entities.
     ///
     /// This just rounds up to the next power of two after 'count' so we get amortized constant
     /// insertion complexity (`O(1)`).
     pub fn minimum_capacity_for_entity_count(count: usize) -> usize {
-        let capacity = count.checked_next_power_of_two().unwrap().max(1);
-        assert!(capacity >= count);
-        capacity
+        if count == 0 {
+            0
+        } else if count.is_power_of_two() {
+            count
+        } else {
+            let capacity = count.checked_next_power_of_two().unwrap();
+            assert!(capacity >= count);
+            capacity
+        }
     }
 }

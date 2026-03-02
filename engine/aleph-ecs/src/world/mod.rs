@@ -245,6 +245,12 @@ impl World {
         self.raw_has_component(entity, T::DESC.id)
     }
 
+    /// Returns `true` if the given entity is live, and accessible, through the given handle.
+    #[inline]
+    pub fn is_live(&self, entity: EntityHandle) -> bool {
+        self.entities.get_ref(entity).is_some()
+    }
+
     /// Returns `Some(ptr)` if the given entity is both live, and has a component of the given type.
     /// `ptr` will point to a component of the requested type.
     ///
@@ -543,6 +549,27 @@ impl World {
                 world: self,
                 inner: UnsafeQuery::new(matches.into_iter()),
             }
+        }
+    }
+
+    /// Delete all entities in the world that match the given query `Q`.
+    ///
+    /// Queries match on types, so what this function does in practice is finds every _archetype_
+    /// that matches `Q` and clears it, dropping all components and releasing all entity handles.
+    pub fn remove_matching<Q: ReadOnlyComponentQuery>(&mut self) {
+        let matches = self.find_query_matches::<Q>();
+        for i in matches {
+            // First we free all the entity handles so the entities in the matching archetype will
+            // become unavailable as they will be considered dead.
+            //
+            // We do this first so if we panic mid-call we just leak entities.
+            self.free_all_entities_in_archetype(i);
+
+            // Then we drop all the entities in the archetype. This also internally has ordering
+            // constraints to keep this code panic safe.
+            //
+            // This also resets the length of the archetype to 0.
+            self.clear_archetype(i);
         }
     }
 }
@@ -1135,24 +1162,52 @@ impl World {
 
         required_archetypes
     }
+
+    /// Internal function that frees all entity handles for the live entities stored in the given
+    /// archetype.
+    fn free_all_entities_in_archetype(&mut self, archetype: usize) {
+        let archetype = &mut self.archetypes[archetype];
+        let count = archetype.len();
+        for &handle in &archetype.entity_handles[0..count] {
+            let _ = self.entities.free(handle);
+        }
+    }
+
+    /// Internal function that calls drop on every live component in the given archetype. This will
+    /// also clear the archetype (set the length to 0).
+    fn clear_archetype(&mut self, archetype: usize) {
+        let archetype = &mut self.archetypes[archetype];
+
+        // Capture the number of live components right before we...
+        let count = archetype.len();
+
+        // 'Clear' the archetype. It is now logically empty. len = 0
+        //
+        // We do this _before_ dropping the components so that if we panic while dropping them then
+        // we just leak components. Otherwise, we would try and free components a second time in the
+        // World destructor while unwinding.
+        archetype.clear();
+
+        unsafe {
+            for (column, &component) in archetype.type_layout.iter().enumerate() {
+                let type_info = self.components.get(component).unwrap_unchecked();
+                if let Some(drop) = type_info.desc.destructor {
+                    let column = archetype.columns.get(column).unwrap_unchecked();
+                    if let Some(column) = column.get() {
+                        drop(column.cast(), count as u64);
+                    }
+                }
+            }
+        }
+    }
 }
 
 impl Drop for World {
     fn drop(&mut self) {
         // Walk through all the columns for all the archetypes and drop any components that are
         // still left alive in the world when it was dropped.
-        for archetype in self.archetypes.iter_mut() {
-            let count = archetype.len();
-            for (column, &component) in archetype.type_layout.iter().enumerate() {
-                let type_info = &self.components[component];
-                if let Some(drop) = type_info.desc.destructor {
-                    if let Some(column) = archetype.columns[column].get() {
-                        unsafe {
-                            drop(column.cast(), count as u64);
-                        }
-                    }
-                }
-            }
+        for archetype in 0..self.archetypes.len() {
+            self.clear_archetype(archetype);
         }
     }
 }
