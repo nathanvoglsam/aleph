@@ -27,16 +27,54 @@
 // SOFTWARE.
 //
 
+pub mod column;
+
 use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BBox, BVec};
 use aleph_gen_arena::HandleType;
 
 use crate::EcsSystem;
+use crate::archetype::column::Column;
 use crate::entity::EntityHandle;
-use crate::internal::column::Column;
-use crate::internal::component_index::ComponentIndex;
 use crate::type_layout::{TypeLayout, TypeLayoutBuf};
+use crate::world::component_index::ComponentIndex;
 
+/// Archetype implements a dynamically sized table data structure.
+///
+/// This struct implements a table, where each column of the table stores data of the same type.
+/// Each column stores data, densely packed in order for each row, where given some row `i` the data
+/// for that row can be found for any column `j` as `columns[j][i]`.
+///
+/// Each column stores an array of elements of some size, the sizes are determined when the
+/// archetype is constructed. [`Column`] implements the storage for a single column.
+///
+/// An extra column of data is provided that associates each row in the table with the live handle
+/// that references the row in the table. This enables `Archetype` to identify the entity a row
+/// is storing.
+///
+/// This type implements the memory management of this table, but makes no attempt at handling the
+/// objects stored _within_ the table. `Archetype` will handle growing and shrinking the memory
+/// allocations, as well as allocating and freeing rows in the table, but `Archetype` will not
+/// handle constructors, destructors, or anything similar. This type concerns itself only with
+/// managing memory allocations.
+///
+/// The API user is expected to allocate memory in the table via the functions exposed here, and
+/// is left to their own devices on how to store and manage the data within the table itself.
+///
+/// # ECS?
+///
+/// This implements the backing storage for an 'archetype' in our ECS world. The logical model of
+/// an entity is that an entity is a unique object that can have a set of 'component' objects
+/// attached to it. An entity is merely an identifier, given form as the sum of its components.
+///
+/// An archetype based ECS stores entities together with other entities of the same shape (i.e.
+/// those with exactly the same set of components). There are methods to implement the logical model
+/// of an ECS, but we use archetypes.
+///
+/// Each column contains the data for a particular _component type_. An entity is a reference to a
+/// specific _row_ within an _archetype_. An entity is fully located by the ID of its archetype and
+/// the row index within. This API manages the allocations, the [`crate::world::World`] is
+/// responsible for implementing the ECS semantics.
 pub struct Archetype {
     /// The layout of this archetype
     pub(crate) type_layout: BBox<TypeLayout, EcsSystem>,
@@ -59,6 +97,27 @@ pub struct Archetype {
 }
 
 impl Archetype {
+    /// Constructs a new, empty [`Archetype`] based on the given component registry and type layout.
+    ///
+    /// The columns are sorted in order of their component ID using the same rules as
+    /// [`TypeLayout`].
+    ///
+    /// ## Component Index
+    ///
+    /// This is a lookup table that matches a [`crate::component::ComponentId`] to a
+    /// [`crate::component::ComponentDescription`]. This is very likely to be the index maintained
+    /// by [`crate::world::World`]. This index is queried to get the size/align of a component so
+    /// that we can construct [`Column`] instances that manage elements with the appropriate memory
+    /// layout.
+    ///
+    /// The component types come from...
+    ///
+    /// ## Type Layout
+    ///
+    /// The `layout` parameter is a `TypeLayout` that defines the shape of an archetype.
+    /// [`TypeLayout`] is just a list of component ids with some extra layout constraints. Each
+    /// component id in the given `layout` will get a column in the `Archetype`, and they will be
+    /// stored in the same order as they are found in `layout`.
     pub fn new(component_index: &ComponentIndex, layout: &TypeLayout) -> Self {
         let components = TypeLayoutBuf::from_layout_in(layout, system());
         let components = components.into_boxed_slice();
@@ -112,13 +171,17 @@ impl Archetype {
         &mut self.entity_handles[0..self.len]
     }
 
-    /// Get a reference to the archetype's component storage columns.
+    /// Get a reference to the archetype's component storage columns. This array is the same size
+    /// as [`Archetype::type_layout`], and associates such that a components column is found by
+    /// `type_layout[i] -> columns[i]`.
     #[inline(always)]
     pub fn columns_ref(&self) -> &[Column<EcsSystem>] {
         &self.columns
     }
 
-    /// Get a reference to the archetype's component storage columns.
+    /// Get a reference to the archetype's component storage columns. This array is the same size
+    /// as [`Archetype::type_layout`], and associates such that a components column is found by
+    /// `type_layout[i] -> columns[i]`.
     #[inline(always)]
     pub fn columns_mut(&mut self) -> &mut [Column<EcsSystem>] {
         &mut self.columns

@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+pub mod component_index;
 pub mod insertion;
 pub mod query;
 #[cfg(test)]
@@ -40,11 +41,11 @@ use aleph_alloc::{BBox, BHashMap, BHashSet, BVec};
 
 use crate::EcsSystem;
 use crate::archetype::Archetype;
+use crate::component::internal::{COMPONENTS, ComponentIdMap};
 use crate::component::{Component, ComponentId};
 use crate::entity::{EntityHandle, EntityHandleArena, EntityLocation};
-use crate::internal::component::{COMPONENTS, ComponentIdMap};
-use crate::internal::component_index::{ComponentArchetypeRecord, ComponentIndex};
 use crate::type_layout::{TypeLayout, TypeLayoutBuf};
+use crate::world::component_index::{ComponentArchetypeRecord, ComponentIndex};
 use crate::world::insertion::{
     ComponentInsertionInfo, EntityInsertionInfo, RustEntityInsertionInfo, SingleEntityInsertionInfo,
 };

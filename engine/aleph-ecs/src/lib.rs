@@ -35,11 +35,10 @@ pub extern crate ctor;
 pub mod archetype;
 pub mod component;
 pub mod entity;
-mod internal;
 pub mod type_layout;
 pub mod world;
 
-pub use self::internal::component::register_component_type;
+pub use self::component::internal::register_component_type;
 
 pub struct Ecs;
 aleph_alloc::new_alloc_category!(Ecs, "01996aaa-df23-7790-ad3f-47f1b2420ee2");

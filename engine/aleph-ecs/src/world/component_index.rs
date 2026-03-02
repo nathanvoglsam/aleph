@@ -33,20 +33,42 @@ use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BHashMap, BVec};
 
 use crate::component::{ComponentDescription, ComponentId};
-use crate::internal::component_index::alloc::ComponentIndexSystem;
+use crate::world::component_index::alloc::ComponentIndexSystem;
 
+/// This API maintains an append-only register of component types, indexable by the [`ComponentId`]
+/// assigned when a type is registered.
+///
+/// This is basically just an append only `Vec`.
 pub struct ComponentIndex {
     /// The list of all component types registered with some ECS world.
     components: BVec<ComponentEntry, ComponentIndexSystem>,
 }
 
 impl ComponentIndex {
+    /// Construct a new, empty Self
     pub fn new() -> Self {
         Self {
             components: BVec::new_in(system()),
         }
     }
 
+    /// Push a new type into the index. The type is described by the given [`ComponentDescription`].
+    ///
+    /// An ID is assigned to this type within this index and returned to the caller.
+    ///
+    /// # Panic
+    ///
+    /// This will panic if a component ID is generated that would overflow a `u32`. This would
+    /// require pushing `u32::MAX` types into a single component index.
+    ///
+    /// # Auto-registration
+    ///
+    /// This type _does not_ integrate with component type auto-registration. That is handled by
+    /// the ECS world. The IDs for auto-registered components is pre-assigned globally and the ECS
+    /// world is implemented so that its internal component index matches the global table of
+    /// component types. At least for __Rust__ component types.
+    ///
+    /// Dynamic component types are unaffected.
     pub fn push(&mut self, t: &ComponentDescription) -> ComponentId {
         let id = u32::try_from(self.components.len()).expect("Too many component types");
         let id = ComponentId(id);
@@ -59,12 +81,14 @@ impl ComponentIndex {
         id
     }
 
+    /// Lookup a [`ComponentEntry`] using the given ID.
     #[inline]
     #[must_use]
     pub fn get(&self, index: ComponentId) -> Option<&ComponentEntry> {
         self.components.get(index.0 as usize)
     }
 
+    /// Lookup a [`ComponentEntry`] using the given ID.
     #[inline]
     #[must_use]
     pub fn get_mut(&mut self, index: ComponentId) -> Option<&mut ComponentEntry> {
@@ -88,6 +112,8 @@ impl IndexMut<ComponentId> for ComponentIndex {
     }
 }
 
+/// An entry within a [`ComponentIndex`]. This stores both the description of the component type
+/// as well as an additional per-component-type hash table that is used by the ECS world.
 pub struct ComponentEntry {
     /// Description of the component type. Includes the physical size/alignment as well as other
     /// hooks and useful type metadata.
