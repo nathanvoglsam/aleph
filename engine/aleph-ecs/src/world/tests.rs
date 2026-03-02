@@ -81,6 +81,10 @@ impl Mesh {
 struct Dropper(Arc<()>);
 register_component!(Dropper);
 
+#[derive(Clone, Default, PartialEq, Debug)]
+pub struct ZeroSized;
+register_component!(ZeroSized);
+
 #[test]
 fn extend_test_vec() {
     let mut world = World::new();
@@ -649,4 +653,37 @@ fn remove_matching_test() {
     drop(world);
 
     assert_eq!(Arc::strong_count(&counter), 1);
+}
+
+#[test]
+fn zero_sized_component() {
+    let mut world = World::new();
+
+    let ids = world.bulk_insert((
+        [Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
+        [ZeroSized, ZeroSized],
+    ));
+
+    assert_eq!(ids.len(), 2);
+    assert_eq!(world.len(), 2);
+
+    assert_eq!(
+        world.get_component_ref::<Position>(ids[0]).unwrap(),
+        &Position::new(1.0, 2.0)
+    );
+    assert_eq!(
+        world.get_component_ref::<Position>(ids[1]).unwrap(),
+        &Position::new(3.0, 4.0)
+    );
+    assert_eq!(
+        world.get_component_ref::<ZeroSized>(ids[0]).unwrap(),
+        &ZeroSized
+    );
+    assert_eq!(
+        world.get_component_ref::<ZeroSized>(ids[1]).unwrap(),
+        &ZeroSized
+    );
+
+    assert!(!world.has_component::<Mesh>(ids[0]));
+    assert!(!world.has_component::<Mesh>(ids[1]));
 }
