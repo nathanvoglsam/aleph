@@ -54,6 +54,128 @@ use crate::world::query::{
     UnsafeQuery,
 };
 
+/// This API is the primary entry point to the `aleph-ecs` library. It is _the_ implementation of
+/// the ECS data structure.
+///
+/// An in-depth explanation of an ECS is out of scope for this documentation. Briefly, ECS is
+/// an overused term that describes a logical method of organizing game simulation code and data
+/// that also gets lumped in to mean a few specific methods of implementing that logical model.
+/// ECS deals with entities as the fundamental primitive object. An entity can have 0 or more
+/// components (which are just structs) attached to it. You can identify an entity with a handle,
+/// and that handle can be used to read/write the components as well as add/remove them dynamically.
+///
+/// The _data structures_ that get lumped in are usually some variant of a columnar database.
+///
+/// This library does not aim to enshrine the ECS programming model as a fundamental interface. This
+/// library implements the data structures with no expectations of a 'pure' ECS model.
+///
+/// `World` implements an archetype based entity database. It exposes an API for managing a singular
+/// pool of entities, referenced via [`EntityHandle`], and provides an interface for working with
+/// [`Components`](Component) on those entities. Tools are provided to spawn entities, delete
+/// entities, add and remove components, get references to those components, and most critically
+/// query for all entities that match a filter.
+///
+/// # The Data
+///
+/// The data structures that `World` uses to implement this API are an important part of the
+/// interface as they make a key set of tradeoffs to make certain operations efficient at the cost
+/// of other operations. `World` implements an 'archetype' based ECS. What this means is that the
+/// fundamental storage medium of the `World` organizes entities with the same set of components
+/// so they are stored together in a single table. Each row of the table is an entity, and each
+/// column stores the data for one of the component types. One of these tables is called an
+/// 'archetype'.
+///
+/// When an entity is created, starting with an initial set of components, it is assigned to an
+/// archetype that stores exactly those components. It  is stored in a row of the table along with
+/// all the other entities of the same _shape_. The _shape_ of an entity is a fundamental term that
+/// refers to the set of entities attached to it. The _shape_ of a new entity is determined from the
+/// set of components, it takes a row in the table used for its shape, the components are copied
+/// into the table, and finally a handle is given out. That handle can be used to find those
+/// components again and identify the entity relative to all others within the same `World`.
+///
+/// An `archetype` is a compacting data structure. When adding/removing entities from an archetype
+/// the other entities may be moved to compact the table so all columns are dense with no gaps
+/// for empty rows.
+///
+/// This layout has a number of consequences:
+///
+/// 1. Iterating within an archetype is _very_ efficient, as each column is just a densely packed
+///    array of structs.
+/// 2. Finding an entity from its handle is also very efficient. The entity can be located with just
+///    an _archetype id_ and a _row index_.
+/// 3. Iterating over the whole world is also very efficient. It's just an extra level of iteration.
+/// 4. Filtered iteration, searching for entities whose shape matches a filter, is also very
+///    efficient. Because all entities of the same shape are stored together, filtering on shape is
+///    performed at a much lower frequency by matching _archetypes_ instead of _individual
+///    entities_.
+/// 5. Adding and removing entities directly to/from an archetype by providing all components
+///    upfront is also cheap.
+/// 6. Adding/removing components dynamically is expensive. Changing the shape of an entity requires
+///    moving it to a different archetype. This adds extra memory traffic beyond just the cost of
+///    copying a new component in. The cost scales with the number of components on an entity too.
+/// 7. Memory may become fragmented if large numbers of archetypes are created. If the shape of the
+///    entities in the world are very inconsistent the entities get spread into a large number of
+///    tables and the efficiency of the data structure suffers.
+///
+/// This library is designed to be most efficient for managing a large number of entities that
+/// take on a small number of unique shapes. These entities will rarely change shape, and it is very
+/// important that entities can be filtered based on their shape. It is expected that the cheap
+/// filtering and iteration will outweigh the cost of the less efficient operations.
+///
+/// # The Logical Model
+///
+/// `World` is a data structure. It stores entities, and lets you query them. If you squint, it's
+/// a database.
+///
+/// What this library isn't is an 'ECS framework'. We don't expose 'systems'. We expose entities and
+/// queries. We expose enough of the internals that more complex frameworks can be built on top of
+/// this fundamental data structure. We keep the library simple enough it could be used as just a
+/// data structure.
+///
+/// The 'ECS framework' can be quite efficient. What it isn't is friendly to your average gameplay
+/// programmer. This library is just data. You could expose systems and represent your logic as
+/// data transformations. You could use this library as storage for a traditional OOP scripting
+/// layer.
+///
+/// # Components
+///
+/// A component is a struct. Specifically it's a struct that has been correctly registered with the
+/// library. A _Rust_ component can be implicitly 'auto-registered' using
+/// [`crate::register_component`]. But ultimately a component is just a bag of bytes with a size
+/// and alignment.
+///
+/// When a component is registered a [`ComponentId`] is given out that identifies that component
+/// type within only the `World` it is registered with.
+///
+/// _Rust_ components that can be used with the safe APIs must be registered using our macro to
+/// correctly implement the [`Component`] trait. _Dynamic_ components are those registered at
+/// runtime and have no such constraint. Dynamic component types are very powerful as they allow
+/// both Rust code or scripting languages loaded as data to create their own component types that
+/// are treated as first class citizens next to the built-in Rust components. The `World` can become
+/// a fully dynamic type system if you want it!
+///
+/// ## Auto Registration
+///
+/// It's worth talking about auto registration to explain what it means and why it's needed. Rust
+/// types that implement [`Component`] correctly are auto registered with all `World` instances
+/// created within the executable. No explicit registration step is required to retrieve a
+/// [`ComponentId`].
+///
+/// How this works is that each `Component` type registers itself into a global list at startup.
+/// When added to the list it is given a global id that is unique within that individual execution
+/// of the program. That id is used as the component id for every `World` that gets constructed.
+/// That id is also reserved so that no dynamic components can also be assigned that id.
+///
+/// This means a single, static [`ComponentId`] can be stored for each type `T` that implements
+/// [`Component`], and that ID can be retrieved via `T::DESC.id`.
+///
+/// This system forms the backbone of Rust's safe, generic APIs. We can rely on the reserved ids
+/// always referring to the _Rust_ type they were assigned, so we can use them like global type ids.
+///
+/// This is implemented using a mix of lazy statics and `__attribute__((constructor))` shenanigans.
+/// The list of components is constructed before `fn main()` is ever called. The IDs are assigned
+/// lazily, however in practice they will all be assigned on the first call to [`World::new`].
+///
 pub struct World {
     /// Holds all the components that have been registered with the World
     pub(crate) components: ComponentIndex,
@@ -74,13 +196,10 @@ pub struct World {
     pub(crate) archetype_del_edges: BVec<ComponentIdMap<usize>, EcsSystem>,
 }
 
-///
-/// Implementations for the rust friendly interface
-///
 impl World {
     /// Constructs a new, empty ECS world.
     ///
-    /// All Rust component types declared using [`crate::register_component_type`] will be
+    /// All Rust component types declared using [`crate::register_component`] will be
     /// automatically registered with the ECS world. Any dynamically registered component types are
     /// only usable with the world they were registered from.
     pub fn new() -> Self {
@@ -302,6 +421,9 @@ impl World {
         self.archetype_map.get(type_layout)
     }
 
+    /// The raw, unsafe form of [`World::add_component`]. This allows adding a component with a
+    /// dynamic type. Reads the component data from 'src_ptr'.
+    ///
     /// # Safety
     ///
     /// This has the same safety issues as [`World::raw_bulk_insert`]. The data referred to
@@ -324,6 +446,16 @@ impl World {
         }
     }
 
+    /// Add a component of type `T` to the entity referenced by the given handle.
+    ///
+    /// If the entity already has a component of type `T` then the old entity will be destructed
+    /// and the new component will replace it.
+    ///
+    /// If the entity did not already have a component of type `T` it will be moved into the
+    /// appropriate archetype, freeing its space on the old location.
+    ///
+    /// Returns `Err` if the handle is invalid, with the `Err` containing the component that
+    /// would've been moved into the world.
     #[inline]
     pub fn add_component<T: Component>(&mut self, entity: EntityHandle, v: T) -> Result<(), T> {
         // Wrap in manually drop as the component will be type erased and moved into another
@@ -349,6 +481,10 @@ impl World {
         }
     }
 
+    /// The raw, unsafe form of [`World::remove_component`]. Allows removing a component with a
+    /// dynamic type. If 'dst_ptr' is `Some`, the removed component will be moved and copied to
+    /// 'dst_ptr' instead of destructed in place.
+    ///
     /// # Safety
     ///
     /// If a 'dst_ptr' is non-null, 'dst_ptr' must be valid to write `size_of(component)` bytes.
@@ -374,6 +510,14 @@ impl World {
         }
     }
 
+    /// Removes a component of type `T` from the entity referenced by the given handle.
+    ///
+    /// If the entity does not have a component of type `T` this will return `None`.
+    ///
+    /// If the entity does have a component of type `T` it will be returned as `Some(t)`. The entity
+    /// will move archetype, and it's old space will be recycled.
+    ///
+    /// If the handle is invalid, then `None` will also be returned.
     #[inline]
     pub fn remove_component<T: Component>(&mut self, entity: EntityHandle) -> Option<T> {
         let mut v = MaybeUninit::<T>::uninit();
@@ -392,6 +536,11 @@ impl World {
 
     /// Given a handle 'entity', remove that entity from the world. This will drop all the
     /// components and invalidate the handle.
+    ///
+    /// Returns `Some` if the handle was valid and an entity was successfully removed from the
+    /// world.
+    ///
+    /// Returns `None` if the handle was invalid and no entity was successfully removed.
     pub fn remove_entity(&mut self, entity: EntityHandle) -> Option<()> {
         let location = self.entities.free(entity)?;
 
@@ -437,6 +586,15 @@ impl World {
         Some(())
     }
 
+    /// Fetches the components specified in the query `Q` for the given entity. Returns `None` if
+    /// all the query terms could not be satisfied.
+    ///
+    /// This applies the query fetcher machinery to load the data for a single entity, but does not
+    /// need to perform a full query operation. The archetype is known from the entity, we only need
+    /// to check that the individual entity passes the query.
+    ///
+    /// If the entity handle is invalid then we return `None` without ever needing to test the
+    /// filter.
     pub fn query_one<Q: ReadOnlyComponentQuery>(
         &self,
         entity: EntityHandle,
@@ -463,6 +621,23 @@ impl World {
         }
     }
 
+    /// Mutable version of [`World::query_one`].
+    ///
+    /// Has the additional constraint that a component type can only be referenced once across all
+    /// terms in the query. Otherwise, it would be possible to create aliasing mutable references
+    /// via this interface. For example: the query (Read<T>, Write<T>) would match and fetch the
+    /// references for the same T twice, once as mutable and as a shared reference. This is UB in
+    /// Rust.
+    ///
+    /// Rather than do a more in-depth borrow check that fully checks shared-xor-mutable, we just
+    /// deny listing the same type in multiple terms. There's no good reason to do it anyway.
+    ///
+    /// # What about `query_one`?
+    ///
+    /// [`World::query_one`] skips this check. `query_one` is only allowed to make shared
+    /// references, which it is perfectly sound to alias. Using the same twice is nonsense, but it
+    /// isn't unsound for read-only access.
+    ///
     pub fn query_one_mut<Q: ComponentQuery>(
         &mut self,
         entity: EntityHandle,
@@ -531,6 +706,25 @@ impl World {
         }
     }
 
+    /// Given a query `Q`, yield an iterator that will yield all entities in the world that match
+    /// that query filter.
+    ///
+    /// `Q` is bounded with [`ReadOnlyComponentQuery`], which means this interface can only be
+    /// used with queries made entirely of read-only terms. This is checked at compile time using
+    /// the restricted trait bound.
+    ///
+    /// # Duplicate Terms
+    ///
+    /// [`World::query_one`] allows the same component type to appear in multiple terms of a query.
+    /// [`World::query_one_mut`] does not because that would allow unsound aliasing of mutable
+    /// references.
+    ///
+    /// [`World::query`] __also denies__ the same component type appearing in multiple terms of
+    /// the query. This wouldn't be unsound, but it is somewhat pointless and likely an error.
+    ///
+    /// This function re-uses the same machinery as [`World::query_mut`], which _must_ do the
+    /// duplicate component term check. We don't think it's worth having the extra machinery to
+    /// skip the check here.
     pub fn query<Q: ReadOnlyComponentQuery>(&self) -> QueryRef<'_, Q> {
         let matches = self.find_query_matches::<Q>();
 
@@ -542,6 +736,15 @@ impl World {
         }
     }
 
+    /// Given a query `Q`, yield an iterator that will yield all entities in the world that match
+    /// that query filter.
+    ///
+    /// `Q` is bounded with [`ComponentQuery`] which allows any query term to be used. Mutable or
+    /// read-only.
+    ///
+    /// Much like [`World::query_one_mut`], the same component type can not appear in more than one
+    /// query term. This is to prevent unsound mutable aliasing by trying to read and write a
+    /// component in the same query.
     pub fn query_mut<Q: ComponentQuery>(&mut self) -> QueryMut<'_, Q> {
         let matches = self.find_query_matches::<Q>();
 
