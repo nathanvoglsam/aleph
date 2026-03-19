@@ -29,6 +29,7 @@
 
 use std::sync::Arc;
 
+use crate::component::singleton::Singleton;
 use crate::register_component;
 use crate::world::World;
 use crate::world::query::{Has, Read, Write};
@@ -686,4 +687,40 @@ fn zero_sized_component() {
 
     assert!(!world.has_component::<Mesh>(ids[0]));
     assert!(!world.has_component::<Mesh>(ids[1]));
+}
+
+#[test]
+fn singleton_api() {
+    let mut world = World::new();
+
+    let p = Position::new(21.0, 420.0);
+    let s = Scale::new(56.0, 360.0);
+
+    let p_id = world.insert_singleton(p.clone()).unwrap();
+    assert_eq!(world.len(), 1);
+
+    let s_id = world.insert_singleton(s.clone()).unwrap();
+    assert_eq!(world.len(), 2);
+
+    assert!(world.has_component::<Singleton>(p_id));
+    assert!(world.has_component::<Singleton>(s_id));
+
+    assert!(world.has_component::<Position>(p_id));
+    assert!(world.has_component::<Scale>(s_id));
+
+    assert_eq!(world.get_singleton_ref::<Position>(), Some(&p));
+    assert_eq!(world.get_singleton_ref::<Scale>(), Some(&s));
+
+    assert_eq!(world.remove_singleton::<Position>(), Some(p.clone()));
+    assert_eq!(world.remove_singleton::<Scale>(), Some(s.clone()));
+    assert_eq!(world.len(), 2);
+
+    assert!(world.is_live(p_id));
+    assert!(world.is_live(s_id));
+
+    assert!(world.has_component::<Singleton>(p_id));
+    assert!(world.has_component::<Singleton>(s_id));
+
+    assert!(!world.has_component::<Position>(p_id));
+    assert!(!world.has_component::<Scale>(s_id));
 }

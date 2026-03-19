@@ -28,6 +28,7 @@
 //
 
 pub(crate) mod internal;
+pub mod singleton;
 
 use std::alloc::{Layout, LayoutError};
 use std::mem::needs_drop;

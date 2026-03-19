@@ -42,6 +42,7 @@ use aleph_alloc::{BBox, BHashMap, BHashSet, BVec};
 use crate::EcsSystem;
 use crate::archetype::Archetype;
 use crate::component::internal::{COMPONENTS, ComponentIdMap};
+use crate::component::singleton::Singleton;
 use crate::component::{Component, ComponentId};
 use crate::entity::{EntityHandle, EntityHandleArena, EntityLocation};
 use crate::type_layout::{TypeLayout, TypeLayoutBuf};
@@ -403,7 +404,7 @@ impl World {
     /// Returns `Some(ref)` if the given entity is both live, and has a component of the given type.
     /// `ref` will refer to the component of type `T` associated with the entity.
     #[inline]
-    pub fn get_component_mut<T: Component>(&mut self, entity: EntityHandle) -> Option<&T> {
+    pub fn get_component_mut<T: Component>(&mut self, entity: EntityHandle) -> Option<&mut T> {
         let ptr = self.raw_get_component(entity, T::DESC.id)?;
 
         // Safety: The pointer should be valid for a single T, if raw_get_component is implemented
@@ -775,6 +776,83 @@ impl World {
             // This also resets the length of the archetype to 0.
             self.clear_archetype(i);
         }
+    }
+
+    /// Insert a 'singleton' entity with the given component into the world. If one already exists
+    /// then the component is replaced with the given value. Replacement will not invalidate the
+    /// entity handle.
+    ///
+    /// # Singleton?
+    ///
+    /// A 'singleton' entity is just a regular entity. It has a handle, and is queried like any
+    /// other. It has the special property that each component type registered with a world can
+    /// track exactly one 'singleton' instance of that component. Using the singleton API you can
+    /// insert and find this entity with _just_ the component id.
+    ///
+    /// This is implemented by inserting an entity with your given component as well as a
+    /// [`Singleton`] tag. The resulting entity handle is stored in the internal component index and
+    /// can be retrieved with just the component id.
+    ///
+    /// The `Singleton` component has no semantic meaning. It is just a utility to identify a
+    /// singleton entity for query filtering purposes.
+    pub fn insert_singleton<T: Component>(&mut self, component: T) -> Result<EntityHandle, T> {
+        let old = self.components[T::DESC.id].singleton;
+        match old {
+            None => {
+                // No existing singleton? We spawn a new entity, register it and return the handle
+                let handle = self.insert((Singleton, component));
+                self.components[T::DESC.id].singleton = Some(handle);
+                Ok(handle)
+            }
+            Some(existing) => {
+                // Already have a singleton entity? Just replace the component, it has the same
+                // effect.
+                match self.add_component(existing, component) {
+                    Ok(_) => Ok(existing),
+                    Err(component) => {
+                        // Existing singleton handle is stale? We spawn a new entity.
+                        let handle = self.insert((Singleton, component));
+                        self.components[T::DESC.id].singleton = Some(handle);
+                        Ok(handle)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Removes the 'singleton' associated with the given component type `T` from the world, if one
+    /// exists.
+    ///
+    /// Returns `Some` if the singleton was successfully removed, along with the `T` instance that
+    /// was stored in the world.
+    ///
+    /// Returns `None` if no singleton for the given component type was found.
+    ///
+    /// # Note
+    ///
+    /// This _does not_ remove the singleton _entity_. It merely removes the singleton component
+    /// from an already existing singleton entity. This preserves the entity handle, as long as you
+    /// only interact with singletons via the singleton API.
+    pub fn remove_singleton<T: Component>(&mut self) -> Option<T> {
+        let singleton = self.components[T::DESC.id].singleton?;
+        let out = self.remove_component::<T>(singleton)?;
+        Some(out)
+    }
+
+    /// Get a reference to the singleton instance associated with the given type `T`.
+    ///
+    /// Returns `None` if no instance for the given component type was found.
+    pub fn get_singleton_ref<T: Component>(&self) -> Option<&T> {
+        let singleton = self.components[T::DESC.id].singleton?;
+        self.get_component_ref::<T>(singleton)
+    }
+
+    /// Get a reference to the singleton instance associated with the given type `T`.
+    ///
+    /// Returns `None` if no instance for the given component type was found.
+    pub fn get_singleton_mut<T: Component>(&mut self) -> Option<&mut T> {
+        let singleton = self.components[T::DESC.id].singleton?;
+        self.get_component_mut::<T>(singleton)
     }
 }
 

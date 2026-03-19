@@ -33,6 +33,7 @@ use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BHashMap, BVec};
 
 use crate::component::{ComponentDescription, ComponentId};
+use crate::entity::EntityHandle;
 use crate::world::component_index::alloc::ComponentIndexSystem;
 
 /// This API maintains an append-only register of component types, indexable by the [`ComponentId`]
@@ -76,6 +77,7 @@ impl ComponentIndex {
         self.components.push(ComponentEntry {
             desc: t.clone(),
             archetypes: Default::default(),
+            singleton: None,
         });
 
         id
@@ -124,6 +126,14 @@ pub struct ComponentEntry {
     /// - Maps the archetype index to the column index the component type is located in for that
     ///   archetype.
     pub archetypes: BHashMap<usize, ComponentArchetypeRecord, ComponentIndexSystem>,
+
+    /// A handle to the current 'singleton' entity for the component type. This is backbone of the
+    /// singleton API. A component singleton is a special entity that can be looked up for a
+    /// component ID. It should always have a component of the associated id, and is used to store
+    /// a single 'global' instance of a component.
+    /// 
+    /// It is, otherwise, just a regular entity.
+    pub singleton: Option<EntityHandle>,
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
