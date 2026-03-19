@@ -36,16 +36,14 @@ use aleph_magnesium::renderer::Renderer;
 use aleph_magnesium::renderer::builder::RendererBuilder;
 use aleph_magnesium::renderer::render_plane::DefaultRenderPlane;
 use aleph_magnesium::renderer::shader_accessor::ShaderAccessor;
-use aleph_magnesium::scene::RenderTransform;
-use aleph_magnesium::scene::render_scene::RenderScene;
-use aleph_math::ToSingle;
-use aleph_pin_board::ScopedParamBoard;
 use aleph_shader_db::ArchivedShaderDatabase;
 use interfaces::any::{AnyArc, QueryInterface, declare_interfaces};
 use interfaces::components::{self, Camera, Transform, TransformHistory};
-use interfaces::ecs::world::query::{Read, Write};
+use interfaces::ecs::world::World;
+use interfaces::ecs::world::query::{Has, Read, Write};
 use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
+use interfaces::object_system::unsafe_impl_iobject;
 use interfaces::platform::*;
 use interfaces::plugin::*;
 use interfaces::rhi::IRhiProvider;
@@ -58,9 +56,7 @@ use mg::renderer::immediate_resource_builder::ImmediateResourceBuilder;
 use mg::renderer::render_plane::{IRenderPlane, RenderPlaneOutput};
 use mg::renderer::state_cache::StateCache;
 use mg::renderer::surface_notify::SurfaceNotification;
-use mg::scene::frame_graph::RenderSceneParam;
-use mg::scene::objects::camera::{CameraInfo, PerspectiveInfo};
-use mg::scene::objects::static_mesh::StaticMesh;
+use mg::scene::components::{DynamicObject, PerspectiveCamera, RenderTransform, StaticMesh};
 use serde::Deserialize;
 
 use crate::egui_draw::EguiPassContext;
@@ -148,14 +144,15 @@ impl IPlugin for PluginRender {
         }
         renderer.render_ahead_frames(config.render_ahead_frames as usize);
 
-        registry.core().resources.insert(RenderScene::new());
+        registry.core().resources.insert(RenderScene {
+            scene: World::new(),
+        });
         registry.core().resources.insert(renderer.build().unwrap());
 
         let mut egui_data = render_data.map(|v| EguiData {
             font_texture: EguiFontTexture::new(),
             render_data: v,
         });
-        let mut board = ScopedParamBoard::new();
         registry.core().schedule.add_system_to_stage(
             CoreStage::Render.into(),
             make_label!("render::render"),
@@ -164,73 +161,72 @@ impl IPlugin for PluginRender {
                   mut render_scene: ResMut<RenderScene>| {
                 device.garbage_collect().unwrap();
 
-                render_scene.clear();
+                let render_scene = &mut render_scene.scene;
+
+                render_scene.remove_matching::<Has<DynamicObject>>();
 
                 let query = world
                     .0
                     .query::<(Read<Transform>, Read<components::StaticMesh>)>();
                 for (_id, (t, m)) in query {
-                    render_scene.push(
+                    render_scene.insert((
                         RenderTransform {
                             position: t.position,
                             rotation: t.rotation,
                             scale: t.scale,
                         },
                         StaticMesh {
-                            vtx: m.vtx,
-                            idx: m.idx,
-                            material_instance: m.material_instance,
+                            vtx: Some(m.vtx),
+                            idx: Some(m.idx),
+                            material_instance: Some(m.material_instance),
                         },
-                    );
+                        DynamicObject,
+                    ));
                 }
 
-                board.scope(|board| {
-                    // Find the first camera object in the scene and make that the active camera.
-                    let mut query = world.0.query::<(Read<Transform>, Read<Camera>)>();
-                    let (_, (t, c)) = query.next().unwrap();
-                    let camera_info = CameraInfo {
-                        position: t.position.to_single(),
-                        orientation: t.rotation,
-                        projection: PerspectiveInfo::new(c.vertical_fov, c.z_near),
-                    };
+                // Find the first camera object in the scene and make that the active camera.
+                let mut query = world.0.query::<(Read<Transform>, Read<Camera>)>();
+                let (_, (t, c)) = query.next().unwrap();
 
-                    // Provide the renderer with our render scene
-                    // TODO: I'd really like to avoid exposing the pin board outside of the renderer
-                    //       because it _feels_ like it should be implementation detail. However
-                    //       I don't have a good way of lending arbitrary data to the renderer for
-                    //       only the duration of draw_frame. In the future we should have some kind
-                    //       of command buffer that we lend that can store references. Putting the
-                    //       command buffer inside the renderer isn't possible.
-                    let param = RenderSceneParam::make(&render_scene, camera_info);
-                    board.publish::<RenderSceneParam>(param);
+                let camera_entity = render_scene.insert((
+                    RenderTransform {
+                        position: t.position,
+                        rotation: t.rotation,
+                        scale: t.scale,
+                    },
+                    PerspectiveCamera {
+                        vertical_fov: c.vertical_fov,
+                        z_near: c.z_near,
+                    },
+                    DynamicObject,
+                ));
 
-                    if let Some(e) = egui_data.as_mut() {
-                        let render_data = e.render_data.take();
+                if let Some(e) = egui_data.as_mut() {
+                    let render_data = e.render_data.take();
 
-                        // Filter the deltas to only those that affect the font texture and upload
-                        // a new font texture immediately.
-                        let font_updates = render_data
-                            .textures_delta
-                            .set
-                            .iter()
-                            .filter(|(id, _)| *id == egui::TextureId::Managed(0))
-                            .map(|(_, delta)| delta);
-                        e.font_texture
-                            .update_font_texture(&mut renderer, font_updates);
+                    // Filter the deltas to only those that affect the font texture and upload
+                    // a new font texture immediately.
+                    let font_updates = render_data
+                        .textures_delta
+                        .set
+                        .iter()
+                        .filter(|(id, _)| *id == egui::TextureId::Managed(0))
+                        .map(|(_, delta)| delta);
+                    e.font_texture
+                        .update_font_texture(&mut renderer, font_updates);
 
-                        // Pass the egui commands and font texture that so our egui render pass
-                        // can do its thing.
-                        board.publish::<EguiPassContext>(EguiPassContext {
-                            font_handle: e.font_texture.font_handle.unwrap(),
-                            render_data,
-                        });
-                    }
+                    // Pass the egui commands and font texture that so our egui render pass
+                    // can do its thing.
+                    let _ = render_scene.insert_singleton(EguiPassContext {
+                        font_handle: e.font_texture.font_handle.unwrap(),
+                        render_data,
+                    });
+                }
 
-                    let options = DrawOptions {
-                        force_rebuild_frame_graph: config.force_graph_rebuild,
-                    };
-                    renderer.draw_frame(&options, board);
-                });
+                let options = DrawOptions {
+                    force_rebuild_frame_graph: config.force_graph_rebuild,
+                };
+                renderer.draw_frame(&options, render_scene, camera_entity);
             },
         );
 
@@ -393,3 +389,8 @@ struct EguiData {
     font_texture: EguiFontTexture,
     render_data: AnyArc<dyn egui::IEguiRenderData>,
 }
+
+struct RenderScene {
+    pub scene: World,
+}
+unsafe_impl_iobject!(RenderScene, "01924ac2-6c15-7362-964e-6bd6d632e4d2");

@@ -38,9 +38,10 @@ use aleph_magnesium::renderer::state_cache::{IStateCacheKey, StateCache};
 use aleph_magnesium::resource::texture::TextureHandle;
 use aleph_math::Vec2;
 use aleph_nstr::nstr;
-use aleph_pin_board::{BoardParamId, PinBoard};
+use aleph_pin_board::PinBoard;
 use egui::RenderData;
 use interfaces::any::AnyArc;
+use interfaces::ecs::register_component;
 
 use crate::shaders;
 
@@ -56,9 +57,7 @@ pub struct EguiPassContext {
     pub render_data: RenderData,
 }
 
-impl BoardParamId for EguiPassContext {
-    type Output<'a> = Self;
-}
+register_component!(EguiPassContext);
 
 pub fn pass(
     frame_graph: &mut FrameGraphBuilder<GraphArgs>,
@@ -123,7 +122,7 @@ pub fn pass(
             let EguiPassContext {
                 font_handle,
                 render_data,
-            } = args.board.get::<EguiPassContext>().unwrap();
+            } = args.scene.get_singleton_ref::<EguiPassContext>().unwrap();
 
             let font_view = args.texture_pool.get_ref(*font_handle).unwrap();
             let font_view = font_view.default_view().unwrap();
