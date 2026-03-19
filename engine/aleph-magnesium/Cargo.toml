@@ -46,20 +46,21 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-alloc = { workspace = true }
-aleph-device-allocators = { workspace = true }
 aleph-any = { workspace = true }
 aleph-atomic-borrow = { workspace = true }
+aleph-device-allocators = { workspace = true }
+aleph-ecs = { workspace = true }
 aleph-frame-graph = { workspace = true }
 aleph-gen-arena = { workspace = true }
 aleph-hibitset = { workspace = true }
 aleph-identity-hasher = { workspace = true }
 aleph-math = { workspace = true }
-aleph-pin-board = { workspace = true }
-aleph-rhi-api = { workspace = true }
-aleph-shader-db = { workspace = true }
-aleph-profile = { workspace = true }
 aleph-nstr = { workspace = true }
 aleph-object-system = { workspace = true }
+aleph-pin-board = { workspace = true }
+aleph-profile = { workspace = true }
+aleph-rhi-api = { workspace = true }
+aleph-shader-db = { workspace = true }
 aleph-vk-format = { workspace = true }
 
 log = { workspace = true }

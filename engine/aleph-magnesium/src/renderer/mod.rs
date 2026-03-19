@@ -43,9 +43,10 @@ use std::sync::Arc;
 use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BBox, BVec};
 use aleph_any::AnyArc;
+use aleph_ecs::entity::EntityHandle;
+use aleph_ecs::world::World;
 use aleph_frame_graph::ImportBundle;
 use aleph_object_system::unsafe_impl_iobject;
-use aleph_pin_board::BoardScope;
 use parking_lot::Mutex;
 use smallbox::SmallBox;
 use smallbox::space::S8;
@@ -262,7 +263,7 @@ impl Renderer {
         self.object_delete_queue.buffer.push(buffer);
     }
 
-    pub fn draw_frame(&mut self, options: &DrawOptions, board: &mut BoardScope) {
+    pub fn draw_frame(&mut self, options: &DrawOptions, scene: &mut World, camera: EntityHandle) {
         unsafe {
             // Each frame we maintain a rolling history of each buffer/texture's last use within
             // the frame. This lets us automatically issue barriers.
@@ -389,12 +390,13 @@ impl Renderer {
                     acquired_tex,
                 );
                 let size = acquired_image.extent;
-                board.publish::<GraphSwapImageInfo>(GraphSwapImageInfo {
+                let _ = scene.insert_singleton(GraphSwapImageInfo {
                     desc: self.swap_manager.desc.clone(),
                     aspect: size.width as f32 / size.height as f32,
                 });
                 let args = GraphArgsLayout {
-                    board,
+                    scene,
+                    camera,
                     texture_pool: self.texture_object_store.accessor(),
                     buffer_pool: self.buffer_object_store.accessor(),
                     material_instance_pool: self.material_instance_store.accessor(),

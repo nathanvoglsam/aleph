@@ -29,7 +29,9 @@
 
 use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
+use aleph_ecs::world::query::Read;
 use aleph_frame_graph::*;
+use aleph_math::ToSingle;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 
@@ -39,7 +41,8 @@ use crate::renderer::frame_graph::{GraphArgs, GraphSwapImageInfo};
 use crate::renderer::pass::main_gbuffer::MainGBufferPassOutput;
 use crate::renderer::shader_accessor::IShaderAccessorExt;
 use crate::renderer::state_cache::{IStateCacheKey, StateCache};
-use crate::scene::frame_graph::RenderSceneParam;
+use crate::scene::camera;
+use crate::scene::components::{PerspectiveCamera, RenderTransform};
 
 struct LightingResolvePassPayload {
     depth: ResourceRef,
@@ -111,9 +114,14 @@ pub fn pass(
         move |encoder, _graph, resources, args| unsafe {
             let device = resources.device();
             let arena = resources.descriptor_arena();
-            let swap_info = args.board.get::<GraphSwapImageInfo>().unwrap();
-            let scene = args.board.get::<RenderSceneParam>().unwrap();
-            let camera_info = &scene.camera;
+            let swap_info = args
+                .scene
+                .get_singleton_ref::<GraphSwapImageInfo>()
+                .unwrap();
+            let (camera_tform, camera_info) = args
+                .scene
+                .query_one::<(Read<RenderTransform>, Read<PerspectiveCamera>)>(args.camera)
+                .unwrap();
 
             let depth = resources.get_texture(data.depth).unwrap();
             let gbuffer0 = resources.get_texture(data.gbuffer0).unwrap();
@@ -140,14 +148,11 @@ pub fn pass(
             // let gbuffer0_desc = gbuffer0.desc();
             // let aspect_ratio = gbuffer0_desc.width as f32 / gbuffer0_desc.height as f32;
             let camera_layout = CameraLayout {
-                view_matrix: camera_info.get_view_matrix().as_array().clone(),
-                proj_matrix: camera_info
-                    .projection
-                    .get_matrix(swap_info.aspect)
-                    .as_array()
-                    .clone(),
-                position: camera_info
+                view_matrix: camera::get_view_matrix(&camera_tform).as_array().clone(),
+                proj_matrix: camera_info.get_matrix(swap_info.aspect).as_array().clone(),
+                position: camera_tform
                     .position
+                    .to_single()
                     .into_homogeneous_point()
                     .as_array()
                     .clone(),

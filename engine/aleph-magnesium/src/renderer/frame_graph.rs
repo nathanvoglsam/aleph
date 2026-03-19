@@ -27,8 +27,10 @@
 // SOFTWARE.
 //
 
+use aleph_ecs::entity::EntityHandle;
+use aleph_ecs::register_component;
+use aleph_ecs::world::World;
 use aleph_frame_graph::PassArgs;
-use aleph_pin_board::{BoardParamId, BoardScope};
 use parking_lot::Mutex;
 
 use crate::material_instance::MaterialInstancePoolAccessor;
@@ -45,12 +47,11 @@ pub struct GraphSwapImageInfo {
     pub aspect: f32,
 }
 
-impl BoardParamId for GraphSwapImageInfo {
-    type Output<'a> = Self;
-}
+register_component!(GraphSwapImageInfo);
 
 pub struct GraphArgsLayout<'a> {
-    pub board: &'a BoardScope<'a>,
+    pub scene: &'a World,
+    pub camera: EntityHandle,
     pub texture_pool: TexturePoolAccessor<'a>,
     pub buffer_pool: BufferPoolAccessor<'a>,
     pub material_instance_pool: MaterialInstancePoolAccessor<'a>,

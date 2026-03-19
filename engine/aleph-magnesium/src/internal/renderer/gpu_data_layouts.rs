@@ -29,7 +29,7 @@
 
 use aleph_math::{Mat4, Vec3};
 
-use crate::scene::RenderTransform;
+use crate::scene::components::RenderTransform;
 
 #[repr(C)]
 #[derive(Debug)]

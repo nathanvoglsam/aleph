@@ -29,8 +29,10 @@
 
 use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
+use aleph_ecs::world::query::Read;
 use aleph_frame_graph::*;
 use aleph_gen_arena::HandleType;
+use aleph_math::ToSingle;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 
@@ -41,8 +43,8 @@ use crate::renderer::frame_graph::{GraphArgs, GraphSwapImageInfo};
 use crate::renderer::shader_accessor::{IShaderAccessor, IShaderAccessorExt};
 use crate::renderer::state_cache::{IStateCacheKey, StateCache};
 use crate::resource::buffer::BufferHandle;
-use crate::scene::frame_graph::RenderSceneParam;
-use crate::scene::objects::static_mesh::StaticMesh;
+use crate::scene::camera;
+use crate::scene::components::{PerspectiveCamera, RenderTransform, StaticMesh};
 
 struct MainGBufferPassPayload {
     gbuffer0: ResourceMut,
@@ -129,10 +131,14 @@ pub fn pass(
             let device = resources.device();
             let descriptor_arena = resources.descriptor_arena();
 
-            let swap_info = args.board.get::<GraphSwapImageInfo>().unwrap();
-            let scene = args.board.get::<RenderSceneParam>().unwrap();
-            let camera_info = &scene.camera;
-            let scene = &scene.scene;
+            let swap_info = args
+                .scene
+                .get_singleton_ref::<GraphSwapImageInfo>()
+                .unwrap();
+            let (camera_tform, camera_info) = args
+                .scene
+                .query_one::<(Read<RenderTransform>, Read<PerspectiveCamera>)>(args.camera)
+                .unwrap();
 
             let gbuffer0 = resources.get_texture(data.gbuffer0).unwrap();
             let gbuffer1 = resources.get_texture(data.gbuffer1).unwrap();
@@ -154,14 +160,11 @@ pub fn pass(
             // let aspect_ratio = extent.width as f32 / extent.height as f32;
 
             let camera_layout = CameraLayout {
-                view_matrix: camera_info.get_view_matrix().as_array().clone(),
-                proj_matrix: camera_info
-                    .projection
-                    .get_matrix(swap_info.aspect)
-                    .as_array()
-                    .clone(),
-                position: camera_info
+                view_matrix: camera::get_view_matrix(camera_tform).as_array().clone(),
+                proj_matrix: camera_info.get_matrix(swap_info.aspect).as_array().clone(),
+                position: camera_tform
                     .position
+                    .to_single()
                     .into_homogeneous_point()
                     .as_array()
                     .clone(),
@@ -212,22 +215,22 @@ pub fn pass(
                 nstr!("MainGBufferPass::render_pass"),
             );
 
-            let objects = scene.get_storage_ref::<StaticMesh>().unwrap();
-            let (transforms, _meshes) = objects.as_slice_ref();
+            let objects = args
+                .scene
+                .query::<(Read<RenderTransform>, Read<StaticMesh>)>();
 
-            let mut commands = Vec::from_iter(objects.iter().enumerate().map(|(i, (_, o))| {
-                let m = o.material_instance;
-                let m = args.material_instance_pool.get_ref(m).unwrap();
+            let mut commands = Vec::from_iter(objects.map(|(_, (t, o))| {
+                let mi = o.material_instance.unwrap();
+                let m = args.material_instance_pool.get_ref(mi).unwrap();
 
                 let key = (m.material().id().get() as u64) << 32;
-                let sort_key =
-                    key | o.material_instance.to_bare_handle().to_fields().slot_index as u64;
+                let sort_key = key | mi.to_bare_handle().to_fields().slot_index as u64;
 
                 DrawCommand {
                     sort_key,
-                    object_index: i,
-                    vtx: o.vtx,
-                    idx: o.idx,
+                    tform: t,
+                    vtx: o.vtx.unwrap(),
+                    idx: o.idx.unwrap(),
                     mat: m,
                 }
             }));
@@ -389,7 +392,7 @@ pub fn pass(
                 );
 
                 // Upload and rebind the per-model parameters
-                let t = &transforms[command.object_index];
+                let t = command.tform;
                 let m = u_alloc
                     .allocate_object(ModelLayout::from_transform(t))
                     .unwrap();
@@ -420,7 +423,7 @@ pub fn pass(
 
 struct DrawCommand<'a> {
     sort_key: u64,
-    object_index: usize,
+    tform: &'a RenderTransform,
     vtx: BufferHandle,
     idx: BufferHandle,
     mat: MaterialInstanceReader<'a>,

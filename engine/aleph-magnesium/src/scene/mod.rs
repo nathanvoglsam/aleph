@@ -27,15 +27,5 @@
 // SOFTWARE.
 //
 
-pub mod frame_graph;
-pub mod objects;
-pub mod render_scene;
-
-use aleph_math::{DVec3, Rotor3, Vec3};
-
-#[derive(Clone, PartialEq, Default, Debug)]
-pub struct RenderTransform {
-    pub position: DVec3,
-    pub rotation: Rotor3,
-    pub scale: Vec3,
-}
+pub mod camera;
+pub mod components;
