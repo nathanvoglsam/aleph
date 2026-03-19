@@ -27,15 +27,12 @@
 // SOFTWARE.
 //
 
-mod scoped;
-
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::ptr::NonNull;
 
 use aleph_identity_hasher::IdentityHasher;
 use parking_lot::Mutex;
-pub use scoped::{BoardParamId, BoardScope, ScopedParamBoard};
 
 /// A data structure for publishing data keyed by type that can be shared among a group of threads
 /// or tasks. Used as a mechanism for dynamically publishing data from one place to another in a
