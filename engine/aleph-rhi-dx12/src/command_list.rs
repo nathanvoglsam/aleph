@@ -66,12 +66,9 @@ impl IGetPlatformInterface for CommandList {
 unsafe impl Send for CommandList {}
 
 impl ICommandList for CommandList {
-    fn begin_general<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError> {
+    fn begin_general(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         if matches!(self.list_type, QueueType::General) {
-            // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
-            Ok(self.begin()?)
+            self.begin()
         } else {
             Err(CommandListBeginError::InvalidEncoderType(
                 QueueType::General,
@@ -79,12 +76,9 @@ impl ICommandList for CommandList {
         }
     }
 
-    fn begin_compute<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError> {
+    fn begin_compute(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         if matches!(self.list_type, QueueType::General | QueueType::Compute) {
-            // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
-            Ok(self.begin()?)
+            self.begin()
         } else {
             Err(CommandListBeginError::InvalidEncoderType(
                 QueueType::Compute,
@@ -92,16 +86,13 @@ impl ICommandList for CommandList {
         }
     }
 
-    fn begin_transfer<'a>(
-        &'a mut self,
-    ) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError> {
-        // We use the ? operator and Ok because we need to coerce-unsized to the trait object.
-        Ok(self.begin()?)
+    fn begin_transfer(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
+        self.begin()
     }
 }
 
 impl CommandList {
-    fn begin<'a>(&'a mut self) -> Result<Box<Encoder<'a>>, CommandListBeginError> {
+    fn begin(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
         match self.state {
             ListState::Empty => {
                 // Open the command list for recording with no bound pipeline so we can attach it to
@@ -124,7 +115,7 @@ impl CommandList {
 
                 let _list = self.list.clone();
                 let _queue_type = self.list_type;
-                let encoder = Encoder::<'a> {
+                let encoder = Encoder {
                     _parent: self,
                     _list,
                     _queue_type,
@@ -135,7 +126,10 @@ impl CommandList {
                     bound_graphics_sets: vec![None; 16].into(),
                     bound_compute_sets: vec![None; 16].into(),
                 };
-                Ok(Box::new(encoder))
+                let encoder = Box::new(encoder);
+
+                // Safety: This isn't unsound/unsafe
+                unsafe { Ok(CommandEncoder::from_abi(encoder)) }
             }
             ListState::Open => Err(CommandListBeginError::InvalidCommandListState),
             ListState::Closed => Err(CommandListBeginError::InvalidCommandListState),

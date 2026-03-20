@@ -131,7 +131,7 @@ pub struct ComponentEntry {
     /// singleton API. A component singleton is a special entity that can be looked up for a
     /// component ID. It should always have a component of the associated id, and is used to store
     /// a single 'global' instance of a component.
-    /// 
+    ///
     /// It is, otherwise, just a regular entity.
     pub singleton: Option<EntityHandle>,
 }
