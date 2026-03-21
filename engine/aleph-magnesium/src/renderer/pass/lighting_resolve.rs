@@ -36,12 +36,11 @@ use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 
 use crate::internal::renderer::gpu_data_layouts::CameraLayout;
-use crate::internal::shaders;
+use crate::internal::{shaders, utils};
 use crate::renderer::frame_graph::{GraphArgs, GraphSwapImageInfo};
 use crate::renderer::pass::main_gbuffer::MainGBufferPassOutput;
 use crate::renderer::shader_accessor::IShaderAccessorExt;
 use crate::renderer::state_cache::{IStateCacheKey, StateCache};
-use crate::scene::camera;
 use crate::scene::components::{PerspectiveCamera, RenderTransform};
 
 struct LightingResolvePassPayload {
@@ -148,7 +147,7 @@ pub fn pass(
             // let gbuffer0_desc = gbuffer0.desc();
             // let aspect_ratio = gbuffer0_desc.width as f32 / gbuffer0_desc.height as f32;
             let camera_layout = CameraLayout {
-                view_matrix: camera::get_view_matrix(&camera_tform).as_array().clone(),
+                view_matrix: utils::get_view_matrix(&camera_tform).as_array().clone(),
                 proj_matrix: camera_info.get_matrix(swap_info.aspect).as_array().clone(),
                 position: camera_tform
                     .position

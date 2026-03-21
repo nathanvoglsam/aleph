@@ -37,13 +37,13 @@ use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 
 use crate::internal::renderer::gpu_data_layouts::{CameraLayout, ModelLayout};
+use crate::internal::utils;
 use crate::material::{Material, MaterialId};
 use crate::material_instance::MaterialInstanceReader;
 use crate::renderer::frame_graph::{GraphArgs, GraphSwapImageInfo};
 use crate::renderer::shader_accessor::{IShaderAccessor, IShaderAccessorExt};
 use crate::renderer::state_cache::{IStateCacheKey, StateCache};
 use crate::resource::buffer::BufferHandle;
-use crate::scene::camera;
 use crate::scene::components::{PerspectiveCamera, RenderTransform, StaticMesh};
 
 struct MainGBufferPassPayload {
@@ -160,7 +160,7 @@ pub fn pass(
             // let aspect_ratio = extent.width as f32 / extent.height as f32;
 
             let camera_layout = CameraLayout {
-                view_matrix: camera::get_view_matrix(camera_tform).as_array().clone(),
+                view_matrix: utils::get_view_matrix(camera_tform).as_array().clone(),
                 proj_matrix: camera_info.get_matrix(swap_info.aspect).as_array().clone(),
                 position: camera_tform
                     .position

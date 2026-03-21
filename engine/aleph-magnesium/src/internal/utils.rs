@@ -27,7 +27,19 @@
 // SOFTWARE.
 //
 
+use aleph_math::{Mat4, ToSingle};
+
+use crate::scene::components::RenderTransform;
+
 /// An implementation of [`Ord::max`] for `u32` that can be used in a const context.
 pub const fn const_max(a: u32, b: u32) -> u32 {
     if b < a { a } else { b }
+}
+
+#[inline]
+pub fn get_view_matrix(this: &RenderTransform) -> Mat4 {
+    let pos_f32 = this.position.to_single();
+    let translation = Mat4::from_translation(-pos_f32);
+    let orientation = this.rotation.reversed().into_matrix().into_homogeneous();
+    orientation * translation
 }
