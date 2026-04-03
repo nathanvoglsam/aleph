@@ -74,8 +74,8 @@ pub(crate) fn platform_interfaces() -> [TypeId; 7] {
     ]
 }
 
-use crate::platform::keyboard::KeyboardState;
-use crate::platform::window::WindowState;
+use crate::internal::platform::keyboard::KeyboardState;
+use crate::internal::platform::window::WindowState;
 use crate::plugin_registry::RegistryAccessor;
 
 #[derive(Clone)]
@@ -494,7 +494,7 @@ impl SdlObjects {
     }
 }
 
-pub struct Sdl2;
-aleph_alloc::new_alloc_category!(Sdl2, "01993166-455d-7e71-9a81-022a9b388514");
+pub struct Sdl;
+aleph_alloc::new_alloc_category!(Sdl, "01993166-455d-7e71-9a81-022a9b388514");
 
-pub type Sdl2System = Instrumented<Sdl2>;
+pub type SdlSystem = Instrumented<Sdl>;

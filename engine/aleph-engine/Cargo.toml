@@ -44,7 +44,8 @@ edition.workspace = true
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [package.metadata.aleph]
-configs = ["core", "rhi"]
+configs = ["core", "rhi", "render"]
+shaders = { modules = ["egui"] }
 
 [features]
 default = []
@@ -63,6 +64,14 @@ aleph-identity-hasher = { workspace = true }
 aleph-rhi-loader = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-objc = { workspace = true }
+aleph-device-allocators = { workspace = true }
+aleph-egui = { workspace = true }
+aleph-frame-graph = { workspace = true }
+aleph-math = { workspace = true }
+aleph-pin-board = { workspace = true }
+aleph-shader-db = { workspace = true }
+aleph-nstr = { workspace = true }
+aleph-magnesium = { workspace = true }
 
 log = { workspace = true }
 utf16_lit = { workspace = true }
@@ -74,6 +83,7 @@ parking_lot = { workspace = true }
 raw-window-handle = { workspace = true }
 smallbox = { workspace = true }
 env_logger = { workspace = true }
+rkyv = { workspace = true }
 
 [build-dependencies]
 aleph-compile = { workspace = true }

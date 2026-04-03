@@ -29,8 +29,7 @@
 
 use aleph_egui::IEguiContextProvider;
 use aleph_egui::widgets::{FrameTimeHistory, MemoryStats, frame_stats, memory_stats};
-use aleph_engine::Engine;
-use aleph_engine::any::declare_interfaces;
+use aleph_engine::api::any::declare_interfaces;
 use aleph_engine::api::components::{Camera, StaticMesh, Transform, TransformHistory};
 use aleph_engine::api::label::make_label;
 use aleph_engine::api::make_plugin_description_for_crate;
@@ -50,6 +49,8 @@ use aleph_engine::api::plugin::{
 };
 use aleph_engine::api::schedule::{CoreStage, WorldResource};
 use aleph_engine::api::scheduler::ResMut;
+use aleph_engine::engine::Engine;
+use aleph_engine::render::PluginRender;
 
 use crate::game::config::Config;
 use crate::game::cube_mesh::upload_cube_buffers;
@@ -59,7 +60,7 @@ use crate::game::throbber_logic::ThrobberLogic;
 pub fn engine_runner() {
     let mut engine = Engine::builder();
     engine.plugin(aleph_egui::PluginEgui::new());
-    engine.plugin(aleph_render::PluginRender::new());
+    engine.plugin(PluginRender::new());
     engine.plugin(PluginGameLogic::new());
     engine.build().run();
 }

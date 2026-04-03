@@ -10,10 +10,10 @@ pub mod egui {
 
     #[allow(unused, non_snake_case)]
     pub const fn egui_frag() -> ShaderName<'static, Fragment> {
-        unsafe { ShaderName::<Fragment>::new("aleph-render/egui/egui.frag") } // Safety guaranteed by code-gen
+        unsafe { ShaderName::<Fragment>::new("egui/egui/egui.frag") } // Safety guaranteed by code-gen
     }
     #[allow(unused, non_snake_case)]
     pub const fn egui_vert() -> ShaderName<'static, Vertex> {
-        unsafe { ShaderName::<Vertex>::new("aleph-render/egui/egui.vert") } // Safety guaranteed by code-gen
+        unsafe { ShaderName::<Vertex>::new("egui/egui/egui.vert") } // Safety guaranteed by code-gen
     }
 }

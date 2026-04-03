@@ -44,11 +44,11 @@ pub(crate) fn rhi_interfaces() -> [TypeId; 1] {
     [TypeId::of::<dyn IRhiProvider>()]
 }
 
-pub(crate) struct Rhi {
+pub(crate) struct RhiLoad {
     rhi_loader: RhiLoader,
 }
 
-impl Rhi {
+impl RhiLoad {
     pub fn new() -> Self {
         Self {
             rhi_loader: RhiLoader::new(),
@@ -56,7 +56,7 @@ impl Rhi {
     }
 }
 
-impl Rhi {
+impl RhiLoad {
     pub(crate) fn on_init(&mut self, registry: &mut RegistryAccessor) {
         // If there are no GPU backends available we early exit and yield no provider as there's
         // nothing to provide

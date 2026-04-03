@@ -27,11 +27,6 @@
 // SOFTWARE.
 //
 
-extern crate aleph_egui as egui;
-extern crate aleph_engine_api as engine_api;
-extern crate aleph_magnesium as mg;
-extern crate aleph_rhi_api as rhi;
-
 mod egui_draw;
 mod egui_font_texture;
 mod plugin;

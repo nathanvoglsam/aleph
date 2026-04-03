@@ -45,9 +45,9 @@ pub use builder::PluginRegistryBuilder;
 
 use crate::api::any::{AnyArc, IAny};
 use crate::api::plugin::{IPlugin, IQuitHandle, IRegistryAccessor};
-use crate::platform::PlatformSDL3;
+use crate::internal::platform::PlatformSDL3;
+use crate::internal::rhi_load::RhiLoad;
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
-use crate::rhi::Rhi;
 
 ///
 pub struct PluginRegistry {
@@ -79,7 +79,7 @@ pub struct PluginRegistry {
     platform: PlatformSDL3,
 
     /// The RHI integration object
-    rhi: Rhi,
+    rhi: RhiLoad,
 }
 
 impl PluginRegistry {

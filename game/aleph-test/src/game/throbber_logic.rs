@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_engine::any::AnyArc;
+use aleph_engine::api::any::AnyArc;
 use aleph_engine::api::components::{StaticMesh, Transform};
 use aleph_engine::api::ecs::entity::EntityHandle;
 use aleph_engine::api::ecs::world::World;

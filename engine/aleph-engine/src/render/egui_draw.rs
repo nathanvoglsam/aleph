@@ -39,11 +39,11 @@ use aleph_magnesium::resource::texture::TextureHandle;
 use aleph_math::Vec2;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
+use api::any::AnyArc;
+use api::ecs::register_component;
 use egui::RenderData;
-use engine_api::any::AnyArc;
-use engine_api::ecs::register_component;
 
-use crate::shaders;
+use crate::render::shaders;
 
 struct EguiPassPayload {
     render_target: ResourceMut,

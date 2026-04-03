@@ -27,6 +27,4 @@
 // SOFTWARE.
 //
 
-fn main() {
-    println!("cargo::rerun-if-changed=src");
-}
+include!("../../shaders/egui.rs");

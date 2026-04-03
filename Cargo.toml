@@ -68,7 +68,6 @@ members = [
     "engine/aleph-profile-procmacros",
     "engine/aleph-quickjs",
     "engine/aleph-quickjs-sys",
-    "engine/aleph-render",
     "engine/aleph-rhi-api",
     "engine/aleph-rhi-dx12",
     "engine/aleph-rhi-impl-utils",
@@ -264,7 +263,6 @@ aleph-windows-thread-local = { path = "./engine/aleph-windows-thread-local", ver
 
 # Aleph Plugins
 aleph-egui = { path = "./engine/aleph-egui", version = "0.1" }
-aleph-render = { path = "./engine/aleph-render", version = "0.1" }
 
 # Compile all our third-party dependencies with optimizations even on debug builds. Some crates (mainly math crates)
 # will bring our runtime performance to a crawl when built without optimizations, so we definitely want this enabled.

@@ -37,18 +37,18 @@ use aleph_magnesium::renderer::builder::RendererBuilder;
 use aleph_magnesium::renderer::render_plane::DefaultRenderPlane;
 use aleph_magnesium::renderer::shader_accessor::ShaderAccessor;
 use aleph_shader_db::ArchivedShaderDatabase;
-use engine_api::any::{AnyArc, QueryInterface, declare_interfaces};
-use engine_api::components::{self, Camera, Transform, TransformHistory};
-use engine_api::ecs::world::World;
-use engine_api::ecs::world::query::{Has, Read, Write};
-use engine_api::label::make_label;
-use engine_api::make_plugin_description_for_crate;
-use engine_api::object_system::unsafe_impl_iobject;
-use engine_api::platform::*;
-use engine_api::plugin::*;
-use engine_api::rhi::IRhiProvider;
-use engine_api::schedule::{CoreStage, WorldResource};
-use engine_api::scheduler::{Res, ResMut};
+use api::any::{AnyArc, QueryInterface, declare_interfaces};
+use api::components::{self, Camera, Transform, TransformHistory};
+use api::ecs::world::World;
+use api::ecs::world::query::{Has, Read, Write};
+use api::label::make_label;
+use api::make_plugin_description_for_crate;
+use api::object_system::unsafe_impl_iobject;
+use api::platform::*;
+use api::plugin::*;
+use api::rhi::IRhiProvider;
+use api::schedule::{CoreStage, WorldResource};
+use api::scheduler::{Res, ResMut};
 use mg::renderer::builder::ApplicationSurface;
 use mg::renderer::draw_options::DrawOptions;
 use mg::renderer::frame_graph::GraphArgs;
@@ -59,8 +59,9 @@ use mg::renderer::surface_notify::SurfaceNotification;
 use mg::scene::components::{DynamicObject, PerspectiveCamera, RenderTransform, StaticMesh};
 use serde::Deserialize;
 
-use crate::egui_draw::EguiPassContext;
-use crate::egui_font_texture::EguiFontTexture;
+use crate::render::egui_draw;
+use crate::render::egui_draw::EguiPassContext;
+use crate::render::egui_font_texture::EguiFontTexture;
 
 pub struct PluginRender {
     device: Option<AnyArc<dyn rhi::IDevice>>,
@@ -359,7 +360,7 @@ impl IRenderPlane for EguiRenderPlane {
         state_cache: &mut StateCache,
     ) -> RenderPlaneOutput {
         let pixels_per_point = self.window.current_display_scale();
-        crate::egui_draw::pass(
+        egui_draw::pass(
             frame_graph,
             device,
             pin_board,

@@ -50,7 +50,6 @@ aleph-alloc = { workspace = true, features = [] }
 aleph-engine = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-egui = { workspace = true }
-aleph-render = { workspace = true }
 aleph-device-allocators = { workspace = true }
 aleph-profile = { workspace = true, features = [] }
 aleph-ktx = { workspace = true }
