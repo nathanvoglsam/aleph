@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-interfaces"
+name = "aleph-engine-api"
 version = "0.1.0"
 authors.workspace = true
 description = "Definitions of aleph's core interfaces"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-interfaces/"
+documentation = "https://docs.rs/aleph-engine-api/"
 edition.workspace = true
 
 [badges]

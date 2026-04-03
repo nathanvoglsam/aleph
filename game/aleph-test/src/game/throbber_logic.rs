@@ -28,12 +28,12 @@
 //
 
 use aleph_engine::any::AnyArc;
-use aleph_engine::interfaces::components::{StaticMesh, Transform};
-use aleph_engine::interfaces::ecs::entity::EntityHandle;
-use aleph_engine::interfaces::ecs::world::World;
-use aleph_engine::interfaces::ecs::world::query::{Read, Write};
-use aleph_engine::interfaces::math::{DVec3, Rotor3};
-use aleph_engine::interfaces::platform::IFrameTimer;
+use aleph_engine::api::components::{StaticMesh, Transform};
+use aleph_engine::api::ecs::entity::EntityHandle;
+use aleph_engine::api::ecs::world::World;
+use aleph_engine::api::ecs::world::query::{Read, Write};
+use aleph_engine::api::math::{DVec3, Rotor3};
+use aleph_engine::api::platform::IFrameTimer;
 
 pub struct ThrobberLogic {
     frame_timer: AnyArc<dyn IFrameTimer>,

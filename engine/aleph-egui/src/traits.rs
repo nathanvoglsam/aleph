@@ -32,7 +32,7 @@ use std::sync::Mutex;
 
 use aleph_alloc::instrumentation::IAllocationCategory;
 use egui::{ClippedPrimitive, FullOutput, RawInput};
-use interfaces::any::IAny;
+use engine_api::any::{IAny, declare_interfaces};
 
 use crate::Egui;
 
@@ -72,7 +72,7 @@ impl IEguiContextProvider for EguiContextProvider {
     }
 }
 
-interfaces::any::declare_interfaces!(EguiContextProvider, [IEguiContextProvider]);
+declare_interfaces!(EguiContextProvider, [IEguiContextProvider]);
 
 ///
 /// This interface is used as a slot for storing/passing the egui rendering data off to a renderer.
@@ -120,4 +120,4 @@ impl IEguiRenderData for EguiRenderData {
     }
 }
 
-interfaces::any::declare_interfaces!(EguiRenderData, [IEguiRenderData]);
+declare_interfaces!(EguiRenderData, [IEguiRenderData]);

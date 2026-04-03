@@ -30,9 +30,7 @@
 use std::any::TypeId;
 use std::collections::BTreeSet;
 
-use interfaces::plugin::{InitOrder, Provides};
-
-use crate::interfaces::plugin::IPluginRegistrar;
+use api::plugin::{IPluginRegistrar, InitOrder, Provides};
 
 pub struct PluginRegistrar {
     pub(crate) depends_on_list: BTreeSet<TypeId>,

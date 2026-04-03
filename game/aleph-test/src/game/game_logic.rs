@@ -27,30 +27,29 @@
 // SOFTWARE.
 //
 
-extern crate aleph_engine as aleph;
-
-use aleph::Engine;
-use aleph::interfaces::make_plugin_description_for_crate;
-use aleph::interfaces::plugin::{IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription};
-use aleph::interfaces::schedule::CoreStage;
 use aleph_egui::IEguiContextProvider;
 use aleph_egui::widgets::{FrameTimeHistory, MemoryStats, frame_stats, memory_stats};
-use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform, TransformHistory};
-use aleph_engine::interfaces::label::make_label;
-use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
-use aleph_engine::interfaces::mg::material::binding::MaterialBinding;
-use aleph_engine::interfaces::mg::material::{StandardMaterial, StandardMaterialLayout};
-use aleph_engine::interfaces::mg::material_instance::MaterialInstanceDesc;
-use aleph_engine::interfaces::mg::renderer::immediate_resource_builder::ImmediateResourceBuilder;
-use aleph_engine::interfaces::mg::renderer::{BufferOptions, Renderer, SimpleTextureOptions};
-use aleph_engine::interfaces::mg::resource::texture::TextureHandle;
-use aleph_engine::interfaces::mg::resource::texture::simple::SimpleTextureLayout;
-use aleph_engine::interfaces::mg::resource_loader::mip_upload::MipUploadDesc;
-use aleph_engine::interfaces::mg::resource_loader::upload_buffer::{IUploadBuffer, UploadBuffer};
-use aleph_engine::interfaces::platform::{IFrameTimer, IGamepads};
-use aleph_engine::interfaces::plugin::{CoreRefs, InitOrder};
-use aleph_engine::interfaces::schedule::WorldResource;
-use aleph_engine::interfaces::scheduler::ResMut;
+use aleph_engine::Engine;
+use aleph_engine::any::declare_interfaces;
+use aleph_engine::api::components::{Camera, StaticMesh, Transform, TransformHistory};
+use aleph_engine::api::label::make_label;
+use aleph_engine::api::make_plugin_description_for_crate;
+use aleph_engine::api::math::{DVec3, Rotor3, Vec3};
+use aleph_engine::api::mg::material::binding::MaterialBinding;
+use aleph_engine::api::mg::material::{StandardMaterial, StandardMaterialLayout};
+use aleph_engine::api::mg::material_instance::MaterialInstanceDesc;
+use aleph_engine::api::mg::renderer::immediate_resource_builder::ImmediateResourceBuilder;
+use aleph_engine::api::mg::renderer::{BufferOptions, Renderer, SimpleTextureOptions};
+use aleph_engine::api::mg::resource::texture::TextureHandle;
+use aleph_engine::api::mg::resource::texture::simple::SimpleTextureLayout;
+use aleph_engine::api::mg::resource_loader::mip_upload::MipUploadDesc;
+use aleph_engine::api::mg::resource_loader::upload_buffer::{IUploadBuffer, UploadBuffer};
+use aleph_engine::api::platform::{IFrameTimer, IGamepads};
+use aleph_engine::api::plugin::{
+    CoreRefs, IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription,
+};
+use aleph_engine::api::schedule::{CoreStage, WorldResource};
+use aleph_engine::api::scheduler::ResMut;
 
 use crate::game::config::Config;
 use crate::game::cube_mesh::upload_cube_buffers;
@@ -67,7 +66,7 @@ pub fn engine_runner() {
 
 struct PluginGameLogic();
 
-aleph::any::declare_interfaces!(PluginGameLogic, [IPlugin]);
+declare_interfaces!(PluginGameLogic, [IPlugin]);
 
 impl PluginGameLogic {
     pub fn new() -> Self {

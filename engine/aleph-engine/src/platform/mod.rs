@@ -43,18 +43,18 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use aleph_alloc::instrumentation::Instrumented;
+use api::any::{AnyArc, IAny};
+use api::label::make_label;
+use api::platform::{
+    Cursor, Event, IClipboard, IEvents, IFrameTimer, IGamepads, IKeyboard, IMouse, IWindow,
+    KeyboardEvent, MouseEvent, WindowEvent,
+};
+use api::plugin::{IQuitHandle, IRegistryAccessor};
+use api::schedule::CoreStage;
 pub use clipboard::Clipboard;
 pub use events::Events;
 pub use frame_timer::FrameTimer;
 pub use gamepad::Gamepads;
-use interfaces::any::{AnyArc, IAny};
-use interfaces::label::make_label;
-use interfaces::platform::{
-    Cursor, Event, IClipboard, IEvents, IFrameTimer, IGamepads, IKeyboard, IMouse, IWindow,
-    KeyboardEvent, MouseEvent, WindowEvent,
-};
-use interfaces::plugin::{IQuitHandle, IRegistryAccessor};
-use interfaces::schedule::CoreStage;
 pub use keyboard::Keyboard;
 pub use mouse::Mouse;
 use parking_lot::RwLockWriteGuard;

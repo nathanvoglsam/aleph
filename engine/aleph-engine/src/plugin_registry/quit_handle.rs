@@ -29,8 +29,8 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::interfaces::any::AnyArc;
-use crate::interfaces::plugin::IQuitHandle;
+use api::any::{AnyArc, declare_interfaces};
+use api::plugin::IQuitHandle;
 
 ///
 /// The struct that implements `IQuitHandle`
@@ -39,7 +39,7 @@ pub struct QuitHandleImpl {
     pub wants_quit: AtomicBool,
 }
 
-interfaces::any::declare_interfaces!(QuitHandleImpl, [IQuitHandle]);
+declare_interfaces!(QuitHandleImpl, [IQuitHandle]);
 
 impl IQuitHandle for QuitHandleImpl {
     fn quit(&self) {

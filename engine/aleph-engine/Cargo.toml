@@ -54,7 +54,7 @@ instrumentation = ["aleph-alloc/instrumentation-enabled"]
 [dependencies]
 aleph-alloc = { workspace = true }
 aleph-object-system = { workspace = true }
-aleph-interfaces = { workspace = true }
+aleph-engine-api = { workspace = true }
 aleph-target = { workspace = true }
 aleph-sys-info = { workspace = true }
 aleph-profile = { workspace = true }

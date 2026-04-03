@@ -28,12 +28,12 @@
 //
 
 use aleph_engine::any::AnyArc;
-use aleph_engine::interfaces::components::{Camera, Transform};
-use aleph_engine::interfaces::ecs::entity::EntityHandle;
-use aleph_engine::interfaces::ecs::world::World;
-use aleph_engine::interfaces::ecs::world::query::{Read, Write};
-use aleph_engine::interfaces::math::{Rotor3, ToDouble, Vec3};
-use aleph_engine::interfaces::platform::{GamepadAxis, IFrameTimer, IGamepadsAccessor};
+use aleph_engine::api::components::{Camera, Transform};
+use aleph_engine::api::ecs::entity::EntityHandle;
+use aleph_engine::api::ecs::world::World;
+use aleph_engine::api::ecs::world::query::{Read, Write};
+use aleph_engine::api::math::{Rotor3, ToDouble, Vec3};
+use aleph_engine::api::platform::{GamepadAxis, IFrameTimer, IGamepadsAccessor};
 
 pub struct FreeCamera {
     frame_timer: AnyArc<dyn IFrameTimer>,

@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use interfaces::any::{AnyArc, declare_interfaces};
-use interfaces::platform::{Event, IEvents, IEventsLock};
+use api::any::{AnyArc, declare_interfaces};
+use api::platform::{Event, IEvents, IEventsLock};
 use parking_lot::{RwLock, RwLockReadGuard};
 use smallbox::space::S1;
 use smallbox::{SmallBox, smallbox};

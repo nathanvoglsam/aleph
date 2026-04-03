@@ -30,8 +30,8 @@
 use std::ffi::{CStr, CString, c_void};
 use std::marker::PhantomData;
 
-use interfaces::any::{AnyArc, declare_interfaces};
-use interfaces::platform::IClipboard;
+use api::any::{AnyArc, declare_interfaces};
+use api::platform::IClipboard;
 
 ///
 /// Object that provides implementation of `IClipboard`

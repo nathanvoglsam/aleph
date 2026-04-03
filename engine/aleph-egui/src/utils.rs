@@ -29,7 +29,7 @@
 
 use aleph_alloc::instrumentation::IAllocationCategory;
 use egui::{ViewportId, ViewportInfo};
-use interfaces::platform::{
+use engine_api::platform::{
     Cursor, Event, IClipboard, IEvents, IFrameTimer, IKeyboard, IMouse, IWindow, KeyCode, KeyMod,
     KeyboardEvent, MouseButton, MouseEvent, MouseWheelDirection, ScanCode,
 };

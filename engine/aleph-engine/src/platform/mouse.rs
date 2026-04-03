@@ -30,8 +30,8 @@
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
-use interfaces::any::{AnyArc, declare_interfaces};
-use interfaces::platform::{
+use api::any::{AnyArc, declare_interfaces};
+use api::platform::{
     Cursor, Event, IMouse, IMouseEventsLock, MouseButton, MouseButtonDownEvent, MouseButtonUpEvent,
     MouseEvent, MouseMotionEvent, MouseState, MouseWheelDirection, MouseWheelEvent,
 };

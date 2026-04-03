@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-extern crate aleph_interfaces as interfaces;
+extern crate aleph_engine_api as engine_api;
 extern crate egui;
 
 pub mod widgets;

@@ -28,7 +28,7 @@
 //
 
 extern crate aleph_egui as egui;
-extern crate aleph_interfaces as interfaces;
+extern crate aleph_engine_api as engine_api;
 extern crate aleph_magnesium as mg;
 extern crate aleph_rhi_api as rhi;
 

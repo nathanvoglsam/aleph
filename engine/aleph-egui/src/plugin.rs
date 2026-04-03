@@ -31,14 +31,14 @@ use std::ops::Deref;
 
 use aleph_alloc::instrumentation::IAllocationCategory;
 use egui::ClippedPrimitive;
-use interfaces::any::AnyArc;
-use interfaces::label::make_label;
-use interfaces::make_plugin_description_for_crate;
-use interfaces::platform::{IClipboard, IEvents, IFrameTimer, IKeyboard, IMouse, IWindow};
-use interfaces::plugin::{
+use engine_api::any::{AnyArc, declare_interfaces};
+use engine_api::label::make_label;
+use engine_api::make_plugin_description_for_crate;
+use engine_api::platform::{IClipboard, IEvents, IFrameTimer, IKeyboard, IMouse, IWindow};
+use engine_api::plugin::{
     IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription, Provides,
 };
-use interfaces::schedule::CoreStage;
+use engine_api::schedule::CoreStage;
 
 use crate::traits::{EguiContextProvider, EguiRenderData};
 use crate::{Egui, IEguiContextProvider, IEguiRenderData, RenderData};
@@ -147,4 +147,4 @@ impl Default for PluginEgui {
     }
 }
 
-interfaces::any::declare_interfaces!(PluginEgui, [IPlugin]);
+declare_interfaces!(PluginEgui, [IPlugin]);

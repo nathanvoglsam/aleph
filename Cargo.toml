@@ -43,6 +43,7 @@ members = [
     "engine/aleph-ecs",
     "engine/aleph-egui",
     "engine/aleph-engine",
+    "engine/aleph-engine-api",
     "engine/aleph-engine-build",
     "engine/aleph-frame-graph",
     "engine/aleph-gen-arena",
@@ -51,7 +52,6 @@ members = [
     "engine/aleph-identity-hasher",
     "engine/aleph-image",
     "engine/aleph-init-list",
-    "engine/aleph-interfaces",
     "engine/aleph-ktx",
     "engine/aleph-label",
     "engine/aleph-magnesium",
@@ -217,6 +217,7 @@ aleph-device-allocators = { path = "./engine/aleph-device-allocators", version =
 aleph-dx12-agility-sdk = { path = "./engine/aleph-dx12-agility-sdk", version = "0.1" }
 aleph-ecs = { path = "./engine/aleph-ecs", version = "0.1" }
 aleph-engine = { path = "./engine/aleph-engine", version = "0.1" }
+aleph-engine-api = { path = "./engine/aleph-engine-api", version = "0.1" }
 aleph-engine-build = { path = "./engine/aleph-engine-build", version = "0.1" }
 aleph-frame-graph = { path = "./engine/aleph-frame-graph", version = "0.1" }
 aleph-gen-arena = { path = "./engine/aleph-gen-arena", version = "0.1" }
@@ -225,7 +226,6 @@ aleph-hibitset = { path = "./engine/aleph-hibitset", version = "0.1" }
 aleph-identity-hasher = { path = "./engine/aleph-identity-hasher", version = "0.1" }
 aleph-image = { path = "./engine/aleph-image", version = "0.1" }
 aleph-init-list = { path = "./engine/aleph-init-list", version = "0.1" }
-aleph-interfaces = { path = "./engine/aleph-interfaces", version = "0.1" }
 aleph-ktx = { path = "./engine/aleph-ktx", version = "0.1" }
 aleph-label = { path = "./engine/aleph-label", version = "0.1" }
 aleph-magnesium = { path = "./engine/aleph-magnesium", version = "0.1" }

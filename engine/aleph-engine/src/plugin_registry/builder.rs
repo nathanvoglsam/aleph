@@ -30,11 +30,11 @@
 use std::any::{Any, TypeId};
 use std::collections::{BTreeMap, BTreeSet};
 
-use interfaces::ecs::world::World;
-use interfaces::schedule::CoreStage;
-use interfaces::scheduler::{Schedule, SystemSchedule, TypedTable};
+use api::ecs::world::World;
+use api::plugin::IPlugin;
+use api::schedule::CoreStage;
+use api::scheduler::{Schedule, SystemSchedule, TypedTable};
 
-use crate::interfaces::plugin::IPlugin;
 use crate::platform::{PlatformSDL3, platform_interfaces};
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 use crate::plugin_registry::registrar::PluginRegistrar;

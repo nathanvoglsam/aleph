@@ -29,8 +29,8 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use interfaces::any::AnyArc;
-use interfaces::platform::IFrameTimer;
+use api::any::{AnyArc, declare_interfaces};
+use api::platform::IFrameTimer;
 
 pub struct FrameTimer {
     freq: AtomicU64,
@@ -79,4 +79,4 @@ impl IFrameTimer for FrameTimer {
     }
 }
 
-interfaces::any::declare_interfaces!(FrameTimer, [IFrameTimer]);
+declare_interfaces!(FrameTimer, [IFrameTimer]);

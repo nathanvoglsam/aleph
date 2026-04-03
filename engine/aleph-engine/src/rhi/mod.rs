@@ -29,14 +29,13 @@
 
 use std::any::TypeId;
 
-use aleph_interfaces::any::{AnyArc, declare_interfaces};
-use aleph_interfaces::platform::IWindow;
-use aleph_interfaces::rhi::IRhiProvider;
 use aleph_rhi_api::*;
 use aleph_rhi_loader::{
     BackendConfigs, ContextOptions, D3D12Config, MetalConfig, RhiLoader, VulkanConfig,
 };
-use interfaces::any::IAny;
+use api::any::{AnyArc, IAny, declare_interfaces};
+use api::platform::IWindow;
+use api::rhi::IRhiProvider;
 use serde::Deserialize;
 
 use crate::plugin_registry::RegistryAccessor;

@@ -28,11 +28,11 @@
 //
 
 use aleph_config::{ConfigRunner, RunConfigError};
-pub use interfaces::any;
-use interfaces::ecs::world::World;
-use interfaces::plugin::CoreRefs;
-use interfaces::schedule::WorldResource;
-use interfaces::scheduler::{Schedule, Stage, TypedTable};
+pub use api::any;
+use api::ecs::world::World;
+use api::plugin::CoreRefs;
+use api::schedule::WorldResource;
+use api::scheduler::{Schedule, Stage, TypedTable};
 
 mod builder;
 mod quit_handle;
@@ -43,8 +43,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub use builder::PluginRegistryBuilder;
 
-use crate::interfaces::any::{AnyArc, IAny};
-use crate::interfaces::plugin::{IPlugin, IQuitHandle, IRegistryAccessor};
+use crate::api::any::{AnyArc, IAny};
+use crate::api::plugin::{IPlugin, IQuitHandle, IRegistryAccessor};
 use crate::platform::PlatformSDL3;
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 use crate::rhi::Rhi;

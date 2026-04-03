@@ -51,7 +51,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-alloc = { workspace = true }
 aleph-device-allocators = { workspace = true }
 aleph-egui = { workspace = true }
-aleph-interfaces = { workspace = true }
+aleph-engine-api = { workspace = true }
 aleph-frame-graph = { workspace = true }
 aleph-math = { workspace = true }
 aleph-pin-board = { workspace = true }

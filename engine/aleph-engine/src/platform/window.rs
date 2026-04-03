@@ -31,8 +31,8 @@ use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use interfaces::any::{AnyArc, declare_interfaces};
-use interfaces::platform::{
+use api::any::{AnyArc, declare_interfaces};
+use api::platform::{
     Event, HasDisplayHandle, HasWindowHandle, IWindow, IWindowEventsLock, RawDisplayHandle,
     RawWindowHandle, WindowEvent,
 };

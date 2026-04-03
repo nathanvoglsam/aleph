@@ -29,8 +29,8 @@
 
 use std::collections::HashMap;
 
-use interfaces::any::{AnyArc, declare_interfaces};
-use interfaces::platform::{
+use api::any::{AnyArc, declare_interfaces};
+use api::platform::{
     Event, IKeyboard, IKeyboardEventsLock, IKeyboardStateLock, KeyCode, KeyDownEvent, KeyMod,
     KeyUpEvent, KeyboardEvent, ScanCode, TextInputEvent,
 };

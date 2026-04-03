@@ -40,8 +40,8 @@ use aleph_math::Vec2;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use egui::RenderData;
-use interfaces::any::AnyArc;
-use interfaces::ecs::register_component;
+use engine_api::any::AnyArc;
+use engine_api::ecs::register_component;
 
 use crate::shaders;
 

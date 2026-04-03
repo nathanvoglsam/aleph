@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use aleph_engine::interfaces::mg::renderer::{BufferOptions, Renderer};
-use aleph_engine::interfaces::mg::resource::buffer::BufferHandle;
-use aleph_engine::interfaces::mg::resource_loader::upload_buffer::{IUploadBuffer, UploadBuffer};
+use aleph_engine::api::mg::renderer::{BufferOptions, Renderer};
+use aleph_engine::api::mg::resource::buffer::BufferHandle;
+use aleph_engine::api::mg::resource_loader::upload_buffer::{IUploadBuffer, UploadBuffer};
 use bytemuck::{Pod, Zeroable};
 
 #[aleph_profile::function]

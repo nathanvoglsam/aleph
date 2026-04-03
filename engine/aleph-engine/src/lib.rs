@@ -32,13 +32,13 @@
 // =================================================================================================
 
 // Re-export useful crates
-pub extern crate aleph_interfaces as interfaces;
+pub extern crate aleph_engine_api as api;
 pub extern crate aleph_target as target;
 
 pub mod plugin_registry;
 
 pub mod any {
-    pub use interfaces::any::*;
+    pub use api::any::*;
 }
 
 // =================================================================================================
@@ -55,7 +55,7 @@ use std::sync::LazyLock;
 use log::LevelFilter;
 use target::{Architecture, BuildConfig, BuildType, Platform};
 
-use crate::interfaces::plugin::IPlugin;
+use crate::api::plugin::IPlugin;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 
 pub struct EngineBuilder {
