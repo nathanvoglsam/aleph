@@ -27,11 +27,4 @@
 // SOFTWARE.
 //
 
-mod config;
-mod egui;
-mod plugin;
-mod resources;
-mod shaders;
-mod systems;
-
-pub use plugin::PluginRender;
+pub mod render_scene;

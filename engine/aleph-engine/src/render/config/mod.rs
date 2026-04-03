@@ -27,11 +27,20 @@
 // SOFTWARE.
 //
 
-mod config;
-mod egui;
-mod plugin;
-mod resources;
-mod shaders;
-mod systems;
+use serde::Deserialize;
 
-pub use plugin::PluginRender;
+#[derive(Clone, Deserialize)]
+pub struct Config {
+    #[serde(rename = "renderAheadFrames")]
+    pub render_ahead_frames: u32,
+
+    #[serde(rename = "forceGraphRebuild")]
+    pub force_graph_rebuild: bool,
+}
+
+impl Config {
+    pub fn log(&self) {
+        log::info!("render.renderAheadFrames = {}", self.render_ahead_frames);
+        log::info!("render.forceGraphRebuild = {}", self.force_graph_rebuild);
+    }
+}

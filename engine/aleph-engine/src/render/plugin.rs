@@ -38,30 +38,30 @@ use aleph_magnesium::renderer::render_plane::DefaultRenderPlane;
 use aleph_magnesium::renderer::shader_accessor::ShaderAccessor;
 use aleph_shader_db::ArchivedShaderDatabase;
 use api::any::{AnyArc, QueryInterface, declare_interfaces};
-use api::components::{self, Camera, Transform, TransformHistory};
+use api::components::{Transform, TransformHistory};
 use api::ecs::world::World;
-use api::ecs::world::query::{Has, Read, Write};
+use api::ecs::world::query::{Read, Write};
 use api::label::make_label;
 use api::make_plugin_description_for_crate;
-use api::object_system::unsafe_impl_iobject;
 use api::platform::*;
 use api::plugin::*;
 use api::rhi::IRhiProvider;
 use api::schedule::{CoreStage, WorldResource};
-use api::scheduler::{Res, ResMut};
+use api::scheduler::{ExplicitDependencies, IntoSystem, Res, ResMut};
 use mg::renderer::builder::ApplicationSurface;
-use mg::renderer::draw_options::DrawOptions;
 use mg::renderer::frame_graph::GraphArgs;
 use mg::renderer::immediate_resource_builder::ImmediateResourceBuilder;
 use mg::renderer::render_plane::{IRenderPlane, RenderPlaneOutput};
 use mg::renderer::state_cache::StateCache;
 use mg::renderer::surface_notify::SurfaceNotification;
-use mg::scene::components::{DynamicObject, PerspectiveCamera, RenderTransform, StaticMesh};
-use serde::Deserialize;
 
+use crate::render::config::Config;
 use crate::render::egui::egui_pass;
-use crate::render::egui::egui_pass::EguiPassContext;
 use crate::render::egui::font_texture::EguiFontTexture;
+use crate::render::resources::render_scene::RenderSceneResource;
+use crate::render::systems::publish_egui_scene::PublishEguiSceneSystem;
+use crate::render::systems::publish_render_scene::PublishRenderSceneSystem;
+use crate::render::systems::render::RenderSystem;
 
 pub struct PluginRender {
     device: Option<AnyArc<dyn rhi::IDevice>>,
@@ -145,123 +145,96 @@ impl IPlugin for PluginRender {
         }
         renderer.render_ahead_frames(config.render_ahead_frames as usize);
 
-        registry.core().resources.insert(RenderScene {
+        registry.core().resources.insert(RenderSceneResource {
             scene: World::new(),
         });
         registry.core().resources.insert(renderer.build().unwrap());
 
-        let mut egui_data = render_data.map(|v| EguiData {
-            font_texture: EguiFontTexture::new(),
-            render_data: v,
-        });
-        registry.core().schedule.add_system_to_stage(
-            CoreStage::Render.into(),
-            make_label!("render::render"),
-            move |world: Res<WorldResource>,
-                  mut renderer: ResMut<Renderer>,
-                  mut render_scene: ResMut<RenderScene>| {
-                device.garbage_collect().unwrap();
-
-                let render_scene = &mut render_scene.scene;
-
-                render_scene.remove_matching::<Has<DynamicObject>>();
-
-                let query = world
-                    .0
-                    .query::<(Read<Transform>, Read<components::StaticMesh>)>();
-                for (_id, (t, m)) in query {
-                    render_scene.insert((
-                        RenderTransform {
-                            position: t.position,
-                            rotation: t.rotation,
-                            scale: t.scale,
-                        },
-                        StaticMesh {
-                            vtx: Some(m.vtx),
-                            idx: Some(m.idx),
-                            material_instance: Some(m.material_instance),
-                        },
-                        DynamicObject,
-                    ));
-                }
-
-                // Find the first camera object in the scene and make that the active camera.
-                let mut query = world.0.query::<(Read<Transform>, Read<Camera>)>();
-                let (_, (t, c)) = query.next().unwrap();
-
-                let camera_entity = render_scene.insert((
-                    RenderTransform {
-                        position: t.position,
-                        rotation: t.rotation,
-                        scale: t.scale,
-                    },
-                    PerspectiveCamera {
-                        vertical_fov: c.vertical_fov,
-                        z_near: c.z_near,
-                    },
-                    DynamicObject,
-                ));
-
-                if let Some(e) = egui_data.as_mut() {
-                    let render_data = e.render_data.take();
-
-                    // Filter the deltas to only those that affect the font texture and upload
-                    // a new font texture immediately.
-                    let font_updates = render_data
-                        .textures_delta
-                        .set
-                        .iter()
-                        .filter(|(id, _)| *id == egui::TextureId::Managed(0))
-                        .map(|(_, delta)| delta);
-                    e.font_texture
-                        .update_font_texture(&mut renderer, font_updates);
-
-                    // Pass the egui commands and font texture that so our egui render pass
-                    // can do its thing.
-                    let _ = render_scene.insert_singleton(EguiPassContext {
-                        font_handle: e.font_texture.font_handle.unwrap(),
-                        render_data,
-                    });
-                }
-
-                let options = DrawOptions {
-                    force_rebuild_frame_graph: config.force_graph_rebuild,
-                };
-                renderer.draw_frame(&options, render_scene, camera_entity);
-            },
-        );
-
         // System to take the send events about the rendering surface into the renderer over the
         // channel that we gave it.
-        registry
-            .core()
-            .schedule
-            .add_exclusive_at_end_system_to_stage(
-                CoreStage::InputCollection.into(),
-                make_label!("render::send_surface_events"),
-                move || {
-                    surface_sender.pump();
-                },
-            );
+        {
+            let system = move || {
+                surface_sender.pump();
+            };
+            registry
+                .core()
+                .schedule
+                .add_exclusive_at_end_system_to_stage(
+                    CoreStage::InputCollection.into(),
+                    make_label!("render::send_surface_events"),
+                    system,
+                );
+        }
 
         // System to update the transform history of entities so we get correct motion vectors. We
         // do this immediately after the main render job gets kicked off as we want to capture the
         // transforms immediately after the last render frame.
-        registry
-            .core()
-            .schedule
-            .add_exclusive_at_end_system_to_stage(
+        {
+            let system = move |mut world: ResMut<WorldResource>| {
+                for (_id, (t, h)) in world
+                    .0
+                    .query_mut::<(Read<Transform>, Write<TransformHistory>)>()
+                {
+                    h.previous = t.clone();
+                }
+            };
+            registry
+                .core()
+                .schedule
+                .add_exclusive_at_end_system_to_stage(
+                    CoreStage::Render.into(),
+                    make_label!("render::capture_previous_transform"),
+                    system,
+                );
+        }
+
+        // System to copy the simulation scene into the render scene
+        {
+            let mut publish_render_scene_system = PublishRenderSceneSystem;
+            let system = move |world: Res<WorldResource>,
+                               render_scene: ResMut<RenderSceneResource>| {
+                publish_render_scene_system.run(world, render_scene);
+            };
+            let system = system.system();
+            let system = system.runs_before(make_label!("render::RenderSystem"));
+            registry.core().schedule.add_system_to_stage(
                 CoreStage::Render.into(),
-                make_label!("render::capture_previous_transform"),
-                move |mut world: ResMut<WorldResource>| {
-                    for (_id, (t, h)) in world
-                        .0
-                        .query_mut::<(Read<Transform>, Write<TransformHistory>)>()
-                    {
-                        h.previous = t.clone();
-                    }
-                },
+                make_label!("render::PublishRenderSceneSystem"),
+                system,
             );
+        }
+
+        // System to publish the egui scene into the render scene
+        if let Some(v) = render_data {
+            let mut publish_egui_scene_system = PublishEguiSceneSystem {
+                font_texture: EguiFontTexture::new(),
+                render_data: v,
+            };
+            let system = move |renderer: ResMut<Renderer>,
+                               render_scene: ResMut<RenderSceneResource>| {
+                publish_egui_scene_system.run(renderer, render_scene);
+            };
+            let system = system.system();
+            let system = system.runs_before(make_label!("render::RenderSystem"));
+            registry.core().schedule.add_system_to_stage(
+                CoreStage::Render.into(),
+                make_label!("render::PublishEguiSceneSystem"),
+                system,
+            );
+        }
+
+        // System that kicks off the main render job
+        let mut render_system = RenderSystem {
+            device,
+            render_config: config.clone(),
+        };
+        registry.core().schedule.add_system_to_stage(
+            CoreStage::Render.into(),
+            make_label!("render::RenderSystem"),
+            move |renderer: ResMut<Renderer>, render_scene: ResMut<RenderSceneResource>| {
+                render_system.run(renderer, render_scene);
+            },
+        );
     }
 
     fn on_exit(&mut self) {
@@ -369,29 +342,3 @@ impl IRenderPlane for EguiRenderPlane {
         )
     }
 }
-
-#[derive(Deserialize)]
-struct Config {
-    #[serde(rename = "renderAheadFrames")]
-    pub render_ahead_frames: u32,
-
-    #[serde(rename = "forceGraphRebuild")]
-    pub force_graph_rebuild: bool,
-}
-
-impl Config {
-    pub fn log(&self) {
-        log::info!("render.renderAheadFrames = {}", self.render_ahead_frames);
-        log::info!("render.forceGraphRebuild = {}", self.force_graph_rebuild);
-    }
-}
-
-struct EguiData {
-    font_texture: EguiFontTexture,
-    render_data: AnyArc<dyn egui::IEguiRenderData>,
-}
-
-struct RenderScene {
-    pub scene: World,
-}
-unsafe_impl_iobject!(RenderScene, "01924ac2-6c15-7362-964e-6bd6d632e4d2");

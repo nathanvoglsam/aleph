@@ -27,11 +27,38 @@
 // SOFTWARE.
 //
 
-mod config;
-mod egui;
-mod plugin;
-mod resources;
-mod shaders;
-mod systems;
+use api::any::AnyArc;
+use api::ecs::world::query::Read;
+use api::scheduler::ResMut;
+use mg::renderer::Renderer;
+use mg::renderer::draw_options::DrawOptions;
+use mg::scene::components::{PerspectiveCamera, RenderTransform};
 
-pub use plugin::PluginRender;
+use crate::render::config::Config;
+use crate::render::resources::render_scene::RenderSceneResource;
+
+pub struct RenderSystem {
+    pub device: AnyArc<dyn rhi::IDevice>,
+    pub render_config: Config,
+}
+
+impl RenderSystem {
+    pub fn run(
+        &mut self,
+        mut renderer: ResMut<Renderer>,
+        mut render_scene: ResMut<RenderSceneResource>,
+    ) {
+        self.device.garbage_collect().unwrap();
+
+        // Find the first camera object in the scene and make that the active camera.
+        let mut query = render_scene
+            .scene
+            .query::<(Read<RenderTransform>, Read<PerspectiveCamera>)>();
+        let (camera_entity, _) = query.next().unwrap();
+
+        let options = DrawOptions {
+            force_rebuild_frame_graph: self.render_config.force_graph_rebuild,
+        };
+        renderer.draw_frame(&options, &mut render_scene.scene, camera_entity);
+    }
+}

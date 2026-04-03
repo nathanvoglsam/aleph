@@ -27,11 +27,10 @@
 // SOFTWARE.
 //
 
-mod config;
-mod egui;
-mod plugin;
-mod resources;
-mod shaders;
-mod systems;
+use aleph_object_system::unsafe_impl_iobject;
+use api::ecs::world::World;
 
-pub use plugin::PluginRender;
+pub struct RenderSceneResource {
+    pub scene: World,
+}
+unsafe_impl_iobject!(RenderSceneResource, "01924ac2-6c15-7362-964e-6bd6d632e4d2");
