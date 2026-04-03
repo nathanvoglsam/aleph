@@ -27,10 +27,9 @@
 // SOFTWARE.
 //
 
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::map_acquired_image;
@@ -38,21 +37,19 @@ use aleph_rhi_impl_utils::map_acquired_image;
 use crate::{ValidationDevice, ValidationSurface, ValidationSwapImage, ValidationTexture};
 
 pub struct ValidationSwapChain {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) _surface: AnyArc<ValidationSurface>,
-    pub(crate) inner: AnyArc<dyn ISwapChain>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _device: Arc<ValidationDevice>,
+    pub(crate) _surface: Arc<ValidationSurface>,
+    pub(crate) inner: Arc<dyn ISwapChain>,
     pub(crate) queue_support: QueueType,
     pub(crate) acquired: AtomicBool,
 }
 
-declare_interfaces!(ValidationSwapChain, [ISwapChain]);
-
 crate::impl_platform_interface_passthrough!(ValidationSwapChain);
 
 impl ISwapChain for ValidationSwapChain {
-    fn upgrade(&self) -> AnyArc<dyn ISwapChain> {
-        AnyArc::map::<dyn ISwapChain, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn ISwapChain> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -120,12 +117,12 @@ impl ISwapChain for ValidationSwapChain {
             let texture = ArcObject::from_object(texture);
             let texture = unsafe { TextureHandle::new(texture) };
 
-            let swap_image = AnyArc::new(ValidationSwapImage {
+            let swap_image = Arc::new(ValidationSwapImage {
                 _swap_chain: self._this.upgrade().unwrap(),
                 inner: Some(swap_image),
                 texture: Some(texture),
             });
-            AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v)
+            swap_image
         });
         Ok(acquired)
     }

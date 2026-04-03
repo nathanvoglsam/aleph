@@ -34,7 +34,6 @@ resolver = "2"
 members = [
     "engine/aleph",
     "engine/aleph-alloc",
-    "engine/aleph-any",
     "engine/aleph-atomic-borrow",
     "engine/aleph-compile",
     "engine/aleph-config",
@@ -208,7 +207,6 @@ windows.features = [
 
 # Aleph Crates
 aleph-alloc = { path = "engine/aleph-alloc", version = "0.1" }
-aleph-any = { path = "./engine/aleph-any", version = "0.1" }
 aleph-atomic-borrow = { path = "./engine/aleph-atomic-borrow", version = "0.1" }
 aleph-compile = { path = "./engine/aleph-compile", version = "0.1" }
 aleph-config = { path = "./engine/aleph-config", version = "0.1" }

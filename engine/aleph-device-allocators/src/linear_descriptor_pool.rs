@@ -28,15 +28,15 @@
 //
 
 use std::cell::Cell;
+use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
 /// A parameter block allocator that grabs arenas as pages and bump allocates parameter blocks from
 /// those pages. Intended for cheaply allocating one-time-use parameter blocks.
 pub struct LinearDescriptorPool {
     /// The device we're working with
-    device: AnyArc<dyn IDevice>,
+    device: Arc<dyn IDevice>,
 
     /// The active descriptor arena
     active: Cell<Option<Box<dyn IDescriptorArena>>>,

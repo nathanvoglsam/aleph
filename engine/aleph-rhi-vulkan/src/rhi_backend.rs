@@ -1,13 +1,12 @@
 use std::ffi::CStr;
 use std::iter;
 use std::mem::ManuallyDrop;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use aleph_alloc::instrumentation::IAllocationCategory;
-use aleph_any::AnyArc;
 use aleph_rhi_api::{ContextCreateError, IContext};
 use aleph_rhi_impl_utils::Rhi;
-use aleph_rhi_impl_utils::arc::new_rhi_object;
 use ash::vk;
 
 use crate::context::{Context, SurfaceLoaders};
@@ -43,7 +42,7 @@ impl VulkanLoader {
         validation: bool,
         debug: bool,
         config: &VulkanConfig,
-    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
+    ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         match self
             .context_made
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
@@ -85,7 +84,7 @@ impl VulkanLoader {
                     (_, false) => None,
                 };
 
-                Ok(new_rhi_object(move |v| Context {
+                Ok(Arc::new_cyclic(move |v| Context {
                     _this: v.clone(),
                     _config: config.clone(),
                     entry_loader: ManuallyDrop::new(entry),

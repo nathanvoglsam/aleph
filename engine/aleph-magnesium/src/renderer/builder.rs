@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
+
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
-use aleph_any::AnyArc;
 use aleph_pin_board::PinBoard;
 use parking_lot::Mutex;
 
@@ -52,7 +53,7 @@ use crate::renderer::state_cache::StateCache;
 use crate::renderer::surface_notify::ISurfaceNotify;
 
 pub struct RendererBuilder {
-    device: Option<AnyArc<dyn rhi::IDevice>>,
+    device: Option<Arc<dyn rhi::IDevice>>,
     surface: Option<ApplicationSurface>,
     shader_db: Option<Box<dyn IShaderAccessor + Send + Sync + 'static>>,
     render_planes: Vec<Box<dyn IRenderPlane>>,
@@ -76,7 +77,7 @@ impl RendererBuilder {
         Self::default()
     }
 
-    pub fn device(&mut self, device: AnyArc<dyn rhi::IDevice>) -> &mut Self {
+    pub fn device(&mut self, device: Arc<dyn rhi::IDevice>) -> &mut Self {
         self.device = Some(device);
         self
     }
@@ -192,7 +193,7 @@ impl RendererBuilder {
 }
 
 pub struct ApplicationSurface {
-    pub surface: AnyArc<dyn rhi::ISurface>,
+    pub surface: Arc<dyn rhi::ISurface>,
     pub extent: rhi::Extent2D,
     pub notify: Box<dyn ISurfaceNotify + Send + Sync>,
 }

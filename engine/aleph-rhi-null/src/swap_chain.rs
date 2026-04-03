@@ -27,25 +27,24 @@
 // SOFTWARE.
 //
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use std::sync::{Arc, Weak};
+
 use aleph_rhi_api::*;
 
 use crate::{NullDevice, NullSurface};
 
 pub struct NullSwapChain {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<NullDevice>,
-    pub(crate) _surface: AnyArc<NullSurface>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _device: Arc<NullDevice>,
+    pub(crate) _surface: Arc<NullSurface>,
     pub(crate) config: SwapChainConfiguration,
 }
-
-declare_interfaces!(NullSwapChain, [ISwapChain]);
 
 crate::impl_platform_interface_passthrough!(NullSwapChain);
 
 impl ISwapChain for NullSwapChain {
-    fn upgrade(&self) -> AnyArc<dyn ISwapChain> {
-        AnyArc::map::<dyn ISwapChain, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn ISwapChain> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {

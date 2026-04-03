@@ -28,9 +28,9 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::Arc;
 
 use aleph_alloc::BHashMap;
-use aleph_any::AnyArc;
 use aleph_gpu_allocator::GpuAllocation;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
@@ -44,7 +44,7 @@ use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::conv::{image_view_type_to_vk, subresource_range_to_vk, texture_format_to_vk};
 
 pub struct Texture {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) image: vk::Image,
     // pub(crate) creation_flags: vk::ImageCreateFlags,

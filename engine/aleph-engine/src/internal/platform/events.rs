@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use api::any::{AnyArc, declare_interfaces};
+use std::sync::Arc;
+
 use api::platform::{Event, IEvents, IEventsLock};
 use parking_lot::{RwLock, RwLockReadGuard};
 use smallbox::space::S1;
@@ -38,12 +39,10 @@ use smallbox::{SmallBox, smallbox};
 ///
 pub struct Events(pub(crate) RwLock<Vec<Event>>);
 
-declare_interfaces!(Events, [IEvents]);
-
 impl Events {
-    pub(crate) fn new() -> AnyArc<Self> {
+    pub(crate) fn new() -> Arc<Self> {
         let out = Self(RwLock::new(Vec::new()));
-        AnyArc::new(out)
+        Arc::new(out)
     }
 }
 

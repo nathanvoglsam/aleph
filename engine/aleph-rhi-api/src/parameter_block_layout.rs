@@ -27,9 +27,8 @@
 // SOFTWARE.
 //
 
+use std::any::Any;
 use std::num::NonZeroU64;
-
-use aleph_any::IAny;
 
 use crate::*;
 
@@ -79,8 +78,8 @@ use crate::*;
 /// There are only a few, specific circumstances to use manual layouts typically when a collection
 /// of shaders must use compatible binding sets (i.e. Gbuffer lay down), or if opting in to features
 /// like 'dynamic constant buffers' which can't be deduced from the shader.
-pub trait IParameterBlockLayout: IAny + Send + Sync {
-    any_arc_trait_utils_decl!(IParameterBlockLayout);
+pub trait IParameterBlockLayout: Any + Send + Sync {
+    arc_trait_utils_decl!(IParameterBlockLayout);
 
     /// Returns a [`ParameterBlockDesc`] that describes the [`IParameterBlockLayout`], and could be
     /// used to create another compatible layout object.  

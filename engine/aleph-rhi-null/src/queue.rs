@@ -27,52 +27,22 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
-use std::mem::transmute;
-use std::ptr;
-use std::ptr::NonNull;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject};
 use aleph_rhi_api::*;
 
 use crate::NullDevice;
 
 pub struct NullQueue {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyWeak<NullDevice>,
-}
-
-// Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
-impl IAny for NullQueue {
-    #[allow(bare_trait_objects)]
-    fn __query_interface(&self, target: TypeId) -> Option<TraitObject<'_>> {
-        unsafe {
-            if target == TypeId::of::<dyn IQueue>() {
-                return Some(transmute(self as &dyn IQueue));
-            }
-            if target == TypeId::of::<dyn IAny>() {
-                return Some(transmute(self as &dyn IAny));
-            }
-        }
-        unsafe {
-            if target == TypeId::of::<NullQueue>() {
-                Some(TraitObject {
-                    data: NonNull::new_unchecked(self as *const _ as *mut ()),
-                    vtable: ptr::null_mut(),
-                    phantom: Default::default(),
-                })
-            } else {
-                None
-            }
-        }
-    }
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _device: Weak<NullDevice>,
 }
 
 crate::impl_platform_interface_passthrough!(NullQueue);
 
 impl IQueue for NullQueue {
-    fn upgrade(&self) -> AnyArc<dyn IQueue> {
-        AnyArc::map::<dyn IQueue, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IQueue> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -101,7 +71,7 @@ impl IQueue for NullQueue {
         Ok(())
     }
 
-    unsafe fn present(&self, _swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
+    unsafe fn present(&self, _swap_image: Arc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
         Ok(())
     }
 }

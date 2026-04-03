@@ -39,7 +39,6 @@ use aleph_magnesium::resource::texture::TextureHandle;
 use aleph_math::Vec2;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
-use api::any::AnyArc;
 use api::ecs::register_component;
 use egui::RenderData;
 
@@ -337,8 +336,8 @@ impl IStateCacheKey for EguiLayoutKey {
 
 pub struct EguiLayout {
     pub sampler: rhi::SamplerHandle,
-    pub block_layout: AnyArc<dyn rhi::IParameterBlockLayout>,
-    pub binding_signature: AnyArc<dyn rhi::IBindingSignature>,
+    pub block_layout: Arc<dyn rhi::IParameterBlockLayout>,
+    pub binding_signature: Arc<dyn rhi::IBindingSignature>,
 }
 
 impl EguiLayout {
@@ -358,9 +357,7 @@ impl EguiLayout {
         }
     }
 
-    pub fn create_block_layout(
-        device: &dyn rhi::IDevice,
-    ) -> AnyArc<dyn rhi::IParameterBlockLayout> {
+    pub fn create_block_layout(device: &dyn rhi::IDevice) -> Arc<dyn rhi::IParameterBlockLayout> {
         let desc = rhi::ParameterBlockDesc {
             params: &[
                 rhi::ParameterType::Texture2D.param(),
@@ -376,7 +373,7 @@ impl EguiLayout {
     pub fn create_binding_signature(
         device: &dyn rhi::IDevice,
         block_layout: &dyn rhi::IParameterBlockLayout,
-    ) -> AnyArc<dyn rhi::IBindingSignature> {
+    ) -> Arc<dyn rhi::IBindingSignature> {
         let desc = rhi::BindingSignatureDesc {
             parameter_block_layouts: &[block_layout],
             push_constant_block: rhi::PushConstantBlock::new(16),

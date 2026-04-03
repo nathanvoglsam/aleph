@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
 
 use crate::renderer::surface_notify::ISurfaceNotify;
 
@@ -35,12 +35,12 @@ use crate::renderer::surface_notify::ISurfaceNotify;
 pub struct SharedSurface {
     /// Handle to an [`rhi::ISurface`] that has been shared with the renderer by the host. The
     /// renderer will manage any swap chains constructed on this surface.
-    pub _surface: AnyArc<dyn rhi::ISurface>,
+    pub _surface: Arc<dyn rhi::ISurface>,
 
     /// Receiver half of a channel that the renderer may receive notifications about changes to the
     /// surface from the host application.
     pub notify: Box<dyn ISurfaceNotify>,
 
     /// Swap chain constructed from 'surface' that the renderer must manage.
-    pub swap_chain: AnyArc<dyn rhi::ISwapChain>,
+    pub swap_chain: Arc<dyn rhi::ISwapChain>,
 }

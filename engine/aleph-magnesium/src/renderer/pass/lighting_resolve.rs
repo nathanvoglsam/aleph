@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
+
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_ecs::world::query::Read;
 use aleph_frame_graph::*;
@@ -195,8 +196,8 @@ impl IStateCacheKey for LightResolveStateKey {
 }
 
 pub struct LightResolveState {
-    pub block_layout: AnyArc<dyn rhi::IParameterBlockLayout>,
-    pub binding_signature: AnyArc<dyn rhi::IBindingSignature>,
+    pub block_layout: Arc<dyn rhi::IParameterBlockLayout>,
+    pub binding_signature: Arc<dyn rhi::IBindingSignature>,
     pub pipeline: rhi::ComputePipelineHandle,
 }
 
@@ -226,7 +227,7 @@ impl LightResolveState {
     pub fn create_block_layout(
         device: &dyn rhi::IDevice,
         shader: &dyn rhi::IShaderCodeSource,
-    ) -> AnyArc<dyn rhi::IParameterBlockLayout> {
+    ) -> Arc<dyn rhi::IParameterBlockLayout> {
         let mut params = Vec::new();
         params.resize_with(shader.get_parameter_count_for_block(0), Default::default);
         shader.get_parameters_for_block(0, &mut params);
@@ -243,7 +244,7 @@ impl LightResolveState {
     pub fn create_binding_signature(
         device: &dyn rhi::IDevice,
         block_layout: &dyn rhi::IParameterBlockLayout,
-    ) -> AnyArc<dyn rhi::IBindingSignature> {
+    ) -> Arc<dyn rhi::IBindingSignature> {
         device
             .create_binding_signature(
                 &rhi::BindingSignatureDesc::new()

@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
+use std::any::Any;
 use std::fmt::Display;
 
-use any::*;
 use smallbox::SmallBox;
 use smallbox::space::S1;
 
@@ -37,7 +37,7 @@ use smallbox::space::S1;
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's keyboard.
 ///
-pub trait IKeyboard: IAny + Send + Sync + 'static {
+pub trait IKeyboard: Any + Send + Sync + 'static {
     ///
     /// Get the current state of the mouse, last updated at the beginning of the frame
     ///
@@ -58,6 +58,8 @@ pub trait IKeyboard: IAny + Send + Sync + 'static {
     ///
     fn events<'a>(&'a self) -> SmallBox<dyn IKeyboardEventsLock + 'a, S1>;
 }
+
+crate::make_interface_identifier!(AKeyboard, IKeyboard);
 
 ///
 /// This interface is used to provide access to the list of keyboard events for the current frame.

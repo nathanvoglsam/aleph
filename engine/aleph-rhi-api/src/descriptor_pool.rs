@@ -27,12 +27,11 @@
 // SOFTWARE.
 //
 
-use aleph_any::IAny;
 use thiserror::Error;
 
 use crate::*;
 
-pub trait IDescriptorPool: IAny + IGetPlatformInterface + Send {
+pub trait IDescriptorPool: IGetPlatformInterface + Send {
     /// Allocates a new individual parameter block from the pool.
     ///
     /// May fail if the pool's backing memory has been exhausted.

@@ -27,18 +27,17 @@
 // SOFTWARE.
 //
 
-use aleph_any::{AnyArc, declare_interfaces};
+use std::sync::Arc;
+
 use aleph_rhi_api::*;
 
 use crate::{ValidationDevice, ValidationEncoder};
 
 pub struct ValidationCommandList {
-    pub(crate) _device: AnyArc<ValidationDevice>,
+    pub(crate) _device: Arc<ValidationDevice>,
     pub(crate) inner: Box<dyn ICommandList>,
     pub(crate) list_type: QueueType,
 }
-
-declare_interfaces!(ValidationCommandList, [ICommandList]);
 
 crate::impl_platform_interface_passthrough!(ValidationCommandList);
 

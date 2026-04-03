@@ -27,13 +27,11 @@
 // SOFTWARE.
 //
 
-use std::any::{TypeId, type_name};
+use std::any::{Any, TypeId};
+use std::sync::Arc;
 
-use any::IAny;
 use ecs::world::World;
 use scheduler::{Schedule, TypedTable};
-
-use crate::any::AnyArc;
 
 ///
 /// The interface that must be implemented by any engine plugin.
@@ -72,7 +70,7 @@ use crate::any::AnyArc;
 /// - Eventually, at some unspecified time, the plugins will be dropped when the plugin registry is
 ///   destroyed.
 ///
-pub trait IPlugin: IAny {
+pub trait IPlugin: Any {
     /// This function can be called at any time to retrieve a description of the plugin. This will
     /// be used for logging and debug info
     fn get_description(&self) -> PluginDescription;
@@ -126,15 +124,15 @@ pub struct PluginDescription {
 pub trait IRegistryAccessor {
     /// Object safe implementation of `get_interface`. See wrapper for more info.
     #[doc(hidden)]
-    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny>>;
+    fn __get_interface(&self, interface: TypeId) -> Option<&dyn Any>;
 
     /// Object safe implementation of `provide`. See wrapper for more info.
     #[doc(hidden)]
-    fn __provide(&mut self, interface: TypeId, object: AnyArc<dyn IAny>);
+    fn __provide(&mut self, interface: TypeId, object: Box<dyn Any>);
 
     /// Registry quit handle which can be freely sent to other threads. The object is used to
     /// request the engine/plugin registry to exit.
-    fn quit_handle(&self) -> AnyArc<dyn IQuitHandle>;
+    fn quit_handle(&self) -> Arc<dyn IQuitHandle>;
 
     /// Fetch the config object for the given root config name.
     ///
@@ -158,23 +156,15 @@ pub trait IRegistryAccessor {
 impl<'a> dyn IRegistryAccessor + 'a {
     /// Get a reference counted handle to the interface with the type given by the `T` type
     /// parameter.
-    pub fn get_interface<T: IAny + ?Sized>(&self) -> Option<AnyArc<T>> {
-        self.__get_interface(TypeId::of::<T>())
-            .map(|v| v.query_interface::<T>().unwrap())
+    pub fn get_interface<T: Any>(&self) -> Option<&T> {
+        match self.__get_interface(TypeId::of::<T>()) {
+            None => None,
+            Some(v) => Some(v.downcast_ref::<T>().unwrap()),
+        }
     }
 
-    pub fn provide<I: IAny + ?Sized, T: IAny>(&mut self, object: AnyArc<T>) {
-        // We check this in the __provide layer too but we can generate much better panic messages
-        // if we do it here where we can get the type names of all objects involved.
-        let interface_name = type_name::<I>();
-        let got_name = type_name::<T>();
-        assert!(
-            object.query_interface::<I>().is_some(),
-            "Attempting to provide an object '{}' that does not implement the '{}' interface!",
-            got_name,
-            interface_name
-        );
-        self.__provide(TypeId::of::<I>(), AnyArc::map::<dyn IAny, _>(object, |v| v));
+    pub fn provide<T: Any>(&mut self, object: T) {
+        self.__provide(TypeId::of::<T>(), Box::new(object));
     }
 }
 
@@ -187,7 +177,7 @@ pub struct CoreRefs<'a> {
 ///
 /// Interface for accessing the registry's quit handle
 ///
-pub trait IQuitHandle: IAny + Send + Sync + 'static {
+pub trait IQuitHandle: Any + Send + Sync + 'static {
     /// Requests that the registry exit the main loop, call each plugin's `on_exit` and exit.
     ///
     /// # Info
@@ -255,13 +245,13 @@ impl<'a> dyn IPluginRegistrar + 'a {
     ///
     /// The 'init' parameter controls whether an execution dependency is also implied during the
     /// init phase.
-    pub fn requires<T: IAny + ?Sized>(&mut self, init: InitOrder) {
+    pub fn requires<T: Any>(&mut self, init: InitOrder) {
         self.__requires(TypeId::of::<T>(), init);
     }
 
     /// Declares that the plugin will provide an object that implements the interface given by the
     /// `T` type parameter.
-    pub fn provides<T: IAny + ?Sized>(&mut self, availability: Provides) {
+    pub fn provides<T: Any>(&mut self, availability: Provides) {
         self.__provides(TypeId::of::<T>(), availability)
     }
 
@@ -271,7 +261,7 @@ impl<'a> dyn IPluginRegistrar + 'a {
     ///
     /// The 'init' parameter controls whether an execution dependency is also implied during the
     /// init phase.
-    pub fn uses<T: IAny + ?Sized>(&mut self, init: InitOrder) {
+    pub fn uses<T: Any>(&mut self, init: InitOrder) {
         self.__uses(TypeId::of::<T>(), init)
     }
 }
@@ -315,6 +305,40 @@ macro_rules! make_plugin_description_for_crate {
             major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
             minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
             patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
+        }
+    };
+}
+
+///
+/// Utility macro for creating an 'interface identifier'.
+///
+/// This is just a wrapper over an `Arc` containing a trait object. The expectation is that the
+/// inner trait object implements Any, meaning the created struct will also implement Any and serves
+/// to identify one specific name for some interface.
+///
+/// This is used to work around rust not being able to do trait->trait casts easily.
+///
+/// - `$i` is the name of the new struct.
+/// - `$t` is the trait we contain.
+///
+#[macro_export]
+macro_rules! make_interface_identifier {
+    ($i:ident, $t:path) => {
+        #[derive(Clone)]
+        pub struct $i(pub ::std::sync::Arc<dyn $t>);
+
+        impl $i {
+            pub fn get(&self) -> ::std::sync::Arc<dyn $t> {
+                self.clone().0
+            }
+        }
+
+        impl ::std::ops::Deref for $i {
+            type Target = dyn $t;
+
+            fn deref(&self) -> &Self::Target {
+                self.0.deref()
+            }
         }
     };
 }

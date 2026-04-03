@@ -29,25 +29,24 @@
 
 use std::ffi::c_void;
 use std::ptr::NonNull;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, QueryInterface, declare_interfaces};
 use aleph_rhi_api::*;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 
+use crate::internal::unwrap;
 use crate::{ValidationAdapter, ValidationSurface};
 
 pub struct ValidationContext {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) inner: AnyArc<dyn IContext>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) inner: Arc<dyn IContext>,
 }
-
-declare_interfaces!(ValidationContext, [IContext]);
 
 crate::impl_platform_interface_passthrough!(ValidationContext);
 
 impl IContext for ValidationContext {
-    fn upgrade(&self) -> AnyArc<dyn IContext> {
-        AnyArc::map::<dyn IContext, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IContext> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -58,52 +57,47 @@ impl IContext for ValidationContext {
         self._this.weak_count()
     }
 
-    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Arc<dyn IAdapter>> {
         // Unwrap the ISurface reference to the inner object
         let mut options = options.clone();
-        options.surface = options.surface.map(|v| {
-            v.query_interface::<ValidationSurface>()
-                .expect("Unknown ISurface implementation")
-                .inner
-                .as_ref()
-        });
+        options.surface = options.surface.map(|v| unwrap::surface(v).inner.as_ref());
 
         let inner = self.inner.request_adapter(&options)?;
-        let adapter = AnyArc::new_cyclic(move |v| ValidationAdapter {
+        let adapter = Arc::new_cyclic(move |v| ValidationAdapter {
             _this: v.clone(),
             _context: self._this.upgrade().unwrap(),
             inner,
         });
-        Some(AnyArc::map::<dyn IAdapter, _>(adapter, |v| v))
+        Some(adapter)
     }
 
     fn create_surface(
         &self,
         display: &dyn HasDisplayHandle,
         window: &dyn HasWindowHandle,
-    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+    ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
         let inner = self.inner.create_surface(display, window)?;
-        let surface = AnyArc::new_cyclic(move |v| ValidationSurface {
+        let surface = Arc::new_cyclic(move |v| ValidationSurface {
             _this: v.clone(),
             _context: self._this.upgrade().unwrap(),
             inner,
             has_swap_chain: Default::default(),
         });
-        Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
+        Ok(surface)
     }
 
     fn create_surface_for_metal_layer(
         &self,
         layer: NonNull<c_void>,
-    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+    ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
         let inner = self.inner.create_surface_for_metal_layer(layer)?;
-        let surface = AnyArc::new_cyclic(move |v| ValidationSurface {
+        let surface = Arc::new_cyclic(move |v| ValidationSurface {
             _this: v.clone(),
             _context: self._this.upgrade().unwrap(),
             inner,
             has_swap_chain: Default::default(),
         });
-        Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
+        Ok(surface)
     }
 
     fn get_backend_api(&self) -> BackendAPI {
@@ -112,11 +106,10 @@ impl IContext for ValidationContext {
 }
 
 impl ValidationContext {
-    pub fn wrap_context(inner: AnyArc<dyn IContext>) -> AnyArc<dyn IContext> {
-        let adapter = AnyArc::new_cyclic(move |v| ValidationContext {
+    pub fn wrap_context(inner: Arc<dyn IContext>) -> Arc<dyn IContext> {
+        Arc::new_cyclic(move |v| ValidationContext {
             _this: v.clone(),
             inner,
-        });
-        AnyArc::map::<dyn IContext, _>(adapter, |v| v)
+        })
     }
 }

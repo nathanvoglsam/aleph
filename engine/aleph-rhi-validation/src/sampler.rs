@@ -27,14 +27,15 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
+
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 
 use crate::ValidationDevice;
 
 pub struct ValidationSampler {
-    pub(crate) _device: AnyArc<ValidationDevice>,
+    pub(crate) _device: Arc<ValidationDevice>,
     pub(crate) inner: SamplerHandle,
 }
 

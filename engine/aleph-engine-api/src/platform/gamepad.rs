@@ -37,18 +37,21 @@
 //! include local multiplayer gameplay.
 //!
 
-use any::*;
+use std::any::Any;
+use std::sync::Arc;
 
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's gamepads.
-pub trait IGamepads: IAny + 'static {
+pub trait IGamepads: Any + 'static {
     /// Returns a thread-safe accessor to the gamepad state as recorded from the most recently
     /// executed input polling cycle (i.e most recent frame).
-    fn get_accessor(&self) -> AnyArc<dyn IGamepadsAccessor>;
+    fn get_accessor(&self) -> Arc<dyn IGamepadsAccessor>;
 }
 
+crate::make_interface_identifier!(AGamepads, IGamepads);
+
 /// A thread-safe, sharable accessor to the gamepad state.
-pub trait IGamepadsAccessor: IAny + Send + Sync + 'static {
+pub trait IGamepadsAccessor: Any + Send + Sync + 'static {
     /// Returns the current state of the active gamepad as recorded for this frame. May return
     /// [None] if no gamepad is connected.
     fn get_active_controller_state(&self) -> Option<GamepadState>;

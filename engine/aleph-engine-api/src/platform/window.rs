@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
+use std::any::Any;
 use std::ffi::c_void;
 use std::ptr::NonNull;
 
-use any::*;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use smallbox::SmallBox;
 use smallbox::space::S1;
@@ -58,7 +58,7 @@ pub enum WindowEvent {
 ///
 /// This interface should be implemented as the interface to an OS window.
 ///
-pub trait IWindow: IAny + HasDisplayHandle + HasWindowHandle + Send + Sync + 'static {
+pub trait IWindow: Any + HasDisplayHandle + HasWindowHandle + Send + Sync + 'static {
     ///
     /// Returns whether the window has been resized since the last time this function was called.
     ///
@@ -209,6 +209,8 @@ pub trait IWindow: IAny + HasDisplayHandle + HasWindowHandle + Send + Sync + 'st
     ///
     fn events<'a>(&'a self) -> SmallBox<dyn IWindowEventsLock + 'a, S1>;
 }
+
+crate::make_interface_identifier!(AWindow, IWindow);
 
 ///
 /// This interface is used to provide access to the list of window events for the current frame.

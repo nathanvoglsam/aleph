@@ -32,18 +32,17 @@
 //! contain references to interface objects.
 //!
 
+use std::any::TypeId;
 use std::cell::Cell;
 
 use aleph_alloc::BVec;
-use aleph_any::{QueryInterface, box_downcast};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
 
 use crate::internal::unwrap;
 use crate::texture::ValidationImageView;
 use crate::{
-    ValidationBuffer, ValidationCommandList, ValidationFence, ValidationSampler,
-    ValidationSwapImage, ValidationTexture,
+    ValidationBuffer, ValidationCommandList, ValidationFence, ValidationSampler, ValidationTexture,
 };
 
 pub fn buffer(buffer: &BufferHandle) -> &BufferHandle {
@@ -110,7 +109,14 @@ pub fn queue_submit_desc<Return>(
     let mut command_lists = BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
     command_lists.extend(desc.command_lists.iter().map(|v| {
         let v = v.take().unwrap();
-        let v = box_downcast::<_, ValidationCommandList>(v).ok().unwrap();
+        let v = {
+            if v.as_ref().type_id() == TypeId::of::<ValidationCommandList>() {
+                let ptr = Box::into_raw(v);
+                unsafe { Box::from_raw(ptr.cast::<ValidationCommandList>()) }
+            } else {
+                panic!("Unknown ICommandList implementation")
+            }
+        };
         let v = v.inner;
         Cell::new(Some(v))
     }));
@@ -135,12 +141,7 @@ pub fn queue_submit_desc<Return>(
 
     let swap_image = desc
         .swap_image
-        .map(|v| {
-            let v = v
-                .query_interface::<ValidationSwapImage>()
-                .expect("Unknown ISwapImage implementation");
-            v.inner.as_deref()
-        })
+        .map(|v| unwrap::swap_image(v).inner.as_deref())
         .flatten();
 
     let new_desc = QueueSubmitDesc {

@@ -28,11 +28,10 @@
 //
 
 use std::collections::HashSet;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Weak};
 
 use aleph_alloc::{BBox, BVec};
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
@@ -48,17 +47,15 @@ use crate::{
 };
 
 pub struct ValidationDevice {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<ValidationContext>,
-    pub(crate) _adapter: AnyArc<ValidationAdapter>,
-    pub(crate) inner: AnyArc<dyn IDevice>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _context: Arc<ValidationContext>,
+    pub(crate) _adapter: Arc<ValidationAdapter>,
+    pub(crate) inner: Arc<dyn IDevice>,
     pub(crate) pool_counter: AtomicU64,
-    pub(crate) general_queue: Option<AnyArc<ValidationQueue>>,
-    pub(crate) compute_queue: Option<AnyArc<ValidationQueue>>,
-    pub(crate) transfer_queue: Option<AnyArc<ValidationQueue>>,
+    pub(crate) general_queue: Option<Arc<ValidationQueue>>,
+    pub(crate) compute_queue: Option<Arc<ValidationQueue>>,
+    pub(crate) transfer_queue: Option<Arc<ValidationQueue>>,
 }
-
-declare_interfaces!(ValidationDevice, [IDevice]);
 
 crate::impl_platform_interface_passthrough!(ValidationDevice);
 
@@ -66,8 +63,8 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn upgrade(&self) -> AnyArc<dyn IDevice> {
-        AnyArc::map::<dyn IDevice, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IDevice> {
+        self._this.upgrade().unwrap()
     }
 
     // ========================================================================================== //
@@ -104,7 +101,7 @@ impl IDevice for ValidationDevice {
     fn create_parameter_block_layout(
         &self,
         desc: &ParameterBlockDesc,
-    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
+    ) -> Result<Arc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
         if desc.flags.contains(ParameterBlockFlags::PUSH_DESCRIPTOR) {
             for param in desc.params {
                 match param.ty {
@@ -146,12 +143,12 @@ impl IDevice for ValidationDevice {
 
         let inner = self.inner.create_parameter_block_layout(&desc)?;
 
-        let out = AnyArc::new_cyclic(move |v| ValidationParameterBlockLayout {
-            this: v.clone(),
+        let out = Arc::new_cyclic(move |v| ValidationParameterBlockLayout {
+            _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             inner,
         });
-        Ok(AnyArc::map::<dyn IParameterBlockLayout, _>(out, |v| v))
+        Ok(out)
     }
 
     // ========================================================================================== //
@@ -160,7 +157,7 @@ impl IDevice for ValidationDevice {
     fn create_binding_signature(
         &self,
         desc: &BindingSignatureDesc,
-    ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError> {
+    ) -> Result<Arc<dyn IBindingSignature>, BindingSignatureCreateError> {
         if let Some(block) = &desc.push_constant_block {
             if (block.size.get() as u32 % 4) != 0 {
                 return Err(BindingSignatureCreateError::InvalidPushConstantBlockSize);
@@ -172,7 +169,7 @@ impl IDevice for ValidationDevice {
         parameter_block_layouts.extend(
             desc.parameter_block_layouts
                 .iter()
-                .map(|v| unwrap::parameter_block_layout_d(v).this.upgrade().unwrap()),
+                .map(|v| unwrap::parameter_block_layout_d(v)._this.upgrade().unwrap()),
         );
         let mut parameter_block_layouts_inner =
             BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiSystem::default());
@@ -189,14 +186,14 @@ impl IDevice for ValidationDevice {
         };
         let inner = self.inner.create_binding_signature(&new_desc)?;
 
-        let out = AnyArc::new_cyclic(move |v| ValidationBindingSignature {
-            this: v.clone(),
+        let out = Arc::new_cyclic(move |v| ValidationBindingSignature {
+            _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             inner,
             parameter_block_layouts,
             push_constant_block,
         });
-        Ok(AnyArc::map::<dyn IBindingSignature, _>(out, |v| v))
+        Ok(out)
     }
 
     // ========================================================================================== //
@@ -239,7 +236,7 @@ impl IDevice for ValidationDevice {
         let inner = self.inner.create_graphics_pipeline(&new_desc)?;
         let out = ValidationGraphicsPipeline {
             _device: self._this.upgrade().unwrap(),
-            _binding_signature: binding_signature.this.upgrade().unwrap(),
+            _binding_signature: binding_signature._this.upgrade().unwrap(),
             inner,
         };
         let out = Object::new_arc_opaque(out);
@@ -264,7 +261,7 @@ impl IDevice for ValidationDevice {
         let inner = self.inner.create_compute_pipeline(&new_desc)?;
         let out = ValidationComputePipeline {
             _device: self._this.upgrade().unwrap(),
-            _binding_signature: binding_signature.this.upgrade().unwrap(),
+            _binding_signature: binding_signature._this.upgrade().unwrap(),
             inner,
         };
         let out = Object::new_arc_opaque(out);
@@ -296,7 +293,7 @@ impl IDevice for ValidationDevice {
         };
         let pool = Box::new(ValidationDescriptorPool {
             _device: self._this.upgrade().unwrap(),
-            _layout: layout.this.upgrade().unwrap(),
+            _layout: layout._this.upgrade().unwrap(),
             pool: ParameterBlockPool::new(factory, desc.num_blocks as usize),
         });
 
@@ -406,20 +403,15 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
-        match queue_type {
-            QueueType::General => self
-                .general_queue
-                .clone()
-                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
-            QueueType::Compute => self
-                .compute_queue
-                .clone()
-                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
-            QueueType::Transfer => self
-                .transfer_queue
-                .clone()
-                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
+    fn get_queue(&self, queue_type: QueueType) -> Option<Arc<dyn IQueue>> {
+        let out = match queue_type {
+            QueueType::General => self.general_queue.clone(),
+            QueueType::Compute => self.compute_queue.clone(),
+            QueueType::Transfer => self.transfer_queue.clone(),
+        };
+        match out {
+            None => None,
+            Some(v) => Some(v),
         }
     }
 

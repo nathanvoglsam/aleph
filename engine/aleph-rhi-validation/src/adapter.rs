@@ -27,24 +27,23 @@
 // SOFTWARE.
 //
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use std::sync::{Arc, Weak};
+
 use aleph_rhi_api::*;
 
 use crate::{ValidationContext, ValidationDevice, ValidationQueue};
 
 pub struct ValidationAdapter {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<ValidationContext>,
-    pub(crate) inner: AnyArc<dyn IAdapter>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _context: Arc<ValidationContext>,
+    pub(crate) inner: Arc<dyn IAdapter>,
 }
-
-declare_interfaces!(ValidationAdapter, [IAdapter]);
 
 crate::impl_platform_interface_passthrough!(ValidationAdapter);
 
 impl IAdapter for ValidationAdapter {
-    fn upgrade(&self) -> AnyArc<dyn IAdapter> {
-        AnyArc::map::<dyn IAdapter, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IAdapter> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -59,16 +58,16 @@ impl IAdapter for ValidationAdapter {
         self.inner.description()
     }
 
-    fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
+    fn request_device(&self) -> Result<Arc<dyn IDevice>, RequestDeviceError> {
         fn query_queue(
             inner: &dyn IDevice,
-            device_weak: AnyWeak<ValidationDevice>,
+            device_weak: Weak<ValidationDevice>,
             queue_type: QueueType,
-        ) -> Option<AnyArc<ValidationQueue>> {
+        ) -> Option<Arc<ValidationQueue>> {
             inner.get_queue(queue_type).map(|q| {
                 // Query the inner queue for support for the debug interface. This controls whether
                 // ValidationQueue can also expose IQueueDebug.
-                AnyArc::new_cyclic(move |v| ValidationQueue {
+                Arc::new_cyclic(move |v| ValidationQueue {
                     _this: v.clone(),
                     _device: device_weak,
                     inner: q,
@@ -79,7 +78,7 @@ impl IAdapter for ValidationAdapter {
 
         let inner = self.inner.request_device()?;
 
-        let device = AnyArc::new_cyclic(move |v| {
+        let device = Arc::new_cyclic(move |v| {
             let general_queue = query_queue(inner.as_ref(), v.clone(), QueueType::General);
             let compute_queue = query_queue(inner.as_ref(), v.clone(), QueueType::Compute);
             let transfer_queue = query_queue(inner.as_ref(), v.clone(), QueueType::Transfer);
@@ -94,6 +93,6 @@ impl IAdapter for ValidationAdapter {
                 transfer_queue,
             }
         });
-        Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
+        Ok(device)
     }
 }

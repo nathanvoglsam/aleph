@@ -27,10 +27,9 @@
 // SOFTWARE.
 //
 
-use std::sync::Weak;
+use std::sync::{Arc, Weak};
 
 use aleph_alloc::BHashMap;
-use aleph_any::AnyArc;
 use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
@@ -40,7 +39,7 @@ use crate::ValidationDevice;
 
 pub struct ValidationTexture {
     pub(crate) _this: Weak<Object<ValidationTexture>>,
-    pub(crate) _device: AnyArc<ValidationDevice>,
+    pub(crate) _device: Arc<ValidationDevice>,
     pub(crate) inner: TextureHandle,
     pub(crate) desc: TextureDesc<'static>,
     pub(crate) views: Mutex<BHashMap<ImageViewDesc, Box<ValidationImageView>, RhiSystem>>,

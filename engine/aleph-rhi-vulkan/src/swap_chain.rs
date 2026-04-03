@@ -28,12 +28,11 @@
 //
 
 use std::any::TypeId;
-use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
+use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_nstr::{NStr, nstr};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
@@ -54,14 +53,12 @@ use crate::swap_image::SwapImage;
 use crate::texture::Texture;
 
 pub struct SwapChain {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) device: AnyArc<Device>,
-    pub(crate) surface: AnyArc<Surface>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) device: Arc<Device>,
+    pub(crate) surface: Arc<Surface>,
     pub(crate) inner: Mutex<SwapChainState>,
     pub(crate) queue_support: QueuePresentSupportFlags,
 }
-
-declare_interfaces!(SwapChain, [ISwapChain]);
 
 impl IGetPlatformInterface for SwapChain {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
@@ -70,16 +67,16 @@ impl IGetPlatformInterface for SwapChain {
 }
 
 impl ISwapChain for SwapChain {
-    fn upgrade(&self) -> AnyArc<dyn ISwapChain> {
-        AnyArc::map::<dyn ISwapChain, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn ISwapChain> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
-        self.this.strong_count()
+        self._this.strong_count()
     }
 
     fn weak_count(&self) -> usize {
-        self.this.weak_count()
+        self._this.weak_count()
     }
 
     fn present_supported_on_queue(&self, queue: QueueType) -> bool {
@@ -163,15 +160,14 @@ impl ISwapChain for SwapChain {
 
                 let semaphore_pool = inner.semaphore_pools[i as usize].clone();
 
-                let swap_image = AnyArc::new(SwapImage {
-                    swap_chain: self.this.upgrade().unwrap(),
+                let swap_image = Arc::new(SwapImage {
+                    swap_chain: self._this.upgrade().unwrap(),
                     index: i,
                     texture,
                     ready_semaphore: AtomicU64::new(ready_semaphore.as_raw()),
                     work_semaphores: Mutex::new(BVec::new_in(Default::default())),
                     semaphore_pool,
                 });
-                let swap_image = AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v);
                 if sub_optimal {
                     Ok(AcquiredImage::SubOptimal(swap_image))
                 } else {

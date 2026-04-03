@@ -30,13 +30,12 @@
 use std::any::TypeId;
 use std::ffi::CStr;
 use std::mem::ManuallyDrop;
+use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::arc::new_rhi_object;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::{Rhi, RhiSystem, try_clone_value_into_slot};
 use ash::vk;
@@ -49,15 +48,13 @@ use crate::internal::semaphore_pool::SemaphorePool;
 use crate::queue::{Queue, QueueInfo};
 
 pub struct Adapter {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) context: AnyArc<Context>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) context: Arc<Context>,
     pub(crate) name: String,
     pub(crate) vendor: AdapterVendor,
     pub(crate) physical_device: vk::PhysicalDevice,
     pub(crate) device_info: DeviceInfo,
 }
-
-declare_interfaces!(Adapter, [IAdapter]);
 
 impl IGetPlatformInterface for Adapter {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
@@ -299,7 +296,7 @@ impl Adapter {
         }
     }
 
-    fn inner_request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
+    fn inner_request_device(&self) -> Result<Arc<dyn IDevice>, RequestDeviceError> {
         let DeviceInfo {
             extensions: minimum_extensions,
             ..
@@ -382,11 +379,11 @@ impl Adapter {
             None
         };
 
-        Ok(new_rhi_object(move |v| {
+        Ok(Arc::new_cyclic(move |v| {
             let queues = queues;
             let mut device = Device {
-                this: v.clone(),
-                adapter: self.this.upgrade().unwrap(),
+                _this: v.clone(),
+                adapter: self._this.upgrade().unwrap(),
                 context: self.context.clone(),
                 device: ManuallyDrop::new(device),
                 push_descriptor,
@@ -412,16 +409,16 @@ impl Adapter {
 }
 
 impl IAdapter for Adapter {
-    fn upgrade(&self) -> AnyArc<dyn IAdapter> {
-        AnyArc::map::<dyn IAdapter, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IAdapter> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
-        self.this.strong_count()
+        self._this.strong_count()
     }
 
     fn weak_count(&self) -> usize {
-        self.this.weak_count()
+        self._this.weak_count()
     }
 
     fn description(&self) -> AdapterDescription<'_> {
@@ -431,7 +428,7 @@ impl IAdapter for Adapter {
         }
     }
 
-    fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
+    fn request_device(&self) -> Result<Arc<dyn IDevice>, RequestDeviceError> {
         Rhi::with(|| self.inner_request_device())
     }
 }

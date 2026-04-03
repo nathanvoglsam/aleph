@@ -28,9 +28,9 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::IBindingSignature;
 use aleph_rhi_impl_utils::RhiSystem;
 use ash::vk;
@@ -40,27 +40,25 @@ use crate::internal::allocation_callbacks::GLOBAL;
 use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct BindingSignature {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) pipeline_layout: vk::PipelineLayout,
-    pub(crate) parameter_block_layouts: BVec<AnyArc<ParameterBlockLayout>, RhiSystem>,
+    pub(crate) parameter_block_layouts: BVec<Arc<ParameterBlockLayout>, RhiSystem>,
     pub(crate) push_constant_block: Option<vk::PushConstantRange>,
 }
 
-declare_interfaces!(BindingSignature, [IBindingSignature]);
-
 impl IBindingSignature for BindingSignature {
-    fn upgrade(&self) -> AnyArc<dyn IBindingSignature> {
-        AnyArc::map::<dyn IBindingSignature, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IBindingSignature> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
-        self.this.strong_count()
+        self._this.strong_count()
     }
 
     fn weak_count(&self) -> usize {
-        self.this.weak_count()
+        self._this.weak_count()
     }
 
     fn get_id(&self) -> NonZeroU64 {

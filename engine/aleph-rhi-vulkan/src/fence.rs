@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
+
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use ash::vk;
@@ -36,7 +37,7 @@ use crate::device::Device;
 use crate::internal::allocation_callbacks::GLOBAL;
 
 pub struct Fence {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) semaphore: vk::Semaphore,
 }
 

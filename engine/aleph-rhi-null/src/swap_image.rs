@@ -28,17 +28,15 @@
 //
 
 use std::any::TypeId;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 
 use crate::NullSwapChain;
 
 pub struct NullSwapImage {
-    pub(crate) _swap_chain: AnyArc<NullSwapChain>,
+    pub(crate) _swap_chain: Arc<NullSwapChain>,
 }
-
-declare_interfaces!(NullSwapImage, [ISwapImage]);
 
 impl IGetPlatformInterface for NullSwapImage {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {

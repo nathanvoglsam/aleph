@@ -27,13 +27,14 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
+
 use aleph_object_system::unsafe_impl_iobject;
 
 use crate::NullDevice;
 
 pub struct NullSemaphore {
-    pub(crate) _device: AnyArc<NullDevice>,
+    pub(crate) _device: Arc<NullDevice>,
 }
 
 unsafe_impl_iobject!(NullSemaphore, "01944f87-2456-7f90-9474-3d5e95298cd7");

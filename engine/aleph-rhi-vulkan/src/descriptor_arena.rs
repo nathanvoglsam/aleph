@@ -29,9 +29,9 @@
 
 use std::any::TypeId;
 use std::mem::MaybeUninit;
+use std::sync::Arc;
 
 use aleph_alloc::BVec;
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
 use ash::prelude::VkResult;
@@ -43,11 +43,9 @@ use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::unwrap;
 
 pub struct DescriptorArena {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) descriptor_pool: vk::DescriptorPool,
 }
-
-declare_interfaces!(DescriptorArena, [IDescriptorArena]);
 
 impl IGetPlatformInterface for DescriptorArena {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {

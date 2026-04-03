@@ -28,9 +28,9 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedParameterBlockDesc;
@@ -41,27 +41,25 @@ use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::unwrap;
 
 pub struct ParameterBlockLayout {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) descriptor_set_layout: vk::DescriptorSetLayout,
     pub(crate) pool_sizes: BVec<vk::DescriptorPoolSize, RhiSystem>,
     pub(crate) desc: OwnedParameterBlockDesc,
 }
 
-declare_interfaces!(ParameterBlockLayout, [IParameterBlockLayout]);
-
 impl IParameterBlockLayout for ParameterBlockLayout {
-    fn upgrade(&self) -> AnyArc<dyn IParameterBlockLayout> {
-        AnyArc::map::<dyn IParameterBlockLayout, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IParameterBlockLayout> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
-        self.this.strong_count()
+        self._this.strong_count()
     }
 
     fn weak_count(&self) -> usize {
-        self.this.weak_count()
+        self._this.weak_count()
     }
 
     fn desc(&self) -> &ParameterBlockDesc<'_> {

@@ -28,9 +28,9 @@
 //
 
 use std::any::TypeId;
+use std::sync::Arc;
 
 use aleph_alloc::{Blink, BlinkAlloc};
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
 use ash::vk;
@@ -40,14 +40,12 @@ use crate::encoder::Encoder;
 use crate::internal::allocation_callbacks::GLOBAL;
 
 pub struct CommandList {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) pool: vk::CommandPool,
     pub(crate) buffer: vk::CommandBuffer,
     pub(crate) list_type: QueueType,
     pub(crate) state: ListState,
 }
-
-declare_interfaces!(CommandList, [ICommandList]);
 
 impl IGetPlatformInterface for CommandList {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {

@@ -28,19 +28,17 @@
 //
 
 use std::any::TypeId;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 
 use crate::ValidationSwapChain;
 
 pub struct ValidationSwapImage {
-    pub(crate) _swap_chain: AnyArc<ValidationSwapChain>,
-    pub(crate) inner: Option<AnyArc<dyn ISwapImage>>,
+    pub(crate) _swap_chain: Arc<ValidationSwapChain>,
+    pub(crate) inner: Option<Arc<dyn ISwapImage>>,
     pub(crate) texture: Option<TextureHandle>,
 }
-
-declare_interfaces!(ValidationSwapImage, [ISwapImage]);
 
 impl IGetPlatformInterface for ValidationSwapImage {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {

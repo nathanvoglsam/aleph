@@ -29,8 +29,8 @@
 
 use std::ffi::{CStr, CString, c_void};
 use std::marker::PhantomData;
+use std::sync::Arc;
 
-use api::any::{AnyArc, declare_interfaces};
 use api::platform::IClipboard;
 
 ///
@@ -38,13 +38,11 @@ use api::platform::IClipboard;
 ///
 pub struct Clipboard(PhantomData<*const ()>);
 
-declare_interfaces!(Clipboard, [IClipboard]);
-
 impl Clipboard {
     /// Safety: It is the caller's responsibility to ensure they only construct a Clipboard object
     ///         on the main thread.
-    pub(crate) unsafe fn new() -> AnyArc<Self> {
-        AnyArc::new(Self(Default::default()))
+    pub(crate) unsafe fn new() -> Arc<Self> {
+        Arc::new(Self(Default::default()))
     }
 }
 

@@ -31,7 +31,6 @@ use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, Weak};
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::IDevice;
 use crossbeam::queue::ArrayQueue;
 
@@ -143,7 +142,7 @@ impl<T: IAllocatorFactory> Drop for AllocatorPoolItem<T> {
 
 /// An [`IAllocatorFactory`] implementation that builds [`LinearDescriptorPool`] objects.
 pub struct LinearDescriptorPoolFactory {
-    device: AnyArc<dyn IDevice>,
+    device: Arc<dyn IDevice>,
     default_block_num: u32,
 }
 
@@ -153,7 +152,7 @@ impl LinearDescriptorPoolFactory {
     ///
     /// 'default_block_num' is the initial size of a [`LinearDescriptorPool`] object when it is
     /// created by a factory. Be sure to tweak this to your workload if relevant.
-    pub const fn new(device: AnyArc<dyn IDevice>, default_block_num: u32) -> Self {
+    pub const fn new(device: Arc<dyn IDevice>, default_block_num: u32) -> Self {
         Self {
             device,
             default_block_num,

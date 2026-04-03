@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 //
 //
 // This file is a part of Aleph
@@ -26,21 +28,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-
-use aleph_any::{AnyArc, IAny};
 use thiserror::Error;
 
 use crate::*;
 
 /// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
-pub trait IAdapter: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(IAdapter);
+pub trait IAdapter: IGetPlatformInterface + Send + Sync {
+    arc_trait_utils_decl!(IAdapter);
 
     /// Returns the [AdapterDescription] that provides information about this specific adapter.
     fn description(&self) -> AdapterDescription<'_>;
 
     /// Requests an IDevice
-    fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError>;
+    fn request_device(&self) -> Result<Arc<dyn IDevice>, RequestDeviceError>;
 }
 
 /// The set of preferences that can be requested for the type of adapter to select.

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
 
 use crate::internal::renderer::surface::SharedSurface;
 use crate::renderer::surface_notify::SurfaceNotification;
@@ -118,7 +118,7 @@ impl SwapManager {
 
 pub struct AcquiredImage {
     /// Handle to the acquire swap image
-    pub swap_image: AnyArc<dyn rhi::ISwapImage>,
+    pub swap_image: Arc<dyn rhi::ISwapImage>,
 
     /// The dimensions of the swap chain image
     pub extent: rhi::Extent2D,

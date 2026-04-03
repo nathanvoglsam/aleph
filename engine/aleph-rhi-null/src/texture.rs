@@ -29,8 +29,8 @@
 
 use std::num::NonZeroU64;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
@@ -38,7 +38,7 @@ use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use crate::NullDevice;
 
 pub struct NullTexture {
-    pub(crate) _device: AnyArc<NullDevice>,
+    pub(crate) _device: Arc<NullDevice>,
     pub(crate) id: NonZeroU64,
     pub(crate) desc: OwnedTextureDesc,
 }

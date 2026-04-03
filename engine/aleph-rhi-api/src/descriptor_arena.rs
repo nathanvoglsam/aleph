@@ -27,11 +27,9 @@
 // SOFTWARE.
 //
 
-use aleph_any::IAny;
-
 use crate::*;
 
-pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
+pub trait IDescriptorArena: IGetPlatformInterface + Send {
     /// Allocates a new individual parameter block from the pool.
     ///
     /// May fail if the pool's backing memory has been exhausted.

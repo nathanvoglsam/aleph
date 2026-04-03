@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use api::any::AnyArc;
+use std::sync::Arc;
+
 use api::scheduler::ResMut;
 use mg::renderer::Renderer;
 
@@ -37,7 +38,7 @@ use crate::render::resources::render_scene::RenderSceneResource;
 
 pub struct PublishEguiSceneSystem {
     pub font_texture: EguiFontTexture,
-    pub render_data: AnyArc<dyn egui::IEguiRenderData>,
+    pub render_data: Arc<dyn egui::IEguiRenderData>,
 }
 
 impl PublishEguiSceneSystem {

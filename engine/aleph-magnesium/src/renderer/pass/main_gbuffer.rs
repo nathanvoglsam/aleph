@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
+
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_ecs::world::query::Read;
 use aleph_frame_graph::*;
@@ -437,8 +438,8 @@ impl IStateCacheKey for MainOpaqueCommonKey {
 }
 
 pub struct MainOpaqueCommonLayout {
-    pub global_block_layout: AnyArc<dyn rhi::IParameterBlockLayout>,
-    pub model_block_layout: AnyArc<dyn rhi::IParameterBlockLayout>,
+    pub global_block_layout: Arc<dyn rhi::IParameterBlockLayout>,
+    pub model_block_layout: Arc<dyn rhi::IParameterBlockLayout>,
     pub sampler: rhi::SamplerHandle,
 }
 
@@ -473,7 +474,7 @@ impl MainOpaqueCommonLayout {
 
     fn create_global_block_layout(
         device: &dyn rhi::IDevice,
-    ) -> AnyArc<dyn rhi::IParameterBlockLayout> {
+    ) -> Arc<dyn rhi::IParameterBlockLayout> {
         let desc = rhi::ParameterBlockDesc {
             params: &[
                 rhi::ParameterType::ConstantBuffer.param(),
@@ -486,9 +487,7 @@ impl MainOpaqueCommonLayout {
         device.create_parameter_block_layout(&desc).unwrap()
     }
 
-    fn create_model_block_layout(
-        device: &dyn rhi::IDevice,
-    ) -> AnyArc<dyn rhi::IParameterBlockLayout> {
+    fn create_model_block_layout(device: &dyn rhi::IDevice) -> Arc<dyn rhi::IParameterBlockLayout> {
         let desc = rhi::ParameterBlockDesc {
             params: &[rhi::ParameterType::ConstantBuffer.param()],
             visibility: rhi::DescriptorShaderVisibility::All,
@@ -507,10 +506,10 @@ impl IStateCacheKey for MainOpaqueMaterialKey {
 }
 
 pub struct MainOpaqueMaterialLayout {
-    pub global_block_layout: AnyArc<dyn rhi::IParameterBlockLayout>,
-    pub material_block_layout: AnyArc<dyn rhi::IParameterBlockLayout>,
-    pub model_block_layout: AnyArc<dyn rhi::IParameterBlockLayout>,
-    pub binding_signature: AnyArc<dyn rhi::IBindingSignature>,
+    pub global_block_layout: Arc<dyn rhi::IParameterBlockLayout>,
+    pub material_block_layout: Arc<dyn rhi::IParameterBlockLayout>,
+    pub model_block_layout: Arc<dyn rhi::IParameterBlockLayout>,
+    pub binding_signature: Arc<dyn rhi::IBindingSignature>,
     pub pipeline: rhi::GraphicsPipelineHandle,
 }
 
@@ -555,7 +554,7 @@ impl MainOpaqueMaterialLayout {
     fn create_material_block_layout(
         device: &dyn rhi::IDevice,
         material: &Material,
-    ) -> AnyArc<dyn rhi::IParameterBlockLayout> {
+    ) -> Arc<dyn rhi::IParameterBlockLayout> {
         material.material.create_parameter_block_layout(device)
     }
 
@@ -564,7 +563,7 @@ impl MainOpaqueMaterialLayout {
         global: &dyn rhi::IParameterBlockLayout,
         material: &dyn rhi::IParameterBlockLayout,
         model: &dyn rhi::IParameterBlockLayout,
-    ) -> AnyArc<dyn rhi::IBindingSignature> {
+    ) -> Arc<dyn rhi::IBindingSignature> {
         let desc = rhi::BindingSignatureDesc {
             parameter_block_layouts: &[global, material, model],
             push_constant_block: None,

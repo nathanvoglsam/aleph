@@ -27,16 +27,17 @@
 // SOFTWARE.
 //
 
+use std::any::Any;
 use std::num::NonZeroU64;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, IAny};
 use thiserror::Error;
 
 use crate::*;
 
-pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(IDevice);
+pub trait IDevice: Any + IGetPlatformInterface + Send + Sync {
+    arc_trait_utils_decl!(IDevice);
 
     /// Triggers a garbage collection cycle across all queues in a single function call. For more
     /// information, see [IQueue::garbage_collect].
@@ -60,12 +61,12 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     fn create_parameter_block_layout(
         &self,
         desc: &ParameterBlockDesc,
-    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError>;
+    ) -> Result<Arc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError>;
 
     fn create_binding_signature(
         &self,
         desc: &BindingSignatureDesc,
-    ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError>;
+    ) -> Result<Arc<dyn IBindingSignature>, BindingSignatureCreateError>;
 
     fn create_graphics_pipeline(
         &self,
@@ -98,7 +99,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
         desc: &CommandListDesc,
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError>;
 
-    fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>>;
+    fn get_queue(&self, queue_type: QueueType) -> Option<Arc<dyn IQueue>>;
 
     /// Perform the given list of parameter block updates.
     ///

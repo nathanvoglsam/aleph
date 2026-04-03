@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use api::any::AnyArc;
+use std::sync::Arc;
+
 use api::ecs::world::query::Read;
 use api::scheduler::ResMut;
 use mg::renderer::Renderer;
@@ -38,7 +39,7 @@ use crate::render::config::Config;
 use crate::render::resources::render_scene::RenderSceneResource;
 
 pub struct RenderSystem {
-    pub device: AnyArc<dyn rhi::IDevice>,
+    pub device: Arc<dyn rhi::IDevice>,
     pub render_config: Config,
 }
 

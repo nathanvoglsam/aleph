@@ -34,7 +34,6 @@ use std::num::NonZero;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use aleph_shader_db::{Fragment, ShaderName, Vertex};
 use smallbox::space::S2;
@@ -113,10 +112,8 @@ pub unsafe trait IMaterial: Send + Sync + 'static {
 
     fn vert_name(&self) -> ShaderName<'static, Vertex>;
 
-    fn create_parameter_block_layout(
-        &self,
-        device: &dyn IDevice,
-    ) -> AnyArc<dyn IParameterBlockLayout>;
+    fn create_parameter_block_layout(&self, device: &dyn IDevice)
+    -> Arc<dyn IParameterBlockLayout>;
 
     fn check_binding_type(&self, binding: u32, binding_type: MaterialBindingType) -> bool;
 

@@ -28,15 +28,11 @@
 //
 
 use std::any::TypeId;
-use std::mem::transmute;
-use std::ptr;
-use std::ptr::NonNull;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
-use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject, box_downcast};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{Rhi, RhiSystem, try_clone_value_into_slot};
 use ash::vk::{self, Handle};
@@ -53,8 +49,8 @@ use crate::internal::unwrap;
 use crate::swap_image::SwapImage;
 
 pub struct Queue {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyWeak<Device>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _device: Weak<Device>,
     pub(crate) queue_type: QueueType,
     pub(crate) handle: vk::Queue,
 
@@ -86,32 +82,6 @@ pub struct Queue {
     pub(crate) in_flight: SegQueue<QueueSubmission>,
 }
 
-// Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
-impl IAny for Queue {
-    #[allow(bare_trait_objects)]
-    fn __query_interface(&self, target: TypeId) -> Option<TraitObject<'_>> {
-        unsafe {
-            if target == TypeId::of::<dyn IQueue>() {
-                return Some(transmute(self as &dyn IQueue));
-            }
-            if target == TypeId::of::<dyn IAny>() {
-                return Some(transmute(self as &dyn IAny));
-            }
-        }
-        unsafe {
-            if target == TypeId::of::<Queue>() {
-                Some(TraitObject {
-                    data: NonNull::new_unchecked(self as *const _ as *mut ()),
-                    vtable: ptr::null_mut(),
-                    phantom: Default::default(),
-                })
-            } else {
-                None
-            }
-        }
-    }
-}
-
 impl IGetPlatformInterface for Queue {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
         unsafe { try_clone_value_into_slot::<vk::Queue>(&self.handle, out, target) }
@@ -125,7 +95,7 @@ impl Queue {
         device: &Device,
         queue_type: QueueType,
         info: QueueInfo,
-    ) -> AnyArc<Self> {
+    ) -> Arc<Self> {
         let semaphore = unsafe {
             let mut info = vk::SemaphoreTypeCreateInfo::default()
                 .initial_value(0)
@@ -134,9 +104,9 @@ impl Queue {
             device.device.create_semaphore(&info, GLOBAL).unwrap()
         };
         Rhi::with(|| {
-            AnyArc::new_cyclic(|v| Self {
+            Arc::new_cyclic(|v| Self {
                 _this: v.clone(),
-                _device: device.this.clone(),
+                _device: device._this.clone(),
                 queue_type,
                 handle,
                 info,
@@ -163,8 +133,8 @@ impl Queue {
 }
 
 impl IQueue for Queue {
-    fn upgrade(&self) -> AnyArc<dyn IQueue> {
-        AnyArc::map::<dyn IQueue, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IQueue> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -325,7 +295,7 @@ impl IQueue for Queue {
         Ok(())
     }
 
-    unsafe fn present(&self, swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
+    unsafe fn present(&self, swap_image: Arc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
         let device = self._device.upgrade().unwrap();
         let loader = device.swapchain.as_ref().unwrap();
 
@@ -333,7 +303,7 @@ impl IQueue for Queue {
             let v = swap_image;
             unwrap::swap_image_owned(v)
         };
-        let swap_image = AnyArc::get_mut(&mut swap_image).unwrap();
+        let swap_image = Arc::get_mut(&mut swap_image).unwrap();
 
         let swap_chain = &swap_image.swap_chain;
 
@@ -529,7 +499,14 @@ impl<'a> SubmissionManager<'a> {
     ) -> Result<(), QueueSubmitError> {
         for list in desc.command_lists {
             let list = list.take().unwrap();
-            let list = box_downcast::<_, CommandList>(list).ok().unwrap();
+            let list = {
+                if list.as_ref().type_id() == TypeId::of::<CommandList>() {
+                    let ptr = Box::into_raw(list);
+                    unsafe { Box::from_raw(ptr.cast::<CommandList>()) }
+                } else {
+                    panic!("Unknown ICommandList implementation")
+                }
+            };
             self.command_buffers.push(list.buffer);
             submission.lists.push(list);
         }

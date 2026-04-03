@@ -28,23 +28,21 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::IBindingSignature;
 
 use crate::NullDevice;
 
 pub struct NullBindingSignature {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<NullDevice>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) _device: Arc<NullDevice>,
     pub(crate) id: NonZeroU64,
 }
 
-declare_interfaces!(NullBindingSignature, [IBindingSignature]);
-
 impl IBindingSignature for NullBindingSignature {
-    fn upgrade(&self) -> AnyArc<dyn IBindingSignature> {
-        AnyArc::map::<dyn IBindingSignature, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IBindingSignature> {
+        self.this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {

@@ -27,13 +27,14 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
+
 use aleph_object_system::unsafe_impl_iobject;
 
 use crate::NullDevice;
 
 pub struct NullFence {
-    pub(crate) _device: AnyArc<NullDevice>,
+    pub(crate) _device: Arc<NullDevice>,
 }
 
 unsafe_impl_iobject!(NullFence, "01944f85-b377-7ea0-a3ef-972d804169ef");

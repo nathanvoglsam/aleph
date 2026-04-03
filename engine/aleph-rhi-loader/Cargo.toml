@@ -44,7 +44,6 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies]
 aleph-rhi-api = { workspace = true }
 aleph-rhi-validation = { workspace = true }
-aleph-any = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true }
 

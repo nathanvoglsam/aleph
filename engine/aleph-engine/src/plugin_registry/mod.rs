@@ -28,7 +28,6 @@
 //
 
 use aleph_config::{ConfigRunner, RunConfigError};
-pub use api::any;
 use api::ecs::world::World;
 use api::plugin::CoreRefs;
 use api::schedule::WorldResource;
@@ -38,12 +37,13 @@ mod builder;
 mod quit_handle;
 mod registrar;
 
-use std::any::TypeId;
+use std::any::{Any, TypeId};
 use std::collections::{BTreeMap, BTreeSet};
+use std::ops::Deref;
+use std::sync::Arc;
 
 pub use builder::PluginRegistryBuilder;
 
-use crate::api::any::{AnyArc, IAny};
 use crate::api::plugin::{IPlugin, IQuitHandle, IRegistryAccessor};
 use crate::internal::platform::PlatformSDL3;
 use crate::internal::rhi_load::RhiLoad;
@@ -54,11 +54,11 @@ pub struct PluginRegistry {
     /// This stores plugins that can only be invoked directly from the main thread
     plugins: Vec<PluginEntry>,
 
-    quit_handle: AnyArc<QuitHandleImpl>,
+    quit_handle: Arc<QuitHandleImpl>,
 
     /// Sharable storage for the set of all interfaces that have been provided by the registered
     /// plugins
-    interfaces: Option<BTreeMap<TypeId, AnyArc<dyn IAny>>>,
+    interfaces: Option<BTreeMap<TypeId, Box<dyn Any>>>,
 
     /// The baked init execution sequence
     init_order: Vec<usize>,
@@ -97,7 +97,7 @@ impl PluginRegistry {
 
         let configs = Self::load_configs();
 
-        let quit_handle = AnyArc::map::<dyn IQuitHandle, _>(self.quit_handle.clone(), |v| v);
+        let quit_handle = self.quit_handle.clone();
         let mut accessor = RegistryAccessor {
             quit_handle,
             configs,
@@ -300,29 +300,30 @@ impl Drop for PluginRegistry {
 }
 
 pub(crate) struct RegistryAccessor {
-    pub(crate) quit_handle: AnyArc<dyn IQuitHandle>,
+    pub(crate) quit_handle: Arc<dyn IQuitHandle>,
     pub(crate) configs: serde_json::Map<String, serde_json::Value>,
-    pub(crate) interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
-    pub(crate) provides: BTreeMap<TypeId, AnyArc<dyn IAny>>,
+    pub(crate) interfaces: BTreeMap<TypeId, Box<dyn Any>>,
+    pub(crate) provides: BTreeMap<TypeId, Box<dyn Any>>,
     pub(crate) schedule: Box<Schedule>,
     pub(crate) resources: Box<TypedTable>,
     pub(crate) world: Box<World>,
 }
 
 impl IRegistryAccessor for RegistryAccessor {
-    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny>> {
-        self.interfaces.get(&interface).cloned()
+    fn __get_interface(&self, interface: TypeId) -> Option<&dyn Any> {
+        self.interfaces.get(&interface).map(|v| v.deref())
     }
 
-    fn __provide(&mut self, interface: TypeId, object: AnyArc<dyn IAny>) {
-        assert!(
-            object.__query_interface(interface).is_some(),
+    fn __provide(&mut self, interface: TypeId, object: Box<dyn Any>) {
+        assert_eq!(
+            object.as_ref().type_id(),
+            interface,
             "Attempting to provide an object that does not implement the specified interface!"
         );
         self.provides.insert(interface, object);
     }
 
-    fn quit_handle(&self) -> AnyArc<dyn IQuitHandle> {
+    fn quit_handle(&self) -> Arc<dyn IQuitHandle> {
         self.quit_handle.clone()
     }
 

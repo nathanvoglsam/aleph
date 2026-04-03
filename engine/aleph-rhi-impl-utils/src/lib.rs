@@ -28,19 +28,15 @@
 //
 
 #[doc(hidden)]
-pub extern crate aleph_any;
-
-#[doc(hidden)]
 pub extern crate aleph_rhi_api;
 
 use std::any::TypeId;
 use std::ffi::{CStr, c_char};
+use std::sync::Arc;
 
 use aleph_alloc::instrumentation::Instrumented;
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
-pub mod arc;
 pub mod bump_cell;
 pub mod conv;
 pub mod manually_drop;
@@ -108,7 +104,7 @@ pub unsafe fn str_from_ptr(v: *const c_char) -> *const str {
 /// wrapper.
 pub fn map_acquired_image(
     v: AcquiredImage,
-    f: impl FnOnce(AnyArc<dyn ISwapImage>) -> AnyArc<dyn ISwapImage>,
+    f: impl FnOnce(Arc<dyn ISwapImage>) -> Arc<dyn ISwapImage>,
 ) -> AcquiredImage {
     match v {
         AcquiredImage::Ok(old) => AcquiredImage::Ok(f(old)),

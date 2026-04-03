@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use any::*;
+use std::any::Any;
+
 use smallbox::SmallBox;
 use smallbox::space::S1;
 
@@ -37,9 +38,11 @@ use crate::platform::{KeyboardEvent, MouseEvent, WindowEvent};
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's event queue.
 ///
-pub trait IEvents: IAny + Send + Sync + 'static {
+pub trait IEvents: Any + Send + Sync + 'static {
     fn get<'a>(&'a self) -> SmallBox<dyn IEventsLock + 'a, S1>;
 }
+
+crate::make_interface_identifier!(AEvents, IEvents);
 
 ///
 /// This interface is used to provide access to the list of events for the current frame.

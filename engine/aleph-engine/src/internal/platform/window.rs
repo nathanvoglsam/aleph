@@ -29,9 +29,9 @@
 
 use std::ffi::c_void;
 use std::ptr::NonNull;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use api::any::{AnyArc, declare_interfaces};
 use api::platform::{
     Event, HasDisplayHandle, HasWindowHandle, IWindow, IWindowEventsLock, RawDisplayHandle,
     RawWindowHandle, WindowEvent,
@@ -136,8 +136,6 @@ pub struct Window {
     pub(crate) resized: AtomicBool,
 }
 
-declare_interfaces!(Window, [IWindow]);
-
 impl Window {
     ///
     /// Internal function for initializing the engine window
@@ -145,7 +143,7 @@ impl Window {
     pub(crate) fn new(
         video_ctx: &sdl3::VideoSubsystem,
         title: &str,
-    ) -> (AnyArc<Self>, sdl3::video::Window) {
+    ) -> (Arc<Self>, sdl3::video::Window) {
         const DEFAULT_WIDTH: u32 = 1280;
         const DEFAULT_HEIGHT: u32 = 800;
 
@@ -237,7 +235,7 @@ impl Window {
 
         window.raise();
 
-        (AnyArc::new(out), window)
+        (Arc::new(out), window)
     }
 
     ///

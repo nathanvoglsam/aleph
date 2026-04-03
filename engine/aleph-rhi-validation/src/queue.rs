@@ -27,57 +27,26 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
-use std::mem::transmute;
-use std::ptr;
-use std::ptr::NonNull;
-use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, IAny, QueryInterface, TraitObject};
 use aleph_rhi_api::*;
 
 use crate::internal::{get_as_unwrapped, unwrap};
 use crate::{ValidationCommandList, ValidationDevice, ValidationTexture};
 
 pub struct ValidationQueue {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyWeak<ValidationDevice>,
-    pub(crate) inner: AnyArc<dyn IQueue>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _device: Weak<ValidationDevice>,
+    pub(crate) inner: Arc<dyn IQueue>,
     pub(crate) queue_type: QueueType,
-}
-
-// Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
-impl IAny for ValidationQueue {
-    #[allow(bare_trait_objects)]
-    fn __query_interface(&self, target: TypeId) -> Option<TraitObject<'_>> {
-        unsafe {
-            if target == TypeId::of::<dyn IQueue>() {
-                return Some(transmute(self as &dyn IQueue));
-            }
-            if target == TypeId::of::<dyn IAny>() {
-                return Some(transmute(self as &dyn IAny));
-            }
-        }
-        unsafe {
-            if target == TypeId::of::<ValidationQueue>() {
-                Some(TraitObject {
-                    data: NonNull::new_unchecked(self as *const _ as *mut ()),
-                    vtable: ptr::null_mut(),
-                    phantom: Default::default(),
-                })
-            } else {
-                None
-            }
-        }
-    }
 }
 
 crate::impl_platform_interface_passthrough!(ValidationQueue);
 
 impl IQueue for ValidationQueue {
-    fn upgrade(&self) -> AnyArc<dyn IQueue> {
-        AnyArc::map::<dyn IQueue, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IQueue> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -103,10 +72,7 @@ impl IQueue for ValidationQueue {
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         for v in desc.command_lists {
             let list_box = v.take().unwrap();
-            let list = list_box
-                .query_interface::<ValidationCommandList>()
-                .expect("Unknown ICommandList implementation");
-            self.validate_command_list_submission(list);
+            self.validate_command_list_submission(unwrap::command_list(list_box.as_ref()));
             v.set(Some(list_box));
         }
 
@@ -116,12 +82,12 @@ impl IQueue for ValidationQueue {
         })
     }
 
-    unsafe fn present(&self, swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
+    unsafe fn present(&self, swap_image: Arc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
         let mut swap_image = {
             let v = swap_image;
             unwrap::swap_image_owned(v)
         };
-        let swap_image = AnyArc::get_mut(&mut swap_image).unwrap();
+        let swap_image = Arc::get_mut(&mut swap_image).unwrap();
 
         {
             let swap_texture = swap_image.texture.take().unwrap();

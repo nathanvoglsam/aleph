@@ -27,22 +27,25 @@
 // SOFTWARE.
 //
 
+use std::any::Any;
 use std::ops::DerefMut;
 use std::sync::Mutex;
 
 use aleph_alloc::instrumentation::IAllocationCategory;
 use egui::{ClippedPrimitive, FullOutput, RawInput};
-use engine_api::any::{IAny, declare_interfaces};
+use engine_api::make_interface_identifier;
 
 use crate::Egui;
 
 ///
 /// This interface is used for getting an `egui::CtxRef`.
 ///
-pub trait IEguiContextProvider: IAny + Send + Sync {
+pub trait IEguiContextProvider: Any + Send + Sync {
     /// Gets a `egui::CtxRef` handle.
     fn get_context(&self) -> egui::Context;
 }
+
+make_interface_identifier!(AEguiContextProvider, IEguiContextProvider);
 
 /// Concrete implementation of `IEguiContextProvider`
 pub struct EguiContextProvider {
@@ -72,21 +75,21 @@ impl IEguiContextProvider for EguiContextProvider {
     }
 }
 
-declare_interfaces!(EguiContextProvider, [IEguiContextProvider]);
-
 ///
 /// This interface is used as a slot for storing/passing the egui rendering data off to a renderer.
 ///
 /// A renderer can choose to support egui by checking for this interface, and using it to get the
 /// current frame's paint jobs.
 ///
-pub trait IEguiRenderData: IAny + Send + Sync {
+pub trait IEguiRenderData: Any + Send + Sync {
     /// Replace the old paint job data with the newly provided data.
     fn put(&self, data: RenderData);
 
     /// Take the current paint job data, leaving an empty job list in its place.
     fn take(&self) -> RenderData;
 }
+
+make_interface_identifier!(AEguiRenderData, IEguiRenderData);
 
 pub struct RenderData {
     pub primitives: Vec<ClippedPrimitive>,
@@ -119,5 +122,3 @@ impl IEguiRenderData for EguiRenderData {
         slot.unwrap()
     }
 }
-
-declare_interfaces!(EguiRenderData, [IEguiRenderData]);

@@ -32,7 +32,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use aleph_alloc::BVec;
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
 use ash::vk::{self, Handle};
@@ -42,15 +41,13 @@ use crate::internal::semaphore_pool::SemaphorePool;
 use crate::swap_chain::SwapChain;
 
 pub struct SwapImage {
-    pub(crate) swap_chain: AnyArc<SwapChain>,
+    pub(crate) swap_chain: Arc<SwapChain>,
     pub(crate) index: u32,
     pub(crate) texture: TextureHandle,
     pub(crate) ready_semaphore: AtomicU64,
     pub(crate) work_semaphores: Mutex<BVec<vk::Semaphore, RhiSystem>>,
     pub(crate) semaphore_pool: Arc<SemaphorePool>,
 }
-
-declare_interfaces!(SwapImage, [ISwapImage]);
 
 impl IGetPlatformInterface for SwapImage {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {

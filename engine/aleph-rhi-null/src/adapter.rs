@@ -27,24 +27,23 @@
 // SOFTWARE.
 //
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use std::sync::{Arc, Weak};
+
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 
 use crate::{NullContext, NullDevice, NullQueue};
 
 pub struct NullAdapter {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<NullContext>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _context: Arc<NullContext>,
 }
-
-declare_interfaces!(NullAdapter, [IAdapter]);
 
 crate::impl_platform_interface_passthrough!(NullAdapter);
 
 impl IAdapter for NullAdapter {
-    fn upgrade(&self) -> AnyArc<dyn IAdapter> {
-        AnyArc::map::<dyn IAdapter, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IAdapter> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -62,15 +61,15 @@ impl IAdapter for NullAdapter {
         }
     }
 
-    fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
-        fn make_queue(device_weak: &AnyWeak<NullDevice>) -> AnyArc<NullQueue> {
-            AnyArc::new_cyclic(move |v| NullQueue {
+    fn request_device(&self) -> Result<Arc<dyn IDevice>, RequestDeviceError> {
+        fn make_queue(device_weak: &Weak<NullDevice>) -> Arc<NullQueue> {
+            Arc::new_cyclic(move |v| NullQueue {
                 _this: v.clone(),
                 _device: device_weak.clone(),
             })
         }
 
-        let device = AnyArc::new_cyclic(move |v| {
+        let device = Arc::new_cyclic(move |v| {
             let general_queue = make_queue(v);
             let compute_queue = make_queue(v);
             let transfer_queue = make_queue(v);
@@ -84,6 +83,6 @@ impl IAdapter for NullAdapter {
                 object_counter: ObjectCounter::new(),
             }
         });
-        Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
+        Ok(device)
     }
 }

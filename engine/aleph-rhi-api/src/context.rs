@@ -29,8 +29,8 @@
 
 use std::ffi::c_void;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, IAny};
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use thiserror::Error;
 
@@ -38,25 +38,25 @@ use crate::*;
 
 /// Represents the underlying API context. Handles creating surfaces from window handles, and
 /// retrieving.
-pub trait IContext: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(IContext);
+pub trait IContext: IGetPlatformInterface + Send + Sync {
+    arc_trait_utils_decl!(IContext);
 
     /// Create an adapter that suitably meets the requested requirements and preferences specified
     /// by `options`. Will return `None` if no adapter meeting the requirements could be found.
-    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>>;
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Arc<dyn IAdapter>>;
 
     /// Create a surface from the provided window handle.
     fn create_surface(
         &self,
         display: &dyn HasDisplayHandle,
         window: &dyn HasWindowHandle,
-    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError>;
+    ) -> Result<Arc<dyn ISurface>, SurfaceCreateError>;
 
     /// Create a surface from the provided `CAMetalLayer` pointer.
     fn create_surface_for_metal_layer(
         &self,
         layer: NonNull<c_void>,
-    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError>;
+    ) -> Result<Arc<dyn ISurface>, SurfaceCreateError>;
 
     /// Returns the API used by the underlying backend implementation.
     fn get_backend_api(&self) -> BackendAPI;

@@ -46,7 +46,6 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-alloc = { workspace = true }
-aleph-any = { workspace = true }
 aleph-atomic-borrow = { workspace = true }
 aleph-device-allocators = { workspace = true }
 aleph-ecs = { workspace = true }

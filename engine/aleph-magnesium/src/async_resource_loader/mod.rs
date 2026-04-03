@@ -32,10 +32,10 @@ pub mod loader_notify;
 pub mod texture_upload_range;
 
 use std::cell::{Cell, RefCell};
+use std::sync::Arc;
 
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
-use aleph_any::AnyArc;
 use aleph_gen_arena::{Handle, make_handle_id};
 use aleph_nstr::nstr;
 use thiserror::Error;
@@ -71,10 +71,10 @@ pub struct AsyncResourceLoader<C: Send + 'static> {
     config: AsyncResourceLoaderConfig,
 
     /// The GPU device handle.
-    device: AnyArc<dyn rhi::IDevice>,
+    device: Arc<dyn rhi::IDevice>,
 
     /// Handle to the copy queue that we will issue copy commands on.
-    queue: AnyArc<dyn rhi::IQueue>,
+    queue: Arc<dyn rhi::IQueue>,
 
     /// Fence that we use for synchronizing all copy submissions with both the CPU and the GPU.
     fence: rhi::FenceHandle,
@@ -773,8 +773,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
 
 impl<C: Send + 'static> AsyncResourceLoader<C> {
     pub(crate) fn new(
-        device: AnyArc<dyn rhi::IDevice>,
-        queue: AnyArc<dyn rhi::IQueue>,
+        device: Arc<dyn rhi::IDevice>,
+        queue: Arc<dyn rhi::IQueue>,
         fence: rhi::FenceHandle,
         loader_sender: LoaderSender<C>,
         config: AsyncResourceLoaderConfig,

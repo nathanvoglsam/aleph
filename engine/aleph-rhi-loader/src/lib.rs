@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
+
 use aleph_rhi_api::*;
 use serde::Deserialize;
 
@@ -164,7 +165,7 @@ impl RhiLoader {
     pub fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
+    ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         // Check if the backends list is empty, meaning none are available
         if self.backends.is_empty() {
             return Err(ContextCreateError::NoBackendsAvailable);
@@ -302,8 +303,8 @@ impl RhiLoader {
 
     fn wrap_with_validation(
         options: &ContextOptions,
-        context: AnyArc<dyn IContext>,
-    ) -> AnyArc<dyn IContext> {
+        context: Arc<dyn IContext>,
+    ) -> Arc<dyn IContext> {
         if options.validation {
             aleph_rhi_validation::ValidationContext::wrap_context(context)
         } else {
@@ -324,7 +325,7 @@ trait IRhiBackend {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<AnyArc<dyn IContext>, ContextCreateError>;
+    ) -> Result<Arc<dyn IContext>, ContextCreateError>;
 }
 
 #[cfg(any(windows, target_os = "macos", target_os = "ios", target_os = "linux",))]
@@ -336,7 +337,7 @@ impl IRhiBackend for aleph_rhi_vulkan::VulkanLoader {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
+    ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         let config = options.config.vulkan.clone().unwrap_or_default();
         let config = config.into();
         aleph_rhi_vulkan::VulkanLoader::make_context(

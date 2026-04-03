@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use api::any::{AnyArc, declare_interfaces};
 use api::platform::IFrameTimer;
 
 pub struct FrameTimer {
@@ -40,7 +40,7 @@ pub struct FrameTimer {
 }
 
 impl FrameTimer {
-    pub(crate) fn new() -> AnyArc<Self> {
+    pub(crate) fn new() -> Arc<Self> {
         log::info!("Initializing the Frame Timer");
         let out = Self {
             freq: AtomicU64::new(sdl3::timer::performance_frequency()),
@@ -48,7 +48,7 @@ impl FrameTimer {
             last: AtomicU64::new(sdl3::timer::performance_counter()),
             current: AtomicU64::new(sdl3::timer::performance_counter() + 1),
         };
-        AnyArc::new(out)
+        Arc::new(out)
     }
 
     pub(crate) fn update(&self) {
@@ -78,5 +78,3 @@ impl IFrameTimer for FrameTimer {
         elapsed / freq
     }
 }
-
-declare_interfaces!(FrameTimer, [IFrameTimer]);

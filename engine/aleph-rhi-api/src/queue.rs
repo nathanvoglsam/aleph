@@ -28,14 +28,14 @@
 //
 
 use std::cell::Cell;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, IAny};
 use thiserror::Error;
 
 use crate::*;
 
-pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(IQueue);
+pub trait IQueue: IGetPlatformInterface + Send + Sync {
+    arc_trait_utils_decl!(IQueue);
 
     /// Returns the set of per-queue properties associated with this queue.
     fn queue_properties(&self) -> QueueProperties;
@@ -86,7 +86,7 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     /// in the required resource state for presentation by the time this operation will be executed
     /// on the GPU timeline.
     ///
-    unsafe fn present(&self, swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError>;
+    unsafe fn present(&self, swap_image: Arc<dyn ISwapImage>) -> Result<(), QueuePresentError>;
 }
 
 #[derive(Clone, Debug)]

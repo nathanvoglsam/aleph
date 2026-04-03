@@ -28,20 +28,23 @@
 //
 
 use std::ops::Deref;
+use std::sync::Arc;
 
 use aleph_alloc::instrumentation::IAllocationCategory;
 use egui::ClippedPrimitive;
-use engine_api::any::{AnyArc, declare_interfaces};
 use engine_api::label::make_label;
 use engine_api::make_plugin_description_for_crate;
-use engine_api::platform::{IClipboard, IEvents, IFrameTimer, IKeyboard, IMouse, IWindow};
+use engine_api::platform::{AClipboard, AEvents, AFrameTimer, AKeyboard, AMouse, AWindow};
 use engine_api::plugin::{
     IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription, Provides,
 };
 use engine_api::schedule::CoreStage;
 
-use crate::traits::{EguiContextProvider, EguiRenderData};
-use crate::{Egui, IEguiContextProvider, IEguiRenderData, RenderData};
+use crate::traits::{
+    AEguiContextProvider, AEguiRenderData, EguiContextProvider, EguiRenderData,
+    IEguiContextProvider,
+};
+use crate::{Egui, IEguiRenderData, RenderData};
 
 pub struct PluginEgui();
 
@@ -58,28 +61,28 @@ impl IPlugin for PluginEgui {
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
         // We export two interfaces for interacting with egui
-        registrar.provides::<dyn IEguiContextProvider>(Provides::Always);
-        registrar.provides::<dyn IEguiRenderData>(Provides::Always);
+        registrar.provides::<AEguiContextProvider>(Provides::Always);
+        registrar.provides::<AEguiRenderData>(Provides::Always);
 
         // We need to get handles to all these when we initialize to save querying them every frame
-        registrar.requires::<dyn IWindow>(InitOrder::After);
-        registrar.requires::<dyn IMouse>(InitOrder::After);
-        registrar.requires::<dyn IKeyboard>(InitOrder::After);
-        registrar.requires::<dyn IFrameTimer>(InitOrder::After);
-        registrar.requires::<dyn IEvents>(InitOrder::After);
-        registrar.requires::<dyn IClipboard>(InitOrder::After);
+        registrar.requires::<AWindow>(InitOrder::After);
+        registrar.requires::<AMouse>(InitOrder::After);
+        registrar.requires::<AKeyboard>(InitOrder::After);
+        registrar.requires::<AFrameTimer>(InitOrder::After);
+        registrar.requires::<AEvents>(InitOrder::After);
+        registrar.requires::<AClipboard>(InitOrder::After);
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
-        let render_data: AnyArc<EguiRenderData> = AnyArc::default();
-        let context_provider: AnyArc<EguiContextProvider> = AnyArc::default();
+        let render_data: Arc<EguiRenderData> = Arc::default();
+        let context_provider: Arc<EguiContextProvider> = Arc::default();
 
-        let window = registry.get_interface::<dyn IWindow>().unwrap();
-        let mouse = registry.get_interface::<dyn IMouse>().unwrap();
-        let keyboard = registry.get_interface::<dyn IKeyboard>().unwrap();
-        let frame_timer = registry.get_interface::<dyn IFrameTimer>().unwrap();
-        let events = registry.get_interface::<dyn IEvents>().unwrap();
-        let clipboard = registry.get_interface::<dyn IClipboard>().unwrap();
+        let window = registry.get_interface::<AWindow>().unwrap().get();
+        let mouse = registry.get_interface::<AMouse>().unwrap().get();
+        let keyboard = registry.get_interface::<AKeyboard>().unwrap().get();
+        let frame_timer = registry.get_interface::<AFrameTimer>().unwrap().get();
+        let events = registry.get_interface::<AEvents>().unwrap().get();
+        let clipboard = registry.get_interface::<AClipboard>().unwrap().get();
 
         let pre_update_keyboard = keyboard.clone();
         let pre_update_frame_timer = frame_timer.clone();
@@ -136,8 +139,8 @@ impl IPlugin for PluginEgui {
                 },
             );
 
-        registry.provide::<dyn IEguiContextProvider, _>(context_provider);
-        registry.provide::<dyn IEguiRenderData, _>(render_data);
+        registry.provide(AEguiContextProvider(context_provider));
+        registry.provide(AEguiRenderData(render_data));
     }
 }
 
@@ -146,5 +149,3 @@ impl Default for PluginEgui {
         Self::new()
     }
 }
-
-declare_interfaces!(PluginEgui, [IPlugin]);

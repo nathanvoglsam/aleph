@@ -29,18 +29,16 @@
 
 use std::cell::Cell;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 
 use crate::NullDevice;
 
 pub struct NullDescriptorArena {
-    pub(crate) _device: AnyArc<NullDevice>,
+    pub(crate) _device: Arc<NullDevice>,
     pub(crate) counter: Cell<u64>,
 }
-
-declare_interfaces!(NullDescriptorArena, [IDescriptorArena]);
 
 crate::impl_platform_interface_passthrough!(NullDescriptorArena);
 

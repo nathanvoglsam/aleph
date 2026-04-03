@@ -32,7 +32,6 @@ use std::sync::Arc;
 
 use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BVec, Blink, BlinkAlloc};
-use aleph_any::AnyArc;
 use aleph_device_allocators::{
     AllocatorPool, AllocatorPoolItem, Grave, LinearDescriptorPool, LinearDescriptorPoolFactory,
 };
@@ -58,7 +57,7 @@ pub struct FrameGraph<A: PassArgs = ()> {
     pub(crate) _arena: Grave<Blink<BlinkAlloc<FgSystem>>>,
 
     /// The device object that this frame graph is created to work with
-    pub(crate) device: AnyArc<dyn IDevice>,
+    pub(crate) device: Arc<dyn IDevice>,
 
     /// Our final pass + barrier execution order that is the final output of our graph building
     /// operations. The passes and barriers are executed by iterating this list and executing the

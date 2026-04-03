@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
+
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
-use aleph_any::AnyArc;
 
 use crate::internal::MgSystem;
 
@@ -50,7 +51,7 @@ use crate::internal::MgSystem;
 /// - Descriptor pools/descriptor arenas
 pub struct DeferredDeletionManager {
     /// GPU device handle
-    device: AnyArc<dyn rhi::IDevice>,
+    device: Arc<dyn rhi::IDevice>,
 
     /// Collection of deletion bundles. These will be destroyed when their associated fence is
     /// found to be signaled.
@@ -59,7 +60,7 @@ pub struct DeferredDeletionManager {
 
 impl DeferredDeletionManager {
     /// Creates a new manager instance that manages resources for the given device.
-    pub fn new(device: AnyArc<dyn rhi::IDevice>) -> Self {
+    pub fn new(device: Arc<dyn rhi::IDevice>) -> Self {
         Self {
             device,
             bundles: BVec::new_in(system()),

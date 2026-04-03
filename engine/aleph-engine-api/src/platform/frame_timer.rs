@@ -27,10 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::any::IAny;
+use std::any::Any;
 
-pub trait IFrameTimer: IAny + Send + Sync + 'static {
+pub trait IFrameTimer: Any + Send + Sync + 'static {
     fn delta_time(&self) -> f64;
 
     fn elapsed_time(&self) -> f64;
 }
+
+crate::make_interface_identifier!(AFrameTimer, IFrameTimer);

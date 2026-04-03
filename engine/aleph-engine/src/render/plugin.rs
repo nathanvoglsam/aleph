@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::ops::Deref;
+use std::sync::Arc;
 
 use aleph_alloc::crossbeam;
 use aleph_alloc::crossbeam::channel::Sender;
@@ -37,7 +37,6 @@ use aleph_magnesium::renderer::builder::RendererBuilder;
 use aleph_magnesium::renderer::render_plane::DefaultRenderPlane;
 use aleph_magnesium::renderer::shader_accessor::ShaderAccessor;
 use aleph_shader_db::ArchivedShaderDatabase;
-use api::any::{AnyArc, QueryInterface, declare_interfaces};
 use api::components::{Transform, TransformHistory};
 use api::ecs::world::World;
 use api::ecs::world::query::{Read, Write};
@@ -45,9 +44,10 @@ use api::label::make_label;
 use api::make_plugin_description_for_crate;
 use api::platform::*;
 use api::plugin::*;
-use api::rhi::IRhiProvider;
+use api::rhi::ARhiProvider;
 use api::schedule::{CoreStage, WorldResource};
 use api::scheduler::{ExplicitDependencies, IntoSystem, Res, ResMut};
+use egui::AEguiRenderData;
 use mg::renderer::builder::ApplicationSurface;
 use mg::renderer::frame_graph::GraphArgs;
 use mg::renderer::immediate_resource_builder::ImmediateResourceBuilder;
@@ -64,7 +64,7 @@ use crate::render::systems::publish_render_scene::PublishRenderSceneSystem;
 use crate::render::systems::render::RenderSystem;
 
 pub struct PluginRender {
-    device: Option<AnyArc<dyn rhi::IDevice>>,
+    device: Option<Arc<dyn rhi::IDevice>>,
 }
 
 impl PluginRender {
@@ -79,10 +79,10 @@ impl IPlugin for PluginRender {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.requires::<dyn IWindow>(InitOrder::After);
-        registrar.requires::<dyn IRhiProvider>(InitOrder::After);
+        registrar.requires::<AWindow>(InitOrder::After);
+        registrar.requires::<ARhiProvider>(InitOrder::After);
 
-        registrar.uses::<dyn egui::IEguiRenderData>(InitOrder::After);
+        registrar.uses::<AEguiRenderData>(InitOrder::After);
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
@@ -91,25 +91,19 @@ impl IPlugin for PluginRender {
         config.log();
 
         // Get the handle for the window
-        let window = registry.get_interface::<dyn IWindow>().unwrap();
+        let window = registry.get_interface::<AWindow>().unwrap().get();
 
         // Get the render data slot for egui and the egui provider
-        let render_data = registry.get_interface::<dyn egui::IEguiRenderData>();
+        let render_data = registry.get_interface::<AEguiRenderData>().map(|v| v.get());
 
-        let rhi_provider = registry.get_interface::<dyn IRhiProvider>().unwrap();
+        let rhi_provider = registry.get_interface::<ARhiProvider>().unwrap();
         let surface = rhi_provider.surface().unwrap();
         let adapter = rhi_provider.adapter();
         let device = rhi_provider.device();
 
         self.device = Some(device.clone());
 
-        Self::log_gpu_info(
-            device
-                .deref()
-                .query_interface::<dyn rhi::IDevice>()
-                .unwrap(),
-            adapter.deref(),
-        );
+        Self::log_gpu_info(device.as_ref(), adapter.as_ref());
 
         let drawable_size = window.drawable_size();
         let drawable_size = rhi::Extent2D::new(drawable_size.0, drawable_size.1);
@@ -268,8 +262,6 @@ impl Default for PluginRender {
     }
 }
 
-declare_interfaces!(PluginRender, [IPlugin]);
-
 impl PluginRender {
     ///
     /// Internal function for logging info about the CPU that is being used
@@ -293,7 +285,7 @@ impl PluginRender {
 }
 
 struct SurfaceSender {
-    window: AnyArc<dyn IWindow>,
+    window: Arc<dyn IWindow>,
     sender: Sender<SurfaceNotification>,
 }
 
@@ -311,11 +303,11 @@ impl SurfaceSender {
 }
 
 struct EguiRenderPlane {
-    window: AnyArc<dyn IWindow>,
+    window: Arc<dyn IWindow>,
 }
 
 impl EguiRenderPlane {
-    fn new(window: AnyArc<dyn IWindow>) -> Self {
+    fn new(window: Arc<dyn IWindow>) -> Self {
         Self { window }
     }
 }

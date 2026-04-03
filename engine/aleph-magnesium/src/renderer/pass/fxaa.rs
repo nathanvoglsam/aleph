@@ -29,7 +29,6 @@
 
 use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
@@ -164,9 +163,9 @@ impl IStateCacheKey for CompositePlanesLayoutKey {
 }
 
 pub struct CompositePlanesLayout {
-    pub block_layout: AnyArc<dyn rhi::IParameterBlockLayout>,
+    pub block_layout: Arc<dyn rhi::IParameterBlockLayout>,
     pub sampler: rhi::SamplerHandle,
-    pub binding_signature: AnyArc<dyn rhi::IBindingSignature>,
+    pub binding_signature: Arc<dyn rhi::IBindingSignature>,
 }
 
 impl CompositePlanesLayout {
@@ -186,9 +185,7 @@ impl CompositePlanesLayout {
         }
     }
 
-    pub fn create_block_layout(
-        device: &dyn rhi::IDevice,
-    ) -> AnyArc<dyn rhi::IParameterBlockLayout> {
+    pub fn create_block_layout(device: &dyn rhi::IDevice) -> Arc<dyn rhi::IParameterBlockLayout> {
         let desc = rhi::ParameterBlockDesc {
             params: &[
                 rhi::ParameterType::ConstantBuffer.param(),
@@ -205,7 +202,7 @@ impl CompositePlanesLayout {
     pub fn create_binding_signature(
         device: &dyn rhi::IDevice,
         block_layout: &dyn rhi::IParameterBlockLayout,
-    ) -> AnyArc<dyn rhi::IBindingSignature> {
+    ) -> Arc<dyn rhi::IBindingSignature> {
         let desc = rhi::BindingSignatureDesc {
             parameter_block_layouts: &[block_layout],
             push_constant_block: rhi::PushConstantBlock::new(4),

@@ -126,12 +126,12 @@ macro_rules! obj_name_opt {
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! any_arc_trait_utils_decl {
+macro_rules! arc_trait_utils_decl {
     ($x: path) => {
-        /// Returns an `AnyArc` that points to `self`. This is similar to upgrading a weak
+        /// Returns an `Arc` that points to `self`. This is similar to upgrading a weak
         /// reference. We take a non-owning reference `&dyn SomeTrait` and upgrade it to an owning
-        /// `AnyArc<dyn SomeTrait>` handle.
-        fn upgrade(&self) -> aleph_any::AnyArc<dyn $x>;
+        /// `Arc<dyn SomeTrait>` handle.
+        fn upgrade(&self) -> ::std::sync::Arc<dyn $x>;
 
         /// Returns the number of strong references to the object.
         ///

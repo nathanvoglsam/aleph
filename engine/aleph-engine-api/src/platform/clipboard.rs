@@ -27,15 +27,14 @@
 // SOFTWARE.
 //
 
+use std::any::Any;
 use std::ffi::{CStr, CString};
-
-use any::*;
 
 ///
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's clipboard.
 ///
-pub trait IClipboard: IAny + 'static {
+pub trait IClipboard: Any + 'static {
     ///
     /// Gets if the clipboard currently contains any text.
     ///
@@ -64,3 +63,5 @@ pub trait IClipboard: IAny + 'static {
     ///
     fn set_null_terminated(&self, value: &CStr);
 }
+
+crate::make_interface_identifier!(AClipboard, IClipboard);

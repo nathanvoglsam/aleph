@@ -38,7 +38,7 @@ mod utils;
 
 pub use egui::*;
 pub use plugin::PluginEgui;
-pub use traits::{IEguiContextProvider, IEguiRenderData, RenderData};
+pub use traits::{AEguiContextProvider, AEguiRenderData, IEguiRenderData, RenderData};
 
 pub struct Egui;
 aleph_alloc::new_alloc_category!(Egui, "01992eb2-0738-7fd3-8637-05630397500e");

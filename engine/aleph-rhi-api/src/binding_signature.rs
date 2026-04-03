@@ -27,9 +27,8 @@
 // SOFTWARE.
 //
 
+use std::any::Any;
 use std::num::{NonZero, NonZeroU64};
-
-use aleph_any::IAny;
 
 use crate::*;
 
@@ -38,8 +37,8 @@ use crate::*;
 /// constant block.
 ///
 /// A binding signature can be shared between many pipelines.
-pub trait IBindingSignature: IAny + Send + Sync {
-    any_arc_trait_utils_decl!(IBindingSignature);
+pub trait IBindingSignature: Any + Send + Sync {
+    arc_trait_utils_decl!(IBindingSignature);
 
     /// Returns a globally unique ID that is guaranteed to not be shared by any other object
     /// allocated from the same [`IDevice`] instance.

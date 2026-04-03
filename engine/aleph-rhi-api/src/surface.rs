@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_any::{AnyArc, IAny};
+use std::any::Any;
+use std::sync::Arc;
 
 use crate::*;
 
@@ -38,12 +39,12 @@ use crate::*;
 /// surface. As such [ISurface] is not created by an [IDevice], rather it is created by the
 /// [IContext]. An [IDevice] will be selected and created based on its compatibility with an
 /// [ISurface].
-pub trait ISurface: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(ISurface);
+pub trait ISurface: Any + IGetPlatformInterface + Send + Sync {
+    arc_trait_utils_decl!(ISurface);
 
     fn create_swap_chain(
         &self,
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError>;
+    ) -> Result<Arc<dyn ISwapChain>, SwapChainCreateError>;
 }

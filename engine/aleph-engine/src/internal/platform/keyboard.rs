@@ -28,8 +28,8 @@
 //
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
-use api::any::{AnyArc, declare_interfaces};
 use api::platform::{
     Event, IKeyboard, IKeyboardEventsLock, IKeyboardStateLock, KeyCode, KeyDownEvent, KeyMod,
     KeyUpEvent, KeyboardEvent, ScanCode, TextInputEvent,
@@ -64,8 +64,6 @@ pub struct Keyboard {
     pub(crate) events: RwLock<Vec<KeyboardEvent>>,
 }
 
-declare_interfaces!(Keyboard, [IKeyboard]);
-
 impl IKeyboard for Keyboard {
     fn get_state<'a>(&'a self) -> SmallBox<dyn IKeyboardStateLock + 'a, S1> {
         smallbox!(KeyboardStateLock(self.state.read()))
@@ -80,7 +78,7 @@ impl Keyboard {
     ///
     /// Internal function for initializing the keyboard state
     ///
-    pub(crate) fn new() -> AnyArc<Self> {
+    pub(crate) fn new() -> Arc<Self> {
         log::info!("Initializing the Keyboard system");
         let keyboard_state = KeyboardState {
             keys: [false; ScanCode::MAX_VALUES],
@@ -92,7 +90,7 @@ impl Keyboard {
             state: RwLock::new(keyboard_state),
             events: RwLock::new(Vec::new()),
         };
-        AnyArc::new(out)
+        Arc::new(out)
     }
 
     ///

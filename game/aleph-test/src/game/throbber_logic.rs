@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_engine::api::any::AnyArc;
+use std::sync::Arc;
+
 use aleph_engine::api::components::{StaticMesh, Transform};
 use aleph_engine::api::ecs::entity::EntityHandle;
 use aleph_engine::api::ecs::world::World;
@@ -36,12 +37,12 @@ use aleph_engine::api::math::{DVec3, Rotor3};
 use aleph_engine::api::platform::IFrameTimer;
 
 pub struct ThrobberLogic {
-    frame_timer: AnyArc<dyn IFrameTimer>,
+    frame_timer: Arc<dyn IFrameTimer>,
     throbber: EntityHandle,
 }
 
 impl ThrobberLogic {
-    pub fn new(frame_timer: AnyArc<dyn IFrameTimer>, throbber: EntityHandle) -> Self {
+    pub fn new(frame_timer: Arc<dyn IFrameTimer>, throbber: EntityHandle) -> Self {
         Self {
             frame_timer,
             throbber,

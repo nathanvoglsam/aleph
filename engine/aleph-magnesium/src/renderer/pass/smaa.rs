@@ -29,7 +29,6 @@
 
 use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
@@ -321,12 +320,12 @@ impl IStateCacheKey for SmaaStateKey {
 pub struct SmaaState {
     pub linear_sampler: rhi::SamplerHandle,
     pub point_sampler: rhi::SamplerHandle,
-    pub edge_block_layout: AnyArc<dyn rhi::IParameterBlockLayout>,
-    pub weight_block_layout: AnyArc<dyn rhi::IParameterBlockLayout>,
-    pub blend_block_layout: AnyArc<dyn rhi::IParameterBlockLayout>,
-    pub edge_signature: AnyArc<dyn rhi::IBindingSignature>,
-    pub weight_signature: AnyArc<dyn rhi::IBindingSignature>,
-    pub blend_signature: AnyArc<dyn rhi::IBindingSignature>,
+    pub edge_block_layout: Arc<dyn rhi::IParameterBlockLayout>,
+    pub weight_block_layout: Arc<dyn rhi::IParameterBlockLayout>,
+    pub blend_block_layout: Arc<dyn rhi::IParameterBlockLayout>,
+    pub edge_signature: Arc<dyn rhi::IBindingSignature>,
+    pub weight_signature: Arc<dyn rhi::IBindingSignature>,
+    pub blend_signature: Arc<dyn rhi::IBindingSignature>,
     pub edge_pipeline: rhi::GraphicsPipelineHandle,
     pub weight_pipeline: rhi::GraphicsPipelineHandle,
     pub blend_pipeline: rhi::GraphicsPipelineHandle,
@@ -401,7 +400,7 @@ impl SmaaState {
         }
     }
 
-    pub fn create_edge_layout(device: &dyn rhi::IDevice) -> AnyArc<dyn rhi::IParameterBlockLayout> {
+    pub fn create_edge_layout(device: &dyn rhi::IDevice) -> Arc<dyn rhi::IParameterBlockLayout> {
         let desc = rhi::ParameterBlockDesc {
             params: &[
                 rhi::ParameterType::Texture2D.param(),
@@ -415,9 +414,7 @@ impl SmaaState {
         device.create_parameter_block_layout(&desc).unwrap()
     }
 
-    pub fn create_weight_layout(
-        device: &dyn rhi::IDevice,
-    ) -> AnyArc<dyn rhi::IParameterBlockLayout> {
+    pub fn create_weight_layout(device: &dyn rhi::IDevice) -> Arc<dyn rhi::IParameterBlockLayout> {
         let desc = rhi::ParameterBlockDesc {
             params: &[
                 rhi::ParameterType::Texture2D.param(),
@@ -433,9 +430,7 @@ impl SmaaState {
         device.create_parameter_block_layout(&desc).unwrap()
     }
 
-    pub fn create_blend_layout(
-        device: &dyn rhi::IDevice,
-    ) -> AnyArc<dyn rhi::IParameterBlockLayout> {
+    pub fn create_blend_layout(device: &dyn rhi::IDevice) -> Arc<dyn rhi::IParameterBlockLayout> {
         let desc = rhi::ParameterBlockDesc {
             params: &[
                 rhi::ParameterType::Texture2D.param(),
@@ -454,7 +449,7 @@ impl SmaaState {
         device: &dyn rhi::IDevice,
         block_layout: &dyn rhi::IParameterBlockLayout,
         name: Option<&str>,
-    ) -> AnyArc<dyn rhi::IBindingSignature> {
+    ) -> Arc<dyn rhi::IBindingSignature> {
         let desc = rhi::BindingSignatureDesc {
             parameter_block_layouts: &[block_layout],
             push_constant_block: rhi::PushConstantBlock::new(16),

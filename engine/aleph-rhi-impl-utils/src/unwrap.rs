@@ -34,7 +34,6 @@ macro_rules! conversion_function {
         /// Converts the given dynamic object to a concrete type, panicking if it is not the
         /// expected concrete type.
         pub fn $name(v: &dyn $from) -> &$to {
-            use $crate::aleph_any::*;
             use $crate::aleph_rhi_api::*;
             unsafe {
                 if ::core::any::Any::type_id(v) == ::core::any::TypeId::of::<$to>() {
@@ -48,14 +47,12 @@ macro_rules! conversion_function {
 
         /// Converts the given dynamic object to a concrete type, panicking if it is not the
         /// expected concrete type.
-        pub fn $name_owned(
-            v: $crate::aleph_any::AnyArc<dyn $from>,
-        ) -> $crate::aleph_any::AnyArc<$to> {
-            use $crate::aleph_any::*;
+        pub fn $name_owned(v: ::std::sync::Arc<dyn $from>) -> ::std::sync::Arc<$to> {
             use $crate::aleph_rhi_api::*;
             unsafe {
-                if let Some(v) = v.query_interface::<$to>() {
-                    v
+                if ::core::any::Any::type_id(v.as_ref()) == ::core::any::TypeId::of::<$to>() {
+                    let ptr = ::std::sync::Arc::into_raw(v);
+                    unsafe { ::std::sync::Arc::from_raw(ptr.cast::<$to>()) }
                 } else {
                     panic!(concat!("Unknown ", stringify!($from), " implementation"))
                 }

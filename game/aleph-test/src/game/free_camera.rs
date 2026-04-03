@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_engine::api::any::AnyArc;
+use std::sync::Arc;
+
 use aleph_engine::api::components::{Camera, Transform};
 use aleph_engine::api::ecs::entity::EntityHandle;
 use aleph_engine::api::ecs::world::World;
@@ -36,8 +37,8 @@ use aleph_engine::api::math::{Rotor3, ToDouble, Vec3};
 use aleph_engine::api::platform::{GamepadAxis, IFrameTimer, IGamepadsAccessor};
 
 pub struct FreeCamera {
-    frame_timer: AnyArc<dyn IFrameTimer>,
-    gamepad: AnyArc<dyn IGamepadsAccessor>,
+    frame_timer: Arc<dyn IFrameTimer>,
+    gamepad: Arc<dyn IGamepadsAccessor>,
     l_dir: f32,
     u_dir: f32,
     camera: EntityHandle,
@@ -45,8 +46,8 @@ pub struct FreeCamera {
 
 impl FreeCamera {
     pub fn new(
-        frame_timer: AnyArc<dyn IFrameTimer>,
-        gamepad: AnyArc<dyn IGamepadsAccessor>,
+        frame_timer: Arc<dyn IFrameTimer>,
+        gamepad: Arc<dyn IGamepadsAccessor>,
         camera: EntityHandle,
     ) -> Self {
         Self {

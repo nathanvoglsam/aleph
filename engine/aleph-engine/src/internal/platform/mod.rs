@@ -41,12 +41,12 @@ use std::cell::Cell;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use aleph_alloc::instrumentation::Instrumented;
-use api::any::{AnyArc, IAny};
 use api::label::make_label;
 use api::platform::{
-    Cursor, Event, IClipboard, IEvents, IFrameTimer, IGamepads, IKeyboard, IMouse, IWindow,
+    AClipboard, AEvents, AFrameTimer, AGamepads, AKeyboard, AMouse, AWindow, Cursor, Event,
     KeyboardEvent, MouseEvent, WindowEvent,
 };
 use api::plugin::{IQuitHandle, IRegistryAccessor};
@@ -64,13 +64,13 @@ pub use window::Window;
 
 pub(crate) fn platform_interfaces() -> [TypeId; 7] {
     [
-        TypeId::of::<dyn IClipboard>(),
-        TypeId::of::<dyn IEvents>(),
-        TypeId::of::<dyn IFrameTimer>(),
-        TypeId::of::<dyn IGamepads>(),
-        TypeId::of::<dyn IKeyboard>(),
-        TypeId::of::<dyn IMouse>(),
-        TypeId::of::<dyn IWindow>(),
+        TypeId::of::<AClipboard>(),
+        TypeId::of::<AEvents>(),
+        TypeId::of::<AFrameTimer>(),
+        TypeId::of::<AGamepads>(),
+        TypeId::of::<AKeyboard>(),
+        TypeId::of::<AMouse>(),
+        TypeId::of::<AWindow>(),
     ]
 }
 
@@ -80,13 +80,13 @@ use crate::plugin_registry::RegistryAccessor;
 
 #[derive(Clone)]
 pub(crate) struct Objects {
-    pub(crate) frame_timer: Option<AnyArc<FrameTimer>>,
-    pub(crate) window: Option<AnyArc<Window>>,
-    pub(crate) mouse: Option<AnyArc<Mouse>>,
-    pub(crate) keyboard: Option<AnyArc<Keyboard>>,
-    pub(crate) gamepads: Option<AnyArc<Gamepads>>,
-    pub(crate) events: Option<AnyArc<Events>>,
-    pub(crate) clipboard: Option<AnyArc<Clipboard>>,
+    pub(crate) frame_timer: Option<Arc<FrameTimer>>,
+    pub(crate) window: Option<Arc<Window>>,
+    pub(crate) mouse: Option<Arc<Mouse>>,
+    pub(crate) keyboard: Option<Arc<Keyboard>>,
+    pub(crate) gamepads: Option<Arc<Gamepads>>,
+    pub(crate) events: Option<Arc<Events>>,
+    pub(crate) clipboard: Option<Arc<Clipboard>>,
 }
 
 pub(crate) struct PlatformSDL3 {
@@ -211,48 +211,33 @@ impl PlatformSDL3 {
                 },
             );
 
-        objects.frame_timer.clone().inspect(|v| {
-            registry.interfaces.insert(
-                TypeId::of::<dyn IFrameTimer>(),
-                AnyArc::map::<dyn IAny, _>(v.clone(), |v| v),
-            );
+        objects.frame_timer.inspect(|v| {
+            registry.__provide(
+                TypeId::of::<AFrameTimer>(),
+                Box::new(AFrameTimer(v.clone())),
+            )
         });
-        objects.window.clone().inspect(|v| {
-            registry.interfaces.insert(
-                TypeId::of::<dyn IWindow>(),
-                AnyArc::map::<dyn IAny, _>(v.clone(), |v| v),
-            );
+        objects.window.inspect(|v| {
+            registry.__provide(TypeId::of::<AWindow>(), Box::new(AWindow(v.clone())));
         });
-        objects.mouse.clone().inspect(|v| {
-            registry.interfaces.insert(
-                TypeId::of::<dyn IMouse>(),
-                AnyArc::map::<dyn IAny, _>(v.clone(), |v| v),
-            );
+        objects.mouse.inspect(|v| {
+            registry.__provide(TypeId::of::<AMouse>(), Box::new(AMouse(v.clone())));
         });
-        objects.keyboard.clone().inspect(|v| {
-            registry.interfaces.insert(
-                TypeId::of::<dyn IKeyboard>(),
-                AnyArc::map::<dyn IAny, _>(v.clone(), |v| v),
-            );
+        objects.keyboard.inspect(|v| {
+            registry.__provide(TypeId::of::<AKeyboard>(), Box::new(AKeyboard(v.clone())));
         });
-        objects.gamepads.clone().inspect(|v| {
-            registry.interfaces.insert(
-                TypeId::of::<dyn IGamepads>(),
-                AnyArc::map::<dyn IAny, _>(v.clone(), |v| v),
-            );
+        objects.gamepads.inspect(|v| {
+            registry.__provide(TypeId::of::<AGamepads>(), Box::new(AGamepads(v.clone())));
         });
-        objects.events.clone().inspect(|v| {
-            registry.interfaces.insert(
-                TypeId::of::<dyn IEvents>(),
-                AnyArc::map::<dyn IAny, _>(v.clone(), |v| v),
-            );
+        objects.events.inspect(|v| {
+            registry.__provide(TypeId::of::<AEvents>(), Box::new(AEvents(v.clone())));
         });
-        objects.clipboard.clone().inspect(|v| {
-            registry.interfaces.insert(
-                TypeId::of::<dyn IClipboard>(),
-                AnyArc::map::<dyn IAny, _>(v.clone(), |v| v),
-            );
+        objects.clipboard.inspect(|v| {
+            registry.__provide(TypeId::of::<AClipboard>(), Box::new(AClipboard(v.clone())));
         });
+        registry
+            .interfaces
+            .extend(std::iter::from_fn(|| registry.provides.pop_first()));
     }
 
     pub(crate) fn on_shutdown(&mut self) {

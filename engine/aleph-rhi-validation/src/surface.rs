@@ -27,26 +27,26 @@
 // SOFTWARE.
 //
 
-use aleph_any::{AnyArc, AnyWeak, QueryInterface, declare_interfaces};
+use std::sync::{Arc, Weak};
+
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
 
-use crate::{ValidationContext, ValidationDevice, ValidationSwapChain};
+use crate::internal::unwrap;
+use crate::{ValidationContext, ValidationSwapChain};
 
 pub struct ValidationSurface {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<ValidationContext>,
-    pub(crate) inner: AnyArc<dyn ISurface>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _context: Arc<ValidationContext>,
+    pub(crate) inner: Arc<dyn ISurface>,
     pub(crate) has_swap_chain: Mutex<bool>,
 }
-
-declare_interfaces!(ValidationSurface, [ISurface]);
 
 crate::impl_platform_interface_passthrough!(ValidationSurface);
 
 impl ISurface for ValidationSurface {
-    fn upgrade(&self) -> AnyArc<dyn ISurface> {
-        AnyArc::map::<dyn ISurface, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn ISurface> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -61,10 +61,8 @@ impl ISurface for ValidationSurface {
         &self,
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
-        let device = device
-            .query_interface::<ValidationDevice>()
-            .expect("Unknown IDevice implementation");
+    ) -> Result<Arc<dyn ISwapChain>, SwapChainCreateError> {
+        let device = unwrap::device(device);
         let inner_device = device.inner.as_ref();
 
         let inner = {
@@ -84,7 +82,7 @@ impl ISurface for ValidationSurface {
             result
         }?;
 
-        let swap_chain = AnyArc::new_cyclic(move |v| ValidationSwapChain {
+        let swap_chain = Arc::new_cyclic(move |v| ValidationSwapChain {
             _this: v.clone(),
             _device: device._this.upgrade().unwrap(),
             _surface: self._this.upgrade().unwrap(),
@@ -92,6 +90,6 @@ impl ISurface for ValidationSurface {
             queue_support: Default::default(),
             acquired: Default::default(),
         });
-        Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
+        Ok(swap_chain)
     }
 }

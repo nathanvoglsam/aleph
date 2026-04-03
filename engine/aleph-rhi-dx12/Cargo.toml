@@ -48,7 +48,6 @@ aleph-alloc = { workspace = true }
 aleph-gpu-allocator = { workspace = true }
 aleph-object-system = { workspace = true }
 aleph-rhi-impl-utils = { workspace = true }
-aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-profile = { workspace = true }
 aleph-nstr = { workspace = true }

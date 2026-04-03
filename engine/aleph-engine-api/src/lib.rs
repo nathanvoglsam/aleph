@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_any as any;
 pub extern crate aleph_ecs as ecs;
 pub extern crate aleph_label as label;
 pub extern crate aleph_magnesium as mg;

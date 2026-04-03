@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
+
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
@@ -39,7 +40,7 @@ use crate::{
     BufferImportDesc, FrameGraph, ImportBundle, ResourceMut, ResourceRef, TextureImportDesc,
 };
 
-fn make_null_device() -> AnyArc<dyn IDevice> {
+fn make_null_device() -> Arc<dyn IDevice> {
     let context = NullContext::new_arced();
     let adapter = context.request_adapter(&Default::default()).unwrap();
     adapter.request_device().unwrap()

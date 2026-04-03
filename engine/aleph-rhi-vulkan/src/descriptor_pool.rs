@@ -29,8 +29,8 @@
 
 use std::any::TypeId;
 use std::mem::MaybeUninit;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::prelude::VkResult;
@@ -42,12 +42,10 @@ use crate::internal::allocation_callbacks::GLOBAL;
 use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct DescriptorPool {
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) _layout: AnyArc<ParameterBlockLayout>,
+    pub(crate) _device: Arc<Device>,
+    pub(crate) _layout: Arc<ParameterBlockLayout>,
     pub(crate) descriptor_pool: vk::DescriptorPool,
 }
-
-declare_interfaces!(DescriptorPool, [IDescriptorPool]);
 
 impl IGetPlatformInterface for DescriptorPool {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {

@@ -28,8 +28,8 @@
 //
 
 use std::cell::Cell;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
@@ -43,16 +43,14 @@ use crate::{
 };
 
 pub struct NullDevice {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<NullContext>,
-    pub(crate) _adapter: AnyArc<NullAdapter>,
-    pub(crate) general_queue: Option<AnyArc<NullQueue>>,
-    pub(crate) compute_queue: Option<AnyArc<NullQueue>>,
-    pub(crate) transfer_queue: Option<AnyArc<NullQueue>>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _context: Arc<NullContext>,
+    pub(crate) _adapter: Arc<NullAdapter>,
+    pub(crate) general_queue: Option<Arc<NullQueue>>,
+    pub(crate) compute_queue: Option<Arc<NullQueue>>,
+    pub(crate) transfer_queue: Option<Arc<NullQueue>>,
     pub(crate) object_counter: ObjectCounter,
 }
-
-declare_interfaces!(NullDevice, [IDevice]);
 
 crate::impl_platform_interface_passthrough!(NullDevice);
 
@@ -60,8 +58,8 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn upgrade(&self) -> AnyArc<dyn IDevice> {
-        AnyArc::map::<dyn IDevice, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IDevice> {
+        self._this.upgrade().unwrap()
     }
 
     // ========================================================================================== //
@@ -98,13 +96,13 @@ impl IDevice for NullDevice {
     fn create_parameter_block_layout(
         &self,
         _desc: &ParameterBlockDesc,
-    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
-        let out = AnyArc::new_cyclic(move |v| NullParameterBlockLayout {
-            this: v.clone(),
+    ) -> Result<Arc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
+        let out = Arc::new_cyclic(move |v| NullParameterBlockLayout {
+            _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             id: self.object_counter.next_parameter_block_layout(),
         });
-        Ok(AnyArc::map::<dyn IParameterBlockLayout, _>(out, |v| v))
+        Ok(out)
     }
 
     // ========================================================================================== //
@@ -113,13 +111,13 @@ impl IDevice for NullDevice {
     fn create_binding_signature(
         &self,
         _desc: &BindingSignatureDesc,
-    ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError> {
-        let out = AnyArc::new_cyclic(move |v| NullBindingSignature {
+    ) -> Result<Arc<dyn IBindingSignature>, BindingSignatureCreateError> {
+        let out = Arc::new_cyclic(move |v| NullBindingSignature {
             this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             id: self.object_counter.next_binding_signature(),
         });
-        Ok(AnyArc::map::<dyn IBindingSignature, _>(out, |v| v))
+        Ok(out)
     }
 
     // ========================================================================================== //
@@ -168,7 +166,7 @@ impl IDevice for NullDevice {
         let layout = unwrap::parameter_block_layout(desc.layout);
         let pool = Box::new(NullDescriptorPool {
             _device: self._this.upgrade().unwrap(),
-            _layout: layout.this.upgrade().unwrap(),
+            _layout: layout._this.upgrade().unwrap(),
             counter: 1,
         });
 
@@ -249,20 +247,15 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
-        match queue_type {
-            QueueType::General => self
-                .general_queue
-                .clone()
-                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
-            QueueType::Compute => self
-                .compute_queue
-                .clone()
-                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
-            QueueType::Transfer => self
-                .transfer_queue
-                .clone()
-                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
+    fn get_queue(&self, queue_type: QueueType) -> Option<Arc<dyn IQueue>> {
+        let queue = match queue_type {
+            QueueType::General => self.general_queue.clone(),
+            QueueType::Compute => self.compute_queue.clone(),
+            QueueType::Transfer => self.transfer_queue.clone(),
+        };
+        match queue {
+            None => None,
+            Some(v) => Some(v),
         }
     }
 

@@ -28,8 +28,8 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 
@@ -39,24 +39,22 @@ use crate::internal::unwrap;
 use crate::texture::ValidationImageView;
 
 pub struct ValidationParameterBlockLayout {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) inner: AnyArc<dyn IParameterBlockLayout>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _device: Arc<ValidationDevice>,
+    pub(crate) inner: Arc<dyn IParameterBlockLayout>,
 }
 
-declare_interfaces!(ValidationParameterBlockLayout, [IParameterBlockLayout]);
-
 impl IParameterBlockLayout for ValidationParameterBlockLayout {
-    fn upgrade(&self) -> AnyArc<dyn IParameterBlockLayout> {
-        AnyArc::map::<dyn IParameterBlockLayout, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IParameterBlockLayout> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
-        self.this.strong_count()
+        self._this.strong_count()
     }
 
     fn weak_count(&self) -> usize {
-        self.this.weak_count()
+        self._this.weak_count()
     }
 
     fn desc(&self) -> &ParameterBlockDesc<'_> {

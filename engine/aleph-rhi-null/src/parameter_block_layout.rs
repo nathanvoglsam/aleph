@@ -28,31 +28,29 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 
 use crate::device::NullDevice;
 
 pub struct NullParameterBlockLayout {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<NullDevice>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _device: Arc<NullDevice>,
     pub(crate) id: NonZeroU64,
 }
 
-declare_interfaces!(NullParameterBlockLayout, [IParameterBlockLayout]);
-
 impl IParameterBlockLayout for NullParameterBlockLayout {
-    fn upgrade(&self) -> AnyArc<dyn IParameterBlockLayout> {
-        AnyArc::map::<dyn IParameterBlockLayout, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IParameterBlockLayout> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
-        self.this.strong_count()
+        self._this.strong_count()
     }
 
     fn weak_count(&self) -> usize {
-        self.this.weak_count()
+        self._this.weak_count()
     }
 
     fn desc(&self) -> &ParameterBlockDesc<'_> {

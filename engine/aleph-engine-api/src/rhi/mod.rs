@@ -27,8 +27,10 @@
 // SOFTWARE.
 //
 
+use std::any::Any;
+use std::sync::Arc;
+
 use aleph_rhi_api::{IAdapter, IDevice, ISurface};
-use any::{AnyArc, IAny};
 
 /// This trait is used to provide the engine access to the system GPU using the `aleph-rhi-api`
 /// render hardware interface. The plugin that implements an [IRhiProvider] is expected to fully
@@ -36,13 +38,15 @@ use any::{AnyArc, IAny};
 ///
 /// This interface is expected to provide handles to GPU objects that were *already-created* prior
 /// to any of the functions on this trait being called.
-pub trait IRhiProvider: IAny {
+pub trait IRhiProvider: Any {
     /// Returns the surface handle, if one is available
-    fn surface(&self) -> Option<AnyArc<dyn ISurface>>;
+    fn surface(&self) -> Option<Arc<dyn ISurface>>;
 
     /// Returns the GPU adapter that was selected
-    fn adapter(&self) -> AnyArc<dyn IAdapter>;
+    fn adapter(&self) -> Arc<dyn IAdapter>;
 
     /// Returns the 'logical' device handle that was created from the selected adapter
-    fn device(&self) -> AnyArc<dyn IDevice>;
+    fn device(&self) -> Arc<dyn IDevice>;
 }
+
+crate::make_interface_identifier!(ARhiProvider, IRhiProvider);

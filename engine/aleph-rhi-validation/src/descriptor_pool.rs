@@ -30,8 +30,8 @@
 use std::any::TypeId;
 use std::mem::{MaybeUninit, swap};
 use std::ptr::NonNull;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_pool::{IBlockFactory, ParameterBlockPool};
 
@@ -39,12 +39,10 @@ use crate::internal::parameter_block::ParameterBlock;
 use crate::{ValidationDevice, ValidationParameterBlockLayout};
 
 pub struct ValidationDescriptorPool {
-    pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) _layout: AnyArc<ValidationParameterBlockLayout>,
+    pub(crate) _device: Arc<ValidationDevice>,
+    pub(crate) _layout: Arc<ValidationParameterBlockLayout>,
     pub(crate) pool: ParameterBlockPool<PoolBlockFactory>,
 }
-
-declare_interfaces!(ValidationDescriptorPool, [IDescriptorPool]);
 
 impl IGetPlatformInterface for ValidationDescriptorPool {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
@@ -107,7 +105,7 @@ unsafe impl IBlockFactory for PoolBlockFactory {
             let new = ParameterBlock {
                 _magic_header: ParameterBlock::MAGIC_HEADER_VAL,
                 _pool_id: self.pool_id,
-                _layout: p.this.clone(),
+                _layout: p._this.clone(),
                 inner: Some(self.inner_pool.allocate_block()?),
             };
             block.write(new);
@@ -124,7 +122,7 @@ unsafe impl IBlockFactory for PoolBlockFactory {
             let mut inner_block = Some(self.inner_pool.allocate_block()?);
             unsafe {
                 let block = block.as_mut();
-                block._layout = p.this.clone();
+                block._layout = p._this.clone();
                 swap(&mut inner_block, &mut block.inner);
             }
             assert!(inner_block.is_none());

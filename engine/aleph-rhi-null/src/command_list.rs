@@ -27,16 +27,15 @@
 // SOFTWARE.
 //
 
-use aleph_any::{AnyArc, declare_interfaces};
+use std::sync::Arc;
+
 use aleph_rhi_api::*;
 
 use crate::{NullDevice, NullEncoder};
 
 pub struct NullCommandList {
-    pub(crate) _device: AnyArc<NullDevice>,
+    pub(crate) _device: Arc<NullDevice>,
 }
-
-declare_interfaces!(NullCommandList, [ICommandList]);
 
 crate::impl_platform_interface_passthrough!(NullCommandList);
 

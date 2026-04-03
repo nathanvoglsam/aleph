@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
+
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
-use aleph_any::AnyArc;
 use aleph_nstr::nstr;
 use smallbox::SmallBox;
 use smallbox::space::S8;
@@ -48,13 +49,13 @@ use crate::resource_loader::mip_upload::MipUploadDesc;
 use crate::resource_loader::upload_buffer::IUploadBuffer;
 
 pub struct ImmediateUploadQueue {
-    pub device: AnyArc<dyn rhi::IDevice>,
+    pub device: Arc<dyn rhi::IDevice>,
     pub textures: BVec<ImmediateTextureUpload, MgSystem>,
     pub buffers: BVec<ImmediateBufferUpload, MgSystem>,
 }
 
 impl ImmediateUploadQueue {
-    pub const fn new(device: AnyArc<dyn rhi::IDevice>) -> Self {
+    pub const fn new(device: Arc<dyn rhi::IDevice>) -> Self {
         Self {
             device,
             textures: BVec::new_in(system()),

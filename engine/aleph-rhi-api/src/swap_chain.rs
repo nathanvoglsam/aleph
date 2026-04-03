@@ -27,13 +27,15 @@
 // SOFTWARE.
 //
 
-use aleph_any::{AnyArc, IAny};
+use std::any::Any;
+use std::sync::Arc;
+
 use thiserror::Error;
 
 use crate::*;
 
-pub trait ISwapChain: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(ISwapChain);
+pub trait ISwapChain: Any + IGetPlatformInterface + Send + Sync {
+    arc_trait_utils_decl!(ISwapChain);
 
     /// Returns whether support operations are supported on the given queue.
     fn present_supported_on_queue(&self, queue: QueueType) -> bool;
@@ -129,7 +131,7 @@ pub trait ISwapChain: IAny + IGetPlatformInterface + Send + Sync {
 /// explicitly. Some let you hold on to the texture handles, some require they are fully released.
 /// It's a mess. This abstraction simplifies the API surface and efficiently abstracts over the
 /// different APIs without trading much flexibility.
-pub trait ISwapImage: IAny + IGetPlatformInterface + Send + Sync {
+pub trait ISwapImage: Any + IGetPlatformInterface + Send + Sync {
     /// Get the texture handle associated with this [`ISwapImage`].
     ///
     /// All references to this texture must be dropped before calling [`IQueue::present`].
@@ -142,7 +144,7 @@ pub trait ISwapImage: IAny + IGetPlatformInterface + Send + Sync {
 /// Wrapper enum that flags the different success conditions for [`ISwapChain::acquire_next_image`].
 pub enum AcquiredImage {
     /// The image was acquired fully with no issues.
-    Ok(AnyArc<dyn ISwapImage>),
+    Ok(Arc<dyn ISwapImage>),
 
     /// This 'error' is a soft failure case for [ISwapChain::acquire_next_image]. In some cases it
     /// is possible for the swapchain to be placed in a state where it does not fully match the
@@ -154,13 +156,13 @@ pub enum AcquiredImage {
     /// sub-optimal swapchain. It is, however, recommended that the swapchain be rebuilt to
     /// correctly match the underlying surface again. This variant flags the sub-optimal case
     /// for the caller to handle.
-    SubOptimal(AnyArc<dyn ISwapImage>),
+    SubOptimal(Arc<dyn ISwapImage>),
 }
 
 impl AcquiredImage {
     /// Discard the [`AcquiredImage`] container and get the image inside.
     #[inline]
-    pub fn get(self) -> AnyArc<dyn ISwapImage> {
+    pub fn get(self) -> Arc<dyn ISwapImage> {
         match self {
             AcquiredImage::Ok(v) => v,
             AcquiredImage::SubOptimal(v) => v,

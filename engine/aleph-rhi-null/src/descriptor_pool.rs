@@ -28,20 +28,18 @@
 //
 
 use std::ptr::NonNull;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 
 use crate::NullDevice;
 use crate::parameter_block_layout::NullParameterBlockLayout;
 
 pub struct NullDescriptorPool {
-    pub(crate) _device: AnyArc<NullDevice>,
-    pub(crate) _layout: AnyArc<NullParameterBlockLayout>,
+    pub(crate) _device: Arc<NullDevice>,
+    pub(crate) _layout: Arc<NullParameterBlockLayout>,
     pub(crate) counter: u64,
 }
-
-declare_interfaces!(NullDescriptorPool, [IDescriptorPool]);
 
 crate::impl_platform_interface_passthrough!(NullDescriptorPool);
 

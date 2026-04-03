@@ -31,9 +31,9 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::ops::Deref;
+use std::sync::Arc;
 
 use aleph_identity_hasher::IdentityHasher;
-use api::any::{AnyArc, declare_interfaces};
 use api::platform::{
     GamepadAxis, GamepadAxisMotion, GamepadButton, GamepadButtonDown, GamepadButtonUp,
     GamepadEvent, GamepadId, GamepadState, IGamepads, IGamepadsAccessor,
@@ -57,18 +57,16 @@ pub struct Gamepads {
 
     /// The thread-safe object we can share to enable safe access to the current gamepad state
     /// outside of the main thread. New state and events will be published here every frame.
-    pub(crate) accessor: AnyArc<GamepadsAccessor>,
+    pub(crate) accessor: Arc<GamepadsAccessor>,
 }
 
-declare_interfaces!(Gamepads, [IGamepads]);
-
 impl Gamepads {
-    pub(crate) fn new() -> AnyArc<Self> {
-        AnyArc::new(Self {
+    pub(crate) fn new() -> Arc<Self> {
+        Arc::new(Self {
             gamepads: Default::default(),
             highest_id: Default::default(),
             active_controller: Default::default(),
-            accessor: AnyArc::new(Default::default()),
+            accessor: Arc::new(Default::default()),
         })
     }
 
@@ -241,8 +239,8 @@ impl Gamepads {
 }
 
 impl IGamepads for Gamepads {
-    fn get_accessor(&self) -> AnyArc<dyn IGamepadsAccessor> {
-        AnyArc::map::<dyn IGamepadsAccessor, _>(self.accessor.clone(), |v| v)
+    fn get_accessor(&self) -> Arc<dyn IGamepadsAccessor> {
+        self.accessor.clone()
     }
 }
 
@@ -257,8 +255,6 @@ pub struct GamepadsAccessor {
     pub(crate) shared_state: RwLock<Option<GamepadState>>,
     pub(crate) shared_events: RwLock<Option<Vec<GamepadEvent>>>,
 }
-
-declare_interfaces!(GamepadsAccessor, [IGamepadsAccessor]);
 
 impl IGamepadsAccessor for GamepadsAccessor {
     fn get_active_controller_state(&self) -> Option<GamepadState> {

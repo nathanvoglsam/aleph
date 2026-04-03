@@ -42,7 +42,6 @@ use std::sync::Arc;
 
 use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BBox, BVec};
-use aleph_any::AnyArc;
 use aleph_ecs::entity::EntityHandle;
 use aleph_ecs::world::World;
 use aleph_frame_graph::ImportBundle;
@@ -86,8 +85,8 @@ use crate::resource_loader::upload_buffer::IUploadBuffer;
 
 pub struct Renderer {
     pub(crate) config: RendererConfig,
-    pub(crate) device: AnyArc<dyn rhi::IDevice>,
-    pub(crate) queue: AnyArc<dyn rhi::IQueue>,
+    pub(crate) device: Arc<dyn rhi::IDevice>,
+    pub(crate) queue: Arc<dyn rhi::IQueue>,
     pub(crate) frame_fence: rhi::FenceHandle,
     pub(crate) async_loader_dispatchers:
         BVec<BBox<dyn LoaderMessageDispatcher, MgSystem>, MgSystem>,
@@ -551,7 +550,7 @@ pub struct BufferOptions {
 pub struct SharedSurfaceDesc {
     /// Handle to an [`rhi::ISurface`] that has been shared with the renderer by the host. The
     /// renderer will manage any swap chains constructed on this surface.
-    pub surface: AnyArc<dyn rhi::ISurface>,
+    pub surface: Arc<dyn rhi::ISurface>,
 
     /// Receiver half of a channel that the renderer may receive notifications about changes to the
     /// surface from the host application.

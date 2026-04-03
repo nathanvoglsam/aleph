@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use api::any::{AnyArc, declare_interfaces};
 use api::plugin::IQuitHandle;
 
 ///
@@ -38,8 +38,6 @@ use api::plugin::IQuitHandle;
 pub struct QuitHandleImpl {
     pub wants_quit: AtomicBool,
 }
-
-declare_interfaces!(QuitHandleImpl, [IQuitHandle]);
 
 impl IQuitHandle for QuitHandleImpl {
     fn quit(&self) {
@@ -52,10 +50,10 @@ impl IQuitHandle for QuitHandleImpl {
 }
 
 impl QuitHandleImpl {
-    pub fn new() -> AnyArc<QuitHandleImpl> {
+    pub fn new() -> Arc<QuitHandleImpl> {
         let out = Self {
             wants_quit: AtomicBool::new(false),
         };
-        AnyArc::new(out)
+        Arc::new(out)
     }
 }

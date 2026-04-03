@@ -28,8 +28,8 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedSamplerDesc;
@@ -39,7 +39,7 @@ use crate::device::Device;
 use crate::internal::allocation_callbacks::GLOBAL;
 
 pub struct Sampler {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) sampler: vk::Sampler,
     pub(crate) desc: OwnedSamplerDesc,

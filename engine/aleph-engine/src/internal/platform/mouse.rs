@@ -29,8 +29,8 @@
 
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
 
-use api::any::{AnyArc, declare_interfaces};
 use api::platform::{
     Cursor, Event, IMouse, IMouseEventsLock, MouseButton, MouseButtonDownEvent, MouseButtonUpEvent,
     MouseEvent, MouseMotionEvent, MouseState, MouseWheelDirection, MouseWheelEvent,
@@ -64,10 +64,8 @@ pub struct Mouse {
     pub(crate) requests: Mutex<Vec<MouseRequest>>,
 }
 
-declare_interfaces!(Mouse, [IMouse]);
-
 impl Mouse {
-    pub(crate) fn new() -> AnyArc<Self> {
+    pub(crate) fn new() -> Arc<Self> {
         let out = Self {
             state: RwLock::new(MouseState {
                 pos: (0.0, 0.0),
@@ -76,7 +74,7 @@ impl Mouse {
             events: RwLock::new(Vec::new()),
             requests: Mutex::new(Vec::new()),
         };
-        AnyArc::new(out)
+        Arc::new(out)
     }
 
     ///

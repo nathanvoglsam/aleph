@@ -29,7 +29,6 @@
 
 use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use aleph_shader_db::{Fragment, ShaderName, Vertex};
 
@@ -60,7 +59,7 @@ unsafe impl IMaterial for StandardMaterial {
     fn create_parameter_block_layout(
         &self,
         device: &dyn IDevice,
-    ) -> AnyArc<dyn IParameterBlockLayout> {
+    ) -> Arc<dyn IParameterBlockLayout> {
         let desc = ParameterBlockDesc {
             params: &[
                 ParameterType::ConstantBuffer.param(),

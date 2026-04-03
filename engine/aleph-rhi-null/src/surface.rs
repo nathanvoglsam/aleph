@@ -27,23 +27,23 @@
 // SOFTWARE.
 //
 
-use aleph_any::{AnyArc, AnyWeak, QueryInterface, declare_interfaces};
+use std::sync::{Arc, Weak};
+
 use aleph_rhi_api::*;
 
-use crate::{NullContext, NullDevice, NullSwapChain};
+use crate::internal::unwrap;
+use crate::{NullContext, NullSwapChain};
 
 pub struct NullSurface {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<NullContext>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _context: Arc<NullContext>,
 }
-
-declare_interfaces!(NullSurface, [ISurface]);
 
 crate::impl_platform_interface_passthrough!(NullSurface);
 
 impl ISurface for NullSurface {
-    fn upgrade(&self) -> AnyArc<dyn ISurface> {
-        AnyArc::map::<dyn ISurface, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn ISurface> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -58,17 +58,15 @@ impl ISurface for NullSurface {
         &self,
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
-        let device = device
-            .query_interface::<NullDevice>()
-            .expect("Unknown IDevice implementation");
+    ) -> Result<Arc<dyn ISwapChain>, SwapChainCreateError> {
+        let device = unwrap::device(device);
 
-        let swap_chain = AnyArc::new_cyclic(move |v| NullSwapChain {
+        let swap_chain = Arc::new_cyclic(move |v| NullSwapChain {
             _this: v.clone(),
             _device: device._this.upgrade().unwrap(),
             _surface: self._this.upgrade().unwrap(),
             config: config.clone(),
         });
-        Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
+        Ok(swap_chain)
     }
 }

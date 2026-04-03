@@ -29,31 +29,28 @@
 
 use std::ffi::c_void;
 use std::ptr::NonNull;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 
 use crate::{NullAdapter, NullSurface};
 
 pub struct NullContext {
-    pub(crate) _this: AnyWeak<Self>,
+    pub(crate) _this: Weak<Self>,
 }
-
-declare_interfaces!(NullContext, [IContext]);
 
 crate::impl_platform_interface_passthrough!(NullContext);
 
 impl NullContext {
-    pub fn new_arced() -> AnyArc<dyn IContext> {
-        let context = AnyArc::new_cyclic(move |v| NullContext { _this: v.clone() });
-        AnyArc::map::<dyn IContext, _>(context, |v| v)
+    pub fn new_arced() -> Arc<dyn IContext> {
+        Arc::new_cyclic(move |v| NullContext { _this: v.clone() })
     }
 }
 
 impl IContext for NullContext {
-    fn upgrade(&self) -> AnyArc<dyn IContext> {
-        AnyArc::map::<dyn IContext, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IContext> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -64,35 +61,35 @@ impl IContext for NullContext {
         self._this.weak_count()
     }
 
-    fn request_adapter(&self, _options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
-        let adapter = AnyArc::new_cyclic(move |v| NullAdapter {
+    fn request_adapter(&self, _options: &AdapterRequestOptions) -> Option<Arc<dyn IAdapter>> {
+        let adapter = Arc::new_cyclic(move |v| NullAdapter {
             _this: v.clone(),
             _context: self._this.upgrade().unwrap(),
         });
-        Some(AnyArc::map::<dyn IAdapter, _>(adapter, |v| v))
+        Some(adapter)
     }
 
     fn create_surface(
         &self,
         _display: &dyn HasDisplayHandle,
         _window: &dyn HasWindowHandle,
-    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
-        let surface = AnyArc::new_cyclic(move |v| NullSurface {
+    ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
+        let surface = Arc::new_cyclic(move |v| NullSurface {
             _this: v.clone(),
             _context: self._this.upgrade().unwrap(),
         });
-        Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
+        Ok(surface)
     }
 
     fn create_surface_for_metal_layer(
         &self,
         _layer: NonNull<c_void>,
-    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
-        let surface = AnyArc::new_cyclic(move |v| NullSurface {
+    ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
+        let surface = Arc::new_cyclic(move |v| NullSurface {
             _this: v.clone(),
             _context: self._this.upgrade().unwrap(),
         });
-        Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
+        Ok(surface)
     }
 
     fn get_backend_api(&self) -> BackendAPI {

@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
+
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
-use aleph_any::AnyArc;
 
 use crate::internal::MgSystem;
 
@@ -40,7 +41,7 @@ use crate::internal::MgSystem;
 /// be attached to the frame's queue submission.
 pub struct FrameManager {
     /// GPU device handle
-    device: AnyArc<dyn rhi::IDevice>,
+    device: Arc<dyn rhi::IDevice>,
 
     /// Number of frames we're allowed to render ahead by.
     render_ahead_frames: usize,
@@ -54,7 +55,7 @@ pub struct FrameManager {
 }
 
 impl FrameManager {
-    pub fn new(device: AnyArc<dyn rhi::IDevice>, render_ahead_frames: usize) -> Self {
+    pub fn new(device: Arc<dyn rhi::IDevice>, render_ahead_frames: usize) -> Self {
         Self {
             device,
             render_ahead_frames,

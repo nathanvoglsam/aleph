@@ -27,34 +27,33 @@
 // SOFTWARE.
 //
 
+use std::sync::{Arc, Weak};
+
 use aleph_alloc::BVec;
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
 
 use crate::{ValidationDevice, ValidationParameterBlockLayout};
 
 pub struct ValidationBindingSignature {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) inner: AnyArc<dyn IBindingSignature>,
-    pub(crate) parameter_block_layouts: BVec<AnyArc<ValidationParameterBlockLayout>, RhiSystem>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _device: Arc<ValidationDevice>,
+    pub(crate) inner: Arc<dyn IBindingSignature>,
+    pub(crate) parameter_block_layouts: BVec<Arc<ValidationParameterBlockLayout>, RhiSystem>,
     pub(crate) push_constant_block: Option<PushConstantBlock>,
 }
 
-declare_interfaces!(ValidationBindingSignature, [IBindingSignature]);
-
 impl IBindingSignature for ValidationBindingSignature {
-    fn upgrade(&self) -> AnyArc<dyn IBindingSignature> {
-        AnyArc::map::<dyn IBindingSignature, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IBindingSignature> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
-        self.this.strong_count()
+        self._this.strong_count()
     }
 
     fn weak_count(&self) -> usize {
-        self.this.weak_count()
+        self._this.weak_count()
     }
 
     fn get_id(&self) -> std::num::NonZeroU64 {

@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
+
 use crossbeam::channel::{Receiver, Sender, TryRecvError};
 use thiserror::Error;
 
@@ -101,7 +102,7 @@ pub trait LoaderMessageDispatcher: Send + Sync + 'static {
 /// and handle loaders uniformly. The renderer doesn't care about the cookies.
 pub struct GenericLoaderMessageDispatcher<C: Send + 'static> {
     /// The GPU we're rendering with.
-    pub device: AnyArc<dyn rhi::IDevice>,
+    pub device: Arc<dyn rhi::IDevice>,
 
     /// Receives messages from a resource loader.
     pub renderer_receiver: LoaderReceiver<C>,

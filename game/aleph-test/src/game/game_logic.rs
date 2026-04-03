@@ -27,9 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_egui::IEguiContextProvider;
+use aleph_egui::AEguiContextProvider;
 use aleph_egui::widgets::{FrameTimeHistory, MemoryStats, frame_stats, memory_stats};
-use aleph_engine::api::any::declare_interfaces;
 use aleph_engine::api::components::{Camera, StaticMesh, Transform, TransformHistory};
 use aleph_engine::api::label::make_label;
 use aleph_engine::api::make_plugin_description_for_crate;
@@ -43,7 +42,7 @@ use aleph_engine::api::mg::resource::texture::TextureHandle;
 use aleph_engine::api::mg::resource::texture::simple::SimpleTextureLayout;
 use aleph_engine::api::mg::resource_loader::mip_upload::MipUploadDesc;
 use aleph_engine::api::mg::resource_loader::upload_buffer::{IUploadBuffer, UploadBuffer};
-use aleph_engine::api::platform::{IFrameTimer, IGamepads};
+use aleph_engine::api::platform::{AFrameTimer, AGamepads};
 use aleph_engine::api::plugin::{
     CoreRefs, IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription,
 };
@@ -67,8 +66,6 @@ pub fn engine_runner() {
 
 struct PluginGameLogic();
 
-declare_interfaces!(PluginGameLogic, [IPlugin]);
-
 impl PluginGameLogic {
     pub fn new() -> Self {
         Self()
@@ -81,9 +78,9 @@ impl IPlugin for PluginGameLogic {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.requires::<dyn IGamepads>(InitOrder::After);
-        registrar.requires::<dyn IFrameTimer>(InitOrder::After);
-        registrar.uses::<dyn IEguiContextProvider>(InitOrder::After);
+        registrar.requires::<AGamepads>(InitOrder::After);
+        registrar.requires::<AFrameTimer>(InitOrder::After);
+        registrar.uses::<AEguiContextProvider>(InitOrder::After);
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
@@ -91,9 +88,11 @@ impl IPlugin for PluginGameLogic {
         let config: Config = serde_json::from_value(config.clone()).unwrap();
         config.log();
 
-        let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
-        let frame_timer = registry.get_interface::<dyn IFrameTimer>().unwrap();
-        let gamepads = registry.get_interface::<dyn IGamepads>().unwrap();
+        let egui_provider = registry
+            .get_interface::<AEguiContextProvider>()
+            .map(|v| v.get());
+        let frame_timer = registry.get_interface::<AFrameTimer>().unwrap().get();
+        let gamepads = registry.get_interface::<AGamepads>().unwrap().get();
 
         let CoreRefs {
             resources,

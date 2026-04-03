@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use any::*;
+use std::any::Any;
+
 use smallbox::SmallBox;
 use smallbox::space::S1;
 
@@ -35,7 +36,7 @@ use smallbox::space::S1;
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's mouse.
 ///
-pub trait IMouse: IAny + Send + Sync + 'static {
+pub trait IMouse: Any + Send + Sync + 'static {
     ///
     /// Get the current state of the mouse, last updated at the beginning of the frame
     ///
@@ -71,6 +72,8 @@ pub trait IMouse: IAny + Send + Sync + 'static {
     ///
     fn events<'a>(&'a self) -> SmallBox<dyn IMouseEventsLock + 'a, S1>;
 }
+
+crate::make_interface_identifier!(AMouse, IMouse);
 
 ///
 /// This interface is used to provide access to the list of mouse events for the current frame.

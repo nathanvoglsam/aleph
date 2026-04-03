@@ -28,20 +28,22 @@
 //
 
 use std::any::TypeId;
+use std::ops::Deref;
+use std::sync::Arc;
 
 use aleph_rhi_api::*;
 use aleph_rhi_loader::{
     BackendConfigs, ContextOptions, D3D12Config, MetalConfig, RhiLoader, VulkanConfig,
 };
-use api::any::{AnyArc, IAny, declare_interfaces};
-use api::platform::IWindow;
-use api::rhi::IRhiProvider;
+use api::platform::AWindow;
+use api::plugin::IRegistryAccessor;
+use api::rhi::{ARhiProvider, IRhiProvider};
 use serde::Deserialize;
 
 use crate::plugin_registry::RegistryAccessor;
 
 pub(crate) fn rhi_interfaces() -> [TypeId; 1] {
-    [TypeId::of::<dyn IRhiProvider>()]
+    [TypeId::of::<ARhiProvider>()]
 }
 
 pub(crate) struct RhiLoad {
@@ -85,13 +87,13 @@ impl RhiLoad {
 
         let window = registry
             .interfaces
-            .get(&TypeId::of::<dyn IWindow>())
-            .and_then(|v| v.query_interface::<dyn IWindow>());
+            .get(&TypeId::of::<AWindow>())
+            .and_then(|v| v.downcast_ref::<AWindow>());
         let surface = if let Some(window) = window {
             let surface = if cfg!(any(target_os = "ios", target_os = "macos")) {
                 context.create_surface_for_metal_layer(window.metal_layer().unwrap())
             } else {
-                context.create_surface(&window.as_ref(), &window.as_ref())
+                context.create_surface(window.deref(), window.deref())
             };
             match surface {
                 Ok(v) => Some(v),
@@ -116,16 +118,19 @@ impl RhiLoad {
 
         let device = adapter.request_device().unwrap();
 
-        let provider = AnyArc::new(RhiProvider {
+        let provider = Arc::new(RhiProvider {
             surface,
             adapter,
             device,
         });
 
-        registry.interfaces.insert(
-            TypeId::of::<dyn IRhiProvider>(),
-            AnyArc::map::<dyn IAny, _>(provider, |v| v),
+        registry.__provide(
+            TypeId::of::<ARhiProvider>(),
+            Box::new(ARhiProvider(provider)),
         );
+        registry
+            .interfaces
+            .extend(std::iter::from_fn(|| registry.provides.pop_first()));
     }
 }
 
@@ -181,23 +186,21 @@ impl Config {
 }
 
 pub(crate) struct RhiProvider {
-    pub(crate) surface: Option<AnyArc<dyn ISurface>>,
-    pub(crate) adapter: AnyArc<dyn IAdapter>,
-    pub(crate) device: AnyArc<dyn IDevice>,
+    pub(crate) surface: Option<Arc<dyn ISurface>>,
+    pub(crate) adapter: Arc<dyn IAdapter>,
+    pub(crate) device: Arc<dyn IDevice>,
 }
 
 impl IRhiProvider for RhiProvider {
-    fn surface(&self) -> Option<AnyArc<dyn ISurface>> {
+    fn surface(&self) -> Option<Arc<dyn ISurface>> {
         self.surface.clone()
     }
 
-    fn adapter(&self) -> AnyArc<dyn IAdapter> {
+    fn adapter(&self) -> Arc<dyn IAdapter> {
         self.adapter.clone()
     }
 
-    fn device(&self) -> AnyArc<dyn IDevice> {
+    fn device(&self) -> Arc<dyn IDevice> {
         self.device.clone()
     }
 }
-
-declare_interfaces!(RhiProvider, [IRhiProvider]);

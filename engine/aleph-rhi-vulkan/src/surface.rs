@@ -28,11 +28,10 @@
 //
 
 use std::any::TypeId;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{Rhi, try_clone_value_into_slot};
 use ash::vk;
@@ -47,12 +46,10 @@ use crate::internal::unwrap;
 use crate::swap_chain::{SwapChain, SwapChainState};
 
 pub struct Surface {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) context: AnyArc<Context>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) context: Arc<Context>,
     pub(crate) surface: vk::SurfaceKHR,
 }
-
-declare_interfaces!(Surface, [ISurface]);
 
 impl IGetPlatformInterface for Surface {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
@@ -107,23 +104,23 @@ impl Surface {
 }
 
 impl ISurface for Surface {
-    fn upgrade(&self) -> AnyArc<dyn ISurface> {
-        AnyArc::map::<dyn ISurface, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn ISurface> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
-        self.this.strong_count()
+        self._this.strong_count()
     }
 
     fn weak_count(&self) -> usize {
-        self.this.weak_count()
+        self._this.weak_count()
     }
 
     fn create_swap_chain(
         &self,
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
+    ) -> Result<Arc<dyn ISwapChain>, SwapChainCreateError> {
         let device = unwrap::device(device);
 
         let queue_support = unsafe { Surface::get_queue_support(device, self.surface).unwrap() };
@@ -144,10 +141,10 @@ impl ISurface for Surface {
             semaphore_pools,
         };
         let swap_chain = Rhi::with(|| {
-            AnyArc::new_cyclic(move |v| SwapChain {
-                this: v.clone(),
-                device: device.this.upgrade().unwrap(),
-                surface: self.this.upgrade().unwrap(),
+            Arc::new_cyclic(move |v| SwapChain {
+                _this: v.clone(),
+                device: device._this.upgrade().unwrap(),
+                surface: self._this.upgrade().unwrap(),
                 inner: Mutex::new(inner),
                 queue_support,
             })
@@ -159,7 +156,7 @@ impl ISurface for Surface {
             swap_chain.build(&mut inner, config)?;
         }
 
-        Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
+        Ok(swap_chain)
     }
 }
 

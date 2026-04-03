@@ -31,10 +31,9 @@ use std::any::TypeId;
 use std::ffi::{CStr, c_void};
 use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::arc::new_rhi_object;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use aleph_rhi_impl_utils::str_from_ptr;
 use ash::vk;
@@ -48,7 +47,7 @@ use crate::internal::unwrap;
 use crate::surface::Surface;
 
 pub struct Context {
-    pub _this: AnyWeak<Self>,
+    pub _this: Weak<Self>,
     pub _config: VulkanConfig,
     pub entry_loader: ManuallyDrop<ash::Entry>,
     pub instance: ManuallyDrop<ash::Instance>,
@@ -56,8 +55,6 @@ pub struct Context {
     pub debug_loader: Option<ash::ext::debug_utils::Instance>,
     pub messenger: Option<vk::DebugUtilsMessengerEXT>,
 }
-
-declare_interfaces!(Context, [IContext]);
 
 impl IGetPlatformInterface for Context {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
@@ -371,8 +368,8 @@ impl Context {
 }
 
 impl IContext for Context {
-    fn upgrade(&self) -> AnyArc<dyn IContext> {
-        AnyArc::map::<dyn IContext, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IContext> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -383,18 +380,19 @@ impl IContext for Context {
         self._this.weak_count()
     }
 
-    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Arc<dyn IAdapter>> {
         let surface = options.surface.map(unwrap::surface).map(|v| v.surface);
         Context::select_device(&self.entry_loader, &self.instance, surface, options).map(
             |(name, vendor, physical_device)| {
-                new_rhi_object(move |v| Adapter {
-                    this: v.clone(),
+                let out: Arc<dyn IAdapter> = Arc::new_cyclic(move |v| Adapter {
+                    _this: v.clone(),
                     context: self._this.upgrade().unwrap(),
                     name,
                     vendor,
                     physical_device,
                     device_info: DeviceInfo::load(&self.instance, physical_device),
-                })
+                });
+                out
             },
         )
     }
@@ -403,7 +401,7 @@ impl IContext for Context {
         &self,
         display: &dyn HasDisplayHandle,
         window: &dyn HasWindowHandle,
-    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+    ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
         let display = display.display_handle().unwrap().as_raw();
         let window = window.window_handle().unwrap().as_raw();
         let result = unsafe {
@@ -534,8 +532,8 @@ impl IContext for Context {
             .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
             .map_err(|_| SurfaceCreateError::Platform)?;
 
-        Ok(new_rhi_object(move |v| Surface {
-            this: v.clone(),
+        Ok(Arc::new_cyclic(move |v| Surface {
+            _this: v.clone(),
             surface,
             context: self._this.upgrade().unwrap(),
         }))
@@ -544,7 +542,7 @@ impl IContext for Context {
     fn create_surface_for_metal_layer(
         &self,
         layer: NonNull<c_void>,
-    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+    ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
         if !cfg!(any(target_os = "macos", target_os = "ios")) {
             log::warn!("Called 'IContext::create_surface_for_metal_layer' on non apple platform!");
             return Err(SurfaceCreateError::UnsupportedWSI);
@@ -566,12 +564,12 @@ impl IContext for Context {
             .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
             .map_err(|_| SurfaceCreateError::Platform)?;
 
-        let surface = AnyArc::new_cyclic(move |v| Surface {
-            this: v.clone(),
+        let surface = Arc::new_cyclic(move |v| Surface {
+            _this: v.clone(),
             surface,
             context: self._this.upgrade().unwrap(),
         });
-        Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
+        Ok(surface)
     }
 
     fn get_backend_api(&self) -> BackendAPI {

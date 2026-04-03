@@ -35,7 +35,7 @@ authors.workspace = true
 description = "Serde schema for the Slang shader compiler's reflection JSON dumps"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-any/"
+documentation = "https://docs.rs/aleph-slang-reflection/"
 edition.workspace = true
 
 [badges]

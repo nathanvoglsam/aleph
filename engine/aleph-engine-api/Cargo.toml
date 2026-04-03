@@ -46,7 +46,6 @@ aleph-ecs = { workspace = true }
 aleph-scheduler = { workspace = true }
 aleph-label = { workspace = true }
 aleph-math = { workspace = true }
-aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-object-system = { workspace = true }
 aleph-magnesium = { workspace = true }

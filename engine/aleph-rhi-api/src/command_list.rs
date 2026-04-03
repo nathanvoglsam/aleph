@@ -27,12 +27,13 @@
 // SOFTWARE.
 //
 
-use aleph_any::IAny;
+use std::any::Any;
+
 use thiserror::Error;
 
 use crate::*;
 
-pub trait ICommandList: IAny + IGetPlatformInterface + Send {
+pub trait ICommandList: Any + IGetPlatformInterface + Send {
     fn begin_general(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError>;
 
     fn begin_compute(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError>;
