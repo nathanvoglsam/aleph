@@ -59,9 +59,9 @@ use mg::renderer::surface_notify::SurfaceNotification;
 use mg::scene::components::{DynamicObject, PerspectiveCamera, RenderTransform, StaticMesh};
 use serde::Deserialize;
 
-use crate::render::egui_draw;
-use crate::render::egui_draw::EguiPassContext;
-use crate::render::egui_font_texture::EguiFontTexture;
+use crate::render::egui::egui_pass;
+use crate::render::egui::egui_pass::EguiPassContext;
+use crate::render::egui::font_texture::EguiFontTexture;
 
 pub struct PluginRender {
     device: Option<AnyArc<dyn rhi::IDevice>>,
@@ -360,7 +360,7 @@ impl IRenderPlane for EguiRenderPlane {
         state_cache: &mut StateCache,
     ) -> RenderPlaneOutput {
         let pixels_per_point = self.window.current_display_scale();
-        egui_draw::pass(
+        egui_pass::pass(
             frame_graph,
             device,
             pin_board,

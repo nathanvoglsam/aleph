@@ -27,8 +27,5 @@
 // SOFTWARE.
 //
 
-mod egui;
-mod plugin;
-mod shaders;
-
-pub use plugin::PluginRender;
+pub mod egui_pass;
+pub mod font_texture;
