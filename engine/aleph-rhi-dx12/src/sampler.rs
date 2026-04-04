@@ -28,8 +28,8 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedSamplerDesc;
@@ -38,7 +38,7 @@ use windows::utils::GPUDescriptorHandle;
 use crate::device::Device;
 
 pub struct Sampler {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) desc: OwnedSamplerDesc,
     pub(crate) gpu_handle: GPUDescriptorHandle,

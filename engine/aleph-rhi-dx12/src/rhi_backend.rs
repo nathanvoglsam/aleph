@@ -1,6 +1,6 @@
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::{ContextCreateError, IContext};
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Dxgi::*;
@@ -32,7 +32,7 @@ impl D3D12Loader {
         validation: bool,
         debug: bool,
         _config: &D3D12Config,
-    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
+    ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         match self
             .context_made
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
@@ -46,13 +46,13 @@ impl D3D12Loader {
                 let debug_interface = unsafe { setup_debug_layer(validation, gpu_assisted) };
                 let dxgi_debug = unsafe { setup_dxgi_debug_interface(debug) };
 
-                let context = AnyArc::new_cyclic(move |v| Context {
+                let context = Arc::new_cyclic(move |v| Context {
                     this: v.clone(),
                     debug: debug_interface,
                     dxgi_debug: dxgi_debug.map(Mutex::new),
                     factory: Some(Mutex::new(dxgi_factory)),
                 });
-                Ok(AnyArc::map::<dyn IContext, _>(context, |v| v))
+                Ok(context)
             }
             Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
         }

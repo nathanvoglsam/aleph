@@ -28,8 +28,8 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use allocator_api2::alloc::Allocator;
@@ -41,20 +41,19 @@ use crate::internal::conv::shader_visibility_to_dx12;
 use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct BindingSignature {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
-    pub(crate) _parameter_block_layouts: Vec<AnyArc<ParameterBlockLayout>>,
+    pub(crate) _parameter_block_layouts: Vec<Arc<ParameterBlockLayout>>,
     pub(crate) root_signature: ID3D12RootSignature,
     pub(crate) compiled: CompiledBindingSignature,
 }
 
-declare_interfaces!(BindingSignature, [IBindingSignature]);
 unsafe_impl_iobject!(BindingSignature, "01944fef-c9e8-7563-b77a-5bda76bb4330");
 
 impl IBindingSignature for BindingSignature {
-    fn upgrade(&self) -> AnyArc<dyn IBindingSignature> {
-        AnyArc::map::<dyn IBindingSignature, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IBindingSignature> {
+        self.this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -80,7 +79,7 @@ impl BindingSignature {
     /// lifetime of the allocator parameter. Ensure that the allocator lives longer than the desc
     /// and you'll be fine.
     pub fn translate_root_signature_desc<A: Allocator + Copy>(
-        layouts: &[AnyArc<ParameterBlockLayout>],
+        layouts: &[Arc<ParameterBlockLayout>],
         compiled: &CompiledBindingSignature,
         allocator: A,
     ) -> D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
@@ -191,7 +190,7 @@ pub struct CompiledBindingSignature {
 
 impl CompiledBindingSignature {
     pub fn new(
-        block_layouts: &[AnyArc<ParameterBlockLayout>],
+        block_layouts: &[Arc<ParameterBlockLayout>],
         desc: &BindingSignatureDesc,
     ) -> Result<Self, BindingSignatureCreateError> {
         let mut num_dwords = 0;

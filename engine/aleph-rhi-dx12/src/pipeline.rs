@@ -30,7 +30,6 @@
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use windows::Win32::Graphics::Direct3D::*;
@@ -40,8 +39,8 @@ use crate::binding_signature::BindingSignature;
 use crate::device::Device;
 
 pub struct GraphicsPipeline {
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) binding_signature: AnyArc<BindingSignature>,
+    pub(crate) _device: Arc<Device>,
+    pub(crate) binding_signature: Arc<BindingSignature>,
     pub(crate) id: NonZeroU64,
     pub(crate) pipeline: ID3D12PipelineState,
 
@@ -77,8 +76,8 @@ impl GraphicsPipeline {
 }
 
 pub struct ComputePipeline {
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) binding_signature: AnyArc<BindingSignature>,
+    pub(crate) _device: Arc<Device>,
+    pub(crate) binding_signature: Arc<BindingSignature>,
     pub(crate) id: NonZeroU64,
     pub(crate) pipeline: ID3D12PipelineState,
 }

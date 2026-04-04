@@ -28,8 +28,8 @@
 //
 
 use std::any::TypeId;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
 use raw_window_handle::{HandleError, HasWindowHandle, RawWindowHandle, WindowHandle};
@@ -43,8 +43,8 @@ use crate::internal::{dxgi_create_swap_chain, unwrap};
 use crate::swap_chain::{SwapChain, SwapChainState};
 
 pub struct Surface {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) context: AnyArc<Context>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) context: Arc<Context>,
     pub(crate) handle: RawWindowHandle,
     pub(crate) has_swap_chain: Mutex<bool>,
 }
@@ -53,8 +53,6 @@ pub struct Surface {
 //         consume it. The consumer constrains thread sharing so this is safe.
 unsafe impl Send for Surface {}
 unsafe impl Sync for Surface {}
-
-declare_interfaces!(Surface, [ISurface]);
 
 impl IGetPlatformInterface for Surface {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
@@ -67,7 +65,7 @@ impl Surface {
         &self,
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
+    ) -> Result<Arc<dyn ISwapChain>, SwapChainCreateError> {
         let device = unwrap::device(device);
 
         // Translate our high level present mode into terms that make sense to d3d12
@@ -167,7 +165,7 @@ impl Surface {
             dxgi_format: in_memory_format,
             dxgi_flags: flags,
         };
-        let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
+        let swap_chain = Arc::new_cyclic(move |v| SwapChain {
             this: v.clone(),
             device: device.this.upgrade().unwrap(),
             surface: self.this.upgrade().unwrap(),
@@ -185,13 +183,13 @@ impl Surface {
                 .map_err(|_| SwapChainCreateError::Platform)?;
         }
 
-        Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
+        Ok(swap_chain)
     }
 }
 
 impl ISurface for Surface {
-    fn upgrade(&self) -> AnyArc<dyn ISurface> {
-        AnyArc::map::<dyn ISurface, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn ISurface> {
+        self.this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -206,7 +204,7 @@ impl ISurface for Surface {
         &self,
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
+    ) -> Result<Arc<dyn ISwapChain>, SwapChainCreateError> {
         // Check if the surface is currently taken with an existing swap chain
         let mut has_swap_chain = self.has_swap_chain.lock();
         if *has_swap_chain {

@@ -31,8 +31,8 @@ use std::any::TypeId;
 use std::ffi::c_void;
 use std::ops::Deref;
 use std::ptr::NonNull;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
@@ -51,13 +51,11 @@ use crate::internal::{adapter_description_string, create_device, dxgi_create_swa
 use crate::surface::Surface;
 
 pub struct Context {
-    pub(crate) this: AnyWeak<Self>,
+    pub(crate) this: Weak<Self>,
     pub(crate) debug: Option<DebugInterface>,
     pub(crate) dxgi_debug: Option<Mutex<IDXGIDebug>>,
     pub(crate) factory: Option<Mutex<IDXGIFactory2>>,
 }
-
-declare_interfaces!(Context, [IContext]);
 
 impl IGetPlatformInterface for Context {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
@@ -314,8 +312,8 @@ impl Context {
 }
 
 impl IContext for Context {
-    fn upgrade(&self) -> AnyArc<dyn IContext> {
-        AnyArc::map::<dyn IContext, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IContext> {
+        self.this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -326,7 +324,7 @@ impl IContext for Context {
         self.this.weak_count()
     }
 
-    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Arc<dyn IAdapter>> {
         let factory = self.factory.as_ref().unwrap().lock();
         let selected_adapter = self.select_adapter(options, &factory, |candidate| {
             Self::adapter_meets_requirements(options, &factory, candidate)
@@ -349,14 +347,14 @@ impl IContext for Context {
             let vendor = pci_id_to_vendor(desc.VendorId);
             let name = adapter_description_string(&desc).unwrap_or_else(|| "Unknown".to_string());
 
-            let adapter = AnyArc::new_cyclic(move |v| Adapter {
+            let adapter = Arc::new_cyclic(move |v| Adapter {
                 this: v.clone(),
                 context: self.this.upgrade().unwrap(),
                 name,
                 vendor,
                 adapter: Mutex::new(adapter),
             });
-            Some(AnyArc::map::<dyn IAdapter, _>(adapter, |v| v))
+            Some(adapter)
         } else {
             None
         }
@@ -366,7 +364,7 @@ impl IContext for Context {
         &self,
         display: &dyn HasDisplayHandle,
         window: &dyn HasWindowHandle,
-    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+    ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
         let display_handle = display.display_handle().unwrap().as_raw();
         let handle = window.window_handle().unwrap().as_raw();
 
@@ -383,19 +381,19 @@ impl IContext for Context {
             }
         }
 
-        let surface = AnyArc::new_cyclic(move |v| Surface {
+        let surface = Arc::new_cyclic(move |v| Surface {
             this: v.clone(),
             context: self.this.upgrade().unwrap(),
             handle,
             has_swap_chain: Default::default(),
         });
-        Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
+        Ok(surface)
     }
 
     fn create_surface_for_metal_layer(
         &self,
         _layer: NonNull<c_void>,
-    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+    ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
         log::warn!("Called 'ISurface::create_surface_for_metal_layer' on non Apple platform!");
         return Err(SurfaceCreateError::UnsupportedWSI);
     }

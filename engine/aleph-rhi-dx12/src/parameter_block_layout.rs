@@ -28,8 +28,8 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedParameterBlockDesc;
@@ -39,19 +39,18 @@ use crate::device::Device;
 use crate::internal::{conv, unwrap};
 
 pub struct ParameterBlockLayout {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) desc: OwnedParameterBlockDesc,
     pub(crate) compiled: CompiledParameterBlockLayout,
 }
 
-declare_interfaces!(ParameterBlockLayout, [IParameterBlockLayout]);
 unsafe_impl_iobject!(ParameterBlockLayout, "01944fed-ed20-7631-ab3e-c6683ac06428");
 
 impl IParameterBlockLayout for ParameterBlockLayout {
-    fn upgrade(&self) -> AnyArc<dyn IParameterBlockLayout> {
-        AnyArc::map::<dyn IParameterBlockLayout, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IParameterBlockLayout> {
+        self.this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {

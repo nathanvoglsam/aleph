@@ -28,8 +28,8 @@
 //
 
 use std::any::TypeId;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
 use blink_alloc::{Blink, BlinkAlloc};
@@ -39,15 +39,13 @@ use crate::device::Device;
 use crate::encoder::Encoder;
 
 pub struct CommandList {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) allocator: ID3D12CommandAllocator,
     pub(crate) list: ID3D12GraphicsCommandList7,
     pub(crate) descriptor_heaps: [Option<ID3D12DescriptorHeap>; 2],
     pub(crate) list_type: QueueType,
     pub(crate) state: ListState,
 }
-
-declare_interfaces!(CommandList, [ICommandList]);
 
 impl IGetPlatformInterface for CommandList {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {

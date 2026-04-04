@@ -32,9 +32,9 @@ use std::mem::ManuallyDrop;
 use std::num::NonZeroU64;
 use std::ops::Deref;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
 use aleph_alloc::BHashMap;
-use aleph_any::AnyArc;
 use aleph_gpu_allocator::GpuAllocation;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
@@ -53,7 +53,7 @@ use crate::internal::{
 };
 
 pub struct Texture {
-    pub(crate) device: AnyArc<Device>,
+    pub(crate) device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) allocation: Option<GpuAllocation>,
     pub(crate) resource: ManuallyDrop<ID3D12Resource>,

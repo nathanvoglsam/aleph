@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
+
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -35,7 +36,7 @@ use windows::Win32::Graphics::Direct3D12::*;
 use crate::device::Device;
 
 pub struct Fence {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) fence: ID3D12Fence,
 }
 

@@ -29,10 +29,9 @@
 
 use std::any::TypeId;
 use std::mem::{ManuallyDrop, size_of};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
@@ -51,16 +50,14 @@ use crate::swap_image::SwapImage;
 use crate::texture::{ImageViewObject, Texture};
 
 pub struct SwapChain {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) device: AnyArc<Device>,
-    pub(crate) surface: AnyArc<Surface>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) device: Arc<Device>,
+    pub(crate) surface: Arc<Surface>,
     pub(crate) swap_chain: IDXGISwapChain4,
     pub(crate) queue_support: QueueType,
     pub(crate) inner: Mutex<SwapChainState>,
     pub(crate) acquired: AtomicBool,
 }
-
-declare_interfaces!(SwapChain, [ISwapChain]);
 
 impl IGetPlatformInterface for SwapChain {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
@@ -167,8 +164,8 @@ impl SwapChain {
 }
 
 impl ISwapChain for SwapChain {
-    fn upgrade(&self) -> AnyArc<dyn ISwapChain> {
-        AnyArc::map::<dyn ISwapChain, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn ISwapChain> {
+        self.this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -288,11 +285,10 @@ impl ISwapChain for SwapChain {
         let texture = ArcObject::from_object(texture);
         let texture = unsafe { TextureHandle::new(texture) };
 
-        let swap_image = AnyArc::new(SwapImage {
+        let swap_image = Arc::new(SwapImage {
             swap_chain: self.this.upgrade().unwrap(),
             texture,
         });
-        let swap_image = AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v);
         Ok(AcquiredImage::Ok(swap_image))
     }
 }

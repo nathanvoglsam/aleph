@@ -358,7 +358,7 @@ impl IRhiBackend for aleph_rhi_dx12::D3D12Loader {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
+    ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         let config = options.config.d3d12.clone().unwrap_or_default();
         let config = config.into();
         aleph_rhi_dx12::D3D12Loader::make_context(self, options.validation, options.debug, &config)
@@ -374,7 +374,7 @@ impl IRhiBackend for aleph_rhi_metal::MetalLoader {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
+    ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         let config = options.config.metal.clone().unwrap_or_default();
         let config = config.into();
         aleph_rhi_metal::MetalLoader::make_context(self, options.validation, options.debug, &config)

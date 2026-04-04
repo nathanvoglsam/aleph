@@ -30,8 +30,8 @@
 use std::any::TypeId;
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
@@ -52,8 +52,8 @@ use crate::internal::register_message_callback::{
 use crate::queue::Queue;
 
 pub struct Adapter {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) context: AnyArc<Context>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) context: Arc<Context>,
     pub(crate) name: String,
     pub(crate) vendor: AdapterVendor,
     pub(crate) adapter: Mutex<IDXGIAdapter1>,
@@ -66,8 +66,6 @@ pub struct Adapter {
 unsafe impl Send for Adapter {}
 unsafe impl Sync for Adapter {}
 
-declare_interfaces!(Adapter, [IAdapter]);
-
 impl IGetPlatformInterface for Adapter {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
         unsafe { try_clone_value_into_slot(self.adapter.lock().deref(), out, target) }
@@ -75,7 +73,7 @@ impl IGetPlatformInterface for Adapter {
 }
 
 impl Adapter {
-    fn create_queue(device: &Device, queue_type: QueueType) -> Option<AnyArc<Queue>> {
+    fn create_queue(device: &Device, queue_type: QueueType) -> Option<Arc<Queue>> {
         unsafe {
             let desc = D3D12_COMMAND_QUEUE_DESC {
                 Type: queue_type_to_dx12(queue_type),
@@ -93,8 +91,8 @@ impl Adapter {
 }
 
 impl IAdapter for Adapter {
-    fn upgrade(&self) -> AnyArc<dyn IAdapter> {
-        AnyArc::map::<dyn IAdapter, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IAdapter> {
+        self.this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -112,7 +110,7 @@ impl IAdapter for Adapter {
         }
     }
 
-    fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
+    fn request_device(&self) -> Result<Arc<dyn IDevice>, RequestDeviceError> {
         let adapter = self.adapter.lock();
 
         // Create the actual d3d12 device
@@ -161,7 +159,7 @@ impl IAdapter for Adapter {
             .map_err(|_| RequestDeviceError::Platform)?;
 
         // Bundle and return the device
-        let device = AnyArc::new_cyclic(move |v| {
+        let device = Arc::new_cyclic(move |v| {
             let mut v = Device {
                 this: v.clone(),
                 _context: self.context.clone(),
@@ -183,7 +181,7 @@ impl IAdapter for Adapter {
             create_queues(&mut v);
             v
         });
-        Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
+        Ok(device)
     }
 }
 

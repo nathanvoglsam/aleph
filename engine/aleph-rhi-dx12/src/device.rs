@@ -31,9 +31,9 @@ use std::any::TypeId;
 use std::mem::{ManuallyDrop, size_of, transmute_copy};
 use std::ops::Deref;
 use std::ptr::NonNull;
+use std::sync::{Arc, Weak};
 
 use aleph_alloc::offset_allocator::OffsetAllocator;
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_gpu_allocator::{AllocationDesc, GpuAllocator, MemoryLocation};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
@@ -90,24 +90,22 @@ use crate::sampler::Sampler;
 use crate::texture::{ImageViewObject, Texture};
 
 pub struct Device {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<Context>,
-    pub(crate) _adapter: AnyArc<Adapter>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) _context: Arc<Context>,
+    pub(crate) _adapter: Arc<Adapter>,
     pub(crate) device: ID3D12Device10,
     pub(crate) allocator: Option<ManuallyDrop<GpuAllocator<D3D12AllocatorBridge>>>,
     pub(crate) debug_message_cookie: Option<u32>,
     pub(crate) descriptor_heaps: DescriptorHeaps,
-    pub(crate) general_queue: Option<AnyArc<Queue>>,
-    pub(crate) compute_queue: Option<AnyArc<Queue>>,
-    pub(crate) transfer_queue: Option<AnyArc<Queue>>,
+    pub(crate) general_queue: Option<Arc<Queue>>,
+    pub(crate) compute_queue: Option<Arc<Queue>>,
+    pub(crate) transfer_queue: Option<Arc<Queue>>,
     pub(crate) command_list_pool: CommandListPool,
     pub(crate) object_counter: ObjectCounter,
 }
 
 unsafe impl Send for Device {}
 unsafe impl Sync for Device {}
-
-declare_interfaces!(Device, [IDevice]);
 
 impl IGetPlatformInterface for Device {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
@@ -119,8 +117,8 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn upgrade(&self) -> AnyArc<dyn IDevice> {
-        AnyArc::map::<dyn IDevice, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IDevice> {
+        self.this.upgrade().unwrap()
     }
 
     // ========================================================================================== //
@@ -175,10 +173,10 @@ impl IDevice for Device {
     fn create_parameter_block_layout(
         &self,
         desc: &ParameterBlockDesc,
-    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
+    ) -> Result<Arc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
         let compiled = CompiledParameterBlockLayout::new(desc);
 
-        let layout = AnyArc::new_cyclic(move |v| ParameterBlockLayout {
+        let layout = Arc::new_cyclic(move |v| ParameterBlockLayout {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_parameter_block_layout(),
@@ -186,7 +184,7 @@ impl IDevice for Device {
             compiled,
         });
 
-        Ok(AnyArc::map::<dyn IParameterBlockLayout, _>(layout, |v| v))
+        Ok(layout)
     }
 
     // ========================================================================================== //
@@ -195,8 +193,8 @@ impl IDevice for Device {
     fn create_binding_signature(
         &self,
         desc: &BindingSignatureDesc,
-    ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
+    ) -> Result<Arc<dyn IBindingSignature>, BindingSignatureCreateError> {
+        let out = DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
             let mut parameter_block_layouts =
@@ -227,7 +225,7 @@ impl IDevice for Device {
                 set_name(&root_signature, name).unwrap();
             }
 
-            let signature = AnyArc::new_cyclic(move |v| BindingSignature {
+            let signature = Arc::new_cyclic(move |v| BindingSignature {
                 this: v.clone(),
                 _device: self.this.upgrade().unwrap(),
                 id: self.object_counter.next_binding_signature(),
@@ -236,8 +234,9 @@ impl IDevice for Device {
                 compiled,
             });
 
-            Ok(AnyArc::map::<dyn IBindingSignature, _>(signature, |v| v))
-        })
+            Ok(signature)
+        })?;
+        Ok(out)
     }
 
     // ========================================================================================== //
@@ -692,20 +691,15 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
-        match queue_type {
-            QueueType::General => self
-                .general_queue
-                .clone()
-                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
-            QueueType::Compute => self
-                .compute_queue
-                .clone()
-                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
-            QueueType::Transfer => self
-                .transfer_queue
-                .clone()
-                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
+    fn get_queue(&self, queue_type: QueueType) -> Option<Arc<dyn IQueue>> {
+        let device = match queue_type {
+            QueueType::General => self.general_queue.clone(),
+            QueueType::Compute => self.compute_queue.clone(),
+            QueueType::Transfer => self.transfer_queue.clone(),
+        };
+        match device {
+            None => None,
+            Some(v) => Some(v),
         }
     }
 
