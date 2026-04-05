@@ -72,6 +72,7 @@ aleph-pin-board = { workspace = true }
 aleph-shader-db = { workspace = true }
 aleph-nstr = { workspace = true }
 aleph-magnesium = { workspace = true }
+aleph-gen-arena = { workspace = true }
 
 log = { workspace = true }
 utf16_lit = { workspace = true }

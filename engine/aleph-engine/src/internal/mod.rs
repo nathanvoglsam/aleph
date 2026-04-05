@@ -29,3 +29,9 @@
 
 pub mod platform;
 pub mod rhi_load;
+
+/// The root engine allocation category.
+pub struct Engine;
+aleph_alloc::new_alloc_category!(Engine, "019d57fa-2986-7f02-9c68-f51a76f57e6e");
+
+pub type EngineSystem = aleph_alloc::instrumentation::Instrumented<Engine>;

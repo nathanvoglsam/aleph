@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+pub mod async_load_resolver;
 pub mod publish_egui_scene;
 pub mod publish_render_scene;
 pub mod render;
