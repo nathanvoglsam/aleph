@@ -28,8 +28,8 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use objc2::rc::Retained;
@@ -42,8 +42,8 @@ use crate::device::Device;
 use crate::internal::{conv, unwrap};
 
 pub struct GraphicsPipeline {
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) _binding_signature: AnyArc<BindingSignature>,
+    pub(crate) _device: Arc<Device>,
+    pub(crate) _binding_signature: Arc<BindingSignature>,
     pub(crate) id: NonZeroU64,
     pub(crate) objects: GraphicsPipelineObjects,
     pub(crate) info: CachedGraphicsInfo,
@@ -302,8 +302,8 @@ unsafe impl Send for GraphicsPipelineObjects {}
 unsafe impl Sync for GraphicsPipelineObjects {}
 
 pub struct ComputePipeline {
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) _binding_signature: AnyArc<BindingSignature>,
+    pub(crate) _device: Arc<Device>,
+    pub(crate) _binding_signature: Arc<BindingSignature>,
     pub(crate) id: NonZeroU64,
     pub(crate) objects: ComputePipelineObjects,
     pub(crate) workgroup_size: MTLSize,

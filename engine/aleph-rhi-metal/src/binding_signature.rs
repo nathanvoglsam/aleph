@@ -28,9 +28,9 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::{
     BindingSignatureCreateError, BindingSignatureDesc, IBindingSignature, PushConstantBlock,
 };
@@ -41,18 +41,16 @@ use crate::internal::unwrap;
 use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct BindingSignature {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
-    pub(crate) _parameter_block_layouts: BVec<AnyArc<ParameterBlockLayout>, RhiSystem>,
+    pub(crate) _parameter_block_layouts: BVec<Arc<ParameterBlockLayout>, RhiSystem>,
     pub(crate) push_constant_block: Option<PushConstantBlock>,
 }
 
-declare_interfaces!(BindingSignature, [IBindingSignature]);
-
 impl IBindingSignature for BindingSignature {
-    fn upgrade(&self) -> AnyArc<dyn IBindingSignature> {
-        AnyArc::map::<dyn IBindingSignature, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IBindingSignature> {
+        self.this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -72,7 +70,7 @@ impl BindingSignature {
     pub(crate) fn create(
         device: &Device,
         desc: &BindingSignatureDesc,
-    ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError> {
+    ) -> Result<Arc<dyn IBindingSignature>, BindingSignatureCreateError> {
         let mut block_layouts =
             BVec::with_capacity_in(desc.parameter_block_layouts.len(), Default::default());
         block_layouts.extend(
@@ -82,13 +80,13 @@ impl BindingSignature {
                 .map(|v| v.this.upgrade().unwrap()),
         );
 
-        let out = AnyArc::new_cyclic(move |v| BindingSignature {
+        let out = Arc::new_cyclic(move |v| BindingSignature {
             this: v.clone(),
             _device: device.this.upgrade().unwrap(),
             id: device.object_counter.next_binding_signature(),
             _parameter_block_layouts: block_layouts,
             push_constant_block: desc.push_constant_block.clone(),
         });
-        Ok(AnyArc::map::<dyn IBindingSignature, _>(out, |v| v))
+        Ok(out)
     }
 }

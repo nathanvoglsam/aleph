@@ -30,9 +30,9 @@
 use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
 use aleph_alloc::instrumentation::system;
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
 use blink_alloc::BlinkAlloc;
@@ -44,13 +44,11 @@ use crate::internal::unwrap;
 use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct DescriptorPool {
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) _layout: AnyArc<ParameterBlockLayout>,
+    pub(crate) _device: Arc<Device>,
+    pub(crate) _layout: Arc<ParameterBlockLayout>,
     pub(crate) block: MemoryBlock,
     pub(crate) pool: ParameterBlockPool<LinearBlockFactory>,
 }
-
-declare_interfaces!(DescriptorPool, [IDescriptorPool]);
 
 impl IGetPlatformInterface for DescriptorPool {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {

@@ -31,10 +31,10 @@ use std::alloc::{Layout, handle_alloc_error};
 use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_alloc::offset_allocator::OffsetAllocator;
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_pool::{IBlockFactory, ParameterBlockPool};
 use aleph_rhi_impl_utils::{Rhi, RhiSystem};
@@ -50,12 +50,10 @@ use crate::internal::unwrap;
 use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct DescriptorArenaLinear {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) memory_block: MemoryBlock,
     pub(crate) pool: ParameterBlockPool<LinearBlockFactory>,
 }
-
-declare_interfaces!(DescriptorArenaLinear, [IDescriptorArena]);
 
 impl IGetPlatformInterface for DescriptorArenaLinear {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
@@ -223,12 +221,10 @@ unsafe impl IBlockFactory for LinearBlockFactory {
 }
 
 pub struct DescriptorArenaHeap {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) memory_block: MemoryBlock,
     pub(crate) pool: ParameterBlockPool<HeapBlockFactory>,
 }
-
-declare_interfaces!(DescriptorArenaHeap, [IDescriptorArena]);
 
 impl IGetPlatformInterface for DescriptorArenaHeap {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {

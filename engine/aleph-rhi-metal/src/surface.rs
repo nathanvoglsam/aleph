@@ -28,8 +28,8 @@
 //
 
 use std::any::TypeId;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use objc2::rc::{Retained, autoreleasepool};
 use objc2_core_foundation::CGSize;
@@ -41,12 +41,10 @@ use crate::internal::{conv, unwrap};
 use crate::swap_chain::{SwapChain, SwapChainObjects, SwapChainState};
 
 pub struct Surface {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<Context>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) _context: Arc<Context>,
     pub(crate) objects: SurfaceObjects,
 }
-
-declare_interfaces!(Surface, [ISurface]);
 
 impl IGetPlatformInterface for Surface {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
@@ -55,8 +53,8 @@ impl IGetPlatformInterface for Surface {
 }
 
 impl ISurface for Surface {
-    fn upgrade(&self) -> AnyArc<dyn ISurface> {
-        AnyArc::map::<dyn ISurface, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn ISurface> {
+        self.this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -71,8 +69,8 @@ impl ISurface for Surface {
         &self,
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
-        autoreleasepool(|_| {
+    ) -> Result<Arc<dyn ISwapChain>, SwapChainCreateError> {
+        let swap_chain = autoreleasepool(|_| {
             let device = unwrap::device(device);
 
             let size = self.objects.layer.drawableSize();
@@ -131,7 +129,7 @@ impl ISurface for Surface {
                 );
             }
 
-            let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
+            Arc::new_cyclic(move |v| SwapChain {
                 this: v.clone(),
                 device: device.this.upgrade().unwrap(),
                 _surface: self.this.upgrade().unwrap(),
@@ -142,9 +140,9 @@ impl ISurface for Surface {
                 inner: Mutex::new(SwapChainState {
                     config: config.clone(),
                 }),
-            });
-            Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
-        })
+            })
+        });
+        Ok(swap_chain)
     }
 }
 

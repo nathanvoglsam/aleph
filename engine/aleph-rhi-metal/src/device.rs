@@ -29,10 +29,9 @@
 
 use std::any::TypeId;
 use std::ptr::NonNull;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use std::time::Duration;
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
@@ -64,22 +63,20 @@ use crate::sampler::Sampler;
 use crate::texture::Texture;
 
 pub struct Device {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) context: AnyArc<Context>,
-    pub(crate) _adapter: AnyArc<Adapter>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) context: Arc<Context>,
+    pub(crate) _adapter: Arc<Adapter>,
     pub(crate) device: Retained<ProtocolObject<dyn MTLDevice>>,
     pub(crate) listener: Retained<MTLSharedEventListener>,
-    pub(crate) general_queue: Option<AnyArc<Queue>>,
-    pub(crate) compute_queue: Option<AnyArc<Queue>>,
-    pub(crate) transfer_queue: Option<AnyArc<Queue>>,
+    pub(crate) general_queue: Option<Arc<Queue>>,
+    pub(crate) compute_queue: Option<Arc<Queue>>,
+    pub(crate) transfer_queue: Option<Arc<Queue>>,
     pub(crate) object_counter: ObjectCounter,
 }
 
 // Safety: Needed because of 'MTLDevice'
 unsafe impl Send for Device {}
 unsafe impl Sync for Device {}
-
-declare_interfaces!(Device, [IDevice]);
 
 impl IGetPlatformInterface for Device {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
@@ -91,8 +88,8 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn upgrade(&self) -> AnyArc<dyn IDevice> {
-        AnyArc::map::<dyn IDevice, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IDevice> {
+        self.this.upgrade().unwrap()
     }
 
     // ========================================================================================== //
@@ -157,7 +154,7 @@ impl IDevice for Device {
     fn create_parameter_block_layout(
         &self,
         desc: &ParameterBlockDesc,
-    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
+    ) -> Result<Arc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
         ParameterBlockLayout::create(self, desc)
     }
 
@@ -167,7 +164,7 @@ impl IDevice for Device {
     fn create_binding_signature(
         &self,
         desc: &BindingSignatureDesc,
-    ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError> {
+    ) -> Result<Arc<dyn IBindingSignature>, BindingSignatureCreateError> {
         BindingSignature::create(self, desc)
     }
 
@@ -250,21 +247,13 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
-        match queue_type {
-            QueueType::General => self
-                .general_queue
-                .clone()
-                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
-            QueueType::Compute => self
-                .compute_queue
-                .clone()
-                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
-            QueueType::Transfer => self
-                .transfer_queue
-                .clone()
-                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
-        }
+    fn get_queue(&self, queue_type: QueueType) -> Option<Arc<dyn IQueue>> {
+        let queue = match queue_type {
+            QueueType::General => self.general_queue.clone(),
+            QueueType::Compute => self.compute_queue.clone(),
+            QueueType::Transfer => self.transfer_queue.clone(),
+        };
+        Some(queue?)
     }
 
     // ========================================================================================== //

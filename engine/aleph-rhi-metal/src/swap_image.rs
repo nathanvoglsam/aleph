@@ -28,8 +28,8 @@
 //
 
 use std::any::TypeId;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
@@ -39,12 +39,10 @@ use objc2_quartz_core::CAMetalDrawable;
 use crate::swap_chain::SwapChain;
 
 pub struct SwapImage {
-    pub(crate) _swap_chain: AnyArc<SwapChain>,
+    pub(crate) _swap_chain: Arc<SwapChain>,
     pub(crate) objects: SwapImageObjects,
     pub(crate) texture: TextureHandle,
 }
-
-declare_interfaces!(SwapImage, [ISwapImage]);
 
 impl IGetPlatformInterface for SwapImage {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {

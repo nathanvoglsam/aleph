@@ -30,8 +30,8 @@
 use std::any::TypeId;
 use std::ffi::c_void;
 use std::ptr::NonNull;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use objc2::rc::{Retained, autoreleasepool};
 use objc2_metal::*;
@@ -44,13 +44,11 @@ use crate::internal::unwrap;
 use crate::surface::{Surface, SurfaceObjects};
 
 pub struct Context {
-    pub _this: AnyWeak<Self>,
+    pub _this: Weak<Self>,
     pub _config: MetalConfig,
     pub validation: bool,
     pub debug: bool,
 }
-
-declare_interfaces!(Context, [IContext]);
 
 impl IGetPlatformInterface for Context {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
@@ -59,8 +57,8 @@ impl IGetPlatformInterface for Context {
 }
 
 impl IContext for Context {
-    fn upgrade(&self) -> AnyArc<dyn IContext> {
-        AnyArc::map::<dyn IContext, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IContext> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -71,8 +69,8 @@ impl IContext for Context {
         self._this.weak_count()
     }
 
-    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
-        autoreleasepool(|_| {
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Arc<dyn IAdapter>> {
+        let adapter = autoreleasepool(|_| {
             // Metal doesn't have software adapters so the solution here is obvious. We bail.
             if options.deny_hardware_adapters {
                 return None;
@@ -137,7 +135,7 @@ impl IContext for Context {
             let surface = surface.map(|v| v.this.upgrade().unwrap());
 
             let name = device.name().to_string();
-            let adapter = AnyArc::new_cyclic(move |v| Adapter {
+            let adapter = Arc::new_cyclic(move |v| Adapter {
                 this: v.clone(),
                 context: self._this.upgrade().unwrap(),
                 surface,
@@ -145,33 +143,34 @@ impl IContext for Context {
                 vendor: AdapterVendor::Apple, // TODO: this may not always be the case
                 objects: AdapterObjects { device },
             });
-            Some(AnyArc::map::<dyn IAdapter, _>(adapter, |v| v))
-        })
+            Some(adapter)
+        });
+        Some(adapter?)
     }
 
     fn create_surface(
         &self,
         _display: &dyn HasDisplayHandle,
         _window: &dyn HasWindowHandle,
-    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+    ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
         unimplemented!("Use IContext::create_surface_for_metal_layer")
     }
 
     fn create_surface_for_metal_layer(
         &self,
         layer: NonNull<c_void>,
-    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
-        autoreleasepool(|_| {
+    ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
+        let surface = autoreleasepool(|_| {
             let layer = unsafe { Retained::retain(layer.cast::<CAMetalLayer>().as_ptr()) };
             let layer = layer.unwrap();
 
-            let surface = AnyArc::new_cyclic(move |v| Surface {
+            Arc::new_cyclic(move |v| Surface {
                 this: v.clone(),
                 _context: self._this.upgrade().unwrap(),
                 objects: SurfaceObjects { layer },
-            });
-            Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
-        })
+            })
+        });
+        Ok(surface)
     }
 
     fn get_backend_api(&self) -> BackendAPI {

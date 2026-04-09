@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::{ContextCreateError, IContext};
 
 use crate::context::Context;
@@ -57,19 +57,19 @@ impl MetalLoader {
         validation: bool,
         debug: bool,
         config: &MetalConfig,
-    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
+    ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         match self
             .context_made
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
         {
             Ok(_) => {
-                let context = AnyArc::new_cyclic(move |v| Context {
+                let context = Arc::new_cyclic(move |v| Context {
                     _this: v.clone(),
                     _config: config.clone(),
                     validation,
                     debug,
                 });
-                Ok(AnyArc::map::<dyn IContext, _>(context, |v| v))
+                Ok(context)
             }
             Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
         }

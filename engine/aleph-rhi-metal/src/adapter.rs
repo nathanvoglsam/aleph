@@ -28,8 +28,8 @@
 //
 
 use std::any::TypeId;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use objc2::rc::{Retained, autoreleasepool};
@@ -42,15 +42,13 @@ use crate::queue::Queue;
 use crate::surface::Surface;
 
 pub struct Adapter {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) context: AnyArc<Context>,
-    pub(crate) surface: Option<AnyArc<Surface>>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) context: Arc<Context>,
+    pub(crate) surface: Option<Arc<Surface>>,
     pub(crate) name: String,
     pub(crate) vendor: AdapterVendor,
     pub(crate) objects: AdapterObjects,
 }
-
-declare_interfaces!(Adapter, [IAdapter]);
 
 impl IGetPlatformInterface for Adapter {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
@@ -59,8 +57,8 @@ impl IGetPlatformInterface for Adapter {
 }
 
 impl IAdapter for Adapter {
-    fn upgrade(&self) -> AnyArc<dyn IAdapter> {
-        AnyArc::map::<dyn IAdapter, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IAdapter> {
+        self.this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -78,8 +76,8 @@ impl IAdapter for Adapter {
         }
     }
 
-    fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
-        autoreleasepool(|_| {
+    fn request_device(&self) -> Result<Arc<dyn IDevice>, RequestDeviceError> {
+        let device = autoreleasepool(|_| {
             if let Some(surface) = self.surface.as_ref() {
                 surface.objects.layer.setDevice(Some(&self.objects.device));
 
@@ -91,7 +89,7 @@ impl IAdapter for Adapter {
                 }
             }
 
-            let device = AnyArc::new_cyclic(move |v| {
+            Arc::new_cyclic(move |v| {
                 let mut device = Device {
                     this: v.clone(),
                     _adapter: self.this.upgrade().unwrap(),
@@ -107,10 +105,9 @@ impl IAdapter for Adapter {
                 Self::build_queue_objects(&mut device);
 
                 device
-            });
-
-            Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
-        })
+            })
+        });
+        Ok(device)
     }
 }
 

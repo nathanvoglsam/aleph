@@ -28,8 +28,8 @@
 //
 
 use std::any::TypeId;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
@@ -48,15 +48,13 @@ use crate::swap_image::{SwapImage, SwapImageObjects};
 use crate::texture::{Texture, TextureObjects};
 
 pub struct SwapChain {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) device: AnyArc<Device>,
-    pub(crate) _surface: AnyArc<Surface>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) device: Arc<Device>,
+    pub(crate) _surface: Arc<Surface>,
     pub(crate) queue_type: QueueType,
     pub(crate) objects: SwapChainObjects,
     pub(crate) inner: Mutex<SwapChainState>,
 }
-
-declare_interfaces!(SwapChain, [ISwapChain]);
 
 impl IGetPlatformInterface for SwapChain {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
@@ -65,8 +63,8 @@ impl IGetPlatformInterface for SwapChain {
 }
 
 impl ISwapChain for SwapChain {
-    fn upgrade(&self) -> AnyArc<dyn ISwapChain> {
-        AnyArc::map::<dyn ISwapChain, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn ISwapChain> {
+        self.this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -173,12 +171,11 @@ impl ISwapChain for SwapChain {
             let queue = self.device.get_queue_internal(self.queue_type).unwrap();
             let list = queue.objects.queue.commandBuffer().unwrap();
 
-            let swap_image = AnyArc::new(SwapImage {
+            let swap_image = Arc::new(SwapImage {
                 _swap_chain: self.this.upgrade().unwrap(),
                 objects: SwapImageObjects { list, drawable },
                 texture,
             });
-            let swap_image = AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v);
 
             Ok(AcquiredImage::Ok(swap_image))
         })

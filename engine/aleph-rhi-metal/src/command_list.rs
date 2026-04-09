@@ -28,8 +28,8 @@
 //
 
 use std::any::TypeId;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use blink_alloc::Blink;
 use objc2::rc::Retained;
@@ -41,13 +41,11 @@ use crate::device::Device;
 use crate::encoder::{ActiveEncoder, Encoder, EncoderObjects};
 
 pub struct CommandList {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) list_type: QueueType,
     pub(crate) state: ListState,
     pub(crate) objects: CommandListObjects,
 }
-
-declare_interfaces!(CommandList, [ICommandList]);
 
 impl IGetPlatformInterface for CommandList {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {

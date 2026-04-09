@@ -28,8 +28,8 @@
 //
 
 use std::any::TypeId;
+use std::sync::{Arc, Weak};
 
-use aleph_any::{AnyArc, AnyWeak, box_downcast, declare_interfaces};
 use aleph_rhi_api::*;
 use crossbeam::queue::ArrayQueue;
 use objc2::rc::{Retained, autoreleasepool};
@@ -41,11 +41,11 @@ use parking_lot::{Mutex, MutexGuard};
 use crate::command_list::{CommandList, ListState};
 use crate::device::Device;
 use crate::fence::Fence;
-use crate::swap_image::SwapImage;
+use crate::internal::unwrap;
 
 pub struct Queue {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyWeak<Device>,
+    pub(crate) _this: Weak<Self>,
+    pub(crate) _device: Weak<Device>,
     pub(crate) queue_type: QueueType,
 
     pub(crate) objects: QueueObjects,
@@ -59,8 +59,6 @@ pub struct Queue {
     pub(crate) in_flight: ArrayQueue<QueueSubmission>,
 }
 
-declare_interfaces!(Queue, [IQueue]);
-
 impl IGetPlatformInterface for Queue {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
         None
@@ -69,7 +67,7 @@ impl IGetPlatformInterface for Queue {
 
 impl Queue {
     #[inline]
-    pub(crate) fn new(device: &Device, queue_type: QueueType) -> Option<AnyArc<Self>> {
+    pub(crate) fn new(device: &Device, queue_type: QueueType) -> Option<Arc<Self>> {
         // TODO: should this be configurable? metal 4 will make this go away anyway I think?
         let queue = device.device.newCommandQueueWithMaxCommandBufferCount(64)?;
         match queue_type {
@@ -78,7 +76,7 @@ impl Queue {
             QueueType::Transfer => queue.setLabel(Some(ns_string!("TransferQueue"))),
         }
 
-        let out = AnyArc::new_cyclic(|v| Self {
+        let out = Arc::new_cyclic(|v| Self {
             _this: v.clone(),
             _device: device.this.clone(),
             queue_type,
@@ -92,8 +90,8 @@ impl Queue {
 }
 
 impl IQueue for Queue {
-    fn upgrade(&self) -> AnyArc<dyn IQueue> {
-        AnyArc::map::<dyn IQueue, _>(self._this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IQueue> {
+        self._this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -130,9 +128,14 @@ impl IQueue for Queue {
             let lists: Vec<_> = desc
                 .command_lists
                 .iter()
-                .map(|v| {
-                    let v = v.take().unwrap();
-                    box_downcast::<_, CommandList>(v).ok().unwrap()
+                .map(|list| {
+                    let list = list.take().unwrap();
+                    if list.as_ref().type_id() == TypeId::of::<CommandList>() {
+                        let ptr = Box::into_raw(list);
+                        unsafe { Box::from_raw(ptr.cast::<CommandList>()) }
+                    } else {
+                        panic!("Unknown ICommandList implementation")
+                    }
                 })
                 .collect();
 
@@ -186,18 +189,12 @@ impl IQueue for Queue {
         })
     }
 
-    unsafe fn present(&self, swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
+    unsafe fn present(&self, swap_image: Arc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
         autoreleasepool(|_| {
             let _lock = self.submit_lock.lock();
 
-            let mut swap_image = {
-                let v = swap_image;
-                let v = v
-                    .query_interface::<SwapImage>()
-                    .expect("Unknown ISwapImage implementation");
-                v
-            };
-            let swap_image = AnyArc::get_mut(&mut swap_image).unwrap();
+            let mut swap_image = unwrap::swap_image_owned(swap_image);
+            let swap_image = Arc::get_mut(&mut swap_image).unwrap();
 
             let list = &swap_image.objects.list;
             list.presentDrawable(swap_image.objects.drawable.as_ref());

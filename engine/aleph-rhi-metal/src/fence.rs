@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
+use std::sync::Arc;
+
 use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use objc2::rc::Retained;
@@ -37,7 +38,7 @@ use objc2_metal::*;
 use crate::device::Device;
 
 pub struct Fence {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) objects: FenceObjects,
 }
 

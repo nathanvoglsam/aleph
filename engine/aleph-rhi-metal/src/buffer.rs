@@ -28,8 +28,8 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
@@ -41,7 +41,7 @@ use objc2_metal::*;
 use crate::device::Device;
 
 pub struct Buffer {
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) objects: BufferObjects,
     pub(crate) desc: OwnedBufferDesc,

@@ -28,9 +28,9 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedParameterBlockDesc;
@@ -40,18 +40,16 @@ use crate::device::Device;
 use crate::internal::unwrap;
 
 pub struct ParameterBlockLayout {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) this: Weak<Self>,
+    pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) compiled: CompiledParameterBlockLayout,
     pub(crate) desc: OwnedParameterBlockDesc,
 }
 
-declare_interfaces!(ParameterBlockLayout, [IParameterBlockLayout]);
-
 impl IParameterBlockLayout for ParameterBlockLayout {
-    fn upgrade(&self) -> AnyArc<dyn IParameterBlockLayout> {
-        AnyArc::map::<dyn IParameterBlockLayout, _>(self.this.upgrade().unwrap(), |v| v)
+    fn upgrade(&self) -> Arc<dyn IParameterBlockLayout> {
+        self.this.upgrade().unwrap()
     }
 
     fn strong_count(&self) -> usize {
@@ -80,16 +78,16 @@ impl ParameterBlockLayout {
     pub(crate) fn create(
         device: &Device,
         desc: &ParameterBlockDesc,
-    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
+    ) -> Result<Arc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
         let compiled = CompiledParameterBlockLayout::new(desc);
-        let out = AnyArc::new_cyclic(move |v| ParameterBlockLayout {
+        let out = Arc::new_cyclic(move |v| ParameterBlockLayout {
             this: v.clone(),
             _device: device.this.upgrade().unwrap(),
             id: device.object_counter.next_parameter_block_layout(),
             compiled,
             desc: OwnedParameterBlockDesc::new(desc),
         });
-        Ok(AnyArc::map::<dyn IParameterBlockLayout, _>(out, |v| v))
+        Ok(out)
     }
 }
 
