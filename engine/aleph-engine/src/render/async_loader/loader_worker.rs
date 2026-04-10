@@ -37,7 +37,7 @@ use mg::async_resource_loader::{
     AllocateRangeError, AsyncResourceLoader, BufferLoadHandle, FlushError, RetireError,
 };
 
-use crate::internal::EngineSystem;
+use crate::core::alloc::EngineSystem;
 use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
 
 pub struct AsyncLoaderWorker {

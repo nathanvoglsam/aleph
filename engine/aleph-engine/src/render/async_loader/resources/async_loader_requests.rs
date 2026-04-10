@@ -31,7 +31,7 @@ use aleph_gen_arena::{GenArena, Handle, make_handle_id};
 use aleph_object_system::unsafe_impl_iobject;
 use api::ecs::entity::EntityHandle;
 
-use crate::internal::EngineSystem;
+use crate::core::alloc::EngineSystem;
 
 pub struct AsyncLoaderRequests {
     pub(crate) states: GenArena<ResourceLoadState, ResourceLoadHandle, EngineSystem>,
