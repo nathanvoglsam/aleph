@@ -27,28 +27,46 @@
 // SOFTWARE.
 //
 
-#[doc(hidden)]
-pub extern crate aleph_nstr as nstr;
+use std::sync::Arc;
 
-#[doc(hidden)]
-pub extern crate uuid;
+use api::label::{Label, make_label};
+use api::platform::IWindow;
+use api::schedule::CoreStage;
+use api::scheduler::Schedule;
+use crossbeam::channel::Sender;
+use mg::renderer::surface_notify::SurfaceNotification;
 
-#[doc(hidden)]
-pub extern crate ctor;
+pub struct SurfaceSenderSystem {
+    window: Arc<dyn IWindow>,
+    sender: Sender<SurfaceNotification>,
+}
 
-#[doc(hidden)]
-pub extern crate const_format;
+impl SurfaceSenderSystem {
+    pub const LABEL: Label = make_label!("render::SurfaceSenderSystem");
 
-pub mod allocator_global_handle;
-pub mod instrumentation;
-pub mod mallocator;
-pub mod offset_allocator;
+    pub fn new(window: Arc<dyn IWindow>, sender: Sender<SurfaceNotification>) -> Self {
+        Self { window, sender }
+    }
 
-pub use allocator_api2::boxed::Box as BBox;
-pub use allocator_api2::vec::Vec as BVec;
-pub use allocator_api2::*;
-pub use blink_alloc::*;
-pub use hashbrown::*;
+    pub fn register(self, schedule: &mut Schedule) {
+        let system = move || {
+            self.run();
+        };
+        schedule.add_exclusive_at_end_system_to_stage(
+            CoreStage::InputCollection.into(),
+            Self::LABEL,
+            system,
+        );
+    }
 
-pub type BHashMap<K, V, A = alloc::Global> = HashMap<K, V, DefaultHashBuilder, A>;
-pub type BHashSet<T, A = alloc::Global> = HashSet<T, DefaultHashBuilder, A>;
+    pub fn run(&self) {
+        if self.window.resized() {
+            let size = self.window.drawable_size();
+            let size = rhi::Extent2D::new(size.0, size.1);
+            self.sender
+                .try_send(SurfaceNotification::Resized(size))
+                .ok()
+                .unwrap()
+        }
+    }
+}

@@ -28,7 +28,7 @@
 //
 
 use aleph_alloc::BVec;
-use allocator_api2::alloc::{Allocator, Global};
+use aleph_alloc::alloc::{Allocator, Global};
 use thiserror::Error;
 
 use super::handle::{Generation, HandleFields, RawHandle};

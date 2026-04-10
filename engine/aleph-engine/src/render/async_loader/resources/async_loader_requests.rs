@@ -27,28 +27,26 @@
 // SOFTWARE.
 //
 
-#[doc(hidden)]
-pub extern crate aleph_nstr as nstr;
+use aleph_gen_arena::{GenArena, Handle, make_handle_id};
+use aleph_object_system::unsafe_impl_iobject;
+use api::ecs::entity::EntityHandle;
 
-#[doc(hidden)]
-pub extern crate uuid;
+use crate::internal::EngineSystem;
 
-#[doc(hidden)]
-pub extern crate ctor;
+pub struct AsyncLoaderRequests {
+    pub(crate) states: GenArena<ResourceLoadState, ResourceLoadHandle, EngineSystem>,
+}
 
-#[doc(hidden)]
-pub extern crate const_format;
+unsafe_impl_iobject!(AsyncLoaderRequests, "019d6084-d914-7a01-b9f6-d60d3b3e39d7");
 
-pub mod allocator_global_handle;
-pub mod instrumentation;
-pub mod mallocator;
-pub mod offset_allocator;
+pub struct ResourceLoad;
 
-pub use allocator_api2::boxed::Box as BBox;
-pub use allocator_api2::vec::Vec as BVec;
-pub use allocator_api2::*;
-pub use blink_alloc::*;
-pub use hashbrown::*;
+make_handle_id!(ResourceLoad);
 
-pub type BHashMap<K, V, A = alloc::Global> = HashMap<K, V, DefaultHashBuilder, A>;
-pub type BHashSet<T, A = alloc::Global> = HashSet<T, DefaultHashBuilder, A>;
+pub type ResourceLoadHandle = Handle<ResourceLoad>;
+
+pub enum ResourceLoadState {
+    VertexBuffer { entity: EntityHandle },
+    IndexBuffer { entity: EntityHandle },
+    Texture { entity: EntityHandle },
+}

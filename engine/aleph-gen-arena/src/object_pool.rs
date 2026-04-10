@@ -28,8 +28,8 @@
 //
 
 use aleph_alloc::BVec;
+use aleph_alloc::alloc::{Allocator, Global};
 use aleph_alloc::allocator_global_handle::AllocatorGlobalHandle;
-use allocator_api2::alloc::{Allocator, Global};
 
 use crate::handle::{HandleType, RawHandle};
 use crate::handle_pool::HandlePool;

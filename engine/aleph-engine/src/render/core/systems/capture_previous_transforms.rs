@@ -27,28 +27,32 @@
 // SOFTWARE.
 //
 
-#[doc(hidden)]
-pub extern crate aleph_nstr as nstr;
+use api::components::{Transform, TransformHistory};
+use api::ecs::world::query::{Read, Write};
+use api::label::{Label, make_label};
+use api::schedule::{CoreStage, WorldResource};
+use api::scheduler::{ResMut, Schedule};
 
-#[doc(hidden)]
-pub extern crate uuid;
+pub struct CapturePreviousTransformsSystem;
 
-#[doc(hidden)]
-pub extern crate ctor;
+impl CapturePreviousTransformsSystem {
+    pub const LABEL: Label = make_label!("render::CapturePreviousTransforms");
 
-#[doc(hidden)]
-pub extern crate const_format;
+    pub fn register(mut self, schedule: &mut Schedule) {
+        let system = move |world: ResMut<WorldResource>| {
+            self.run(world);
+        };
+        schedule.add_exclusive_at_end_system_to_stage(
+            CoreStage::Render.into(),
+            Self::LABEL,
+            system,
+        );
+    }
 
-pub mod allocator_global_handle;
-pub mod instrumentation;
-pub mod mallocator;
-pub mod offset_allocator;
-
-pub use allocator_api2::boxed::Box as BBox;
-pub use allocator_api2::vec::Vec as BVec;
-pub use allocator_api2::*;
-pub use blink_alloc::*;
-pub use hashbrown::*;
-
-pub type BHashMap<K, V, A = alloc::Global> = HashMap<K, V, DefaultHashBuilder, A>;
-pub type BHashSet<T, A = alloc::Global> = HashSet<T, DefaultHashBuilder, A>;
+    pub fn run(&mut self, mut world: ResMut<WorldResource>) {
+        let world = &mut world.0;
+        for (_id, (t, h)) in world.query_mut::<(Read<Transform>, Write<TransformHistory>)>() {
+            h.previous = t.clone();
+        }
+    }
+}

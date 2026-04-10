@@ -27,26 +27,46 @@
 // SOFTWARE.
 //
 
-use aleph_gen_arena::{GenArena, Handle, make_handle_id};
 use api::components::StaticMesh;
-use api::ecs::entity::EntityHandle;
 use api::ecs::world::World;
+use api::label::{Label, make_label};
+use api::schedule::{CoreStage, WorldResource};
+use api::scheduler::{ExplicitDependencies, IntoSystem, ResMut, Schedule};
 use mg::async_resource_loader::loader_notify::{LoaderMessage, LoaderNotify};
 use mg::common::channel::TryRecvError;
 use mg::renderer::Renderer;
 
-use crate::internal::EngineSystem;
+use crate::render::async_loader::resources::async_loader_requests::{
+    AsyncLoaderRequests, ResourceLoadHandle, ResourceLoadState,
+};
+use crate::render::core::systems::publish_render_scene::PublishRenderSceneSystem;
 
 pub struct AsyncLoadResolverSystem {
-    pub load_channel: LoaderNotify<ResourceLoadHandle>,
+    load_channel: LoaderNotify<ResourceLoadHandle>,
 }
 
 impl AsyncLoadResolverSystem {
+    pub const LABEL: Label = make_label!("render::AsyncLoadResolverSystem");
+
+    pub fn new(load_channel: LoaderNotify<ResourceLoadHandle>) -> Self {
+        Self { load_channel }
+    }
+
+    pub fn register(mut self, schedule: &mut Schedule) {
+        let system = move |mut world: ResMut<WorldResource>,
+                           mut renderer: ResMut<Renderer>,
+                           mut loader: ResMut<AsyncLoaderRequests>| {
+            self.run(&mut world.0, &mut renderer, &mut loader);
+        };
+        let system = system.system().runs_before(PublishRenderSceneSystem::LABEL);
+        schedule.add_system_to_stage(CoreStage::Render.into(), Self::LABEL, system);
+    }
+
     pub fn run(
         &mut self,
         world: &mut World,
         renderer: &mut Renderer,
-        load_states: &mut ResourceLoadStates,
+        loader: &mut AsyncLoaderRequests,
     ) {
         // The async loader will publish messages onto this channel once the resources are loaded
         // and available.
@@ -74,7 +94,7 @@ impl AsyncLoadResolverSystem {
                     // TODO: In the future we're going to need to do this in a not stupid way, but
                     //       for now this will do for basic GLTF loading.
                     'success: {
-                        if let Some(state) = load_states.states.get_mut(cookie) {
+                        if let Some(state) = loader.states.get_mut(cookie) {
                             match state {
                                 ResourceLoadState::VertexBuffer { entity } => {
                                     let comp = world.get_component_mut::<StaticMesh>(*entity);
@@ -91,7 +111,7 @@ impl AsyncLoadResolverSystem {
                                     }
                                 }
                                 ResourceLoadState::Texture { .. } => {
-                                    unreachable!("Got a buffer message for a texture load!");
+                                    log::warn!("Got a buffer message for a texture load!");
                                 }
                             }
                         }
@@ -104,42 +124,51 @@ impl AsyncLoadResolverSystem {
                     }
 
                     // Finally we can free the request as it is fully resolved
-                    let _ = load_states.states.free(cookie);
+                    let _ = loader.states.free(cookie);
                 }
-                LoaderMessage::TextureComplete { cookie, .. } => {
+                LoaderMessage::TextureComplete { cookie, resource } => {
+                    'success: {
+                        if let Some(state) = loader.states.get_mut(cookie) {
+                            match state {
+                                ResourceLoadState::VertexBuffer { .. } => {
+                                    log::warn!("Got a texture message for a buffer load!");
+                                }
+                                ResourceLoadState::IndexBuffer { .. } => {
+                                    log::warn!("Got a texture message for a buffer load!");
+                                }
+                                ResourceLoadState::Texture { entity } => {
+                                    let comp = world.get_component_mut::<StaticMesh>(*entity);
+                                    if let Some(comp) = comp {
+                                        log::warn!("Unimplemented texture load!");
+                                        break 'success;
+                                    }
+                                }
+                            }
+                        }
+
+                        // If we reach this code then we have _failed_ to store the loaded resource
+                        // handle somewhere, or otherwise handle the loaded resource. We should
+                        // destroy the resource, as otherwise we will leak the handle.
+                        log::warn!("Load resolved onto an entity unable to receive it!");
+                        renderer.destroy_texture(resource);
+                    }
+
                     // Finally we can free the request as it is fully resolved
-                    let _ = load_states.states.free(cookie);
-                    todo!();
+                    let _ = loader.states.free(cookie);
                 }
                 LoaderMessage::Failed { cookie } => {
                     log::info!("Load failed");
 
                     // Finally we can free the request as it is fully resolved
-                    let _ = load_states.states.free(cookie);
+                    let _ = loader.states.free(cookie);
                 }
                 LoaderMessage::Canceled { cookie } => {
                     log::info!("Load canceled");
 
                     // Finally we can free the request as it is fully resolved
-                    let _ = load_states.states.free(cookie);
+                    let _ = loader.states.free(cookie);
                 }
             }
         }
     }
-}
-
-pub struct ResourceLoad;
-
-make_handle_id!(ResourceLoad);
-
-pub type ResourceLoadHandle = Handle<ResourceLoad>;
-
-pub enum ResourceLoadState {
-    VertexBuffer { entity: EntityHandle },
-    IndexBuffer { entity: EntityHandle },
-    Texture { entity: EntityHandle },
-}
-
-pub struct ResourceLoadStates {
-    pub states: GenArena<ResourceLoadState, ResourceLoadHandle, EngineSystem>,
 }

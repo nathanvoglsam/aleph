@@ -27,7 +27,46 @@
 // SOFTWARE.
 //
 
-pub mod async_load_resolver;
-pub mod publish_egui_scene;
-pub mod publish_render_scene;
-pub mod render;
+use std::sync::Arc;
+
+use aleph_frame_graph::FrameGraphBuilder;
+use api::platform::IWindow;
+use mg::renderer::frame_graph::GraphArgs;
+use mg::renderer::immediate_resource_builder::ImmediateResourceBuilder;
+use mg::renderer::render_plane::{IRenderPlane, RenderPlaneOutput};
+use mg::renderer::state_cache::StateCache;
+
+use crate::render::egui::egui_pass;
+
+pub struct EguiRenderPlane {
+    window: Arc<dyn IWindow>,
+}
+
+impl EguiRenderPlane {
+    pub fn new(window: Arc<dyn IWindow>) -> Self {
+        Self { window }
+    }
+}
+
+impl IRenderPlane for EguiRenderPlane {
+    fn init_resources(&mut self, _resource_builder: &mut ImmediateResourceBuilder) {
+        // nothing
+    }
+
+    fn register_passes(
+        &self,
+        frame_graph: &mut FrameGraphBuilder<GraphArgs>,
+        device: &dyn rhi::IDevice,
+        pin_board: &aleph_pin_board::PinBoard,
+        state_cache: &mut StateCache,
+    ) -> RenderPlaneOutput {
+        let pixels_per_point = self.window.current_display_scale();
+        egui_pass::pass(
+            frame_graph,
+            device,
+            pin_board,
+            state_cache,
+            pixels_per_point,
+        )
+    }
+}

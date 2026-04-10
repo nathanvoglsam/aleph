@@ -29,19 +29,40 @@
 
 use std::sync::Arc;
 
-use api::scheduler::ResMut;
+use api::label::{Label, make_label};
+use api::schedule::CoreStage;
+use api::scheduler::{ExplicitDependencies, IntoSystem, ResMut, Schedule};
 use mg::renderer::Renderer;
 
+use crate::render::core::resources::render_scene::RenderSceneResource;
+use crate::render::core::systems::render::RenderSystem;
 use crate::render::egui::egui_pass::EguiPassContext;
 use crate::render::egui::font_texture::EguiFontTexture;
-use crate::render::resources::render_scene::RenderSceneResource;
 
 pub struct PublishEguiSceneSystem {
-    pub font_texture: EguiFontTexture,
-    pub render_data: Arc<dyn egui::IEguiRenderData>,
+    font_texture: EguiFontTexture,
+    render_data: Arc<dyn egui::IEguiRenderData>,
 }
 
 impl PublishEguiSceneSystem {
+    pub const LABEL: Label = make_label!("render::PublishEguiSceneSystem");
+
+    pub fn new(render_data: Arc<dyn egui::IEguiRenderData>) -> Self {
+        Self {
+            font_texture: EguiFontTexture::new(),
+            render_data,
+        }
+    }
+
+    pub fn register(mut self, schedule: &mut Schedule) {
+        let system = move |renderer: ResMut<Renderer>,
+                           render_scene: ResMut<RenderSceneResource>| {
+            self.run(renderer, render_scene);
+        };
+        let system = system.system().runs_before(RenderSystem::LABEL);
+        schedule.add_system_to_stage(CoreStage::Render.into(), Self::LABEL, system);
+    }
+
     pub fn run(
         &mut self,
         mut renderer: ResMut<Renderer>,
