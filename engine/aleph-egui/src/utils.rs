@@ -225,6 +225,7 @@ pub fn translate_mouse_event(
                 unit: egui::MouseWheelUnit::Line,
                 delta,
                 modifiers: *modifiers,
+                phase: egui::TouchPhase::Move,
             };
             Some(event)
         }

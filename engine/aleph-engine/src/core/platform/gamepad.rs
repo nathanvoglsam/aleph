@@ -39,7 +39,7 @@ use api::platform::{
     GamepadEvent, GamepadId, GamepadState, IGamepads, IGamepadsAccessor,
 };
 use parking_lot::RwLock;
-use sdl3::gamepad::Gamepad;
+use sdl3::sys::joystick::SDL_JoystickID;
 
 pub(crate) type GamepadsMap = HashMap<u32, GamepadEntry, BuildHasherDefault<IdentityHasher>>;
 
@@ -82,24 +82,24 @@ impl Gamepads {
         use sdl3::event::Event as SdlEvent;
         match event {
             SdlEvent::ControllerDeviceAdded { which, .. } => {
-                let which = *which;
+                let which = SDL_JoystickID(*which);
 
                 let is_controller = gamepad.is_gamepad(which);
                 let name = gamepad.name_for_id(which).unwrap();
 
-                log::info!("Controller Added: {which}");
+                log::info!("Controller Added: {}", which.0);
                 log::info!("name = {name}; is_controller = {is_controller};");
 
                 if is_controller {
                     let pad = gamepad.open(which).unwrap();
-                    let instance_id = pad.id().unwrap();
+                    let instance_id = pad.id().unwrap().0;
                     let current_highest = self.highest_id.take();
                     self.highest_id.set(instance_id.max(current_highest));
 
                     log::info!("Controller Opened: instance_id = {instance_id}");
 
                     let entry = GamepadEntry {
-                        _device_index: which,
+                        _device_index: which.0,
                         pad,
                         state: Default::default(),
                     };
@@ -246,7 +246,7 @@ impl IGamepads for Gamepads {
 
 pub(crate) struct GamepadEntry {
     pub(crate) _device_index: u32,
-    pub(crate) pad: Gamepad,
+    pub(crate) pad: sdl3::gamepad::Gamepad,
     pub(crate) state: GamepadState,
 }
 
@@ -314,6 +314,7 @@ const fn map_button(button: sdl3::gamepad::Button) -> GamepadButton {
         sdl3::gamepad::Button::Misc3 => GamepadButton::Misc3,
         sdl3::gamepad::Button::Misc4 => GamepadButton::Misc4,
         sdl3::gamepad::Button::Misc5 => GamepadButton::Misc5,
+        sdl3::gamepad::Button::Misc6 => GamepadButton::Misc6,
     }
 }
 

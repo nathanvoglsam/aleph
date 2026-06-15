@@ -107,7 +107,7 @@ impl VPathBuf {
 
     pub fn push_trailing_sep(&mut self) {
         match self.0.as_bytes().last() {
-            Some(&SEPARATOR_BYTE) => {},
+            Some(&SEPARATOR_BYTE) => {}
             _ => self.0.push(SEPARATOR),
         }
     }
@@ -116,8 +116,8 @@ impl VPathBuf {
         match self.0.as_bytes().last() {
             Some(&SEPARATOR_BYTE) => {
                 self.0.pop();
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
 
@@ -335,20 +335,16 @@ impl VPath {
                 next: Some(&self.0),
             }
         }
-
     }
 
     pub fn reverse_components(&self) -> ReverseComponents<'_> {
         if self.is_empty() {
-            ReverseComponents {
-                next: None,
-            }
+            ReverseComponents { next: None }
         } else {
             ReverseComponents {
                 next: Some(&self.0),
             }
         }
-
     }
 
     /// Returns the `VPath` without its final component, if there is one.
@@ -415,8 +411,7 @@ impl VPath {
     pub fn trim_trailing_sep(&self) -> &VPath {
         if self.has_trailing_sep() && (!self.is_absolute() || self.parent().is_some()) {
             let mut bytes = self.0.as_bytes();
-            while let Some((&SEPARATOR_BYTE, init)) = bytes.split_last()
-            {
+            while let Some((&SEPARATOR_BYTE, init)) = bytes.split_last() {
                 bytes = init;
             }
 
@@ -517,7 +512,6 @@ impl_cmp!(VPathBuf, &VPath);
 impl_cmp!(Cow<'_, VPath>, VPath);
 impl_cmp!(Cow<'_, VPath>, &VPath);
 impl_cmp!(Cow<'_, VPath>, VPathBuf);
-
 
 /// An iterator over [`VPath`] and its ancestors.
 ///
@@ -624,7 +618,7 @@ impl<'a> Iterator for Components<'a> {
                         } else {
                             Some(Component::Segment(next))
                         }
-                    },
+                    }
                     Some((component, rest)) => {
                         // If we reach here then we have split the path into two pieces, a prefix
                         // 'component' that contains no separators and a trailing remainder that may
@@ -662,8 +656,8 @@ impl<'a> Iterator for Components<'a> {
                             Some(Component::Segment(component))
                         }
                     }
-                }
-            }
+                },
+            };
         }
     }
 }
@@ -724,7 +718,7 @@ impl<'a> Iterator for ReverseComponents<'a> {
                         } else {
                             Some(Component::Segment(next))
                         }
-                    },
+                    }
                     Some((rest, component)) => {
                         // Advance the iterator
                         self.next = Some(rest);
@@ -735,8 +729,8 @@ impl<'a> Iterator for ReverseComponents<'a> {
                             Some(Component::Segment(next))
                         }
                     }
-                }
-            }
+                },
+            };
         }
     }
 }

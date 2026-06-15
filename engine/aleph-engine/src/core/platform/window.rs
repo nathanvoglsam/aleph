@@ -282,7 +282,8 @@ impl Window {
             | sdl3::event::WindowEvent::Shown
             | sdl3::event::WindowEvent::Hidden
             | sdl3::event::WindowEvent::Exposed
-            | sdl3::event::WindowEvent::ICCProfChanged => {}
+            | sdl3::event::WindowEvent::ICCProfChanged
+            | sdl3::event::WindowEvent::Occluded => {}
             sdl3::event::WindowEvent::None => {
                 log::trace!("Got window event 'None'");
             }
@@ -307,6 +308,7 @@ impl Window {
             sdl3::event::WindowEvent::None => return,
             sdl3::event::WindowEvent::ICCProfChanged => return,
             sdl3::event::WindowEvent::DisplayChanged(_) => return,
+            sdl3::event::WindowEvent::Occluded => return,
         };
         window_events.push(converted_event.clone());
         all_events.push(Event::WindowEvent(converted_event));
