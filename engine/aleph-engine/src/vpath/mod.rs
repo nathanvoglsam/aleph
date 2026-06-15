@@ -34,10 +34,7 @@ pub const SEPARATOR: char = '/';
 pub const SEPARATOR_STR: &'static str = "/";
 pub const SEPARATOR_BYTE: u8 = *SEPARATOR_STR.as_bytes().first().unwrap();
 
-pub const DOT: char = '.';
-pub const DOT_STR: &'static str = ".";
-pub const DOT_BYTE: u8 = *DOT_STR.as_bytes().first().unwrap();
-
+/// An owned version of [`VPath`]. See `VPath` docs for more info.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct VPathBuf(String);
@@ -81,6 +78,34 @@ impl VPathBuf {
         VPath::from_inner_mut(self.0.leak())
     }
 
+    /// Extends `self` with `path`.
+    ///
+    /// If `path` is absolute, it replaces the current path.
+    ///
+    /// Consider using [`VPath::join`] if you need a new `PathBuf` instead of
+    /// using this function on a cloned `PathBuf`.
+    ///
+    /// # Examples
+    ///
+    /// Pushing a relative path extends the existing path:
+    ///
+    /// ```
+    /// use aleph_engine::vpath::VPathBuf;
+    ///
+    /// let mut path = VPathBuf::from("/tmp");
+    /// path.push("file.bk");
+    /// assert_eq!(path, VPathBuf::from("/tmp/file.bk"));
+    /// ```
+    ///
+    /// Pushing an absolute path replaces the existing path:
+    ///
+    /// ```
+    /// use aleph_engine::vpath::VPathBuf;
+    ///
+    /// let mut path = VPathBuf::from("/tmp");
+    /// path.push("/etc");
+    /// assert_eq!(path, VPathBuf::from("/etc"));
+    /// ```
     pub fn push<P: AsRef<VPath>>(&mut self, path: P) {
         self.__push(path.as_ref())
     }
@@ -98,29 +123,24 @@ impl VPathBuf {
 
             // If the existing path in 'self' doesn't have a trailing separator already we need
             // to add one.
-            self.push_trailing_sep();
+            match self.0.as_bytes().last() {
+                Some(&SEPARATOR_BYTE) => {}
+                _ => self.0.push(SEPARATOR),
+            }
 
             // And push the input string
             self.0.push_str(path.to_str());
         }
     }
 
-    pub fn push_trailing_sep(&mut self) {
-        match self.0.as_bytes().last() {
-            Some(&SEPARATOR_BYTE) => {}
-            _ => self.0.push(SEPARATOR),
-        }
-    }
-
+    /// Similar to [`VPath::trim_trailing_sep`], but mutates the underlying path instead.
     pub fn pop_trailing_sep(&mut self) {
-        match self.0.as_bytes().last() {
-            Some(&SEPARATOR_BYTE) => {
-                self.0.pop();
-            }
-            _ => {}
+        while let Some(&SEPARATOR_BYTE) = self.0.as_bytes().last() {
+            self.0.pop();
         }
     }
 
+    /// Get the inner path as a [`VPath`].
     pub const fn as_path(&self) -> &VPath {
         VPath::from_inner(self.0.as_str())
     }
@@ -145,6 +165,12 @@ impl core::fmt::Display for VPathBuf {
 impl<'a> From<&'a VPath> for VPathBuf {
     fn from(value: &'a VPath) -> Self {
         VPathBuf(String::from(&value.0))
+    }
+}
+
+impl<'a> From<&'a str> for VPathBuf {
+    fn from(value: &'a str) -> Self {
+        VPathBuf(String::from(value))
     }
 }
 
@@ -201,6 +227,23 @@ impl PartialEq<str> for VPathBuf {
 }
 
 /// A slice of a path (akin to [`str`]).
+///
+/// `VPath` wraps a `str` into a container that is expected to contain a path. It exposes a similar
+/// interface to [`Path`].
+///
+/// `VPath` however is not concerned with OS path semantics. It adopts unix path semantics with
+/// small differences.
+///
+/// - `.` is not special, and does not mean 'self'.
+/// - `..` is not special, and does not mean 'parent'.
+/// - `/` is the path separator.
+/// - All paths starting with `/` are absolute.
+/// - All paths without a leading `/` are relative.
+///
+/// The expected use is virtual-file-system paths. The semantics are application defined and these
+/// paths should not be used with the OS filesystem.
+///
+/// [`Path`]: std::path::Path
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct VPath(str);
@@ -323,28 +366,56 @@ impl VPath {
         Ancestors { next: Some(&self) }
     }
 
+    /// Produces an iterator over the [`Component`]s of the path.
+    ///
+    /// When parsing the path, there is a small amount of normalization:
+    ///
+    /// * Repeated separators are ignored, so `a/b` and `a//b` both have
+    ///   `a` and `b` as components.
+    ///
+    /// * Trailing separators are normalized away, so `/a/b` and `/a/b/` are equivalent.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use aleph_engine::vpath::VPath;
+    /// use aleph_engine::vpath::Component;
+    ///
+    /// let mut components = VPath::new("/tmp/foo.txt").components();
+    ///
+    /// assert_eq!(components.next(), Some(Component::Root));
+    /// assert_eq!(components.next(), Some(Component::Segment("tmp")));
+    /// assert_eq!(components.next(), Some(Component::Segment("foo.txt")));
+    /// assert_eq!(components.next(), None)
+    /// ```
     pub fn components(&self) -> Components<'_> {
-        if self.is_empty() {
-            Components {
-                yield_root: false,
-                next: None,
-            }
-        } else {
-            Components {
-                yield_root: self.is_absolute(),
-                next: Some(&self.0),
-            }
-        }
+        Components { next: &self.0 }
     }
 
+    /// Produces an iterator over the [`Component`]s of the path in reverse order.
+    ///
+    /// When parsing the path, there is a small amount of normalization:
+    ///
+    /// * Repeated separators are ignored, so `a/b` and `a//b` both have
+    ///   `a` and `b` as components.
+    ///
+    /// * Trailing separators are normalized away, so `/a/b` and `/a/b/` are equivalent.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use aleph_engine::vpath::VPath;
+    /// use aleph_engine::vpath::Component;
+    ///
+    /// let mut components = VPath::new("/tmp/foo.txt").reverse_components();
+    ///
+    /// assert_eq!(components.next(), Some(Component::Segment("foo.txt")));
+    /// assert_eq!(components.next(), Some(Component::Segment("tmp")));
+    /// assert_eq!(components.next(), Some(Component::Root));
+    /// assert_eq!(components.next(), None)
+    /// ```
     pub fn reverse_components(&self) -> ReverseComponents<'_> {
-        if self.is_empty() {
-            ReverseComponents { next: None }
-        } else {
-            ReverseComponents {
-                next: Some(&self.0),
-            }
-        }
+        ReverseComponents { next: &self.0 }
     }
 
     /// Returns the `VPath` without its final component, if there is one.
@@ -380,17 +451,17 @@ impl VPath {
             return None;
         }
 
-        let mut parent = self.reverse_components();
-        match parent.next() {
+        let mut components = self.reverse_components();
+        match components.next() {
+            Some(Component::Segment(_)) => Some(components.as_path()),
+            Some(Component::Root) => None,
             None => None,
-            Some(_) => Some(parent.as_path()),
         }
     }
 
     /// Trims a trailing separator from a path, if possible.
     ///
-    /// The resulting path will return false for [`has_trailing_sep`](Self::has_trailing_sep) for
-    /// most paths.
+    /// The resulting path will return false for [`VPath::has_trailing_sep`] for most paths.
     ///
     /// Some paths, like `/`, cannot be trimmed in this way.
     ///
@@ -409,16 +480,20 @@ impl VPath {
     #[must_use]
     #[inline]
     pub fn trim_trailing_sep(&self) -> &VPath {
-        if self.has_trailing_sep() && (!self.is_absolute() || self.parent().is_some()) {
-            let mut bytes = self.0.as_bytes();
-            while let Some((&SEPARATOR_BYTE, init)) = bytes.split_last() {
-                bytes = init;
-            }
+        let bytes = self.0.as_bytes();
 
-            // SAFETY: Trimming trailing ASCII bytes will retain the validity of the string.
-            VPath::new(unsafe { str::from_utf8_unchecked(bytes) })
-        } else {
+        // Preserve root-like paths that are made entirely of separators ("/", "//", ...).
+        let Some(last_non_sep) = bytes.iter().rposition(|&v| v != SEPARATOR_BYTE) else {
+            return self;
+        };
+
+        let end = last_non_sep + 1;
+        if end == bytes.len() {
             self
+        } else {
+            // SAFETY: `end` points to the byte after a non-separator ASCII byte, so this is a
+            // valid UTF-8 boundary and the subslice remains valid UTF-8.
+            VPath::new(unsafe { str::from_utf8_unchecked(&bytes[..end]) })
         }
     }
 }
@@ -442,6 +517,12 @@ impl core::fmt::Display for VPath {
 // == DEREF TRAITS == //
 
 // == AS TRAITS == //
+
+impl AsRef<VPath> for str {
+    fn as_ref(&self) -> &VPath {
+        VPath::from_inner(self)
+    }
+}
 
 impl AsRef<str> for VPath {
     fn as_ref(&self) -> &str {
@@ -526,7 +607,7 @@ impl_cmp!(Cow<'_, VPath>, VPathBuf);
 /// let path = VPath::new("/foo/bar");
 ///
 /// for ancestor in path.ancestors() {
-///     println!("{}", ancestor.display());
+///     println!("{}", ancestor);
 /// }
 /// ```
 ///
@@ -577,16 +658,12 @@ pub enum Component<'a> {
 #[derive(Copy, Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Components<'a> {
-    yield_root: bool,
-    next: Option<&'a str>,
+    next: &'a str,
 }
 
 impl<'a> Components<'a> {
-    pub fn as_path(&self) -> &'a VPath {
-        match self.next {
-            None => VPath::new(""),
-            Some(path) => VPath::new(path),
-        }
+    pub const fn as_path(&self) -> &'a VPath {
+        VPath::new(self.next)
     }
 }
 
@@ -596,67 +673,73 @@ impl<'a> Iterator for Components<'a> {
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            return match self.next {
-                // The terminal state, always just yield none here. There's nothing more to do.
-                None => None,
+            let next = self.next;
+            return match next.split_once(SEPARATOR) {
+                None => {
+                    // If we reach here then we failed to split the path, meaning there's no
+                    // more path separators (or the path is empty). This is the last segment
+                    // to handle before transitioning to the terminal state.
 
-                // Otherwise we try and split the string in two at the first path separator.
-                Some(next) => match next.split_once(SEPARATOR) {
-                    None => {
-                        // If we reach here then we failed to split the path, meaning there's no
-                        // more path separators (or the path is empty). This is the last segment
-                        // to handle before transitioning to the terminal state.
+                    // Move to terminal state.
+                    self.next = "";
 
-                        // Move to terminal state.
-                        self.next = None;
-
-                        // If there's a trailing separator we may have an empty trailing segment.
-                        // We don't yield these from the iterator and return None instead as they
-                        // have no meaning.
-                        if next.is_empty() {
-                            None
-                        } else {
-                            Some(Component::Segment(next))
-                        }
+                    // If there's a trailing separator we may have an empty trailing segment.
+                    // We don't yield these from the iterator and return None instead as they
+                    // have no meaning.
+                    if next.is_empty() {
+                        None
+                    } else {
+                        Some(Component::Segment(next))
                     }
-                    Some((component, rest)) => {
-                        // If we reach here then we have split the path into two pieces, a prefix
-                        // 'component' that contains no separators and a trailing remainder that may
-                        // contain 0 or more additional separators. 'rest' may also be empty, but
-                        // that case is handled elsewhere.
-                        //
-                        // 'component' contains the path segment we want to try and yield. It is
-                        // possible for 'component' to be empty, say if an input path contains
-                        // multiple separators like 'this/is//a/bad/path'. These are normalized away
-                        // by this iterator.
+                }
+                Some((component, rest)) => {
+                    // If we reach here then we have split the path into two pieces, a prefix
+                    // 'component' that contains no separators and a trailing remainder that may
+                    // contain 0 or more additional separators. 'rest' may also be empty.
 
-                        // Advance the iterator
-                        self.next = Some(rest);
-
-                        if component.is_empty() {
-                            // If the component is empty then we _don't_ yield 'component' and
-                            // instead look for following non-empty segment. Because we just
-                            // advanced the iterator we can just bail to the start of the loop
-                            // again, this effectively skips the empty segment.
-                            //
-                            // Except if 'yield_root' is true, which must only be set for paths
-                            // that start with a leading separator (absolute). In that case we
-                            // yield the 'root' component instead as we just processed the root
-                            // separator.
-                            if self.yield_root {
-                                // We can only yield one root.
-                                self.yield_root = false;
-                                Some(Component::Root)
-                            } else {
-                                // Otherwise we skip the empty segment
+                    // We found one separator, but there may be more. We proactively strip them
+                    // when incrementing the iterator for two reasons.
+                    //
+                    // - as_path() will return a correct path for the current state of the
+                    //   iterator.
+                    // - guarantees only the first call to next() will see leading separators.
+                    //
+                    // This means we need no additional state to determine if we're handling the
+                    // root segment.
+                    let mut next = rest;
+                    loop {
+                        match next.split_once(SEPARATOR) {
+                            Some((component, rest)) if component.is_empty() => {
+                                next = rest;
                                 continue;
                             }
-                        } else {
-                            // Good new! we've got a valid path segment.
-                            Some(Component::Segment(component))
+                            Some((component, rest)) if component.is_empty() && rest.is_empty() => {
+                                break;
+                            }
+                            Some((_, _)) => {
+                                break;
+                            }
+                            None => {
+                                break;
+                            }
                         }
                     }
-                },
+
+                    // Advance the iterator
+                    self.next = next;
+
+                    // 'component' contains the path segment we want to try and yield. If
+                    // component is empty then that means we are processing a root segment.
+                    // Because we strip any leading separators when advancing the iterator it
+                    // is only possible to observe an empty component when processing 1+ leading
+                    // separators on the fist call to 'next'.
+                    if component.is_empty() {
+                        Some(Component::Root)
+                    } else {
+                        // Good news! we've got a valid path segment.
+                        Some(Component::Segment(component))
+                    }
+                }
             };
         }
     }
@@ -685,15 +768,12 @@ impl std::iter::FusedIterator for Components<'_> {}
 #[derive(Copy, Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct ReverseComponents<'a> {
-    next: Option<&'a str>,
+    next: &'a str,
 }
 
 impl<'a> ReverseComponents<'a> {
-    pub fn as_path(&self) -> &'a VPath {
-        match self.next {
-            None => VPath::new(""),
-            Some(path) => VPath::new(path),
-        }
+    pub const fn as_path(&self) -> &'a VPath {
+        VPath::new(self.next)
     }
 }
 
@@ -702,37 +782,274 @@ impl<'a> Iterator for ReverseComponents<'a> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            return match self.next {
-                // The terminal state, always just yield none here. There's nothing more to do.
-                None => None,
+        let next = self.next;
+        match next.rsplit_once(SEPARATOR) {
+            // We've just proven that the path contains exactly a single separator, which
+            // is the root path.
+            Some((lhs, rhs)) if lhs.is_empty() && rhs.is_empty() => {
+                self.next = "";
+                Some(Component::Root)
+            }
 
-                // Otherwise we try and split the string in two at the first path separator.
-                Some(next) => match next.rsplit_once(SEPARATOR) {
-                    None => {
-                        // Move to terminal state.
-                        self.next = None;
+            // We've found that we have a path with a separator that wasn't trailing as rhs
+            // is not empty. We've also determined it was a singular leading separator so
+            // we should set up to yield the root segment next.
+            Some((lhs, rhs)) if lhs.is_empty() => {
+                self.next = "/";
+                Some(Component::Segment(rhs))
+            }
 
-                        if next.is_empty() {
-                            Some(Component::Root)
-                        } else {
-                            Some(Component::Segment(next))
+            // We've found a trailing separator. There may be more so we need to trim them
+            // all before we can find the true leaf segment we want to yield.
+            Some((lhs, rhs)) if rhs.is_empty() => {
+                let mut next = lhs;
+                let leaf = loop {
+                    match next.rsplit_once(SEPARATOR) {
+                        Some((lhs, rhs)) if lhs.is_empty() && rhs.is_empty() => {
+                            next = "";
+                            break Component::Root;
                         }
-                    }
-                    Some((rest, component)) => {
-                        // Advance the iterator
-                        self.next = Some(rest);
-
-                        if component.is_empty() {
+                        Some((lhs, rhs)) if lhs.is_empty() => {
+                            next = "/";
+                            break Component::Segment(rhs);
+                        }
+                        Some((lhs, rhs)) if rhs.is_empty() => {
+                            next = lhs;
                             continue;
-                        } else {
-                            Some(Component::Segment(next))
+                        }
+                        Some((lhs, rhs)) => {
+                            next = lhs;
+                            break Component::Segment(rhs);
+                        }
+                        None => {
+                            let out = next;
+                            next = "";
+                            break Component::Segment(out);
                         }
                     }
-                },
-            };
+                };
+
+                self.next = next;
+
+                loop {
+                    match self.next.rsplit_once(SEPARATOR) {
+                        Some((lhs, rhs)) if lhs.is_empty() && rhs.is_empty() => {
+                            break;
+                        }
+                        Some((lhs, _rhs)) if lhs.is_empty() => {
+                            break;
+                        }
+                        Some((lhs, rhs)) if rhs.is_empty() => {
+                            self.next = lhs;
+                            continue;
+                        }
+                        Some((_lhs, _rhs)) => {
+                            break;
+                        }
+                        None => {
+                            break;
+                        }
+                    }
+                }
+
+                Some(leaf)
+            }
+
+            // We've found a separator. It wasn't
+            Some((lhs, rhs)) => {
+                self.next = lhs;
+
+                loop {
+                    match self.next.rsplit_once(SEPARATOR) {
+                        Some((lhs, rhs)) if lhs.is_empty() && rhs.is_empty() => {
+                            break;
+                        }
+                        Some((lhs, _rhs)) if lhs.is_empty() => {
+                            break;
+                        }
+                        Some((lhs, rhs)) if rhs.is_empty() => {
+                            self.next = lhs;
+                            continue;
+                        }
+                        Some((_lhs, _rhs)) => {
+                            break;
+                        }
+                        None => {
+                            break;
+                        }
+                    }
+                }
+
+                Some(Component::Segment(rhs))
+            }
+
+            // If the path segment in 'next' contains no separators at all then it means we
+            // either have the empty path, or a single remaining segment to yield.
+            None => {
+                // Update the iterator so we don't try to split next time.
+                self.next = "";
+
+                // Coerce the empty path
+                if next.is_empty() {
+                    None
+                } else {
+                    Some(Component::Segment(next))
+                }
+            }
         }
     }
 }
 
 impl std::iter::FusedIterator for ReverseComponents<'_> {}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    pub fn reverse_components_test() {
+        use super::*;
+
+        let mut components = VPath::new("/tmp/foo.txt").reverse_components();
+        assert_eq!(components.as_path(), "/tmp/foo.txt");
+        assert_eq!(components.next(), Some(Component::Segment("foo.txt")));
+        assert_eq!(components.as_path(), "/tmp");
+        assert_eq!(components.next(), Some(Component::Segment("tmp")));
+        assert_eq!(components.as_path(), "/");
+        assert_eq!(components.next(), Some(Component::Root));
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+
+        let mut components = VPath::new("/tmp/foo.txt///").reverse_components();
+        assert_eq!(components.as_path(), "/tmp/foo.txt///");
+        assert_eq!(components.next(), Some(Component::Segment("foo.txt")));
+        assert_eq!(components.as_path(), "/tmp");
+        assert_eq!(components.next(), Some(Component::Segment("tmp")));
+        assert_eq!(components.as_path(), "/");
+        assert_eq!(components.next(), Some(Component::Root));
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+
+        let mut components = VPath::new("//tmp////foo.txt///").reverse_components();
+        assert_eq!(components.as_path(), "//tmp////foo.txt///");
+        assert_eq!(components.next(), Some(Component::Segment("foo.txt")));
+        assert_eq!(components.as_path(), "//tmp");
+        assert_eq!(components.next(), Some(Component::Segment("tmp")));
+        assert_eq!(components.as_path(), "/");
+        assert_eq!(components.next(), Some(Component::Root));
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+
+        let mut components = VPath::new("tmp/foo.txt").reverse_components();
+        assert_eq!(components.as_path(), "tmp/foo.txt");
+        assert_eq!(components.next(), Some(Component::Segment("foo.txt")));
+        assert_eq!(components.as_path(), "tmp");
+        assert_eq!(components.next(), Some(Component::Segment("tmp")));
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+
+        let mut components = VPath::new("tmp").reverse_components();
+        assert_eq!(components.as_path(), "tmp");
+        assert_eq!(components.next(), Some(Component::Segment("tmp")));
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+
+        let mut components = VPath::new("").reverse_components();
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+
+        let mut components = VPath::new("/").reverse_components();
+        assert_eq!(components.as_path(), "/");
+        assert_eq!(components.next(), Some(Component::Root));
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+    }
+
+    #[test]
+    pub fn components_test() {
+        use super::*;
+
+        let mut components = VPath::new("/tmp/foo.txt").components();
+        assert_eq!(components.as_path(), "/tmp/foo.txt");
+        assert_eq!(components.next(), Some(Component::Root));
+        assert_eq!(components.as_path(), "tmp/foo.txt");
+        assert_eq!(components.next(), Some(Component::Segment("tmp")));
+        assert_eq!(components.as_path(), "foo.txt");
+        assert_eq!(components.next(), Some(Component::Segment("foo.txt")));
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+
+        let mut components = VPath::new("/tmp/foo.txt///").components();
+        assert_eq!(components.as_path(), "/tmp/foo.txt///");
+        assert_eq!(components.next(), Some(Component::Root));
+        assert_eq!(components.as_path(), "tmp/foo.txt///");
+        assert_eq!(components.next(), Some(Component::Segment("tmp")));
+        assert_eq!(components.as_path(), "foo.txt///");
+        assert_eq!(components.next(), Some(Component::Segment("foo.txt")));
+        assert_eq!(components.as_path(), "");
+
+        let mut components = VPath::new("//tmp////foo.txt///").components();
+        assert_eq!(components.as_path(), "//tmp////foo.txt///");
+        assert_eq!(components.next(), Some(Component::Root));
+        assert_eq!(components.as_path(), "tmp////foo.txt///");
+        assert_eq!(components.next(), Some(Component::Segment("tmp")));
+        assert_eq!(components.as_path(), "foo.txt///");
+        assert_eq!(components.next(), Some(Component::Segment("foo.txt")));
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+
+        let mut components = VPath::new("tmp/foo.txt").components();
+        assert_eq!(components.as_path(), "tmp/foo.txt");
+        assert_eq!(components.next(), Some(Component::Segment("tmp")));
+        assert_eq!(components.as_path(), "foo.txt");
+        assert_eq!(components.next(), Some(Component::Segment("foo.txt")));
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+
+        let mut components = VPath::new("tmp").components();
+        assert_eq!(components.as_path(), "tmp");
+        assert_eq!(components.next(), Some(Component::Segment("tmp")));
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+
+        let mut components = VPath::new("").components();
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+
+        let mut components = VPath::new("/").components();
+        assert_eq!(components.as_path(), "/");
+        assert_eq!(components.next(), Some(Component::Root));
+        assert_eq!(components.as_path(), "");
+        assert_eq!(components.next(), None);
+    }
+
+    #[test]
+    pub fn trim_trailing_sep_test() {
+        use super::*;
+
+        assert_eq!(VPath::new("dir//").trim_trailing_sep().to_str(), "dir");
+        assert_eq!(VPath::new("dir/").trim_trailing_sep().to_str(), "dir");
+        assert_eq!(VPath::new("dir").trim_trailing_sep().to_str(), "dir");
+        assert_eq!(VPath::new("/").trim_trailing_sep().to_str(), "/");
+        assert_eq!(VPath::new("//").trim_trailing_sep().to_str(), "//");
+    }
+
+    #[test]
+    pub fn parent_test() {
+        use super::*;
+
+        let path = VPath::new("/foo/bar");
+        let parent = path.parent().unwrap();
+        assert_eq!(parent, VPath::new("/foo"));
+
+        let grand_parent = parent.parent().unwrap();
+        assert_eq!(grand_parent, VPath::new("/"));
+        assert_eq!(grand_parent.parent(), None);
+
+        let relative_path = VPath::new("foo/bar");
+        let parent = relative_path.parent();
+        assert_eq!(parent, Some(VPath::new("foo")));
+        let grand_parent = parent.and_then(VPath::parent);
+        assert_eq!(grand_parent, Some(VPath::new("")));
+        let great_grand_parent = grand_parent.and_then(VPath::parent);
+        assert_eq!(great_grand_parent, None);
+    }
+}
