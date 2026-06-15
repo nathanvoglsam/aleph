@@ -46,3 +46,4 @@ pub mod core;
 pub mod engine;
 pub mod plugin_registry;
 pub mod render;
+pub mod vpath;
