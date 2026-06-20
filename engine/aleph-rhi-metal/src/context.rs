@@ -120,7 +120,8 @@ impl IContext for Context {
                 let common_2 = device.supportsFamily(MTLGPUFamily::Common2);
                 let common_3 = device.supportsFamily(MTLGPUFamily::Common3);
                 let metal_3 = device.supportsFamily(MTLGPUFamily::Metal3);
-                let all = common_1 && common_2 && common_3 && metal_3;
+                let metal_4 = device.supportsFamily(MTLGPUFamily::Metal4);
+                let all = common_1 && common_2 && common_3 && metal_3 && metal_4;
 
                 // We don't want this device if it doesn't support the needed features
                 if !all {
@@ -140,7 +141,7 @@ impl IContext for Context {
                 context: self._this.upgrade().unwrap(),
                 surface,
                 name,
-                vendor: AdapterVendor::Apple, // TODO: this may not always be the case
+                vendor: AdapterVendor::Apple,
                 objects: AdapterObjects { device },
             });
             Some(adapter)

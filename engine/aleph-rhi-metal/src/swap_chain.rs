@@ -38,7 +38,7 @@ use blink_alloc::{Blink, BlinkAlloc};
 use objc2::rc::{Retained, autoreleasepool};
 use objc2_core_foundation::CGSize;
 use objc2_foundation::ns_string;
-use objc2_metal::{MTLCommandQueue, MTLResource};
+use objc2_metal::MTLResource;
 use objc2_quartz_core::{CAMetalDrawable, CAMetalLayer};
 use parking_lot::Mutex;
 
@@ -169,12 +169,9 @@ impl ISwapChain for SwapChain {
             let texture = Object::new_arc_opaque(texture);
             let texture = unsafe { TextureHandle::new(texture) };
 
-            let queue = self.device.get_queue_internal(self.queue_type).unwrap();
-            let list = queue.objects.queue.commandBuffer().unwrap();
-
             let swap_image = Arc::new(SwapImage {
                 _swap_chain: self.this.upgrade().unwrap(),
-                objects: SwapImageObjects { list, drawable },
+                objects: SwapImageObjects { drawable },
                 texture,
             });
 

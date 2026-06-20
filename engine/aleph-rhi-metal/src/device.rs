@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
 use std::sync::{Arc, Weak};
 use std::time::Duration;
@@ -36,11 +37,10 @@ use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
-use aleph_rhi_impl_utils::parameter_block_layout_visitor::{
-    ParameterBlockLayoutVisitor, ParameterBlockLayoutVisitorElement,
-};
+use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 use allocator_api2::vec::Vec as BVec;
 use block2::RcBlock;
+use crossbeam::queue::ArrayQueue;
 use objc2::rc::{Retained, autoreleasepool};
 use objc2::runtime::ProtocolObject;
 use objc2_metal::*;
@@ -54,8 +54,8 @@ use crate::context::Context;
 use crate::descriptor_arena::{DescriptorArenaHeap, DescriptorArenaLinear};
 use crate::descriptor_pool::DescriptorPool;
 use crate::fence::Fence;
-use crate::internal::image_view::ImageViewObject;
 use crate::internal::allocator_bridge::MetalAllocatorBridge;
+use crate::internal::image_view_pool::ShardedImageViewPool;
 use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::unwrap;
 use crate::parameter_block_layout::ParameterBlockLayout;
@@ -74,6 +74,8 @@ pub struct Device {
     pub(crate) general_queue: Option<Arc<Queue>>,
     pub(crate) compute_queue: Option<Arc<Queue>>,
     pub(crate) transfer_queue: Option<Arc<Queue>>,
+    pub(crate) command_list_pool: CommandListPool,
+    pub(crate) image_view_pools: ShardedImageViewPool<64>,
     pub(crate) object_counter: ObjectCounter,
 }
 
@@ -273,20 +275,6 @@ impl IDevice for Device {
         let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
         let cpu_handle = block.cpu_addr.unwrap();
 
-        let mut update_use_sets =
-            |write_group: &ParameterBlockLayoutVisitorElement,
-             src: &ProtocolObject<dyn MTLResource>| unsafe {
-                if write_group.ty.is_uav() {
-                    let base = layout.compiled.use_write_bases[write_group.binding as usize]
-                        + write_group.element as usize;
-                    block.writes.as_mut()[base] = NonNull::from(src).as_ptr();
-                } else {
-                    let base = layout.compiled.use_read_bases[write_group.binding as usize]
-                        + write_group.element as usize;
-                    block.reads.as_mut()[base] = NonNull::from(src).as_ptr();
-                }
-            };
-
         let visitor =
             ParameterBlockLayoutVisitor::new(layout.desc.get(), base as u64, writes).unwrap();
         for write_group in visitor {
@@ -299,16 +287,13 @@ impl IDevice for Device {
                         cpu_handle.add(i).write(id);
                     },
                     ParameterWrite::Texture(v) => unsafe {
-                        let src = v.image_view.into_raw::<ImageViewObject>().as_ref();
-                        let id = src.texture.gpuResourceID().to_raw();
+                        let id = v.image_view.into_raw_int();
                         cpu_handle.add(i).write(id);
-                        update_use_sets(&write_group, src.texture.as_ref());
                     },
                     ParameterWrite::Buffer(v) => unsafe {
                         let src = Buffer::get(v.buffer);
-                        let addr = src.objects.buffer.gpuAddress() + v.offset;
+                        let addr = src.gpu_addr.get() + v.offset;
                         cpu_handle.add(i).write(addr);
-                        update_use_sets(&write_group, src.objects.buffer.as_ref());
                     },
                     ParameterWrite::TextureBuffer(_) => unimplemented!(),
                 }
@@ -602,16 +587,46 @@ impl IDevice for Device {
     }
 }
 
-impl Device {
-    pub fn get_queue_internal(&self, queue_type: QueueType) -> Option<&Queue> {
+thread_local! {
+    pub static DEVICE_BUMP: BlinkCell = BlinkCell::new();
+}
+
+pub struct CommandListPool {
+    pub general: ArrayQueue<FreeCommandList>,
+    pub compute: ArrayQueue<FreeCommandList>,
+    pub transfer: ArrayQueue<FreeCommandList>,
+}
+
+impl CommandListPool {
+    pub fn new() -> Self {
+        // We should only really ever need <num_lists_per_frame> * <frames_in_flight>
+        Self {
+            general: ArrayQueue::new(64),
+            compute: ArrayQueue::new(32),
+            transfer: ArrayQueue::new(32),
+        }
+    }
+
+    pub fn get_for_queue_type(&self, queue_type: QueueType) -> Option<FreeCommandList> {
         match queue_type {
-            QueueType::General => self.general_queue.as_deref(),
-            QueueType::Compute => self.compute_queue.as_deref(),
-            QueueType::Transfer => self.transfer_queue.as_deref(),
+            QueueType::General => self.general.pop(),
+            QueueType::Compute => self.compute.pop(),
+            QueueType::Transfer => self.transfer.pop(),
+        }
+    }
+
+    pub fn get_pool_for_queue_type(&self, queue_type: QueueType) -> &ArrayQueue<FreeCommandList> {
+        match queue_type {
+            QueueType::General => &self.general,
+            QueueType::Compute => &self.compute,
+            QueueType::Transfer => &self.transfer,
         }
     }
 }
 
-thread_local! {
-    pub static DEVICE_BUMP: BlinkCell = BlinkCell::new();
+pub struct FreeCommandList {
+    pub allocator: Retained<ProtocolObject<dyn MTL4CommandAllocator>>,
+    pub list: Retained<ProtocolObject<dyn MTL4CommandBuffer>>,
+    pub argument_table: Retained<ProtocolObject<dyn MTL4ArgumentTable>>,
+    pub list_type: QueueType,
 }

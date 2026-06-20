@@ -29,7 +29,7 @@
 
 use std::sync::Arc;
 
-use aleph_object_system::{Object, unsafe_impl_iobject};
+use aleph_object_system::{ArcObject, Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
@@ -45,7 +45,7 @@ pub struct Fence {
 unsafe_impl_iobject!(Fence, "01980753-5c4f-7ae3-be3b-96ea6487c813");
 
 impl Fence {
-    pub(crate) fn create(device: &Device, value: u64) -> Result<FenceHandle, FenceCreateError> {
+    pub(crate) fn new(device: &Device, value: u64) -> Result<Arc<Object<Fence>>, FenceCreateError> {
         let event = match device.device.newSharedEvent() {
             Some(v) => v,
             None => return Err(FenceCreateError::Platform),
@@ -57,8 +57,13 @@ impl Fence {
             _device: device.this.upgrade().unwrap(),
             objects: FenceObjects { event },
         };
-        let fence = Object::new_arc_opaque(fence);
-        unsafe { Ok(FenceHandle::new(fence)) }
+        let fence = Object::new_arc(fence);
+        Ok(fence)
+    }
+
+    pub(crate) fn create(device: &Device, value: u64) -> Result<FenceHandle, FenceCreateError> {
+        let fence = Self::new(device, value)?;
+        unsafe { Ok(FenceHandle::new(ArcObject::from_object(fence))) }
     }
 
     pub(crate) fn get(v: &FenceHandle) -> &Self {

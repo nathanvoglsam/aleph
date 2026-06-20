@@ -47,13 +47,15 @@ use parking_lot::Mutex;
 use crate::device::Device;
 use crate::internal::conv;
 use crate::internal::image_view::ImageViewObject;
+use crate::internal::image_view_pool::ImageViewAllocation;
 
 pub struct Texture {
     pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) objects: TextureObjects,
-    pub(crate) views: Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
     pub(crate) allocation: Option<GpuAllocation>,
+    pub(crate) views:
+        Mutex<BHashMap<ImageViewDesc, (ImageView, Option<ImageViewAllocation>), RhiSystem>>,
     pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
     pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
     pub(crate) image_views: Mutex<Blink<BlinkAlloc<RhiSystem>>>,
@@ -147,16 +149,91 @@ impl Texture {
     }
 
     pub(crate) fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        self.get_mtl_texture_view(&self.rtvs, desc)
+        self.get_mtl_render_view(&self.rtvs, desc)
     }
 
     pub(crate) fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        self.get_mtl_texture_view(&self.dsvs, desc)
+        self.get_mtl_render_view(&self.dsvs, desc)
+    }
+
+    pub(crate) fn get_mtl_texture_view(
+        &self,
+        map: &Mutex<BHashMap<ImageViewDesc, (ImageView, Option<ImageViewAllocation>), RhiSystem>>,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        let mut views = map.lock();
+
+        let view = if let Some((view, _)) = views.get(desc) {
+            *view
+        } else {
+            // Check if we were asked to make a view of the same texture type as the base texture
+            // resource.
+            let is_resource_an_array = self.desc().array_size > 1;
+            let view_type_matches_resource = match (is_resource_an_array, self.desc().dimension) {
+                (false, TextureDimension::Texture1D) => desc.view_type == ImageViewType::Tex1D,
+                (false, TextureDimension::Texture2D) => desc.view_type == ImageViewType::Tex2D,
+                (false, TextureDimension::Texture3D) => desc.view_type == ImageViewType::Tex3D,
+                (true, TextureDimension::Texture1D) => desc.view_type == ImageViewType::TexArray1D,
+                (true, TextureDimension::Texture2D) => desc.view_type == ImageViewType::TexArray2D,
+                (true, TextureDimension::Texture3D) => unreachable!(),
+            };
+
+            // Determine if the requested view covers the _entire_ resource.
+            let all_mips_and_slices = desc.sub_resources.base_mip_level == 0
+                && desc.sub_resources.num_mip_levels == self.desc().mip_levels
+                && desc.sub_resources.base_array_slice == 0
+                && desc.sub_resources.num_array_slices == self.desc().array_size;
+
+            // Determine if the requested view is asking for the same format as the texture resource
+            // itself
+            let view_format_matches_texture = desc.format == self.desc().format;
+
+            let (view, allocation) = match (
+                all_mips_and_slices,
+                view_type_matches_resource,
+                view_format_matches_texture,
+            ) {
+                (true, true, true) => (self.objects.texture.gpuResourceID(), None),
+                _ => {
+                    let texture_type = conv::image_view_type_to_mtl(desc.view_type);
+                    let level_range = NSRange::new(
+                        desc.sub_resources.base_mip_level as usize,
+                        desc.sub_resources.num_mip_levels as usize,
+                    );
+                    let slice_range = NSRange::new(
+                        desc.sub_resources.base_array_slice as usize,
+                        desc.sub_resources.num_array_slices as usize,
+                    );
+                    let view = autoreleasepool(|_| unsafe {
+                        let descriptor = MTLTextureViewDescriptor::new();
+                        descriptor.setPixelFormat(conv::format_to_pixel_mtl(desc.format));
+                        descriptor.setTextureType(texture_type);
+                        descriptor.setLevelRange(level_range);
+                        descriptor.setSliceRange(slice_range);
+
+                        let (id, allocation) = self._device.image_view_pools.alloc(
+                            self.id.get() as usize,
+                            &self.objects.texture,
+                            &descriptor,
+                        );
+                        (id, Some(allocation))
+                    });
+                    view
+                }
+            };
+
+            let view = unsafe { ImageView::from_raw_int(view.to_raw()).unwrap() };
+
+            views.insert(desc.clone(), (view, allocation));
+            view
+        };
+
+        Ok(view)
     }
 
     /// The code-path for 'get_rtv' and 'get_dsv' is almost identical, except for the target hash
     /// map.
-    pub(crate) fn get_mtl_texture_view(
+    pub(crate) fn get_mtl_render_view(
         &self,
         map: &Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
         desc: &ImageViewDesc,
@@ -239,6 +316,17 @@ impl Texture {
 
 impl Drop for Texture {
     fn drop(&mut self) {
+        // Need to free all the image views we've allocated for UAV/SRV views.
+        for (_, (_, allocation)) in self.views.get_mut().drain() {
+            if let Some(allocation) = allocation {
+                unsafe {
+                    self._device
+                        .image_view_pools
+                        .free(self.id.get() as usize, allocation)
+                };
+            }
+        }
+
         unsafe {
             if let Some(allocation) = self.allocation.take() {
                 self._device

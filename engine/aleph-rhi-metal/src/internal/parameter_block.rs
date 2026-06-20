@@ -27,11 +27,10 @@
 // SOFTWARE.
 //
 
+use std::num::NonZero;
 use std::ptr::NonNull;
 
 use aleph_alloc::offset_allocator;
-use objc2::runtime::ProtocolObject;
-use objc2_metal::*;
 
 use crate::parameter_block_layout::ParameterBlockLayout;
 
@@ -44,11 +43,6 @@ pub struct ParameterBlock {
     /// The descriptor set layout of this block
     pub _layout: NonNull<ParameterBlockLayout>,
 
-    /// The buffer object this parameter block's argument buffer is sub-allocated from. This is
-    /// not retained because the lifetime of the parameter block itself is tied to the pool. It is
-    /// already illegal to access this block in a context where accessing this pointer is invalid.
-    pub backing_buffer: NonNull<ProtocolObject<dyn MTLBuffer>>,
-
     /// The allocation object that is associated with our argument buffer sub-allocation. This may
     /// be null/invalid if the pool/arena the block was allocated from does not use an allocation
     /// scheme that requires an offset allocator
@@ -59,16 +53,8 @@ pub struct ParameterBlock {
     /// before being bound.
     pub cpu_addr: Option<NonNull<u64>>,
 
-    /// Offset into 'backing_buffer' where the argument buffer sub-allocation is located.
-    pub gpu_offset: usize,
-
-    /// Array of resource handles. Filled out by update calls and used for hazard tracking with
-    /// useResources. This is the set of read only resources in the parameter block.
-    pub reads: NonNull<[*mut ProtocolObject<dyn MTLResource>]>,
-
-    /// Array of resource handles. Filled out by update calls and used for hazard tracking with
-    /// useResources. This is the set of writable resources in the parameter block.
-    pub writes: NonNull<[*mut ProtocolObject<dyn MTLResource>]>,
+    /// GPU address of our parameter block.
+    pub gpu_addr: Option<NonZero<u64>>,
 }
 
 unsafe impl Send for ParameterBlock {}

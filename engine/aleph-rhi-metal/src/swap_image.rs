@@ -33,7 +33,6 @@ use std::sync::Arc;
 use aleph_rhi_api::*;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2_metal::*;
 use objc2_quartz_core::CAMetalDrawable;
 
 use crate::swap_chain::SwapChain;
@@ -62,7 +61,6 @@ impl ISwapImage for SwapImage {
 
 /// Wrapper to scope our 'unsafe impl Send+Sync'
 pub struct SwapImageObjects {
-    pub list: Retained<ProtocolObject<dyn MTLCommandBuffer>>,
     pub drawable: Retained<ProtocolObject<dyn CAMetalDrawable>>,
 }
 

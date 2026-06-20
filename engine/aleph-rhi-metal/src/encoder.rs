@@ -28,7 +28,8 @@
 //
 
 use std::any::TypeId;
-use std::os::raw::c_void;
+use std::hint::unreachable_unchecked;
+use std::num::NonZero;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
@@ -36,15 +37,12 @@ use aleph_alloc::instrumentation::system;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
-use aleph_rhi_impl_utils::parameter_block_layout_visitor::{
-    ParameterBlockLayoutVisitor, ParameterBlockLayoutVisitorElement,
-};
+use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::Blink;
-use objc2::ffi::NSUInteger;
 use objc2::rc::{Retained, autoreleasepool};
 use objc2::runtime::ProtocolObject;
-use objc2_foundation::{NSRange, NSString};
+use objc2_foundation::NSString;
 use objc2_metal::*;
 
 use crate::binding_signature::BindingSignature;
@@ -54,10 +52,15 @@ use crate::context::Context;
 use crate::device::Device;
 use crate::internal::image_view::ImageViewObject;
 use crate::internal::parameter_block::ParameterBlock;
+use crate::internal::upload_bump_allocator::UploadBumpAllocator;
 use crate::internal::{conv, unwrap};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::sampler::Sampler;
 use crate::texture::Texture;
+
+const COMPUTE_STAGES: MTLStages = MTLStages::Dispatch
+    .union(MTLStages::Blit)
+    .union(MTLStages::AccelerationStructure);
 
 pub struct Encoder<'a> {
     pub(crate) _parent: &'a mut CommandList,
@@ -112,26 +115,15 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
             return; // Bail if no bindings are provided
         }
 
-        let encoder = self.active.get_render();
-
         unsafe {
-            let mut mtl_buffers = BVec::with_capacity_in(bindings.len(), self.arena.allocator());
-            mtl_buffers.extend(bindings.iter().map(|v| {
-                let v = Buffer::get(v.buffer);
-                v.objects.buffer.as_ref() as *const ProtocolObject<dyn MTLBuffer>
-            }));
-
-            let mut mtl_offsets = BVec::with_capacity_in(bindings.len(), self.arena.allocator());
-            mtl_offsets.extend(bindings.iter().map(|v| v.offset as usize));
-
-            let range = NSRange {
-                location: first_binding as usize + 10,
-                length: bindings.len(),
-            };
-
-            let p_mtl_buffers = NonNull::new_unchecked(mtl_buffers.as_mut_ptr());
-            let p_mtl_offsets = NonNull::new_unchecked(mtl_offsets.as_mut_ptr());
-            encoder.setVertexBuffers_offsets_withRange(p_mtl_buffers, p_mtl_offsets, range);
+            for (i, binding) in bindings.iter().enumerate() {
+                let buffer = Buffer::get(binding.buffer);
+                let addr = buffer.gpu_addr.get() + binding.offset;
+                self._parent
+                    .objects
+                    .argument_table
+                    .setAddress_atIndex(addr, 10 + i + first_binding as usize);
+            }
         }
         self.arena.reset();
     }
@@ -142,9 +134,9 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         binding: &InputAssemblyBufferBinding,
     ) {
         let buffer = Buffer::get(binding.buffer);
+        let addr = buffer.gpu_addr.saturating_add(binding.offset);
         let binding = BoundIndexBuffer {
-            buffer: buffer.objects.buffer.clone(),
-            offset: binding.offset,
+            addr,
             index_type: conv::index_type_to_mtl(index_type),
             index_size: conv::index_type_to_size(index_type),
         };
@@ -167,7 +159,8 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
                     BVec::with_capacity_in(viewports.len(), self.arena.allocator());
                 mtl_viewports.extend(viewports.iter().map(conv::viewport_to_mtl));
 
-                encoder.setViewports(&mtl_viewports);
+                let ptr = NonNull::new_unchecked(mtl_viewports.as_mut_ptr());
+                encoder.setViewports_count(ptr, mtl_viewports.len());
             }
             self.arena.reset();
         }
@@ -196,7 +189,7 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
     }
 
     unsafe fn __set_push_constant_block(&mut self, data: &[u8]) {
-        let encoder = self.active.get_render();
+        // TODO: push constants currently not working for compute
 
         // This command can't work without a bound pipeline, we need the pipeline layout so we can
         // know where in the root signature to write the data
@@ -211,21 +204,31 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
             .push_constant_block
             .as_ref()
             .unwrap();
-        let set_bytes_fn = make_set_bytes_fn_graphics(encoder, block.visibility);
-
-        let index = 9;
 
         state.push_constant_block[..data.len()].copy_from_slice(data);
-
         let block_bytes = &state.push_constant_block[0..block.size.get() as usize];
-        let bytes = NonNull::from(block_bytes).cast::<c_void>();
 
-        set_bytes_fn(bytes, block_bytes.len(), index);
+        let (cpu_addr, gpu_addr) = self
+            ._parent
+            .push_constant_allocator
+            .allocate(&self._device, block_bytes.len());
+
+        unsafe {
+            cpu_addr.copy_from(NonNull::from(block_bytes).cast::<u8>(), block_bytes.len());
+        }
+
+        unsafe {
+            const PUSH_CONSTANT_INDEX: usize = 9;
+            self._parent
+                .objects
+                .argument_table
+                .setAddress_atIndex(gpu_addr.get(), PUSH_CONSTANT_INDEX);
+        }
     }
 
     unsafe fn __begin_rendering(&mut self, info: &BeginRenderingInfo) {
         autoreleasepool(|_| {
-            let mtl_desc = MTLRenderPassDescriptor::new();
+            let mtl_desc = MTL4RenderPassDescriptor::new();
 
             let mtl_color_attachments = mtl_desc.colorAttachments();
             for (i, color_attachment) in info.color_attachments.iter().enumerate() {
@@ -322,14 +325,18 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
             mtl_desc.setRenderTargetWidth(info.extent.width as usize);
             mtl_desc.setRenderTargetHeight(info.extent.height as usize);
 
-            self.active.set_render(&self.objects.list, &mtl_desc);
+            self.active.set_render(
+                &self.objects.list,
+                &self._parent.objects.argument_table,
+                &mtl_desc,
+            );
         })
     }
 
     unsafe fn __end_rendering(&mut self) {
-        autoreleasepool(|_| {
-            self.active.end_render();
-        })
+        // autoreleasepool(|_| {
+        //     self.active.end_render();
+        // })
     }
 
     unsafe fn __draw(
@@ -343,8 +350,14 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
 
         let pipeline = self.bound_graphics_pipeline.as_deref().unwrap();
 
-        self.bound_graphics_pipeline_state
-            .maybe_flush_graphics_params(encoder, &pipeline._binding_signature);
+        unsafe {
+            self.bound_graphics_pipeline_state.maybe_flush_params(
+                &self._device,
+                &mut self._parent.push_constant_allocator,
+                &self._parent.objects.argument_table,
+                &pipeline._binding_signature,
+            );
+        }
 
         let primitive_type = self.bound_graphics_pipeline_state.primitive_type;
         unsafe {
@@ -370,20 +383,29 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
 
         let pipeline = self.bound_graphics_pipeline.as_deref().unwrap();
 
-        self.bound_graphics_pipeline_state
-            .maybe_flush_graphics_params(encoder, &pipeline._binding_signature);
+        unsafe {
+            self.bound_graphics_pipeline_state.maybe_flush_params(
+                &self._device,
+                &mut self._parent.push_constant_allocator,
+                &self._parent.objects.argument_table,
+                &pipeline._binding_signature,
+            );
+        }
 
         let primitive_type = self.bound_graphics_pipeline_state.primitive_type;
         let index_buffer = self.bound_index_buffer.as_ref().unwrap();
-        let offset = index_buffer.offset;
-        let offset = offset + (first_index as u64 * index_buffer.index_size as u64);
+
+        let draw_index_offset = first_index as u64 * index_buffer.index_size as u64;
+        let addr = index_buffer.addr.get() + draw_index_offset;
+        let len = index_count as usize * index_buffer.index_size;
+
         unsafe {
-            encoder.drawIndexedPrimitives_indexCount_indexType_indexBuffer_indexBufferOffset_instanceCount_baseVertex_baseInstance(
+            encoder.drawIndexedPrimitives_indexCount_indexType_indexBuffer_indexBufferLength_instanceCount_baseVertex_baseInstance(
                 primitive_type,
                 index_count as usize,
                 index_buffer.index_type,
-                &index_buffer.buffer,
-                offset as usize,
+                addr,
+                len,
                 instance_count as usize,
                 vertex_offset as isize,
                 first_instance as usize,
@@ -392,8 +414,9 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
     }
 
     unsafe fn __bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
-        self.active.test_begin_compute(&self.objects.list);
-        let encoder = self.active.get_compute();
+        let encoder = self
+            .active
+            .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
 
         let concrete = ComputePipeline::get_owned(pipeline);
 
@@ -412,100 +435,36 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         let binding_signature = unwrap::binding_signature(binding_signature);
         match bind_point {
             PipelineBindPoint::Compute => {
-                let encoder = self.active.get_compute();
-
                 for (i, block) in blocks.iter().enumerate() {
                     let i = first_block as usize + i;
 
-                    let block_layout = &binding_signature._parameter_block_layouts[i];
                     let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
 
                     unsafe {
-                        encoder.setBuffer_offset_atIndex(
-                            Some(block.backing_buffer.as_ref()),
-                            block.gpu_offset,
-                            i,
-                        );
-                    }
-
-                    let num_reads = block_layout.compiled.num_reads;
-                    if num_reads != 0 {
-                        let resources = block.reads.cast();
-                        let usage = MTLResourceUsage::Read;
-                        unsafe {
-                            encoder.useResources_count_usage(resources, num_reads, usage);
-                        }
-                    }
-
-                    let num_writes = block_layout.compiled.num_writes;
-                    if num_writes != 0 {
-                        let resources = block.writes.cast();
-                        let usage = MTLResourceUsage::Write;
-                        unsafe {
-                            encoder.useResources_count_usage(resources, num_writes, usage);
-                        }
+                        self._parent
+                            .objects
+                            .argument_table
+                            .setAddress_atIndex(block.gpu_addr.unwrap_unchecked().get(), i);
                     }
                 }
             }
             PipelineBindPoint::Graphics => {
-                let encoder = self.active.get_render();
-
                 for (i, block) in blocks.iter().enumerate() {
                     let i = first_block as usize + i;
 
                     let block_layout = &binding_signature._parameter_block_layouts[i];
                     let block_layout_desc = block_layout.desc.get();
+
                     let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
 
-                    let buffer = unsafe { Some(block.backing_buffer.as_ref()) };
-                    let offset = block.gpu_offset;
-                    match block_layout_desc.visibility {
-                        DescriptorShaderVisibility::All => unsafe {
-                            encoder.setFragmentBuffer_offset_atIndex(buffer, offset, i);
-                            encoder.setVertexBuffer_offset_atIndex(buffer, offset, i);
-                            encoder.setMeshBuffer_offset_atIndex(buffer, offset, i);
-                            encoder.setObjectBuffer_offset_atIndex(buffer, offset, i);
-                        },
-                        DescriptorShaderVisibility::Vertex => unsafe {
-                            encoder.setVertexBuffer_offset_atIndex(buffer, offset, i);
-                        },
-
-                        DescriptorShaderVisibility::Fragment => unsafe {
-                            encoder.setFragmentBuffer_offset_atIndex(buffer, offset, i);
-                        },
-                        DescriptorShaderVisibility::Amplification => unsafe {
-                            encoder.setObjectBuffer_offset_atIndex(buffer, offset, i);
-                        },
-                        DescriptorShaderVisibility::Mesh => unsafe {
-                            encoder.setMeshBuffer_offset_atIndex(buffer, offset, i);
-                        },
-                        DescriptorShaderVisibility::Compute => unreachable!(),
-                        DescriptorShaderVisibility::Hull => unimplemented!(),
-                        DescriptorShaderVisibility::Domain => unimplemented!(),
-                        DescriptorShaderVisibility::Geometry => unimplemented!(),
-                    }
-
-                    let num_reads = block_layout.compiled.num_reads;
-                    if num_reads != 0 {
-                        let resources = block.reads.cast();
-                        let usage = MTLResourceUsage::Read;
-                        let stages = block_layout.compiled.visibility;
+                    let visibility =
+                        conv::descriptor_visibility_to_mtl(block_layout_desc.visibility);
+                    if !visibility.is_empty() {
                         unsafe {
-                            encoder.useResources_count_usage_stages(
-                                resources, num_reads, usage, stages,
-                            );
-                        }
-                    }
-
-                    let num_writes = block_layout.compiled.num_writes;
-                    if num_writes != 0 {
-                        let resources = block.writes.cast();
-                        let usage = MTLResourceUsage::Write;
-                        let stages = block_layout.compiled.visibility;
-                        unsafe {
-                            encoder.useResources_count_usage_stages(
-                                resources, num_writes, usage, stages,
-                            );
+                            self._parent
+                                .objects
+                                .argument_table
+                                .setAddress_atIndex(block.gpu_addr.unwrap_unchecked().get(), i);
                         }
                     }
                 }
@@ -530,36 +489,8 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         };
         let push_params = &mut push_params[block as usize];
 
-        let push_params_reads = match bind_point {
-            PipelineBindPoint::Compute => &mut self.bound_compute_pipeline_state.push_reads,
-            PipelineBindPoint::Graphics => &mut self.bound_graphics_pipeline_state.push_reads,
-        };
-        let push_params_reads = &mut push_params_reads[block as usize];
-
-        let push_params_writes = match bind_point {
-            PipelineBindPoint::Compute => &mut self.bound_compute_pipeline_state.push_writes,
-            PipelineBindPoint::Graphics => &mut self.bound_graphics_pipeline_state.push_writes,
-        };
-        let push_params_writes = &mut push_params_writes[block as usize];
-
         // Ensure the arrays are of the minimum required size
         push_params.resize(layout.compiled.num_arguments, 0);
-        push_params_reads.resize(layout.compiled.num_reads, NonNull::dangling());
-        push_params_writes.resize(layout.compiled.num_writes, NonNull::dangling());
-
-        let mut update_use_sets =
-            |write_group: &ParameterBlockLayoutVisitorElement,
-             src: &ProtocolObject<dyn MTLResource>| {
-                if write_group.ty.is_uav() {
-                    let base = layout.compiled.use_write_bases[write_group.binding as usize];
-                    let base = base + write_group.element as usize;
-                    push_params_writes[base] = NonNull::from(src);
-                } else {
-                    let base = layout.compiled.use_read_bases[write_group.binding as usize];
-                    let base = base + write_group.element as usize;
-                    push_params_reads[base] = NonNull::from(src);
-                }
-            };
 
         let visitor =
             ParameterBlockLayoutVisitor::new(layout.desc.get(), base as u64, writes).unwrap();
@@ -575,9 +506,8 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
                     }
                     ParameterWrite::Buffer(v) => {
                         let src = Buffer::get(v.buffer);
-                        let addr = src.objects.buffer.gpuAddress() + v.offset;
+                        let addr = src.gpu_addr.get() + v.offset;
                         push_params[i] = addr;
-                        update_use_sets(&write_group, src.objects.buffer.as_ref());
                     }
                     ParameterWrite::Texture(_) => unreachable!(),
                     ParameterWrite::TextureBuffer(_) => unreachable!(),
@@ -596,13 +526,20 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
     }
 
     unsafe fn __dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
-        self.active.test_begin_compute(&self.objects.list);
-        let encoder = self.active.get_compute();
+        let encoder = self
+            .active
+            .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
 
         let pipeline = self.bound_compute_pipeline.as_deref().unwrap();
 
-        self.bound_compute_pipeline_state
-            .maybe_flush_compute_params(encoder, &pipeline._binding_signature);
+        unsafe {
+            self.bound_graphics_pipeline_state.maybe_flush_params(
+                &self._device,
+                &mut self._parent.push_constant_allocator,
+                &self._parent.objects.argument_table,
+                &pipeline._binding_signature,
+            );
+        }
 
         encoder.dispatchThreadgroups_threadsPerThreadgroup(
             MTLSize {
@@ -620,14 +557,79 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         buffer_barriers: &[BufferBarrier],
         texture_barriers: &[TextureBarrier],
     ) {
-        // TODO: actually do real barriers for real...
-        match &self.active {
-            ActiveEncoder::Graphics(_) => {}
-            ActiveEncoder::Compute(v) => {
-                v.memoryBarrierWithScope(MTLBarrierScope::Buffers | MTLBarrierScope::Textures);
+        // TODO: we may be able to elide cache flushes?
+
+        // Metal cares not for your buffers and textures, not even your access masks it seems. They
+        // just want the stages. It's also super helpful because I use before/after for my scopes,
+        // and so does Metal. However, Metal's before/after mean the opposite to mine. Awesome.
+        let mut src = MTLStages::empty();
+        let mut dst = MTLStages::empty();
+        for barrier in global_barriers {
+            src |= conv::barrier_sync_to_mtl(barrier.before_sync);
+            dst |= conv::barrier_sync_to_mtl(barrier.after_sync);
+        }
+        for barrier in buffer_barriers {
+            src |= conv::barrier_sync_to_mtl(barrier.before_sync);
+            dst |= conv::barrier_sync_to_mtl(barrier.after_sync);
+        }
+        for barrier in texture_barriers {
+            src |= conv::barrier_sync_to_mtl(barrier.before_sync);
+            dst |= conv::barrier_sync_to_mtl(barrier.after_sync);
+        }
+
+        // If either half of the barrier is empty then we just skip it because an empty edge has
+        // no meaning to Metal.
+        //
+        // If one half is empty then it doesn't matter what the other half is, because the command
+        // doesn't actually sync with anything (on Metal).
+        if src.is_empty() || dst.is_empty() {
+            return;
+        }
+
+        match &self.active.inner {
+            ActiveEncoderInner::Graphics(_) => {
+                // barriers can't be issued inside render passes within our api. however we would
+                // like to issue producer barriers wherever possible. to that end, we don't eagerly
+                // end the render __encoder__ when a caller ends the rhi render pass.
+                //
+                // this means we can actually still be inside a render encoder when a resource
+                // barrier command comes in.
+                //
+                // we just add the relevant stages to the dirty sets and flush them as a producer
+                // barrier when ending the render encoder.
+                //
+                // we don't issue an intra-pass barrier because our rhi doesn't allow barriers
+                // within render passes. you can't have intra-pass sync under aleph-rhi.
+                self.active.dirty_src |= src;
+                self.active.dirty_dst |= dst;
             }
-            ActiveEncoder::Copy(_) => {}
-            ActiveEncoder::None => {}
+            ActiveEncoderInner::Compute(v) => {
+                let src_compute = src & COMPUTE_STAGES;
+                let dst_compute = dst & COMPUTE_STAGES;
+
+                // immediately issue an intra-pass barrier if the dst mask intersects with any
+                // stages for a compute encoder. this will ensure we correctly synchronize with
+                // possible previous work earlier in the encoder.
+                if !dst_compute.is_empty() {
+                    v.barrierAfterEncoderStages_beforeEncoderStages_visibilityOptions(
+                        src_compute,
+                        dst_compute,
+                        MTL4VisibilityOptions::Device,
+                    );
+                }
+
+                self.active.dirty_src |= src;
+                self.active.dirty_dst |= dst;
+            }
+            ActiveEncoderInner::None => {
+                // there's no active encoder, so we can't eagerly issue a barrier.
+                //
+                // instead we just mark the stages as dirty. when we begin a new encoder
+                // we will issue a consumer barrier that will synchronize these stages before
+                // issuing any more commands.
+                self.active.dirty_src |= src;
+                self.active.dirty_dst |= dst;
+            }
         }
     }
 
@@ -640,8 +642,9 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         let src = Buffer::get(src);
         let dst = Buffer::get(dst);
 
-        self.active.test_begin_blit(&self.objects.list);
-        let encoder = self.active.get_blit();
+        let encoder = self
+            .active
+            .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
 
         for region in regions {
             unsafe {
@@ -665,8 +668,9 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         let src = Buffer::get(src);
         let dst = Texture::get(dst);
 
-        self.active.test_begin_blit(&self.objects.list);
-        let encoder = self.active.get_blit();
+        let encoder = self
+            .active
+            .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
 
         for region in regions {
             unsafe {
@@ -706,8 +710,9 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         let src = Texture::get(src);
         let dst = Texture::get(dst);
 
-        self.active.test_begin_blit(&self.objects.list);
-        let encoder = self.active.get_blit();
+        let encoder = self
+            .active
+            .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
 
         for region in regions {
             unsafe {
@@ -733,7 +738,8 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         match self._parent.state {
             ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
             ListState::Open => {
-                self.active.end_all();
+                self.active.end_all(&self._parent.objects.list);
+                self._parent.objects.list.endCommandBuffer();
                 self._parent.state = ListState::Closed;
                 Ok(())
             }
@@ -762,42 +768,68 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
 
 /// Wrapper to limit the scope of our 'unsafe impl Send'
 pub struct EncoderObjects {
-    pub list: Retained<ProtocolObject<dyn MTLCommandBuffer>>,
+    pub list: Retained<ProtocolObject<dyn MTL4CommandBuffer>>,
 }
 
 unsafe impl Send for EncoderObjects {}
 
-pub enum ActiveEncoder {
-    Graphics(Retained<ProtocolObject<dyn MTLRenderCommandEncoder>>),
-    Compute(Retained<ProtocolObject<dyn MTLComputeCommandEncoder>>),
-    Copy(Retained<ProtocolObject<dyn MTLBlitCommandEncoder>>),
+pub struct ActiveEncoder {
+    dirty_src: MTLStages,
+    dirty_dst: MTLStages,
+    inner: ActiveEncoderInner,
+}
+
+enum ActiveEncoderInner {
+    Graphics(Retained<ProtocolObject<dyn MTL4RenderCommandEncoder>>),
+    Compute(Retained<ProtocolObject<dyn MTL4ComputeCommandEncoder>>),
     None,
 }
 
 impl ActiveEncoder {
+    pub const fn new() -> Self {
+        Self {
+            dirty_src: MTLStages::empty(),
+            dirty_dst: MTLStages::empty(),
+            inner: ActiveEncoderInner::None,
+        }
+    }
+
     pub fn set_render(
         &mut self,
-        list: &ProtocolObject<dyn MTLCommandBuffer>,
-        desc: &MTLRenderPassDescriptor,
+        list: &ProtocolObject<dyn MTL4CommandBuffer>,
+        argument_table: &ProtocolObject<dyn MTL4ArgumentTable>,
+        desc: &MTL4RenderPassDescriptor,
     ) {
-        match self {
-            ActiveEncoder::Graphics(_) => {
-                log::error!("Must end previous render encoder with 'end_rendering'!");
-                panic!("Must end previous render encoder with 'end_rendering'!")
-            }
-            ActiveEncoder::Compute(old) => {
+        match &self.inner {
+            ActiveEncoderInner::Graphics(old) => {
+                Self::flush_producer_barrier(
+                    &mut self.dirty_src,
+                    &mut self.dirty_dst,
+                    old.as_ref(),
+                );
                 old.endEncoding();
             }
-            ActiveEncoder::Copy(old) => {
+            ActiveEncoderInner::Compute(old) => {
+                Self::flush_producer_barrier(
+                    &mut self.dirty_src,
+                    &mut self.dirty_dst,
+                    old.as_ref(),
+                );
+
                 old.endEncoding();
             }
-            ActiveEncoder::None => {}
+            ActiveEncoderInner::None => {
+                // do nothing, dirty stages need to be handled with a consumer barrier instead.
+            }
         }
 
         let encoder = list.renderCommandEncoderWithDescriptor(desc);
         match encoder {
             Some(v) => {
-                *self = ActiveEncoder::Graphics(v);
+                // TODO: can/should we be smarter about the stage mask?
+                Self::flush_consumer_barrier(&mut self.dirty_src, &mut self.dirty_dst, v.as_ref());
+                v.setArgumentTable_atStages(argument_table, MTLRenderStages::all());
+                self.inner = ActiveEncoderInner::Graphics(v);
             }
             None => {
                 log::error!("Failed to create 'MTLCommandRenderEncoder'!");
@@ -806,120 +838,156 @@ impl ActiveEncoder {
         }
     }
 
-    pub fn end_render(&mut self) {
-        match self {
-            ActiveEncoder::Graphics(old) => {
-                old.endEncoding();
-            }
-            _ => {
-                log::error!("No render encoder is active to 'endEncoding'!");
-                panic!("No render encoder is active to 'endEncoding'!");
-            }
-        }
-        *self = ActiveEncoder::None;
-    }
-
-    pub fn get_render(&self) -> &ProtocolObject<dyn MTLRenderCommandEncoder> {
-        match self {
-            ActiveEncoder::Graphics(v) => v.as_ref(),
-            ActiveEncoder::Compute(_) => panic!(),
-            ActiveEncoder::Copy(_) => panic!(),
-            ActiveEncoder::None => {
+    pub fn get_render(&self) -> &ProtocolObject<dyn MTL4RenderCommandEncoder> {
+        match &self.inner {
+            ActiveEncoderInner::Graphics(v) => v.as_ref(),
+            ActiveEncoderInner::Compute(_) => panic!(),
+            ActiveEncoderInner::None => {
                 log::error!("Must begin render encoder with 'begin_rendering'!");
                 panic!("Must begin render encoder with 'begin_rendering'!")
             }
         }
     }
 
-    pub fn test_begin_compute<'a>(&'a mut self, list: &ProtocolObject<dyn MTLCommandBuffer>) {
-        match self {
-            ActiveEncoder::Graphics(_) => {
-                log::error!("Must end render encoders with 'end_rendering'!");
-                panic!("Must end render encoders with 'end_rendering'!")
-            }
-            ActiveEncoder::Compute(_) => {
-                // Early exit because we don't need to start a new encoder
-                return;
-            }
-            ActiveEncoder::Copy(old) => {
+    pub fn begin_compute<'a>(
+        &'a mut self,
+        list: &ProtocolObject<dyn MTL4CommandBuffer>,
+        argument_table: &ProtocolObject<dyn MTL4ArgumentTable>,
+    ) -> &'a ProtocolObject<dyn MTL4ComputeCommandEncoder> {
+        // This code is a bit deranged because the borrow checker doesn't like the simpler version.
+        // It is what it is I guess /shrug.
+        match &self.inner {
+            ActiveEncoderInner::Graphics(old) => {
+                Self::flush_producer_barrier(
+                    &mut self.dirty_src,
+                    &mut self.dirty_dst,
+                    old.as_ref(),
+                );
+
                 old.endEncoding();
             }
-            ActiveEncoder::None => {}
+            ActiveEncoderInner::Compute(_) => {}
+            ActiveEncoderInner::None => {}
         };
 
-        // TODO: concurrent dispatch + use memory barriers
-        autoreleasepool(|_| {
-            let encoder = list
-                .computeCommandEncoderWithDispatchType(MTLDispatchType::Serial)
-                .unwrap();
-            *self = ActiveEncoder::Compute(encoder);
-        })
-    }
+        match &self.inner {
+            ActiveEncoderInner::Graphics(_) | ActiveEncoderInner::None => {
+                autoreleasepool(|_| {
+                    let v = list.computeCommandEncoder().unwrap();
+                    Self::flush_consumer_barrier(
+                        &mut self.dirty_src,
+                        &mut self.dirty_dst,
+                        v.as_ref(),
+                    );
+                    v.setArgumentTable(Some(argument_table));
+                    self.inner = ActiveEncoderInner::Compute(v);
+                });
+            }
+            ActiveEncoderInner::Compute(_) => {}
+        }
 
-    pub fn get_compute<'a>(&'a self) -> &'a ProtocolObject<dyn MTLComputeCommandEncoder> {
-        match self {
-            ActiveEncoder::Graphics(_) => panic!(),
-            ActiveEncoder::Compute(v) => v.as_ref(),
-            ActiveEncoder::Copy(_) => panic!(),
-            ActiveEncoder::None => panic!(),
+        match &self.inner {
+            ActiveEncoderInner::Compute(v) => v.as_ref(),
+            _ => unsafe { unreachable_unchecked() },
         }
     }
 
-    pub fn test_begin_blit<'a>(&'a mut self, list: &ProtocolObject<dyn MTLCommandBuffer>) {
-        match self {
-            ActiveEncoder::Graphics(_) => {
-                log::error!("Must end render encoders with 'end_rendering'!");
-                panic!("Must end render encoders with 'end_rendering'!")
-            }
-            ActiveEncoder::Compute(old) => {
-                old.endEncoding();
-            }
-            ActiveEncoder::Copy(_) => {
-                // Early exit because we don't need to start a new encoder
-                return;
-            }
-            ActiveEncoder::None => {}
-        };
-
+    pub fn end_all(&mut self, list: &ProtocolObject<dyn MTL4CommandBuffer>) {
         autoreleasepool(|_| {
-            let encoder = list.blitCommandEncoder().unwrap();
-            *self = ActiveEncoder::Copy(encoder);
+            match &self.inner {
+                ActiveEncoderInner::Graphics(old) => {
+                    Self::flush_producer_barrier(
+                        &mut self.dirty_src,
+                        &mut self.dirty_dst,
+                        old.as_ref(),
+                    );
+                    old.endEncoding();
+                }
+                ActiveEncoderInner::Compute(old) => {
+                    Self::flush_producer_barrier(
+                        &mut self.dirty_src,
+                        &mut self.dirty_dst,
+                        old.as_ref(),
+                    );
+                    old.endEncoding();
+                }
+                ActiveEncoderInner::None => {
+                    if !self.dirty_src.is_empty() || !self.dirty_dst.is_empty() {
+                        autoreleasepool(|_| {
+                            let v = list.computeCommandEncoder().unwrap();
+                            Self::flush_producer_barrier(
+                                &mut self.dirty_src,
+                                &mut self.dirty_dst,
+                                v.as_ref(),
+                            );
+                            v.endEncoding();
+                        });
+                    }
+                }
+            }
+            self.inner = ActiveEncoderInner::None;
         })
     }
 
-    pub fn get_blit<'a>(&'a self) -> &'a ProtocolObject<dyn MTLBlitCommandEncoder> {
-        match self {
-            ActiveEncoder::Graphics(_) => panic!(),
-            ActiveEncoder::Compute(_) => panic!(),
-            ActiveEncoder::Copy(v) => v.as_ref(),
-            ActiveEncoder::None => panic!(),
+    fn should_flush(dirty_src: &MTLStages, dirty_dst: &MTLStages) -> bool {
+        let both_empty = dirty_src.is_empty() && dirty_dst.is_empty();
+        let none_empty = !dirty_src.is_empty() && !dirty_dst.is_empty();
+
+        debug_assert!(
+            both_empty || none_empty,
+            "It is illegal for only one half of the dirty stages to be empty"
+        );
+
+        none_empty
+    }
+
+    fn flush_producer_barrier(
+        dirty_src: &mut MTLStages,
+        dirty_dst: &mut MTLStages,
+        encoder: &ProtocolObject<dyn MTL4CommandEncoder>,
+    ) {
+        // Skip issuing a barrier if there are no dirty stages
+        if !Self::should_flush(dirty_src, dirty_dst) {
+            return;
         }
+
+        // Flush all the outstanding dirty stages with a producer barrier before ending
+        // the old encoder
+        encoder.barrierAfterStages_beforeQueueStages_visibilityOptions(
+            *dirty_src,
+            *dirty_dst,
+            MTL4VisibilityOptions::Device,
+        );
+        *dirty_src = MTLStages::empty();
+        *dirty_dst = MTLStages::empty();
     }
 
-    pub fn end_all(&mut self) {
-        autoreleasepool(|_| {
-            match self {
-                ActiveEncoder::Graphics(old) => {
-                    old.endEncoding();
-                }
-                ActiveEncoder::Compute(old) => {
-                    old.endEncoding();
-                }
-                ActiveEncoder::Copy(old) => {
-                    old.endEncoding();
-                }
-                ActiveEncoder::None => {}
-            }
-            *self = ActiveEncoder::None;
-        })
+    fn flush_consumer_barrier(
+        dirty_src: &mut MTLStages,
+        dirty_dst: &mut MTLStages,
+        encoder: &ProtocolObject<dyn MTL4CommandEncoder>,
+    ) {
+        // Skip issuing a barrier if there are no dirty stages
+        if !Self::should_flush(dirty_src, dirty_dst) {
+            return;
+        }
+
+        // Flush all the outstanding dirty stages with a producer barrier before ending
+        // the old encoder
+        encoder.barrierAfterQueueStages_beforeStages_visibilityOptions(
+            *dirty_src,
+            *dirty_dst,
+            MTL4VisibilityOptions::Device,
+        );
+        *dirty_src = MTLStages::empty();
+        *dirty_dst = MTLStages::empty();
     }
 }
 
 unsafe impl Send for ActiveEncoder {}
 
 pub struct BoundIndexBuffer {
-    buffer: Retained<ProtocolObject<dyn MTLBuffer>>,
-    offset: u64,
+    addr: NonZero<u64>,
     index_type: MTLIndexType,
     index_size: usize,
 }
@@ -929,99 +997,57 @@ unsafe impl Send for BoundIndexBuffer {}
 pub struct BoundPipelineState {
     primitive_type: MTLPrimitiveType,
     push_params: [BVec<u64, RhiSystem>; 8],
-    push_reads: [BVec<NonNull<ProtocolObject<dyn MTLResource>>, RhiSystem>; 8],
-    push_writes: [BVec<NonNull<ProtocolObject<dyn MTLResource>>, RhiSystem>; 8],
     push_params_dirty: bool,
     push_constant_block: BVec<u8, RhiSystem>,
 }
 
 impl BoundPipelineState {
-    pub fn maybe_flush_compute_params(
+    pub unsafe fn maybe_flush_params(
         &mut self,
-        encoder: &ProtocolObject<dyn MTLComputeCommandEncoder>,
+        device: &Device,
+        allocator: &mut UploadBumpAllocator,
+        argument_table: &ProtocolObject<dyn MTL4ArgumentTable>,
         binding_signature: &BindingSignature,
     ) {
         if self.push_params_dirty {
-            for (i, block) in binding_signature
+            let iter = binding_signature
                 ._parameter_block_layouts
                 .iter()
-                .enumerate()
-            {
-                if block
+                .enumerate();
+            for (i, block) in iter {
+                let is_push_descriptor_block = block
                     .desc()
                     .flags
-                    .contains(ParameterBlockFlags::PUSH_DESCRIPTOR)
-                {
-                    let set_bytes_fn = |bytes, length, i| unsafe {
-                        encoder.setBytes_length_atIndex(bytes, length, i);
-                    };
-                    let use_resources_fn = |resources, count, usage| unsafe {
-                        encoder.useResources_count_usage(resources, count, usage);
-                    };
-                    self.flush_params(i, set_bytes_fn, use_resources_fn);
+                    .contains(ParameterBlockFlags::PUSH_DESCRIPTOR);
+                if is_push_descriptor_block {
+                    unsafe {
+                        self.flush_params(device, allocator, argument_table, i);
+                    }
                 }
             }
             self.push_params_dirty = false;
         }
     }
 
-    pub fn maybe_flush_graphics_params(
-        &mut self,
-        encoder: &ProtocolObject<dyn MTLRenderCommandEncoder>,
-        binding_signature: &BindingSignature,
-    ) {
-        if self.push_params_dirty {
-            for (i, block) in binding_signature
-                ._parameter_block_layouts
-                .iter()
-                .enumerate()
-            {
-                if block
-                    .desc()
-                    .flags
-                    .contains(ParameterBlockFlags::PUSH_DESCRIPTOR)
-                {
-                    let set_bytes_fn = make_set_bytes_fn_graphics(encoder, block.desc().visibility);
-                    let use_resources_fn = |resources, count, usage| unsafe {
-                        encoder.useResources_count_usage_stages(
-                            resources,
-                            count,
-                            usage,
-                            block.compiled.visibility,
-                        );
-                    };
-                    self.flush_params(i, set_bytes_fn, use_resources_fn);
-                }
-            }
-            self.push_params_dirty = false;
-        }
-    }
-
-    fn flush_params(
+    unsafe fn flush_params(
         &self,
+        device: &Device,
+        allocator: &mut UploadBumpAllocator,
+        argument_table: &ProtocolObject<dyn MTL4ArgumentTable>,
         i: usize,
-        set_bytes_fn: impl Fn(NonNull<c_void>, NSUInteger, NSUInteger),
-        use_resources_fn: impl Fn(
-            NonNull<NonNull<ProtocolObject<dyn MTLResource>>>,
-            NSUInteger,
-            MTLResourceUsage,
-        ),
     ) {
         let params = self.push_params[i].as_slice();
-        let reads = self.push_writes[i].as_slice();
-        let writes = self.push_writes[i].as_slice();
 
-        let bytes = NonNull::from(params).cast::<c_void>();
-        let length = params.len() * size_of::<u64>();
-        set_bytes_fn(bytes, length, i);
+        let (cpu_addr, gpu_addr) = allocator.allocate(device, params.len() * size_of::<u64>());
+        let cpu_addr = cpu_addr.cast::<u64>();
 
-        let resources = NonNull::from(reads).cast::<NonNull<ProtocolObject<dyn MTLResource>>>();
-        let count = reads.len();
-        use_resources_fn(resources, count, MTLResourceUsage::Read);
+        unsafe {
+            cpu_addr.copy_from(NonNull::from(params).cast::<u64>(), params.len());
+        }
 
-        let resources = NonNull::from(writes).cast::<NonNull<ProtocolObject<dyn MTLResource>>>();
-        let count = writes.len();
-        use_resources_fn(resources, count, MTLResourceUsage::Write);
+        unsafe {
+            argument_table.setAddress_atIndex(gpu_addr.get(), i);
+        }
     }
 }
 
@@ -1030,8 +1056,6 @@ impl Default for BoundPipelineState {
         Self {
             primitive_type: MTLPrimitiveType::Point,
             push_params: [const { BVec::new_in(system()) }; 8],
-            push_reads: [const { BVec::new_in(system()) }; 8],
-            push_writes: [const { BVec::new_in(system()) }; 8],
             push_params_dirty: false,
             push_constant_block: aleph_alloc::vec![in system(); 0u8; 256],
         }
@@ -1039,34 +1063,3 @@ impl Default for BoundPipelineState {
 }
 
 unsafe impl Send for BoundPipelineState {}
-
-fn make_set_bytes_fn_graphics(
-    encoder: &ProtocolObject<dyn MTLRenderCommandEncoder>,
-    visibility: DescriptorShaderVisibility,
-) -> impl Fn(NonNull<c_void>, NSUInteger, NSUInteger) {
-    move |bytes, length, i| match visibility {
-        DescriptorShaderVisibility::All => unsafe {
-            encoder.setFragmentBytes_length_atIndex(bytes, length, i);
-            encoder.setVertexBytes_length_atIndex(bytes, length, i);
-            encoder.setMeshBytes_length_atIndex(bytes, length, i);
-            encoder.setObjectBytes_length_atIndex(bytes, length, i);
-        },
-        DescriptorShaderVisibility::Vertex => unsafe {
-            encoder.setVertexBytes_length_atIndex(bytes, length, i);
-        },
-
-        DescriptorShaderVisibility::Fragment => unsafe {
-            encoder.setFragmentBytes_length_atIndex(bytes, length, i);
-        },
-        DescriptorShaderVisibility::Amplification => unsafe {
-            encoder.setObjectBytes_length_atIndex(bytes, length, i);
-        },
-        DescriptorShaderVisibility::Mesh => unsafe {
-            encoder.setMeshBytes_length_atIndex(bytes, length, i);
-        },
-        DescriptorShaderVisibility::Compute => unreachable!(),
-        DescriptorShaderVisibility::Hull => unimplemented!(),
-        DescriptorShaderVisibility::Domain => unimplemented!(),
-        DescriptorShaderVisibility::Geometry => unimplemented!(),
-    }
-}

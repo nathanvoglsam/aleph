@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, Weak};
 
 use aleph_gpu_allocator::GpuAllocator;
@@ -38,7 +39,8 @@ use objc2::runtime::ProtocolObject;
 use objc2_metal::*;
 
 use crate::context::Context;
-use crate::device::Device;
+use crate::device::{CommandListPool, Device};
+use crate::internal::image_view_pool::ShardedImageViewPool;
 use crate::queue::Queue;
 use crate::surface::Surface;
 
@@ -90,7 +92,7 @@ impl IAdapter for Adapter {
                 }
             }
 
-            Arc::new_cyclic(move |v| {
+            let out: Arc<dyn IDevice> = Arc::new_cyclic(move |v| {
                 let mut device = Device {
                     this: v.clone(),
                     _adapter: self.this.upgrade().unwrap(),
@@ -101,6 +103,8 @@ impl IAdapter for Adapter {
                     general_queue: None,
                     compute_queue: None,
                     transfer_queue: None,
+                    command_list_pool: CommandListPool::new(),
+                    image_view_pools: ShardedImageViewPool::new(self.objects.device.clone()),
                     object_counter: ObjectCounter::new(),
                 };
 
