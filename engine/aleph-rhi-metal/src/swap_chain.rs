@@ -147,6 +147,7 @@ impl ISwapChain for SwapChain {
                 id: self.device.object_counter.next_texture(),
                 views: Default::default(),
                 objects: TextureObjects { texture },
+                allocation: None,
                 rtvs: Default::default(),
                 dsvs: Default::default(),
                 image_views: Mutex::new(Blink::new_in(BlinkAlloc::new_in(RhiSystem::default()))),

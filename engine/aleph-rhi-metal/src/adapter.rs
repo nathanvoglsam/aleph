@@ -30,6 +30,7 @@
 use std::any::TypeId;
 use std::sync::{Arc, Weak};
 
+use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use objc2::rc::{Retained, autoreleasepool};
@@ -96,18 +97,23 @@ impl IAdapter for Adapter {
                     context: self.context.clone(),
                     device: self.objects.device.clone(),
                     listener: MTLSharedEventListener::new(),
+                    allocator: None,
                     general_queue: None,
                     compute_queue: None,
                     transfer_queue: None,
                     object_counter: ObjectCounter::new(),
                 };
 
+                let allocator = ManuallyDrop::new(GpuAllocator::new(&device));
+                device.allocator = Some(allocator);
+
                 Self::build_queue_objects(&mut device);
 
                 device
-            })
+            });
+            Ok(out)
         });
-        Ok(device)
+        device
     }
 }
 

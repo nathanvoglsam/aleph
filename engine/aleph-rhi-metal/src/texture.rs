@@ -32,6 +32,7 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 
 use aleph_alloc::BHashMap;
+use aleph_gpu_allocator::{AllocationDesc, GpuAllocation, MemoryLocation};
 use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiSystem;
@@ -52,6 +53,7 @@ pub struct Texture {
     pub(crate) id: NonZeroU64,
     pub(crate) objects: TextureObjects,
     pub(crate) views: Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
+    pub(crate) allocation: Option<GpuAllocation>,
     pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
     pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
     pub(crate) image_views: Mutex<Blink<BlinkAlloc<RhiSystem>>>,
@@ -89,9 +91,19 @@ impl Texture {
             mtl_desc.setSampleCount(desc.sample_count as usize);
         }
 
-        let texture = match device.device.newTextureWithDescriptor(&mtl_desc) {
-            Some(v) => v,
-            None => return Err(TextureCreateError::Platform),
+        let alloc_info = AllocationDesc {
+            location: MemoryLocation::GpuLocal,
+            strategy: Default::default(),
+            desc: mtl_desc,
+        };
+
+        let (allocation, _metadata, texture) = unsafe {
+            device
+                .allocator
+                .as_ref()
+                .unwrap_unchecked()
+                .allocate_texture(device, &alloc_info)
+                .ok_or(TextureCreateError::OutOfMemory)?
         };
 
         if let Some(name) = desc.name
@@ -106,6 +118,7 @@ impl Texture {
             id: device.object_counter.next_texture(),
             views: Default::default(),
             objects: TextureObjects { texture },
+            allocation: Some(allocation),
             rtvs: Default::default(),
             dsvs: Default::default(),
             image_views: Mutex::new(Blink::new_in(BlinkAlloc::new_in(RhiSystem::default()))),
@@ -221,6 +234,20 @@ impl Texture {
         };
 
         Ok(view)
+    }
+}
+
+impl Drop for Texture {
+    fn drop(&mut self) {
+        unsafe {
+            if let Some(allocation) = self.allocation.take() {
+                self._device
+                    .allocator
+                    .as_ref()
+                    .unwrap_unchecked()
+                    .free_allocation(self._device.as_ref(), allocation);
+            }
+        }
     }
 }
 

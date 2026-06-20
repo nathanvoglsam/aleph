@@ -32,6 +32,7 @@ use std::ptr::NonNull;
 use std::sync::{Arc, Weak};
 use std::time::Duration;
 
+use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
@@ -54,6 +55,7 @@ use crate::descriptor_arena::{DescriptorArenaHeap, DescriptorArenaLinear};
 use crate::descriptor_pool::DescriptorPool;
 use crate::fence::Fence;
 use crate::internal::image_view::ImageViewObject;
+use crate::internal::allocator_bridge::MetalAllocatorBridge;
 use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::unwrap;
 use crate::parameter_block_layout::ParameterBlockLayout;
@@ -68,6 +70,7 @@ pub struct Device {
     pub(crate) _adapter: Arc<Adapter>,
     pub(crate) device: Retained<ProtocolObject<dyn MTLDevice>>,
     pub(crate) listener: Retained<MTLSharedEventListener>,
+    pub(crate) allocator: Option<ManuallyDrop<GpuAllocator<MetalAllocatorBridge>>>,
     pub(crate) general_queue: Option<Arc<Queue>>,
     pub(crate) compute_queue: Option<Arc<Queue>>,
     pub(crate) transfer_queue: Option<Arc<Queue>>,

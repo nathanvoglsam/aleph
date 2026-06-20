@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
-use std::num::NonZeroU64;
+use std::num::{NonZero, NonZeroU64};
 use std::sync::Arc;
 
-use aleph_object_system::{Object, unsafe_impl_iobject};
+use aleph_gpu_allocator::{AllocationDesc, GpuAllocation, MemoryLocation};
+use aleph_object_system::{ArcObject, Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
 use objc2::rc::Retained;
@@ -44,6 +45,8 @@ pub struct Buffer {
     pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) objects: BufferObjects,
+    pub(crate) allocation: Option<GpuAllocation>,
+    pub(crate) gpu_addr: NonZero<u64>,
     pub(crate) desc: OwnedBufferDesc,
 }
 
@@ -58,25 +61,28 @@ impl Buffer {
 }
 
 impl Buffer {
-    pub(crate) fn create(
+    pub(crate) fn new(
         device: &Device,
         desc: &BufferDesc,
-    ) -> Result<BufferHandle, BufferCreateError> {
-        let length = desc.size as usize;
+    ) -> Result<Arc<Object<Self>>, BufferCreateError> {
+        let memory_location = match desc.cpu_access {
+            CpuAccessMode::None => MemoryLocation::GpuLocal,
+            CpuAccessMode::Read => MemoryLocation::GpuToCpu,
+            CpuAccessMode::Write => MemoryLocation::CpuToGpu,
+        };
+        let alloc_info = AllocationDesc {
+            location: memory_location,
+            strategy: Default::default(),
+            desc: desc.size as usize,
+        };
 
-        let mut options = MTLResourceOptions::HazardTrackingModeTracked;
-        match desc.cpu_access {
-            CpuAccessMode::None => options |= MTLResourceOptions::StorageModePrivate,
-            CpuAccessMode::Read => options |= MTLResourceOptions::StorageModeShared,
-            CpuAccessMode::Write => {
-                options |= MTLResourceOptions::StorageModeShared
-                    | MTLResourceOptions::CPUCacheModeWriteCombined
-            }
-        }
-
-        let buffer = match device.device.newBufferWithLength_options(length, options) {
-            Some(v) => v,
-            None => return Err(BufferCreateError::Platform),
+        let (allocation, _, buffer) = unsafe {
+            device
+                .allocator
+                .as_ref()
+                .unwrap_unchecked()
+                .allocate_buffer(device, &alloc_info)
+                .ok_or(BufferCreateError::OutOfMemory)?
         };
 
         if let Some(name) = desc.name
@@ -86,13 +92,27 @@ impl Buffer {
             buffer.setLabel(Some(&mtl_name));
         }
 
+        let gpu_addr = buffer.gpuAddress();
+        let gpu_addr = NonZero::new(gpu_addr).ok_or(BufferCreateError::Platform)?;
+
         let out = Buffer {
             _device: device.this.upgrade().unwrap(),
             id: device.object_counter.next_buffer(),
-            desc: OwnedBufferDesc::new(desc.clone()),
             objects: BufferObjects { buffer },
+            allocation: Some(allocation),
+            gpu_addr,
+            desc: OwnedBufferDesc::new(desc.clone()),
         };
-        let out = Object::new_arc_opaque(out);
+        let out = Object::new_arc(out);
+        Ok(out)
+    }
+
+    pub(crate) fn create(
+        device: &Device,
+        desc: &BufferDesc,
+    ) -> Result<BufferHandle, BufferCreateError> {
+        let out = Self::new(device, desc)?;
+        let out = ArcObject::from_object(out);
         unsafe { Ok(BufferHandle::new(out)) }
     }
 
@@ -123,6 +143,18 @@ impl Buffer {
 
     pub(crate) fn invalidate_buffer_range(&self, _offset: u64, _len: u64) {
         // Intentional no-op
+    }
+}
+
+impl Drop for Buffer {
+    fn drop(&mut self) {
+        unsafe {
+            self._device
+                .allocator
+                .as_ref()
+                .unwrap_unchecked()
+                .free_allocation(self._device.as_ref(), self.allocation.take().unwrap());
+        }
     }
 }
 

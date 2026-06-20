@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+pub mod allocator_bridge;
 pub mod conv;
 pub mod image_view;
 pub mod image_view_pool;
