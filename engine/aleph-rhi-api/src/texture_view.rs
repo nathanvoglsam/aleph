@@ -81,6 +81,11 @@ impl ImageView {
     pub unsafe fn from_raw_int(v: u64) -> Option<Self> {
         NonNull::new(v as *mut ()).map(Self)
     }
+
+    /// The inverse of [`ImageView::from_raw_int`].
+    pub fn into_raw_int(self) -> u64 {
+        self.0.as_ptr() as usize as u64
+    }
 }
 
 unsafe impl Send for ImageView {}
