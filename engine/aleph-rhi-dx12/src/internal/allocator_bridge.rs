@@ -132,6 +132,7 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
     unsafe fn destroy_buffer_object(
         _bridge: &Self::BridgeHandle<'_>,
         _allocator_info: &Self::AllocatorInfo,
+        _pool_info: &Self::PoolInfo,
         buffer: Self::BufferHandle,
     ) {
         drop(buffer);
@@ -207,6 +208,7 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
     unsafe fn destroy_texture_object(
         _bridge: &Self::BridgeHandle<'_>,
         _allocator_info: &Self::AllocatorInfo,
+        _pool_info: &Self::PoolInfo,
         texture: Self::TextureHandle,
     ) {
         drop(texture);
@@ -284,6 +286,7 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
     unsafe fn destroy_block(
         _bridge: &Self::BridgeHandle<'_>,
         _allocator_info: &Self::AllocatorInfo,
+        _pool_info: &Self::PoolInfo,
         block: &mut Self::BlockInfo,
     ) {
         let _sink = block.heap.take();
@@ -292,6 +295,7 @@ impl<'a> IApiBridge for D3D12AllocatorBridge {
     unsafe fn destroy_dedicated_block(
         _bridge: &Self::BridgeHandle<'_>,
         _allocator_info: &Self::AllocatorInfo,
+        _pool_info: &Self::PoolInfo,
         _block: &mut Self::DedicatedBlockInfo,
     ) {
         // Intentional no-op

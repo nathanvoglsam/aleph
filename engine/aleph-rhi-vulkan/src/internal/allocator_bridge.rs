@@ -200,6 +200,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     unsafe fn destroy_buffer_object(
         bridge: &Self::BridgeHandle<'_>,
         allocator_info: &Self::AllocatorInfo,
+        _pool_info: &Self::PoolInfo,
         buffer: Self::BufferHandle,
     ) {
         unsafe {
@@ -286,6 +287,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     unsafe fn destroy_texture_object(
         bridge: &Self::BridgeHandle<'_>,
         allocator_info: &Self::AllocatorInfo,
+        _pool_info: &Self::PoolInfo,
         texture: Self::TextureHandle,
     ) {
         unsafe {
@@ -378,6 +380,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     unsafe fn destroy_block(
         bridge: &Self::BridgeHandle<'_>,
         allocator_info: &Self::AllocatorInfo,
+        _pool_info: &Self::PoolInfo,
         block: &mut Self::BlockInfo,
     ) {
         unsafe {
@@ -391,9 +394,10 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     unsafe fn destroy_dedicated_block(
         bridge: &Self::BridgeHandle<'_>,
         allocator_info: &Self::AllocatorInfo,
+        pool_info: &Self::PoolInfo,
         block: &mut Self::DedicatedBlockInfo,
     ) {
-        unsafe { Self::destroy_block(bridge, allocator_info, block) }
+        unsafe { Self::destroy_block(bridge, allocator_info, pool_info, block) }
     }
 
     fn get_requirements_for_buffer(

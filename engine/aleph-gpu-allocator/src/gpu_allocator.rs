@@ -150,12 +150,12 @@ impl<T: IApiBridge> GpuAllocator<T> {
         self.memory_pools.iter_mut().for_each(|pool| {
             let blocks = &mut pool.pool_blocks.get_mut().memory_blocks;
             blocks.iter_mut().for_each(|block| unsafe {
-                T::destroy_block(bridge, &self.info, &mut block.info);
+                T::destroy_block(bridge, &self.info, &pool.info, &mut block.info);
             });
 
             let blocks = &mut pool.dedicated_blocks.get_mut().memory_blocks;
             blocks.iter_mut().for_each(|block| unsafe {
-                T::destroy_dedicated_block(bridge, &self.info, block);
+                T::destroy_dedicated_block(bridge, &self.info, &pool.info, block);
             });
         });
     }
@@ -176,6 +176,17 @@ impl<T: IApiBridge> GpuAllocator<T> {
             out.tally_pool_stats(&pool.stats);
         }
         out
+    }
+
+    /// Get a reference to the allocator level platform data of this allocator.
+    pub const fn info(&self) -> &T::AllocatorInfo {
+        &self.info
+    }
+
+    /// Get access to the internal list of memory pools. Useful for querying information about them
+    /// or accessing some of the platform specific internals.
+    pub fn pools(&self) -> &[MemoryPool<T>] {
+        &self.memory_pools
     }
 }
 
@@ -246,6 +257,11 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
         }
     }
 
+    /// Get a reference to the pool level platform data on this pool.
+    pub const fn info(&self) -> &T::PoolInfo {
+        &self.info
+    }
+
     pub(crate) unsafe fn allocate_buffer(
         &self,
         bridge: &T::BridgeHandle<'_>,
@@ -308,8 +324,8 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
                     // Unlock the mutex as we don't need to hold it while we do cleanup on allocation
                     // failure
                     drop(dedicated_blocks);
-                    unsafe { T::destroy_buffer_object(bridge, info, resource) };
-                    unsafe { T::destroy_dedicated_block(bridge, info, &mut block) };
+                    unsafe { T::destroy_buffer_object(bridge, info, &self.info, resource) };
+                    unsafe { T::destroy_dedicated_block(bridge, info, &self.info, &mut block) };
                     return None;
                 }
             }
@@ -410,8 +426,8 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
                     // Unlock the mutex as we don't need to hold it while we do cleanup on allocation
                     // failure
                     drop(dedicated_blocks);
-                    unsafe { T::destroy_texture_object(bridge, info, resource) };
-                    unsafe { T::destroy_dedicated_block(bridge, info, &mut block) };
+                    unsafe { T::destroy_texture_object(bridge, info, &self.info, resource) };
+                    unsafe { T::destroy_dedicated_block(bridge, info, &self.info, &mut block) };
                     return None;
                 }
             }
@@ -571,7 +587,7 @@ impl<T: IApiBridge + ?Sized> MemoryPool<T> {
 
             let block = &mut dedicated_blocks.memory_blocks[allocation.block_index as usize];
             unsafe {
-                T::destroy_dedicated_block(bridge, info, block);
+                T::destroy_dedicated_block(bridge, info, &self.info, block);
             }
         } else {
             let pool_blocks = &mut self.pool_blocks.lock();

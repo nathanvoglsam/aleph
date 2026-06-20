@@ -145,6 +145,7 @@ pub trait IApiBridge {
     unsafe fn destroy_buffer_object(
         bridge: &Self::BridgeHandle<'_>,
         allocator_info: &Self::AllocatorInfo,
+        pool_info: &Self::PoolInfo,
         buffer: Self::BufferHandle,
     );
     unsafe fn create_dedicated_buffer_object(
@@ -167,6 +168,7 @@ pub trait IApiBridge {
     unsafe fn destroy_texture_object(
         bridge: &Self::BridgeHandle<'_>,
         allocator_info: &Self::AllocatorInfo,
+        pool_info: &Self::PoolInfo,
         texture: Self::TextureHandle,
     );
     unsafe fn create_dedicated_texture_object(
@@ -187,11 +189,13 @@ pub trait IApiBridge {
     unsafe fn destroy_block(
         bridge: &Self::BridgeHandle<'_>,
         allocator_info: &Self::AllocatorInfo,
+        pool_info: &Self::PoolInfo,
         block: &mut Self::BlockInfo,
     );
     unsafe fn destroy_dedicated_block(
         bridge: &Self::BridgeHandle<'_>,
         allocator_info: &Self::AllocatorInfo,
+        pool_info: &Self::PoolInfo,
         block: &mut Self::DedicatedBlockInfo,
     );
 
