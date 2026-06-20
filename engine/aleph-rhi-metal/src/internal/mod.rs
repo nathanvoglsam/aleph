@@ -35,3 +35,4 @@ pub mod memory_block;
 pub mod parameter_block;
 pub mod residency_set;
 pub mod unwrap;
+pub mod upload_bump_allocator;
