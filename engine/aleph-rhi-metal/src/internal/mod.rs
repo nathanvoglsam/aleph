@@ -29,6 +29,7 @@
 
 pub mod conv;
 pub mod image_view;
+pub mod image_view_pool;
 pub mod memory_block;
 pub mod parameter_block;
 pub mod unwrap;
