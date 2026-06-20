@@ -27,11 +27,14 @@
 // SOFTWARE.
 //
 
+use std::num::NonZero;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
+use aleph_gpu_allocator::{AllocationDesc, GpuAllocation, MemoryLocation};
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2_metal::{MTLBuffer, MTLDevice, MTLResourceOptions};
+use objc2_metal::MTLBuffer;
 
 use crate::device::Device;
 
@@ -41,36 +44,54 @@ use crate::device::Device;
 /// The primary client of this API are descriptor pools/arenas. They sub-allocate argument buffers
 /// from a memory block.
 pub struct MemoryBlock {
-    /// The handle to the buffer we're wrapping over.
-    pub buffer: Retained<ProtocolObject<dyn MTLBuffer>>,
-
-    /// Size, in bytes, of the buffer object.
+    pub device: Arc<Device>,
+    pub _buffer: Retained<ProtocolObject<dyn MTLBuffer>>,
+    pub allocation: Option<GpuAllocation>,
     pub len: usize,
-
-    /// The CPU handle to the start of the memory block
-    pub cpu_base: NonNull<u8>,
-    // /// The GPU handle to the start of the memory block
-    // pub gpu_base: NonZero<u64>,
+    pub cpu_addr: NonNull<u8>,
+    pub gpu_addr: NonZero<u64>,
 }
 
 unsafe impl Send for MemoryBlock {}
 
 impl MemoryBlock {
     pub fn new(device: &Device, len: usize) -> Option<Self> {
-        let options = MTLResourceOptions::HazardTrackingModeTracked
-            | MTLResourceOptions::StorageModeShared
-            | MTLResourceOptions::CPUCacheModeWriteCombined;
+        let alloc_info = AllocationDesc {
+            location: MemoryLocation::CpuToGpu,
+            strategy: Default::default(),
+            desc: len,
+        };
+        let (allocation, _, buffer) = unsafe {
+            device
+                .allocator
+                .as_ref()
+                .unwrap_unchecked()
+                .allocate_buffer(device, &alloc_info)?
+        };
 
-        let buffer = device.device.newBufferWithLength_options(len, options)?;
-
-        let cpu_base = buffer.contents().cast();
-        // let gpu_base = NonZero::new(buffer.gpuAddress()).unwrap();
+        let cpu_addr = buffer.contents().cast();
+        let gpu_addr = buffer.gpuAddress();
+        let gpu_addr = NonZero::new(gpu_addr)?;
 
         Some(Self {
-            buffer,
+            device: device.this.upgrade().unwrap(),
+            _buffer: buffer,
+            allocation: Some(allocation),
             len,
-            cpu_base,
-            // gpu_base,
+            cpu_addr,
+            gpu_addr,
         })
+    }
+}
+
+impl Drop for MemoryBlock {
+    fn drop(&mut self) {
+        unsafe {
+            self.device
+                .allocator
+                .as_ref()
+                .unwrap_unchecked()
+                .free_allocation(&self.device, self.allocation.take().unwrap());
+        }
     }
 }
