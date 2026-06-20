@@ -462,3 +462,73 @@ pub const fn vertex_input_rate_to_mtl(v: VertexInputRate) -> MTLVertexStepFuncti
         VertexInputRate::PerInstance => MTLVertexStepFunction::PerInstance,
     }
 }
+
+macro_rules! translate_flag_onto {
+    ($src:ident, $dst:ident, $src_flag:expr, $dst_flag:expr) => {
+        #[allow(clippy::assign_op_pattern)]
+        if ($src.contains($src_flag)) {
+            $dst = $dst.union($dst_flag);
+        }
+    };
+}
+
+pub const fn barrier_sync_to_mtl(sync: BarrierSync) -> MTLStages {
+    const ALL_GRAPHICS: MTLStages = MTLStages::Vertex
+        .union(MTLStages::Fragment)
+        .union(MTLStages::Tile)
+        .union(MTLStages::Object)
+        .union(MTLStages::Mesh);
+
+    let mut out = MTLStages::empty();
+    translate_flag_onto!(sync, out, BarrierSync::ALL, MTLStages::All);
+    translate_flag_onto!(sync, out, BarrierSync::DRAW, ALL_GRAPHICS);
+    translate_flag_onto!(sync, out, BarrierSync::INDEX_INPUT, MTLStages::Vertex);
+    translate_flag_onto!(sync, out, BarrierSync::VERTEX_SHADING, MTLStages::Vertex);
+    translate_flag_onto!(sync, out, BarrierSync::PIXEL_SHADING, MTLStages::Fragment);
+    translate_flag_onto!(sync, out, BarrierSync::DEPTH_STENCIL, MTLStages::Fragment);
+    translate_flag_onto!(sync, out, BarrierSync::RENDER_TARGET, MTLStages::Fragment);
+    translate_flag_onto!(sync, out, BarrierSync::COMPUTE_SHADING, MTLStages::Dispatch);
+    translate_flag_onto!(sync, out, BarrierSync::RAYTRACING, MTLStages::Dispatch);
+    translate_flag_onto!(sync, out, BarrierSync::COPY, MTLStages::Blit);
+    translate_flag_onto!(sync, out, BarrierSync::RESOLVE, ALL_GRAPHICS);
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::EXECUTE_INDIRECT,
+        MTLStages::All // TODO: what do we even sync with here?
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::CLEAR_UNORDERED_ACCESS_VIEW,
+        MTLStages::Dispatch
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE,
+        MTLStages::AccelerationStructure
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::COPY_RAYTRACING_ACCELERATION_STRUCTURE,
+        MTLStages::AccelerationStructure
+    );
+
+    out
+}
+
+pub const fn descriptor_visibility_to_mtl(v: DescriptorShaderVisibility) -> MTLRenderStages {
+    match v {
+        DescriptorShaderVisibility::All => MTLRenderStages::all(),
+        DescriptorShaderVisibility::Compute => MTLRenderStages::empty(),
+        DescriptorShaderVisibility::Vertex => MTLRenderStages::Vertex,
+        DescriptorShaderVisibility::Hull => MTLRenderStages::empty(),
+        DescriptorShaderVisibility::Domain => MTLRenderStages::empty(),
+        DescriptorShaderVisibility::Geometry => MTLRenderStages::empty(),
+        DescriptorShaderVisibility::Fragment => MTLRenderStages::Fragment,
+        DescriptorShaderVisibility::Amplification => MTLRenderStages::Object,
+        DescriptorShaderVisibility::Mesh => MTLRenderStages::Mesh,
+    }
+}
