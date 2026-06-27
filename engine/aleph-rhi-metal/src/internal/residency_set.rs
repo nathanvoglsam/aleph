@@ -35,7 +35,7 @@ use objc2_metal::*;
 use crate::device::Device;
 
 /// A simple wrapper over a [`MTLResidencySet`].
-/// 
+///
 /// Handles adding/removing allocations and uses an internal dirty flag to skip calling 'commit' if
 /// no changes have been made to the set since the last call.
 pub struct ResidencySet {
