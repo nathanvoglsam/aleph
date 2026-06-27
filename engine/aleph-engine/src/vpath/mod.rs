@@ -85,6 +85,9 @@ impl VPathBuf {
     /// Consider using [`VPath::join`] if you need a new `PathBuf` instead of
     /// using this function on a cloned `PathBuf`.
     ///
+    /// Redundant separators in `path` will be stripped. Redundant separators in `self` will remain
+    /// unchanged.
+    ///
     /// # Examples
     ///
     /// Pushing a relative path extends the existing path:
@@ -113,23 +116,36 @@ impl VPathBuf {
     /// Internal implementation of [`VPath::push`]. Separated from the generic function exposed
     /// publicly so we monomorph less code.
     fn __push(&mut self, path: &VPath) {
+        // If the path is absolute we will replace the path in 'self' with the input 'path'. We do
+        // this by just clearing the path and running the component parsing logic as normal.
+        //
+        // This makes sure we reduce/simplify the input path in all cases.
         if path.is_absolute() {
             // If the input path is absolute then we just replace the existing path string in
             // self.
             self.0.clear();
-            self.0.push_str(path.to_str());
-        } else {
-            // Otherwise we need to join the paths somehow...
+            self.0.push('/');
+        }
 
-            // If the existing path in 'self' doesn't have a trailing separator already we need
-            // to add one.
-            match self.0.as_bytes().last() {
-                Some(&SEPARATOR_BYTE) => {}
-                _ => self.0.push(SEPARATOR),
+        // If the existing path in 'self' doesn't have a trailing separator already we need
+        // to add one.
+        match self.0.as_bytes().last() {
+            Some(&SEPARATOR_BYTE) => {}
+            _ => self.0.push(SEPARATOR),
+        }
+
+        let mut components = path.components().peekable();
+        loop {
+            match components.next() {
+                None => break,
+                Some(Component::Root) => unreachable!(),
+                Some(Component::Segment(v)) => {
+                    self.0.push_str(v);
+                    if components.peek().is_some() {
+                        self.0.push(SEPARATOR);
+                    }
+                }
             }
-
-            // And push the input string
-            self.0.push_str(path.to_str());
         }
     }
 

@@ -47,3 +47,4 @@ pub mod engine;
 pub mod plugin_registry;
 pub mod render;
 pub mod vpath;
+pub mod vfs;
