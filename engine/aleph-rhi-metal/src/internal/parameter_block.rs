@@ -36,13 +36,10 @@ use crate::parameter_block_layout::ParameterBlockLayout;
 
 /// This internal struct is a critical piece of the implementation of the parameter block API. The
 /// RHI API specifies [`ParameterBlockHandle`] as an opaque handle to a 'descriptor set object'.
-/// This  *is* that object, for the Metal implementation.
+/// This *is* that object, for the Metal implementation.
 ///
 /// This tracks the necessary state to write descriptors and bind the set to a slot in the pipeline.
 pub struct ParameterBlock {
-    /// The descriptor set layout of this block
-    pub _layout: NonNull<ParameterBlockLayout>,
-
     /// The allocation object that is associated with our argument buffer sub-allocation. This may
     /// be null/invalid if the pool/arena the block was allocated from does not use an allocation
     /// scheme that requires an offset allocator

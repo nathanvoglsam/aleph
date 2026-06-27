@@ -164,7 +164,6 @@ unsafe impl IBlockFactory for LinearBlockFactory {
             self.next_resource_index += num_arguments;
 
             let new = ParameterBlock {
-                _layout: NonNull::from(block_layout),
                 resource_allocation: Default::default(), // Never used here
                 cpu_addr: Some(cpu_addr.cast()),
                 gpu_addr: Some(gpu_addr),
@@ -323,7 +322,6 @@ unsafe impl IBlockFactory for HeapBlockFactory {
             let gpu_addr = memory_block.gpu_addr.saturating_add(offset as u64);
 
             let new = ParameterBlock {
-                _layout: NonNull::from(block_layout),
                 resource_allocation: alloc,
                 cpu_addr: Some(cpu_addr.cast()),
                 gpu_addr: Some(gpu_addr),

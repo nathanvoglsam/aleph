@@ -40,16 +40,16 @@ use crate::internal::memory_block::MemoryBlock;
 const BLOCK_SIZE: usize = 1024 * 32;
 
 /// A simple bump allocator that manages a growable arena.
-/// 
+///
 /// This is intended to be used for managing upload memory for push constants and push parameters.
 /// The command encoder needs to be able to allocate one-time-use upload memory.
-/// 
+///
 /// This API is intended for serving allocations substantially smaller than the block size. The
 /// implementation will waste some memory as internal fragmentation if the active block doesn't have
 /// enough space to serve an allocation. Because a new block must be made to serve the request some
 /// memory will be left unused in most blocks. The smaller the size of your allocations, the less
 /// memory you will waste.
-/// 
+///
 /// Allocates new blocks as needed to serve allocations. Grows the internal block size
 /// geometrically.
 pub struct UploadBumpAllocator {
@@ -60,7 +60,7 @@ pub struct UploadBumpAllocator {
 
 impl UploadBumpAllocator {
     /// Constructs a new empty allocator.
-    /// 
+    ///
     /// Eagerly allocates the first active block.
     pub fn new(device: &Device) -> Option<Self> {
         let out = Self {
@@ -73,9 +73,9 @@ impl UploadBumpAllocator {
 
     /// Allocate 'len' bytes out of this allocator, and return a (cpu addr, gpu addr) pair. The
     /// lifetime of the memory is tied to the lifetime of the allocator it comes from.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// - If len > BLOCK_SIZE. Allocations can't straddle blocks, so the largest single allocation
     ///   we can serve is BLOCK_SIZE.
     pub fn allocate(&mut self, device: &Device, len: usize) -> (NonNull<u8>, NonZero<u64>) {
