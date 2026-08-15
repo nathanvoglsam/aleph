@@ -52,4 +52,3 @@ aleph-nstr = { workspace = true }
 log = { workspace = true }
 parking_lot = { workspace = true }
 raw-window-handle = { workspace = true }
-crossbeam = { workspace = true }
