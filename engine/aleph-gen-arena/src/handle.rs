@@ -28,20 +28,20 @@
 //
 
 use std::marker::PhantomData;
-use std::num::NonZeroU64;
+use std::num::NonZero;
 
 /// A generic generational handle that pairs a u32 index with a u32 generation.
 ///
 /// This is expected to be new-typed and should not be exported from the crate directly.
 ///
-/// This handle type packs a generation and index into the high/low halves of a [`NonZeroU64`]. We
+/// This handle type packs a generation and index into the high/low halves of a [`NonZero`]. We
 /// exploit the fact that a generation with value 0 is not valid to access (dead generation) so we
 /// can carve a niche from a completely zeroed handle.
 ///
 /// This means `Option<RawHandle>` and `RawHandle` are the same size!
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 #[repr(transparent)]
-pub struct RawHandle(NonZeroU64);
+pub struct RawHandle(NonZero<u64>);
 
 impl RawHandle {
     /// Creates a Handle from the individual fields.
@@ -59,7 +59,7 @@ impl RawHandle {
             let generation: u64 = (v.generation.0 as u64) << 32;
             let resource: u64 = v.slot_index as u64;
             let word = generation | resource;
-            match NonZeroU64::new(word) {
+            match NonZero::new(word) {
                 None => None,
                 Some(v) => Some(Self(v)),
             }
@@ -93,6 +93,16 @@ impl RawHandle {
             generation: Generation(generation as u32),
             slot_index: slot_index as u32,
         }
+    }
+
+    /// Creates a handle from a raw integer value.
+    pub const fn from_int(v: NonZero<u64>) -> Self {
+        Self(v)
+    }
+
+    /// Get self as the inner integer value.
+    pub const fn into_int(self) -> NonZero<u64> {
+        self.0
     }
 
     /// Utility for implementing debug on newtype wrappers using the newtype's name
