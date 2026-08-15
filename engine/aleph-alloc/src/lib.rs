@@ -37,9 +37,6 @@ pub extern crate uuid;
 pub extern crate ctor;
 
 #[doc(hidden)]
-pub extern crate crossbeam;
-
-#[doc(hidden)]
 pub extern crate const_format;
 
 pub mod allocator_global_handle;

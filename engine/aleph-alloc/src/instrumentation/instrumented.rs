@@ -62,9 +62,7 @@ impl<T: IAllocationCategory, A: Allocator> Instrumented<T, A> {
 unsafe impl<T: IAllocationCategory, A: AllocatorGlobalHandle> AllocatorGlobalHandle
     for Instrumented<T, A>
 {
-    fn make_handle() -> Self {
-        Self::new(<A as AllocatorGlobalHandle>::make_handle())
-    }
+    const HANDLE: Self = Self::new(<A as AllocatorGlobalHandle>::HANDLE);
 }
 
 impl<T: IAllocationCategory, A: Allocator> From<A> for Instrumented<T, A> {

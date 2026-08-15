@@ -51,6 +51,7 @@ pub unsafe trait IAllocationCategory: Sized {
     fn info() -> &'static CategoryInfo;
 
     /// Shortcut to [`with_category`].
+    #[inline(always)]
     fn with<O>(f: impl FnOnce() -> O) -> O {
         with_category::<Self, O>(f)
     }

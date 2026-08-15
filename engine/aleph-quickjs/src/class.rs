@@ -262,7 +262,7 @@ unsafe impl<T: Sized + 'static, A: AllocatorGlobalHandle + 'static> ClassOpaque 
     }
 
     unsafe fn from_raw(ptr: NonNull<c_void>) -> Self {
-        unsafe { BBox::<T, A>::from_raw_in(ptr.cast().as_ptr(), A::make_handle()) }
+        unsafe { BBox::<T, A>::from_raw_in(ptr.cast().as_ptr(), A::HANDLE) }
     }
 }
 

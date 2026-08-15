@@ -28,8 +28,8 @@
 //
 
 use aleph_alloc::BVec;
+use aleph_alloc::alloc::{Allocator, Global};
 use aleph_alloc::allocator_global_handle::AllocatorGlobalHandle;
-use allocator_api2::alloc::{Allocator, Global};
 
 use crate::handle::{HandleType, RawHandle};
 use crate::handle_pool::HandlePool;
@@ -82,9 +82,9 @@ impl<T, H: HandleType, A: AllocatorGlobalHandle> GenArena<T, H, A> {
     /// consumption of different object pools.
     pub fn new_in() -> Self {
         Self {
-            objects: BVec::new_in(A::make_handle()),
-            back_references: BVec::new_in(A::make_handle()),
-            handles: HandlePool::new_in(A::make_handle()),
+            objects: BVec::new_in(A::HANDLE),
+            back_references: BVec::new_in(A::HANDLE),
+            handles: HandlePool::new_in(A::HANDLE),
         }
     }
 }

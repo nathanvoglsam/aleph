@@ -62,9 +62,7 @@ impl<A: Allocator> Tagged<A> {
 }
 
 unsafe impl<A: AllocatorGlobalHandle> AllocatorGlobalHandle for Tagged<A> {
-    fn make_handle() -> Self {
-        Self::new(<A as AllocatorGlobalHandle>::make_handle())
-    }
+    const HANDLE: Self = Self::new(<A as AllocatorGlobalHandle>::HANDLE);
 }
 
 impl<A: Allocator> From<A> for Tagged<A> {

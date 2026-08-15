@@ -41,12 +41,9 @@ use allocator_api2::alloc::Allocator;
 /// [`System`] allocator, which is a zero sized struct that simply defers to the system's global
 /// allocator. Any [`System`] instance is the same, so this trait is correct to implement on it.
 pub unsafe trait AllocatorGlobalHandle: Allocator {
-    /// Constructs a new handle
-    fn make_handle() -> Self;
+    const HANDLE: Self;
 }
 
 unsafe impl AllocatorGlobalHandle for System {
-    fn make_handle() -> Self {
-        Self
-    }
+    const HANDLE: Self = Self;
 }
