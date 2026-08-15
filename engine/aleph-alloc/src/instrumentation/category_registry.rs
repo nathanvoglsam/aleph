@@ -207,7 +207,7 @@ macro_rules! new_alloc_category_inner {
 #[macro_export]
 macro_rules! category_ctor {
     ($t: path, $parent_expr: expr) => {
-        #[$crate::ctor::ctor(crate_path = $crate::ctor)]
+        #[$crate::ctor::ctor(unsafe, crate_path = $crate::ctor)]
         fn __internal_register_t() {
             $crate::instrumentation::register_category(
                 <$t as $crate::instrumentation::IAllocationCategory>::info(),

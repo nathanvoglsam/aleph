@@ -220,7 +220,7 @@ macro_rules! register_component {
 
             #[doc(hidden)]
             const fn __internal_register_component_node_scope() -> bool {
-                #[$crate::ctor::ctor(crate_path = $crate::ctor)]
+                #[$crate::ctor::ctor(unsafe, crate_path = $crate::ctor)]
                 fn internal_register_t() {
                     unsafe {
                         $crate::register_component_type(<$t>::__internal_component_node());
