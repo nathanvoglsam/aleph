@@ -61,15 +61,10 @@ impl HandlePool<Global> {
 
 impl<A: Allocator> HandlePool<A> {
     /// Constructs a new, empty [`HandlePool`].
-    pub fn new_in(a: A) -> Self {
+    pub const fn new_in(a: A) -> Self {
         // Construct the pool storage, with the zeroeth element containing the head of the free list
         // linked list. It's default initialized to empty (by pointing to itself)
-        let mut slots = BVec::with_capacity_in(1, a);
-        slots.push(HandleData {
-            generation: Generation::new_dead(),
-            data: 0,
-        });
-
+        let slots = BVec::new_in(a);
         Self { slots }
     }
 
@@ -229,6 +224,13 @@ impl<A: Allocator> HandlePool<A> {
     pub fn free(&mut self, handle: RawHandle) -> Result<u32, HandleFreeError> {
         let fields = handle.to_fields();
 
+        if self.slots.is_empty() {
+            self.slots.push(HandleData {
+                generation: Generation::new_dead(),
+                data: 0,
+            });
+        }
+
         // The zeroth element is _always_ the head of the free list.
         // We need to store this as we may need it while we have the other slot borrowed.
         let free_list_next = self.slots[0].data;
@@ -275,6 +277,13 @@ impl<A: Allocator> HandlePool<A> {
     /// allocated.
     fn pop_free_list(&mut self) -> u32 {
         let slot_index = {
+            if self.slots.is_empty() {
+                self.slots.push(HandleData {
+                    generation: Generation::new_dead(),
+                    data: 0,
+                });
+            }
+
             // Take an item from the free list
             //
             // When the free list is empty this is the equivalent of the following pseudo snippet:

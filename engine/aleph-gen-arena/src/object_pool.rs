@@ -80,7 +80,7 @@ impl<T, H: HandleType, A: AllocatorGlobalHandle> GenArena<T, H, A> {
     ///
     /// This interface is intended for use with allocator instrumentation to track memory
     /// consumption of different object pools.
-    pub fn new_in() -> Self {
+    pub const fn new_in() -> Self {
         Self {
             objects: BVec::new_in(A::HANDLE),
             back_references: BVec::new_in(A::HANDLE),
