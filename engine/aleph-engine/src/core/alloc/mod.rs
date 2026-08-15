@@ -27,22 +27,8 @@
 // SOFTWARE.
 //
 
-// =================================================================================================
-// Crate Imports
-// =================================================================================================
+/// The root engine allocation category.
+pub struct Engine;
+aleph_alloc::new_alloc_category!(Engine, "019d57fa-2986-7f02-9c68-f51a76f57e6e");
 
-// Re-export useful crates
-pub extern crate aleph_egui as egui;
-pub extern crate aleph_engine_api as api;
-pub extern crate aleph_magnesium as mg;
-pub extern crate aleph_rhi_api as rhi;
-pub extern crate aleph_target as target;
-
-// =================================================================================================
-// Modules
-// =================================================================================================
-
-pub mod core;
-pub mod engine;
-pub mod plugin_registry;
-pub mod render;
+pub type EngineSystem = aleph_alloc::instrumentation::Instrumented<Engine>;

@@ -27,5 +27,46 @@
 // SOFTWARE.
 //
 
-pub mod platform;
-pub mod rhi_load;
+use std::sync::Arc;
+
+use api::label::{Label, make_label};
+use api::platform::IWindow;
+use api::schedule::CoreStage;
+use api::scheduler::Schedule;
+use crossbeam::channel::Sender;
+use mg::renderer::surface_notify::SurfaceNotification;
+
+pub struct SurfaceSenderSystem {
+    window: Arc<dyn IWindow>,
+    sender: Sender<SurfaceNotification>,
+}
+
+impl SurfaceSenderSystem {
+    pub const LABEL: Label = make_label!("render::SurfaceSenderSystem");
+
+    pub fn new(window: Arc<dyn IWindow>, sender: Sender<SurfaceNotification>) -> Self {
+        Self { window, sender }
+    }
+
+    pub fn register(self, schedule: &mut Schedule) {
+        let system = move || {
+            self.run();
+        };
+        schedule.add_exclusive_at_end_system_to_stage(
+            CoreStage::InputCollection.into(),
+            Self::LABEL,
+            system,
+        );
+    }
+
+    pub fn run(&self) {
+        if self.window.resized() {
+            let size = self.window.drawable_size();
+            let size = rhi::Extent2D::new(size.0, size.1);
+            self.sender
+                .try_send(SurfaceNotification::Resized(size))
+                .ok()
+                .unwrap()
+        }
+    }
+}

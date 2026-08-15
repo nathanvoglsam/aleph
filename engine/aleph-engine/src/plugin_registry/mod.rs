@@ -45,8 +45,6 @@ use std::sync::Arc;
 pub use builder::PluginRegistryBuilder;
 
 use crate::api::plugin::{IPlugin, IQuitHandle, IRegistryAccessor};
-use crate::internal::platform::PlatformSDL3;
-use crate::internal::rhi_load::RhiLoad;
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 
 ///
@@ -74,12 +72,6 @@ pub struct PluginRegistry {
 
     /// The core ECS world that constitures the 'game world'
     world: Option<Box<World>>,
-
-    /// The SDL integration object for managing the connection to the SDL library
-    platform: PlatformSDL3,
-
-    /// The RHI integration object
-    rhi: RhiLoad,
 }
 
 impl PluginRegistry {
@@ -107,12 +99,6 @@ impl PluginRegistry {
             resources: self.resources.take().unwrap(),
             world: self.world.take().unwrap(),
         };
-
-        // Init the SDL2 integration
-        self.platform.on_init(&mut accessor);
-
-        // Init the RHI integration
-        self.rhi.on_init(&mut accessor);
 
         self.init_order.iter().cloned().for_each(|index| {
             // Take the set out of the list
@@ -291,8 +277,6 @@ impl Drop for PluginRegistry {
                 plugin.v.on_shutdown();
             }
         });
-
-        self.platform.on_shutdown();
 
         // Destroy the plugins
         drop(plugins);

@@ -36,21 +36,27 @@ mod mouse;
 mod sdl_alloc_wrapper;
 mod window;
 
-use std::any::TypeId;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::ops::Deref;
+use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use aleph_alloc::instrumentation::Instrumented;
+use aleph_alloc::BVec;
+use aleph_alloc::instrumentation::{Instrumented, system};
+use aleph_vfs::directory_layer::DirectoryLayer;
+use aleph_vfs::{LayerDesc, Router};
 use api::label::make_label;
 use api::platform::{
-    AClipboard, AEvents, AFrameTimer, AGamepads, AKeyboard, AMouse, AWindow, Cursor, Event,
-    KeyboardEvent, MouseEvent, WindowEvent,
+    AClipboard, AEvents, AFrameTimer, AGamepads, AKeyboard, AMouse, ARouter, AWindow, Cursor,
+    Event, KeyboardEvent, MouseEvent, WindowEvent,
 };
-use api::plugin::{IQuitHandle, IRegistryAccessor};
+use api::plugin::{
+    IPlugin, IPluginRegistrar, IQuitHandle, IRegistryAccessor, PluginDescription, Provides,
+};
 use api::schedule::CoreStage;
+use camino::Utf8PathBuf;
 pub use clipboard::Clipboard;
 pub use events::Events;
 pub use frame_timer::FrameTimer;
@@ -62,21 +68,9 @@ pub use sdl_alloc_wrapper::set_memory_functions;
 use sdl3::mouse::SystemCursor;
 pub use window::Window;
 
-pub(crate) fn platform_interfaces() -> [TypeId; 7] {
-    [
-        TypeId::of::<AClipboard>(),
-        TypeId::of::<AEvents>(),
-        TypeId::of::<AFrameTimer>(),
-        TypeId::of::<AGamepads>(),
-        TypeId::of::<AKeyboard>(),
-        TypeId::of::<AMouse>(),
-        TypeId::of::<AWindow>(),
-    ]
-}
-
-use crate::internal::platform::keyboard::KeyboardState;
-use crate::internal::platform::window::WindowState;
-use crate::plugin_registry::RegistryAccessor;
+use crate::core::alloc::EngineSystem;
+use crate::core::platform::keyboard::KeyboardState;
+use crate::core::platform::window::WindowState;
 
 #[derive(Clone)]
 pub(crate) struct Objects {
@@ -89,11 +83,12 @@ pub(crate) struct Objects {
     pub(crate) clipboard: Option<Arc<Clipboard>>,
 }
 
-pub(crate) struct PlatformSDL3 {
+pub(crate) struct CorePlatform {
     sdl: Rc<Cell<Option<SdlObjects>>>,
+    vfs: Option<Arc<Router>>,
 }
 
-impl PlatformSDL3 {
+impl CorePlatform {
     pub(crate) fn new() -> Self {
         let sdl = SdlObjects {
             _ctx: None,
@@ -107,12 +102,34 @@ impl PlatformSDL3 {
         };
         Self {
             sdl: Rc::new(Cell::new(Some(sdl))),
+            vfs: None,
         }
     }
 }
 
-impl PlatformSDL3 {
-    pub(crate) fn on_init(&mut self, registry: &mut RegistryAccessor) {
+impl IPlugin for CorePlatform {
+    fn get_description(&self) -> PluginDescription {
+        PluginDescription {
+            name: "CorePlatform".to_string(),
+            description: "Provides the basic platform interfaces".to_string(),
+            major_version: 1,
+            minor_version: 0,
+            patch_version: 0,
+        }
+    }
+
+    fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
+        registrar.provides::<AFrameTimer>(Provides::Always);
+        registrar.provides::<AWindow>(Provides::Always);
+        registrar.provides::<AMouse>(Provides::Always);
+        registrar.provides::<AKeyboard>(Provides::Always);
+        registrar.provides::<AGamepads>(Provides::Always);
+        registrar.provides::<AEvents>(Provides::Always);
+        registrar.provides::<AClipboard>(Provides::Always);
+        registrar.provides::<ARouter>(Provides::Always);
+    }
+
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
         log::info!("Initializing SDL3 Library");
         let sdl = sdl3::init().expect("Failed to initialize SDL3");
 
@@ -175,6 +192,25 @@ impl PlatformSDL3 {
         sdl_o.gamepad = Some(sdl_gamepad);
         self.sdl.set(Some(sdl_o));
 
+        let mut layers: BVec<_, EngineSystem> = BVec::new_in(system());
+
+        // TODO: right now for the shaders we either mount the CWD or .aleph if we find it
+        if Path::new(".aleph/shaders").exists() {
+            layers.push(LayerDesc {
+                mount_name: "__shader",
+                layer: DirectoryLayer::new(Utf8PathBuf::from(".aleph/shaders")),
+            });
+        } else {
+            layers.push(LayerDesc {
+                mount_name: "__shader",
+                layer: DirectoryLayer::new(Utf8PathBuf::from("./")),
+            });
+        }
+
+        let vfs = Router::new(layers).unwrap();
+        let vfs = Arc::new(vfs);
+        self.vfs = Some(vfs);
+
         // Update our provider with the newly created implementations
         let objects = Objects {
             frame_timer: Some(frame_timer),
@@ -212,41 +248,38 @@ impl PlatformSDL3 {
             );
 
         objects.frame_timer.inspect(|v| {
-            registry.__provide(
-                TypeId::of::<AFrameTimer>(),
-                Box::new(AFrameTimer(v.clone())),
-            )
+            registry.provide(AFrameTimer(v.clone()));
         });
         objects.window.inspect(|v| {
-            registry.__provide(TypeId::of::<AWindow>(), Box::new(AWindow(v.clone())));
+            registry.provide(AWindow(v.clone()));
         });
         objects.mouse.inspect(|v| {
-            registry.__provide(TypeId::of::<AMouse>(), Box::new(AMouse(v.clone())));
+            registry.provide(AMouse(v.clone()));
         });
         objects.keyboard.inspect(|v| {
-            registry.__provide(TypeId::of::<AKeyboard>(), Box::new(AKeyboard(v.clone())));
+            registry.provide(AKeyboard(v.clone()));
         });
         objects.gamepads.inspect(|v| {
-            registry.__provide(TypeId::of::<AGamepads>(), Box::new(AGamepads(v.clone())));
+            registry.provide(AGamepads(v.clone()));
         });
         objects.events.inspect(|v| {
-            registry.__provide(TypeId::of::<AEvents>(), Box::new(AEvents(v.clone())));
+            registry.provide(AEvents(v.clone()));
         });
         objects.clipboard.inspect(|v| {
-            registry.__provide(TypeId::of::<AClipboard>(), Box::new(AClipboard(v.clone())));
+            registry.provide(AClipboard(v.clone()));
         });
-        registry
-            .interfaces
-            .extend(std::iter::from_fn(|| registry.provides.pop_first()));
+        self.vfs
+            .as_ref()
+            .inspect(|&v| registry.provide(ARouter(v.clone())));
     }
 
-    pub(crate) fn on_shutdown(&mut self) {
+    fn on_shutdown(&mut self) {
         let mut sdl = self.sdl.take().unwrap();
         sdl.on_shutdown();
     }
 }
 
-impl PlatformSDL3 {
+impl CorePlatform {
     fn handle_requests(
         cursors: &HashMap<Cursor, sdl3::mouse::Cursor>,
         sdl: &mut SdlObjects,
@@ -368,7 +401,7 @@ impl PlatformSDL3 {
     }
 }
 
-impl PlatformSDL3 {
+impl CorePlatform {
     fn window_state(provider: &Objects) -> Option<RwLockWriteGuard<'_, WindowState>> {
         provider.window.as_ref().map(|v| v.state.write())
     }

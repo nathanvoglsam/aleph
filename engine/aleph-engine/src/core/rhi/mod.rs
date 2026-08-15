@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -36,21 +35,17 @@ use aleph_rhi_loader::{
     BackendConfigs, ContextOptions, D3D12Config, MetalConfig, RhiLoader, VulkanConfig,
 };
 use api::platform::AWindow;
-use api::plugin::IRegistryAccessor;
+use api::plugin::{
+    IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription, Provides,
+};
 use api::rhi::{ARhiProvider, IRhiProvider};
 use serde::Deserialize;
 
-use crate::plugin_registry::RegistryAccessor;
-
-pub(crate) fn rhi_interfaces() -> [TypeId; 1] {
-    [TypeId::of::<ARhiProvider>()]
-}
-
-pub(crate) struct RhiLoad {
+pub(crate) struct CoreRhi {
     rhi_loader: RhiLoader,
 }
 
-impl RhiLoad {
+impl CoreRhi {
     pub fn new() -> Self {
         Self {
             rhi_loader: RhiLoader::new(),
@@ -58,17 +53,34 @@ impl RhiLoad {
     }
 }
 
-impl RhiLoad {
-    pub(crate) fn on_init(&mut self, registry: &mut RegistryAccessor) {
+impl IPlugin for CoreRhi {
+    fn get_description(&self) -> PluginDescription {
+        PluginDescription {
+            name: "CoreRhi".to_string(),
+            description: "Provides an rhi::IDevice".to_string(),
+            major_version: 1,
+            minor_version: 0,
+            patch_version: 0,
+        }
+    }
+
+    fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
+        registrar.uses::<AWindow>(InitOrder::After);
+        registrar.provides::<ARhiProvider>(Provides::Always);
+    }
+
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
+        let config = registry.config("rhi").unwrap();
+        let config: Config = serde_json::from_value(config.clone()).unwrap();
+        config.log();
+
+        let window = registry.get_interface::<AWindow>();
+
         // If there are no GPU backends available we early exit and yield no provider as there's
         // nothing to provide
         if self.rhi_loader.backends().is_empty() {
             return;
         }
-
-        let config = registry.configs.get("rhi").unwrap();
-        let config: Config = serde_json::from_value(config.clone()).unwrap();
-        config.log();
 
         // Construct the context from the RHI loader with the final set of settings
         let context = self
@@ -85,10 +97,6 @@ impl RhiLoad {
             })
             .unwrap();
 
-        let window = registry
-            .interfaces
-            .get(&TypeId::of::<AWindow>())
-            .and_then(|v| v.downcast_ref::<AWindow>());
         let surface = if let Some(window) = window {
             let surface = if cfg!(any(target_os = "ios", target_os = "macos")) {
                 context.create_surface_for_metal_layer(window.metal_layer().unwrap())
@@ -124,13 +132,7 @@ impl RhiLoad {
             device,
         });
 
-        registry.__provide(
-            TypeId::of::<ARhiProvider>(),
-            Box::new(ARhiProvider(provider)),
-        );
-        registry
-            .interfaces
-            .extend(std::iter::from_fn(|| registry.provides.pop_first()));
+        registry.provide(ARhiProvider(provider));
     }
 }
 
@@ -185,10 +187,10 @@ impl Config {
     }
 }
 
-pub(crate) struct RhiProvider {
-    pub(crate) surface: Option<Arc<dyn ISurface>>,
-    pub(crate) adapter: Arc<dyn IAdapter>,
-    pub(crate) device: Arc<dyn IDevice>,
+struct RhiProvider {
+    surface: Option<Arc<dyn ISurface>>,
+    adapter: Arc<dyn IAdapter>,
+    device: Arc<dyn IDevice>,
 }
 
 impl IRhiProvider for RhiProvider {

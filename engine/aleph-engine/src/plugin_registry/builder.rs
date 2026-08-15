@@ -35,8 +35,8 @@ use api::plugin::IPlugin;
 use api::schedule::CoreStage;
 use api::scheduler::{Schedule, SystemSchedule, TypedTable};
 
-use crate::internal::platform::{PlatformSDL3, platform_interfaces};
-use crate::internal::rhi_load::{RhiLoad, rhi_interfaces};
+use crate::core::platform::CorePlatform;
+use crate::core::rhi::CoreRhi;
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 use crate::plugin_registry::registrar::PluginRegistrar;
 use crate::plugin_registry::{PluginEntry, PluginRegistry};
@@ -65,6 +65,9 @@ impl PluginRegistryBuilder {
 
     /// Construct the final plugin registry, baking in execution orders
     pub fn build(mut self) -> PluginRegistry {
+        self.plugin(CoreRhi::new());
+        self.plugin(CorePlatform::new());
+
         // First we handle registering the plugins. Here we call `IPlugin::register` for each
         // plugin and collect their responses so we can schedule their execution phases.
         let SchedulerState {
@@ -97,8 +100,6 @@ impl PluginRegistryBuilder {
             schedule: Some(Box::new(schedule)),
             resources: Some(Box::new(TypedTable::default())),
             world: Some(Box::new(World::new())),
-            platform: PlatformSDL3::new(),
-            rhi: RhiLoad::new(),
         };
 
         // Initialize the plugins
@@ -162,8 +163,6 @@ impl PluginRegistryBuilder {
             .iter()
             .flat_map(|v| v.iter().cloned())
             .chain(self.plugins.iter().map(|v| v.v.type_id()))
-            .chain(platform_interfaces()) // Add the platform interfaces provided by the engine
-            .chain(rhi_interfaces()) // Add the platform interfaces provided by the engine
             .collect();
 
         // If all interfaces contain the entirety of mandatory interfaces then all plugins provided
@@ -246,10 +245,7 @@ impl PluginRegistryBuilder {
         let mut order = Vec::new();
 
         // Set to keep track of what has been executed
-        //
-        // Contains platform interfaces as they are implicitly provided by the engine
-        let mut executed =
-            BTreeSet::from_iter(platform_interfaces().into_iter().chain(rhi_interfaces()));
+        let mut executed = BTreeSet::new();
 
         // Set to keep track of what was executed over the course of a single scheduler iteration
         let mut newly_executed = BTreeSet::new();

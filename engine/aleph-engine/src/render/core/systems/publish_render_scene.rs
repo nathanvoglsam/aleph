@@ -30,15 +30,28 @@
 use api::components;
 use api::components::{Camera, Transform};
 use api::ecs::world::query::{Has, Read};
-use api::schedule::WorldResource;
-use api::scheduler::{Res, ResMut};
+use api::label::{Label, make_label};
+use api::schedule::{CoreStage, WorldResource};
+use api::scheduler::{ExplicitDependencies, IntoSystem, Res, ResMut, Schedule};
 use mg::scene::components::{DynamicObject, PerspectiveCamera, RenderTransform, StaticMesh};
 
-use crate::render::resources::render_scene::RenderSceneResource;
+use crate::render::core::resources::render_scene::RenderSceneResource;
+use crate::render::core::systems::render::RenderSystem;
 
 pub struct PublishRenderSceneSystem;
 
 impl PublishRenderSceneSystem {
+    pub const LABEL: Label = make_label!("render::PublishRenderSceneSystem");
+
+    pub fn register(mut self, schedule: &mut Schedule) {
+        let system = move |world: Res<WorldResource>, render_scene: ResMut<RenderSceneResource>| {
+            self.run(world, render_scene);
+        };
+        let system = system.system().runs_before(RenderSystem::LABEL);
+
+        schedule.add_system_to_stage(CoreStage::Render.into(), Self::LABEL, system);
+    }
+
     pub fn run(
         &mut self,
         world: Res<WorldResource>,

@@ -31,7 +31,7 @@ use std::ffi::c_void;
 
 use aleph_alloc::mallocator::Mallocator;
 
-use crate::internal::platform::SdlSystem;
+use crate::core::platform::SdlSystem;
 
 /// A very, very unsafe wrapper function used to inject malloc wrappers into SDL. These are used to
 /// track all the allocations SDL makes and should be disabled when memory instrumentation is not

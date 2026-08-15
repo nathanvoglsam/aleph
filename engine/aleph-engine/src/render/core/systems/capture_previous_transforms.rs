@@ -27,22 +27,32 @@
 // SOFTWARE.
 //
 
-// =================================================================================================
-// Crate Imports
-// =================================================================================================
+use api::components::{Transform, TransformHistory};
+use api::ecs::world::query::{Read, Write};
+use api::label::{Label, make_label};
+use api::schedule::{CoreStage, WorldResource};
+use api::scheduler::{ResMut, Schedule};
 
-// Re-export useful crates
-pub extern crate aleph_egui as egui;
-pub extern crate aleph_engine_api as api;
-pub extern crate aleph_magnesium as mg;
-pub extern crate aleph_rhi_api as rhi;
-pub extern crate aleph_target as target;
+pub struct CapturePreviousTransformsSystem;
 
-// =================================================================================================
-// Modules
-// =================================================================================================
+impl CapturePreviousTransformsSystem {
+    pub const LABEL: Label = make_label!("render::CapturePreviousTransforms");
 
-pub mod core;
-pub mod engine;
-pub mod plugin_registry;
-pub mod render;
+    pub fn register(mut self, schedule: &mut Schedule) {
+        let system = move |world: ResMut<WorldResource>| {
+            self.run(world);
+        };
+        schedule.add_exclusive_at_end_system_to_stage(
+            CoreStage::Render.into(),
+            Self::LABEL,
+            system,
+        );
+    }
+
+    pub fn run(&mut self, mut world: ResMut<WorldResource>) {
+        let world = &mut world.0;
+        for (_id, (t, h)) in world.query_mut::<(Read<Transform>, Write<TransformHistory>)>() {
+            h.previous = t.clone();
+        }
+    }
+}

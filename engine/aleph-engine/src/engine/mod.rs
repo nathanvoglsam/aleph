@@ -35,7 +35,6 @@ use log::LevelFilter;
 use target::{Architecture, BuildConfig, BuildType, Platform};
 
 use crate::api::plugin::IPlugin;
-use crate::internal;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 
 pub struct EngineBuilder {
@@ -53,7 +52,7 @@ impl EngineBuilder {
         LazyLock::force(&aleph_object_system::TYPES);
 
         if aleph_alloc::instrumentation::is_instrumentation_enabled() {
-            unsafe { internal::platform::set_memory_functions() };
+            unsafe { crate::core::platform::set_memory_functions() };
         }
 
         // Initialize COM with MTA
