@@ -27,18 +27,6 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_ecs as ecs;
-pub extern crate aleph_label as label;
-pub extern crate aleph_magnesium as mg;
-pub extern crate aleph_math as math;
-pub extern crate aleph_object_system as object_system;
-pub extern crate aleph_scheduler as scheduler;
-pub extern crate aleph_vfs as vfs;
+use aleph_vfs::IRouter;
 
-pub mod components;
-pub mod platform;
-pub mod plugin;
-pub mod rhi;
-pub mod schedule;
-
-mod utils;
+crate::make_interface_identifier!(ARouter, IRouter);

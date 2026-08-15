@@ -49,6 +49,8 @@ aleph-math = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-object-system = { workspace = true }
 aleph-magnesium = { workspace = true }
+aleph-vfs = { workspace = true }
+
 raw-window-handle = { workspace = true }
 serde_json = { workspace = true }
 smallbox = { workspace = true }

@@ -33,6 +33,7 @@ mod frame_timer;
 mod gamepad;
 mod keyboard;
 mod mouse;
+mod vfs;
 mod window;
 
 pub use clipboard::*;
@@ -49,4 +50,5 @@ pub use mouse::{
     MouseWheelEvent,
 };
 pub use raw_window_handle::*;
+pub use vfs::ARouter;
 pub use window::{AWindow, IWindow, IWindowEventsLock, WindowEvent};
