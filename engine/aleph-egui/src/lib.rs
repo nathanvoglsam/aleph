@@ -32,12 +32,12 @@ extern crate egui;
 
 pub mod widgets;
 
-mod plugin;
+mod iplugin;
 mod traits;
 mod utils;
 
 pub use egui::*;
-pub use plugin::PluginEgui;
+pub use iplugin::PluginEgui;
 pub use traits::{AEguiContextProvider, AEguiRenderData, IEguiRenderData, RenderData};
 
 pub struct Egui;
