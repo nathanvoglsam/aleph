@@ -55,12 +55,13 @@ impl EguiFontTexture {
     pub fn update_font_texture<'a>(
         &mut self,
         renderer: &mut Renderer,
-        deltas: impl Iterator<Item = &'a ImageDelta>,
+        deltas: impl Iterator<Item = &'a [ImageDelta]>,
     ) {
         let mut updated = false;
         for delta in deltas {
             updated = true;
-            self.apply_delta_to_font_texture(delta);
+            assert!(delta.len() <= 1);
+            self.apply_delta_to_font_texture(&delta[0]);
         }
 
         if updated {

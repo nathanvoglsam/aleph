@@ -66,7 +66,6 @@ pub fn get_egui_input(
         screen_rect,
         time,
         predicted_dt,
-        modifiers,
         events,
         ..Default::default()
     }

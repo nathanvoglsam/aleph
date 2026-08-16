@@ -100,8 +100,8 @@ license = "MIT"
 
 ## Third Party Crates
 clap = "4"
-egui = { version = "0.34", features = ["bytemuck"] } ## Heavy
-egui_plot = "0.35" ## Heavy
+egui = { version = "0.36", features = ["bytemuck"] } ## Heavy
+egui_plot = "0.37" ## Heavy
 ignore = "0.4"
 rayon = "1"
 
@@ -125,7 +125,7 @@ env_logger = "0.11.0" ## Heavy
 ## Macros and Utilities
 bitflags = "2"
 utf16_lit = "2"
-phf = { version = "0.13", features = ["macros"] }
+phf = { version = "0.14", features = ["macros"] }
 const_format = { version = "0.2", features = ["fmt"] }
 bytemuck = { version = "1", features = ["derive"] }
 byteorder = "1"
@@ -139,8 +139,8 @@ rkyv = "0.8" ## Heavy
 image = {version = "0.25", default-features = false, features = ["default-formats"] }
 
 ## Proc Macro
-syn = { version = "2.0", features = ["full"] }
-quote = { version = "1.0", default-features = false }
+syn = { version = "3", features = ["full"] }
+quote = { version = "1", default-features = false }
 
 ## Sync Primitives
 crossbeam = "0.8"

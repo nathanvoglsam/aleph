@@ -70,7 +70,7 @@ impl PublishEguiSceneSystem {
     ) {
         let render_scene = &mut render_scene.scene;
 
-        let render_data = self.render_data.take();
+        let mut render_data = self.render_data.take();
 
         // Filter the deltas to only those that affect the font texture and upload
         // a new font texture immediately.
@@ -78,10 +78,12 @@ impl PublishEguiSceneSystem {
             .textures_delta
             .set
             .iter()
-            .filter(|(id, _)| *id == egui::TextureId::Managed(0))
-            .map(|(_, delta)| delta);
+            .filter(|(id, _)| **id == egui::TextureId::Managed(0))
+            .map(|(_, delta)| delta.as_slice());
         self.font_texture
             .update_font_texture(&mut renderer, font_updates);
+
+        render_data.textures_delta.clear();
 
         // Pass the egui commands and font texture that so our egui render pass
         // can do its thing.
