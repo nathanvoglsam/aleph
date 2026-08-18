@@ -30,11 +30,10 @@
 use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use aleph_alloc::BHashMap;
 use aleph_alloc::instrumentation::IAllocationCategory;
-use parking_lot::Mutex;
 
 use crate::async_io::{AsyncIo, AsyncIoSystem};
 
@@ -85,9 +84,17 @@ impl TopLevelHandleCache {
     }
 
     fn __get_or_open(&self, path: &Path) -> Result<Arc<[File]>, io::Error> {
-        if let Some(existing) = self.cache.lock().get(path) {
+        let cache = self.cache.lock().map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::BrokenPipe,
+                "The top level cache mutex was poisoned.",
+            )
+        })?;
+        if let Some(existing) = cache.get(path) {
             Ok(existing.clone())
         } else {
+            // Release the lock so we don't block other threads while we open the file handles.
+            drop(cache);
             let handles = AsyncIo::with(|| -> Result<Arc<[File]>, io::Error> {
                 let mut handles = Vec::with_capacity(self.threads);
                 for _ in 0..self.threads {
@@ -115,7 +122,13 @@ impl TopLevelHandleCache {
             // This means we can do wasted work instead, where we open file handles while racing
             // and immediately close them. The reduced contention is more important than perfect
             // compute efficiency.
-            let _ = self.cache.lock().insert(path_buf, handles.clone());
+            let mut cache = self.cache.lock().map_err(|_| {
+                io::Error::new(
+                    io::ErrorKind::BrokenPipe,
+                    "The top level cache mutex was poisoned.",
+                )
+            })?;
+            let _ = cache.insert(path_buf, handles.clone());
             Ok(handles)
         }
     }

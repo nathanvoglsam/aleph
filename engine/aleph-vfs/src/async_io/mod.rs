@@ -32,7 +32,9 @@ pub mod top_level_handle_cache;
 
 use std::io;
 use std::io::Read;
+use std::panic::catch_unwind;
 use std::path::Path;
+use std::process::abort;
 use std::ptr::NonNull;
 use std::sync::Arc;
 use std::thread::JoinHandle;
@@ -62,12 +64,33 @@ impl IoQueue {
                 let thread = std::thread::Builder::new()
                     .name(format!("async-file-io-queue-{}", thread_id))
                     .spawn(move || {
-                        IoQueueWorker {
+                        let mut worker = IoQueueWorker {
                             thread_id,
                             recv,
                             handle_cache: LocalHandleCache::new(top_level_handle_cache),
+                        };
+                        let result = catch_unwind(move || {
+                            worker.run();
+                        });
+                        match result {
+                            Ok(_) => {}
+                            Err(_) => {
+                                // We must promote any unhandled error or panic in a worker thread
+                                // to a full app abort. Clients of this queue are unable to end the
+                                // lifetime of the dst buffers until the worker sends a completion
+                                // message.
+                                //
+                                // If the worker panics then that message will never be sent.
+                                // Leaking requests must _not_ happen, so we abort instead.
+                                // Otherwise, clients would wait for a message that will never come.
+                                //
+                                // W/e caused the panic will likely happen again so we will leak
+                                // to death, or the whole ioqueue is so borked we can't do io
+                                // anymore. W/e the cause it's likely unrecoverable.
+                                log::error!("IoQueue worker has panicked. Aborting.");
+                                abort()
+                            }
                         }
-                        .run();
                     })
                     .expect("Failed to spawn IoQueue thread");
                 threads.push(thread);

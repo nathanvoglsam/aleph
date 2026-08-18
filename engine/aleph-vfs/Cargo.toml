@@ -46,6 +46,5 @@ aleph-alloc = { workspace = true }
 aleph-gen-arena = { workspace = true }
 
 crossbeam = { workspace = true }
-parking_lot = { workspace = true }
+log = { workspace = true }
 camino = { workspace = true }
-sdl3 = { workspace = true }
