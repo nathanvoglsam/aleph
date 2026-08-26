@@ -123,6 +123,24 @@ impl<T, H: HandleType, A: Allocator> GenArena<T, H, A> {
         handle
     }
 
+    /// An alternate form of [`GenArena::alloc`] that takes a closure that is given the handle that
+    /// the object will be assigned. This allows storing a `T` that knows its own handle.
+    ///
+    /// This is similar to the [`std::sync::Arc::new_cyclic`].
+    ///
+    /// See [`GenArena::alloc`] for detailed documentation.
+    pub fn alloc_cyclic<F>(&mut self, f: F) -> H
+    where
+        F: FnOnce(H) -> T,
+    {
+        let index = u32::try_from(self.objects.len()).expect("Too many objects!");
+        let handle = self.handles.alloc(index);
+        let handle = H::from_bare_handle(handle);
+        self.objects.push(f(handle));
+        self.back_references.push(handle);
+        handle
+    }
+
     /// Retrieve a reference to an object identified by the provided handle. This may return
     /// [`None`] if the handle is no longer valid, such as if the object was removed from the pool
     /// with [`GenArena::free`].
