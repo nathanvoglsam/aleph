@@ -281,11 +281,19 @@ impl IQueue for Queue {
 
         unsafe {
             let _lock = self.submit_lock.lock();
-            device
+            let result = device
                 .device
-                .queue_submit(self.handle, &[info], vk::Fence::null())
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(|_| QueueSubmitError::Platform)?;
+                .queue_submit(self.handle, &[info], vk::Fence::null());
+
+            if let Err(err) = result {
+                return match err {
+                    vk::Result::ERROR_DEVICE_LOST => Err(QueueSubmitError::DeviceLost),
+                    _ => {
+                        log::error!("Platform Error: {:#?}", err);
+                        Err(QueueSubmitError::Platform)
+                    }
+                };
+            }
         }
 
         Rhi::with(|| {
@@ -340,6 +348,7 @@ impl IQueue for Queue {
         match result {
             Ok(false) => Ok(()),
             Ok(true) => Err(QueuePresentError::SubOptimal),
+            Err(vk::Result::ERROR_DEVICE_LOST) => Err(QueuePresentError::DeviceLost),
             Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => Err(QueuePresentError::OutOfDate),
             Err(vk::Result::ERROR_SURFACE_LOST_KHR) => Err(QueuePresentError::SurfaceLost),
             Err(e) => {

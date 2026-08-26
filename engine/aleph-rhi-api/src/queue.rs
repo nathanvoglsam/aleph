@@ -264,6 +264,9 @@ pub enum QueueWaitError {
 
 #[derive(Error, Debug)]
 pub enum QueueSubmitError {
+    #[error("The platform API device was lost.")]
+    DeviceLost,
+
     #[error("A command list in the submission was not in the correct state for submission.")]
     InvalidCommandListState,
 
@@ -276,6 +279,9 @@ pub enum QueueSubmitError {
 
 #[derive(Error, Debug)]
 pub enum QueuePresentError {
+    #[error("The platform API device was lost.")]
+    DeviceLost,
+
     #[error("The queue '{0}' does not support presentation to the requested swap chain")]
     QueuePresentationNotSupported(QueueType),
 
