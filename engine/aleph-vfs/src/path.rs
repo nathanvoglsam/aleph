@@ -534,6 +534,12 @@ impl core::fmt::Display for VPath {
 
 // == AS TRAITS == //
 
+impl AsRef<VPath> for VPath {
+    fn as_ref(&self) -> &VPath {
+        self
+    }
+}
+
 impl AsRef<VPath> for str {
     fn as_ref(&self) -> &VPath {
         VPath::from_inner(self)
