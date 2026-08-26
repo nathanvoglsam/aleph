@@ -102,7 +102,7 @@ pub struct AsyncResourceLoader<C: Send + 'static> {
     submission_manager: SubmissionManager,
 
     /// Channel to pipe output upload messages into.
-    loader_sender: LoaderSender<C>,
+    loader_sender: LoaderSender<C>, // TODO: this should probably be a queue
 }
 
 impl<C: Send + 'static> Drop for AsyncResourceLoader<C> {
@@ -131,7 +131,7 @@ impl<C: Send + 'static> Drop for AsyncResourceLoader<C> {
                 // drop the resources being held live by this loader, but we have no sane recovery
                 // path. We can't wait on the device.
                 //
-                // The next best thing we can do is panic. This should just leak the handles which
+                // The next best thing we can do is abort. This should just leak the handles which
                 // does keep them alive, technically.
                 panic!("Unrecoverable wait_all_submissions error");
             }
@@ -597,13 +597,13 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             // Record copy commands for all the submitted upload ranges.
             for block in queue.iter() {
                 match block {
-                    SubmittedCopy::Buffer(block) => 'proccess: {
+                    SubmittedCopy::Buffer(block) => 'process: {
                         // It's possible to submit uploads and then cancel the request before
                         // flushing the upload commands. Our simple solution is to just drop the
                         // copy command if the request is no longer valid. This avoids us needing to
                         // flush stale entries from submitted queue eagerly.
                         let load = match request_states.buffers.get_ref(block.request) {
-                            None => break 'proccess,
+                            None => break 'process,
                             Some(v) => v,
                         };
 
@@ -763,7 +763,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
 
         unsafe {
             // Submit the encoded copy commands to the transfer queue
-            self.queue
+            let result = self
+                .queue
                 .submit(&rhi::QueueSubmitDesc {
                     command_lists: &[Cell::new(Some(list))],
                     wait_fences: &[],
@@ -772,8 +773,19 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
                     signal_values: &[submission.signal_value],
                     swap_image: None,
                 })
-                .inspect_err(|err| log::error!("{}", err))
-                .map_err(|_| FlushError::CommandRecordingFailure)?;
+                .inspect_err(|err| log::error!("{}", err));
+            if let Err(e) = result {
+                return match e {
+                    rhi::QueueSubmitError::InvalidCommandListState => {
+                        Err(FlushError::CommandRecordingFailure)
+                    }
+                    rhi::QueueSubmitError::InvalidEncoderType(_) => {
+                        Err(FlushError::CommandRecordingFailure)
+                    }
+                    rhi::QueueSubmitError::DeviceLost => Err(FlushError::DeviceLost),
+                    rhi::QueueSubmitError::Platform => Err(FlushError::CommandRecordingFailure),
+                };
+            }
 
             // Only after we've successfully submitted our copy commands do we clear the queue. This
             // prevents failures within the command recording loop from leaving the loader in an
@@ -891,12 +903,12 @@ pub enum AllocateRangeError {
 #[derive(Error, Debug)]
 pub enum FlushError {
     /// This error is thrown when recording device commands into a command buffer fails for any
-    /// reason. This could be a fail when creating the command buffer, a failure to submit, and any
-    /// other RHI failure along that chain.
+    /// reason. This could be a fail when creating the command buffer, or a failure to submit.
     ///
-    /// There's really not much you can do in this case other than abort, but we leave that decision
-    /// up to the caller.
-    #[error("Failed to allocate memory")]
+    /// The loader will be left in a valid state, and the pending upload work will remain unflushed.
+    /// You may attempt to flush the work again, and it may succeed. It is, however, unlikely. This
+    /// error is likely a signal to shut down.
+    #[error("Failed to record and submit GPU commands.")]
     CommandRecordingFailure,
 
     /// This error is thrown when the loader observes a device lost error when trying to wait on
@@ -906,7 +918,7 @@ pub enum FlushError {
 
     /// This error is thrown when the loader fails to wait on the internal fence for any reason
     /// other than device lost. This is usually fatal and can't easily be cleaned up from because
-    /// the device is strictly speaking still alive. You should probably just panic if you observe
+    /// the device is strictly speaking still alive. You should probably just abort if you observe
     /// this error.
     #[error("The fence wait operation failed for a non-device-lost reason.")]
     WaitFailure,
@@ -927,7 +939,7 @@ pub enum RetireError {
 
     /// This error is thrown when the loader fails to wait on the internal fence for any reason
     /// other than device lost. This is usually fatal and can't easily be cleaned up from because
-    /// the device is strictly speaking still alive. You should probably just panic if you observe
+    /// the device is strictly speaking still alive. You should probably just abort if you observe
     /// this error.
     #[error("The fence wait operation failed for a non-device-lost reason.")]
     WaitFailure,
