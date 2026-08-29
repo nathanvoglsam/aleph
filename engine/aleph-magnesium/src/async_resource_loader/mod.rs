@@ -803,6 +803,11 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             self.submission_manager.submit(submission);
         }
 
+        // Need to drop our ref cell borrows so 'retire_completed' doesn't panic trying to borrow
+        // them a second time.
+        drop(request_states);
+        drop(queue);
+
         // The very last thing we do is poll our in-flight submissions for completion and release
         // any resources we were holding alive for the GPU. We do this last to give the GPU as much
         // time as possible to complete the work before we try and poll.

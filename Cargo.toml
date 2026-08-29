@@ -95,6 +95,7 @@ edition = "2024"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 repository = "https://github.com/nathanvoglsam/aleph"
 license = "MIT"
+rust-version = "1.97"
 
 [workspace.dependencies]
 
