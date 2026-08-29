@@ -318,6 +318,12 @@ impl IDevice for Device {
         wait_all: bool,
         timeout: u32,
     ) -> Result<FenceWaitResult, FenceWaitError> {
+        assert_eq!(
+            fences.len(),
+            values.len(),
+            "You must provide a matching number of fences and wait values"
+        );
+
         match (fences, values) {
             // The single fence case can just call a wait function directly.
             (&[fence], &[value]) => {

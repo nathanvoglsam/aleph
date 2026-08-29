@@ -1034,6 +1034,12 @@ impl IDevice for Device {
                 "You must provide a matching number of fences and wait values"
             );
 
+            // If you provide no fences to wait on then we just return immediately. Can't block on
+            // nothing.
+            if fences.is_empty() {
+                return Ok(FenceWaitResult::Complete);
+            }
+
             let iter = fences.iter().copied().map(Fence::get).map(|v| v.semaphore);
             let mut fences = BVec::new_in(bump.allocator());
             fences.extend(iter);
