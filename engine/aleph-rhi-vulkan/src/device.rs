@@ -42,7 +42,7 @@ use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::owned_desc::{
     OwnedBufferDesc, OwnedParameterBlockDesc, OwnedSamplerDesc, OwnedTextureDesc,
 };
-use aleph_rhi_impl_utils::{Rhi, RhiSystem};
+use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind};
 use ash::vk;
 use byteorder::{ByteOrder, NativeEndian};
 use crossbeam::queue::ArrayQueue;
@@ -98,7 +98,7 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn upgrade(&self) -> Arc<dyn IDevice> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     // ========================================================================================== //
@@ -119,35 +119,39 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
-        if let Some(queue) = &self.general_queue {
-            queue.garbage_collect()?;
-        }
-        if let Some(queue) = &self.compute_queue {
-            queue.garbage_collect()?;
-        }
-        if let Some(queue) = &self.transfer_queue {
-            queue.garbage_collect()?;
-        }
-        Ok(())
+        abort_on_unwind(|| {
+            if let Some(queue) = &self.general_queue {
+                queue.garbage_collect()?;
+            }
+            if let Some(queue) = &self.compute_queue {
+                queue.garbage_collect()?;
+            }
+            if let Some(queue) = &self.transfer_queue {
+                queue.garbage_collect()?;
+            }
+            Ok(())
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn wait_idle(&self) -> Result<(), QueueWaitError> {
-        // We need to take all of the queue locks to meet vulkan sync requirements.
-        let _lock_ness_monster = (
-            self.general_queue.as_ref().map(|v| v.submit_lock.lock()),
-            self.compute_queue.as_ref().map(|v| v.submit_lock.lock()),
-            self.transfer_queue.as_ref().map(|v| v.submit_lock.lock()),
-        );
+        abort_on_unwind(|| {
+            // We need to take all of the queue locks to meet vulkan sync requirements.
+            let _lock_ness_monster = (
+                self.general_queue.as_ref().map(|v| v.submit_lock.lock()),
+                self.compute_queue.as_ref().map(|v| v.submit_lock.lock()),
+                self.transfer_queue.as_ref().map(|v| v.submit_lock.lock()),
+            );
 
-        unsafe {
-            self.device
-                .device_wait_idle()
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(map_error_class)
-        }
+            unsafe {
+                self.device
+                    .device_wait_idle()
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(map_error_class)
+            }
+        })
     }
 
     // ========================================================================================== //
@@ -157,67 +161,71 @@ impl IDevice for Device {
         &self,
         desc: &ParameterBlockDesc,
     ) -> Result<Arc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
+                let bump = bump_cell.scope();
 
-            let stage_flags = descriptor_shader_visibility_to_vk(desc.visibility);
+                let stage_flags = descriptor_shader_visibility_to_vk(desc.visibility);
 
-            let mut sizes = [0; 11];
+                let mut sizes = [0; 11];
 
-            let mut bindings = BVec::with_capacity_in(desc.params.len(), bump.allocator());
-            for (i, v) in desc.params.iter().enumerate() {
-                let binding = parameter_desc_to_vk(v)
-                    .binding(i as u32)
-                    .stage_flags(stage_flags);
+                let mut bindings = BVec::with_capacity_in(desc.params.len(), bump.allocator());
+                for (i, v) in desc.params.iter().enumerate() {
+                    let binding = parameter_desc_to_vk(v)
+                        .binding(i as u32)
+                        .stage_flags(stage_flags);
 
-                sizes[binding.descriptor_type.as_raw() as usize] += binding.descriptor_count;
+                    sizes[binding.descriptor_type.as_raw() as usize] += binding.descriptor_count;
 
-                bindings.push(binding);
-            }
-
-            let mut pool_sizes = BVec::with_capacity_in(sizes.len(), Default::default());
-            for (i, v) in sizes.iter().copied().enumerate() {
-                // Accumulate any non-zero pool size into the list
-                if v > 0 {
-                    pool_sizes.push(
-                        vk::DescriptorPoolSize::default()
-                            .ty(vk::DescriptorType::from_raw(i as i32))
-                            .descriptor_count(v),
-                    );
+                    bindings.push(binding);
                 }
-            }
 
-            // Set push descriptor flag if requested by the caller.
-            let mut create_info = vk::DescriptorSetLayoutCreateInfo::default().bindings(&bindings);
-            if desc.flags.contains(ParameterBlockFlags::PUSH_DESCRIPTOR) {
-                create_info =
-                    create_info.flags(vk::DescriptorSetLayoutCreateFlags::PUSH_DESCRIPTOR_KHR);
-            }
+                let mut pool_sizes = BVec::with_capacity_in(sizes.len(), Default::default());
+                for (i, v) in sizes.iter().copied().enumerate() {
+                    // Accumulate any non-zero pool size into the list
+                    if v > 0 {
+                        pool_sizes.push(
+                            vk::DescriptorPoolSize::default()
+                                .ty(vk::DescriptorType::from_raw(i as i32))
+                                .descriptor_count(v),
+                        );
+                    }
+                }
 
-            let descriptor_set_layout = unsafe {
-                self.device
-                    .create_descriptor_set_layout(&create_info, GLOBAL)
-                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| ParameterBlockLayoutCreateError::Platform)?
-            };
+                // Set push descriptor flag if requested by the caller.
+                let mut create_info =
+                    vk::DescriptorSetLayoutCreateInfo::default().bindings(&bindings);
+                if desc.flags.contains(ParameterBlockFlags::PUSH_DESCRIPTOR) {
+                    create_info =
+                        create_info.flags(vk::DescriptorSetLayoutCreateFlags::PUSH_DESCRIPTOR_KHR);
+                }
 
-            set_name(
-                self.debug_loader.as_ref(),
-                bump.allocator(),
-                descriptor_set_layout,
-                desc.name,
-            );
+                let descriptor_set_layout = unsafe {
+                    self.device
+                        .create_descriptor_set_layout(&create_info, GLOBAL)
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| ParameterBlockLayoutCreateError::Platform)?
+                };
 
-            let out: Arc<dyn IParameterBlockLayout> =
-                Arc::new_cyclic(move |v| ParameterBlockLayout {
-                    _this: v.clone(),
-                    _device: self._this.upgrade().unwrap(),
-                    id: self.object_counter.next_parameter_block_layout(),
+                set_name(
+                    self.debug_loader.as_ref(),
+                    bump.allocator(),
                     descriptor_set_layout,
-                    pool_sizes,
-                    desc: OwnedParameterBlockDesc::new(desc),
+                    desc.name,
+                );
+
+                let out: Arc<dyn IParameterBlockLayout> = Rhi::with(|| {
+                    Arc::new_cyclic(move |v| ParameterBlockLayout {
+                        _this: v.clone(),
+                        _device: self._this.upgrade().unwrap(),
+                        id: self.object_counter.next_parameter_block_layout(),
+                        descriptor_set_layout,
+                        pool_sizes,
+                        desc: OwnedParameterBlockDesc::new(desc),
+                    })
                 });
-            Ok(out)
+                Ok(out)
+            })
         })
     }
 
@@ -228,57 +236,63 @@ impl IDevice for Device {
         &self,
         desc: &BindingSignatureDesc,
     ) -> Result<Arc<dyn IBindingSignature>, BindingSignatureCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
+                let bump = bump_cell.scope();
 
-            let mut block_layouts =
-                BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiSystem::default());
-            let mut set_layouts =
-                BVec::with_capacity_in(desc.parameter_block_layouts.len(), bump.allocator());
-            for v in desc.parameter_block_layouts {
-                let v = unwrap::parameter_block_layout_d(v);
-                block_layouts.push(v._this.upgrade().unwrap());
-                set_layouts.push(v.descriptor_set_layout);
-            }
+                let mut block_layouts = BVec::with_capacity_in(
+                    desc.parameter_block_layouts.len(),
+                    RhiSystem::default(),
+                );
+                let mut set_layouts =
+                    BVec::with_capacity_in(desc.parameter_block_layouts.len(), bump.allocator());
+                for v in desc.parameter_block_layouts {
+                    let v = unwrap::parameter_block_layout_d(v);
+                    block_layouts.push(v._this.upgrade().unwrap());
+                    set_layouts.push(v.descriptor_set_layout);
+                }
 
-            let push_constant_block = desc.push_constant_block.as_ref().map(|v| {
-                vk::PushConstantRange::default()
-                    .stage_flags(descriptor_shader_visibility_to_vk(v.visibility))
-                    .offset(0)
-                    .size(v.size.get() as u32)
-            });
-            let push_constant_ranges = push_constant_block
-                .as_ref()
-                .map(std::slice::from_ref)
-                .unwrap_or(&[]);
+                let push_constant_block = desc.push_constant_block.as_ref().map(|v| {
+                    vk::PushConstantRange::default()
+                        .stage_flags(descriptor_shader_visibility_to_vk(v.visibility))
+                        .offset(0)
+                        .size(v.size.get() as u32)
+                });
+                let push_constant_ranges = push_constant_block
+                    .as_ref()
+                    .map(std::slice::from_ref)
+                    .unwrap_or(&[]);
 
-            let create_info = vk::PipelineLayoutCreateInfo::default()
-                .set_layouts(&set_layouts)
-                .push_constant_ranges(push_constant_ranges);
+                let create_info = vk::PipelineLayoutCreateInfo::default()
+                    .set_layouts(&set_layouts)
+                    .push_constant_ranges(push_constant_ranges);
 
-            let pipeline_layout = unsafe {
-                self.device
-                    .create_pipeline_layout(&create_info, GLOBAL)
-                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| BindingSignatureCreateError::Platform)?
-            };
+                let pipeline_layout = unsafe {
+                    self.device
+                        .create_pipeline_layout(&create_info, GLOBAL)
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| BindingSignatureCreateError::Platform)?
+                };
 
-            set_name(
-                self.debug_loader.as_ref(),
-                bump.allocator(),
-                pipeline_layout,
-                desc.name,
-            );
+                set_name(
+                    self.debug_loader.as_ref(),
+                    bump.allocator(),
+                    pipeline_layout,
+                    desc.name,
+                );
 
-            let out: Arc<dyn IBindingSignature> = Arc::new_cyclic(move |v| BindingSignature {
-                _this: v.clone(),
-                _device: self._this.upgrade().unwrap(),
-                id: self.object_counter.next_binding_signature(),
-                pipeline_layout,
-                parameter_block_layouts: block_layouts,
-                push_constant_block,
-            });
-            Ok(out)
+                let out: Arc<dyn IBindingSignature> = Rhi::with(|| {
+                    Arc::new_cyclic(move |v| BindingSignature {
+                        _this: v.clone(),
+                        _device: self._this.upgrade().unwrap(),
+                        id: self.object_counter.next_binding_signature(),
+                        pipeline_layout,
+                        parameter_block_layouts: block_layouts,
+                        push_constant_block,
+                    })
+                });
+                Ok(out)
+            })
         })
     }
 
@@ -290,112 +304,115 @@ impl IDevice for Device {
         &self,
         desc: &GraphicsPipelineDesc,
     ) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
+                let bump = bump_cell.scope();
 
-            let binding_signature = unwrap::binding_signature(desc.binding_signature);
+                let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
-            let mut builder =
-                vk::GraphicsPipelineCreateInfo::default().layout(binding_signature.pipeline_layout);
+                let mut builder = vk::GraphicsPipelineCreateInfo::default()
+                    .layout(binding_signature.pipeline_layout);
 
-            let dynamic_states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
-            let dynamic_state =
-                vk::PipelineDynamicStateCreateInfo::default().dynamic_states(&dynamic_states);
+                let dynamic_states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
+                let dynamic_state =
+                    vk::PipelineDynamicStateCreateInfo::default().dynamic_states(&dynamic_states);
 
-            // Translate the vertex input state
-            let vertex_binding_descriptions: BVec<_, _> =
-                Self::translate_vertex_bindings(bump.allocator(), desc);
-            let vertex_attribute_descriptions: BVec<_, _> =
-                Self::translate_vertex_attributes(bump.allocator(), desc);
-            let vertex_input_state = Self::translate_vertex_input_state(
-                &vertex_binding_descriptions,
-                &vertex_attribute_descriptions,
-            );
+                // Translate the vertex input state
+                let vertex_binding_descriptions: BVec<_, _> =
+                    Self::translate_vertex_bindings(bump.allocator(), desc);
+                let vertex_attribute_descriptions: BVec<_, _> =
+                    Self::translate_vertex_attributes(bump.allocator(), desc);
+                let vertex_input_state = Self::translate_vertex_input_state(
+                    &vertex_binding_descriptions,
+                    &vertex_attribute_descriptions,
+                );
 
-            let viewport_state = vk::PipelineViewportStateCreateInfo::default()
-                .viewport_count(1)
-                .scissor_count(1);
-            let input_assembly_state = Self::translate_input_assembly_state(desc);
-            let rasterization_state = Self::translate_rasterization_state(desc);
-            let multisample_state = vk::PipelineMultisampleStateCreateInfo::default()
-                .rasterization_samples(vk::SampleCountFlags::TYPE_1)
-                .sample_shading_enable(false)
-                .min_sample_shading(0.0)
-                .alpha_to_coverage_enable(false)
-                .alpha_to_one_enable(false);
-            let depth_stencil_state = Self::translate_depth_stencil_state(desc);
+                let viewport_state = vk::PipelineViewportStateCreateInfo::default()
+                    .viewport_count(1)
+                    .scissor_count(1);
+                let input_assembly_state = Self::translate_input_assembly_state(desc);
+                let rasterization_state = Self::translate_rasterization_state(desc);
+                let multisample_state = vk::PipelineMultisampleStateCreateInfo::default()
+                    .rasterization_samples(vk::SampleCountFlags::TYPE_1)
+                    .sample_shading_enable(false)
+                    .min_sample_shading(0.0)
+                    .alpha_to_coverage_enable(false)
+                    .alpha_to_one_enable(false);
+                let depth_stencil_state = Self::translate_depth_stencil_state(desc);
 
-            let mut color_formats =
-                BVec::with_capacity_in(desc.render_target_formats.len(), bump.allocator());
-            let mut dynamic_rendering = Self::translate_framebuffer_info(desc, &mut color_formats);
+                let mut color_formats =
+                    BVec::with_capacity_in(desc.render_target_formats.len(), bump.allocator());
+                let mut dynamic_rendering =
+                    Self::translate_framebuffer_info(desc, &mut color_formats);
 
-            let attachments = Self::translate_color_attachment_state(bump.allocator(), desc);
-            let color_blend_state = Self::translate_color_blend_state(&attachments);
+                let attachments = Self::translate_color_attachment_state(bump.allocator(), desc);
+                let color_blend_state = Self::translate_color_blend_state(&attachments);
 
-            let mut shader_modules =
-                BVec::with_capacity_in(desc.shader_stages.len(), bump.allocator());
-            for (i, v) in desc.shader_stages.iter().copied().enumerate() {
-                let stage = v.shader_type();
-                let module = unsafe {
-                    let shader_data = Self::unwrap_shader_bytecode(bump.allocator(), i, v)?;
-                    let create_info = vk::ShaderModuleCreateInfo::default().code(shader_data);
+                let mut shader_modules =
+                    BVec::with_capacity_in(desc.shader_stages.len(), bump.allocator());
+                for (i, v) in desc.shader_stages.iter().copied().enumerate() {
+                    let stage = v.shader_type();
+                    let module = unsafe {
+                        let shader_data = Self::unwrap_shader_bytecode(bump.allocator(), i, v)?;
+                        let create_info = vk::ShaderModuleCreateInfo::default().code(shader_data);
+                        self.device
+                            .create_shader_module(&create_info, GLOBAL)
+                            .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                            .map_err(|_| PipelineCreateError::Platform)?
+                    };
+                    shader_modules.push((stage, module));
+                }
+
+                let mut stages = BVec::with_capacity_in(shader_modules.len(), bump.allocator());
+                for &(shader_type, module) in shader_modules.iter() {
+                    let info = vk::PipelineShaderStageCreateInfo::default()
+                        .stage(shader_type_to_vk(shader_type))
+                        .module(module)
+                        .name(c"main");
+                    stages.push(info);
+                }
+
+                builder = builder.dynamic_state(&dynamic_state);
+                builder = builder.stages(&stages);
+                builder = builder.vertex_input_state(&vertex_input_state);
+                builder = builder.viewport_state(&viewport_state);
+                builder = builder.input_assembly_state(&input_assembly_state);
+                builder = builder.rasterization_state(&rasterization_state);
+                builder = builder.multisample_state(&multisample_state);
+                builder = builder.depth_stencil_state(&depth_stencil_state);
+                builder = builder.push_next(&mut dynamic_rendering);
+                builder = builder.color_blend_state(&color_blend_state);
+
+                let pipeline = unsafe {
                     self.device
-                        .create_shader_module(&create_info, GLOBAL)
-                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .create_graphics_pipelines(vk::PipelineCache::null(), &[builder], GLOBAL)
+                        .inspect_err(|(_, v)| log::error!("Platform Error: {:#?}", v))
                         .map_err(|_| PipelineCreateError::Platform)?
                 };
-                shader_modules.push((stage, module));
-            }
+                let pipeline = pipeline[0];
 
-            let mut stages = BVec::with_capacity_in(shader_modules.len(), bump.allocator());
-            for &(shader_type, module) in shader_modules.iter() {
-                let info = vk::PipelineShaderStageCreateInfo::default()
-                    .stage(shader_type_to_vk(shader_type))
-                    .module(module)
-                    .name(c"main");
-                stages.push(info);
-            }
-
-            builder = builder.dynamic_state(&dynamic_state);
-            builder = builder.stages(&stages);
-            builder = builder.vertex_input_state(&vertex_input_state);
-            builder = builder.viewport_state(&viewport_state);
-            builder = builder.input_assembly_state(&input_assembly_state);
-            builder = builder.rasterization_state(&rasterization_state);
-            builder = builder.multisample_state(&multisample_state);
-            builder = builder.depth_stencil_state(&depth_stencil_state);
-            builder = builder.push_next(&mut dynamic_rendering);
-            builder = builder.color_blend_state(&color_blend_state);
-
-            let pipeline = unsafe {
-                self.device
-                    .create_graphics_pipelines(vk::PipelineCache::null(), &[builder], GLOBAL)
-                    .inspect_err(|(_, v)| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| PipelineCreateError::Platform)?
-            };
-            let pipeline = pipeline[0];
-
-            for (_, module) in shader_modules {
-                unsafe {
-                    self.device.destroy_shader_module(module, GLOBAL);
+                for (_, module) in shader_modules {
+                    unsafe {
+                        self.device.destroy_shader_module(module, GLOBAL);
+                    }
                 }
-            }
 
-            set_name(
-                self.debug_loader.as_ref(),
-                bump.allocator(),
-                pipeline,
-                desc.name,
-            );
+                set_name(
+                    self.debug_loader.as_ref(),
+                    bump.allocator(),
+                    pipeline,
+                    desc.name,
+                );
 
-            let out = GraphicsPipeline {
-                _device: self._this.upgrade().unwrap(),
-                _binding_signature: binding_signature._this.upgrade().unwrap(),
-                id: self.object_counter.next_graphics_pipeline(),
-                pipeline,
-            };
-            let out = Rhi::with(|| Object::new_arc_opaque(out));
-            unsafe { Ok(GraphicsPipelineHandle::new(out)) }
+                let out = GraphicsPipeline {
+                    _device: self._this.upgrade().unwrap(),
+                    _binding_signature: binding_signature._this.upgrade().unwrap(),
+                    id: self.object_counter.next_graphics_pipeline(),
+                    pipeline,
+                };
+                let out = Rhi::with(|| Object::new_arc_opaque(out));
+                unsafe { Ok(GraphicsPipelineHandle::new(out)) }
+            })
         })
     }
 
@@ -407,57 +424,59 @@ impl IDevice for Device {
         &self,
         desc: &ComputePipelineDesc,
     ) -> Result<ComputePipelineHandle, PipelineCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
+                let bump = bump_cell.scope();
 
-            let shader_data =
-                Self::unwrap_shader_bytecode(bump.allocator(), 0, desc.shader_module)?;
-            let binding_signature = unwrap::binding_signature(desc.binding_signature);
+                let shader_data =
+                    Self::unwrap_shader_bytecode(bump.allocator(), 0, desc.shader_module)?;
+                let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
-            // Create a temporary shader module using
-            let module = unsafe {
-                let create_info = vk::ShaderModuleCreateInfo::default().code(shader_data);
-                self.device
-                    .create_shader_module(&create_info, GLOBAL)
-                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| PipelineCreateError::Platform)?
-            };
+                // Create a temporary shader module using
+                let module = unsafe {
+                    let create_info = vk::ShaderModuleCreateInfo::default().code(shader_data);
+                    self.device
+                        .create_shader_module(&create_info, GLOBAL)
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| PipelineCreateError::Platform)?
+                };
 
-            let builder = vk::ComputePipelineCreateInfo::default()
-                .layout(binding_signature.pipeline_layout)
-                .stage(
-                    vk::PipelineShaderStageCreateInfo::default()
-                        .stage(vk::ShaderStageFlags::COMPUTE)
-                        .module(module)
-                        .name(c"main"),
+                let builder = vk::ComputePipelineCreateInfo::default()
+                    .layout(binding_signature.pipeline_layout)
+                    .stage(
+                        vk::PipelineShaderStageCreateInfo::default()
+                            .stage(vk::ShaderStageFlags::COMPUTE)
+                            .module(module)
+                            .name(c"main"),
+                    );
+
+                let pipeline = unsafe {
+                    self.device
+                        .create_compute_pipelines(vk::PipelineCache::null(), &[builder], GLOBAL)
+                        .inspect_err(|(_, v)| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| PipelineCreateError::Platform)?
+                };
+                let pipeline = pipeline[0];
+
+                // Destroy the temporary shader module
+                unsafe { self.device.destroy_shader_module(module, GLOBAL) }
+
+                set_name(
+                    self.debug_loader.as_ref(),
+                    bump.allocator(),
+                    pipeline,
+                    desc.name,
                 );
 
-            let pipeline = unsafe {
-                self.device
-                    .create_compute_pipelines(vk::PipelineCache::null(), &[builder], GLOBAL)
-                    .inspect_err(|(_, v)| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| PipelineCreateError::Platform)?
-            };
-            let pipeline = pipeline[0];
-
-            // Destroy the temporary shader module
-            unsafe { self.device.destroy_shader_module(module, GLOBAL) }
-
-            set_name(
-                self.debug_loader.as_ref(),
-                bump.allocator(),
-                pipeline,
-                desc.name,
-            );
-
-            let out = ComputePipeline {
-                _device: self._this.upgrade().unwrap(),
-                _binding_signature: binding_signature._this.upgrade().unwrap(),
-                id: self.object_counter.next_compute_pipeline(),
-                pipeline,
-            };
-            let out = Rhi::with(|| Object::new_arc_opaque(out));
-            unsafe { Ok(ComputePipelineHandle::new(out)) }
+                let out = ComputePipeline {
+                    _device: self._this.upgrade().unwrap(),
+                    _binding_signature: binding_signature._this.upgrade().unwrap(),
+                    id: self.object_counter.next_compute_pipeline(),
+                    pipeline,
+                };
+                let out = Rhi::with(|| Object::new_arc_opaque(out));
+                unsafe { Ok(ComputePipelineHandle::new(out)) }
+            })
         })
     }
 
@@ -468,44 +487,46 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
+                let bump = bump_cell.scope();
 
-            let layout = unwrap::parameter_block_layout(desc.layout);
+                let layout = unwrap::parameter_block_layout(desc.layout);
 
-            let iter = layout.pool_sizes.iter().copied();
-            let mut pool_sizes = BVec::new_in(bump.allocator());
-            pool_sizes.extend(iter);
-            for size in &mut pool_sizes {
-                size.descriptor_count *= desc.num_blocks;
-            }
+                let iter = layout.pool_sizes.iter().copied();
+                let mut pool_sizes = BVec::new_in(bump.allocator());
+                pool_sizes.extend(iter);
+                for size in &mut pool_sizes {
+                    size.descriptor_count *= desc.num_blocks;
+                }
 
-            let create_info = vk::DescriptorPoolCreateInfo::default()
-                .flags(vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET)
-                .max_sets(desc.num_blocks)
-                .pool_sizes(&pool_sizes);
+                let create_info = vk::DescriptorPoolCreateInfo::default()
+                    .flags(vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET)
+                    .max_sets(desc.num_blocks)
+                    .pool_sizes(&pool_sizes);
 
-            let descriptor_pool = unsafe {
-                self.device
-                    .create_descriptor_pool(&create_info, GLOBAL)
-                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| DescriptorPoolCreateError::Platform)?
-            };
+                let descriptor_pool = unsafe {
+                    self.device
+                        .create_descriptor_pool(&create_info, GLOBAL)
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| DescriptorPoolCreateError::Platform)?
+                };
 
-            set_name(
-                self.debug_loader.as_ref(),
-                bump.allocator(),
-                descriptor_pool,
-                desc.name,
-            );
+                set_name(
+                    self.debug_loader.as_ref(),
+                    bump.allocator(),
+                    descriptor_pool,
+                    desc.name,
+                );
 
-            let pool: Box<dyn IDescriptorPool> = Box::new(DescriptorPool {
-                _device: self._this.upgrade().unwrap(),
-                _layout: layout._this.upgrade().unwrap(),
-                descriptor_pool,
-            });
+                let pool: Box<dyn IDescriptorPool> = Box::new(DescriptorPool {
+                    _device: self._this.upgrade().unwrap(),
+                    _layout: layout._this.upgrade().unwrap(),
+                    descriptor_pool,
+                });
 
-            Ok(pool)
+                Ok(pool)
+            })
         })
     }
 
@@ -516,69 +537,71 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorArenaDesc,
     ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
+                let bump = bump_cell.scope();
 
-            const fn pool_size(
-                ty: vk::DescriptorType,
-                descriptor_count: u32,
-            ) -> vk::DescriptorPoolSize {
-                vk::DescriptorPoolSize {
-                    ty,
-                    descriptor_count,
+                const fn pool_size(
+                    ty: vk::DescriptorType,
+                    descriptor_count: u32,
+                ) -> vk::DescriptorPoolSize {
+                    vk::DescriptorPoolSize {
+                        ty,
+                        descriptor_count,
+                    }
                 }
-            }
-            let mut pool_sizes = [
-                pool_size(vk::DescriptorType::SAMPLER, 1),
-                // pool_size(vk::DescriptorType::COMBINED_IMAGE_SAMPLER, 0),
-                pool_size(vk::DescriptorType::SAMPLED_IMAGE, 8),
-                pool_size(vk::DescriptorType::STORAGE_IMAGE, 4),
-                pool_size(vk::DescriptorType::UNIFORM_TEXEL_BUFFER, 2),
-                pool_size(vk::DescriptorType::STORAGE_TEXEL_BUFFER, 2),
-                pool_size(vk::DescriptorType::UNIFORM_BUFFER, 4),
-                pool_size(vk::DescriptorType::STORAGE_BUFFER, 4),
-                pool_size(vk::DescriptorType::UNIFORM_BUFFER_DYNAMIC, 2),
-                // pool_size(vk::DescriptorType::STORAGE_BUFFER_DYNAMIC, 0),
-                // pool_size(vk::DescriptorType::INPUT_ATTACHMENT, 0),
-            ];
-            // Multiply the pool sizes by our multiplier. We encode the default sizes as the number
-            // of descriptors expected per '2' sets so we can do some nice integer math instead of
-            // icky float maths with fractional ratios
-            let multiplier = desc.num_blocks.div_ceil(2).max(2);
-            for v in &mut pool_sizes {
-                v.descriptor_count *= multiplier;
-            }
+                let mut pool_sizes = [
+                    pool_size(vk::DescriptorType::SAMPLER, 1),
+                    // pool_size(vk::DescriptorType::COMBINED_IMAGE_SAMPLER, 0),
+                    pool_size(vk::DescriptorType::SAMPLED_IMAGE, 8),
+                    pool_size(vk::DescriptorType::STORAGE_IMAGE, 4),
+                    pool_size(vk::DescriptorType::UNIFORM_TEXEL_BUFFER, 2),
+                    pool_size(vk::DescriptorType::STORAGE_TEXEL_BUFFER, 2),
+                    pool_size(vk::DescriptorType::UNIFORM_BUFFER, 4),
+                    pool_size(vk::DescriptorType::STORAGE_BUFFER, 4),
+                    pool_size(vk::DescriptorType::UNIFORM_BUFFER_DYNAMIC, 2),
+                    // pool_size(vk::DescriptorType::STORAGE_BUFFER_DYNAMIC, 0),
+                    // pool_size(vk::DescriptorType::INPUT_ATTACHMENT, 0),
+                ];
+                // Multiply the pool sizes by our multiplier. We encode the default sizes as the number
+                // of descriptors expected per '2' sets so we can do some nice integer math instead of
+                // icky float maths with fractional ratios
+                let multiplier = desc.num_blocks.div_ceil(2).max(2);
+                for v in &mut pool_sizes {
+                    v.descriptor_count *= multiplier;
+                }
 
-            let flags = match desc.arena_type {
-                DescriptorArenaType::Linear => vk::DescriptorPoolCreateFlags::empty(),
-                DescriptorArenaType::Heap => vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET,
-            };
+                let flags = match desc.arena_type {
+                    DescriptorArenaType::Linear => vk::DescriptorPoolCreateFlags::empty(),
+                    DescriptorArenaType::Heap => vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET,
+                };
 
-            let create_info = vk::DescriptorPoolCreateInfo::default()
-                .flags(flags)
-                .max_sets(desc.num_blocks)
-                .pool_sizes(&pool_sizes);
+                let create_info = vk::DescriptorPoolCreateInfo::default()
+                    .flags(flags)
+                    .max_sets(desc.num_blocks)
+                    .pool_sizes(&pool_sizes);
 
-            let descriptor_pool = unsafe {
-                self.device
-                    .create_descriptor_pool(&create_info, GLOBAL)
-                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| DescriptorPoolCreateError::Platform)?
-            };
+                let descriptor_pool = unsafe {
+                    self.device
+                        .create_descriptor_pool(&create_info, GLOBAL)
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| DescriptorPoolCreateError::Platform)?
+                };
 
-            set_name(
-                self.debug_loader.as_ref(),
-                bump.allocator(),
-                descriptor_pool,
-                desc.name,
-            );
+                set_name(
+                    self.debug_loader.as_ref(),
+                    bump.allocator(),
+                    descriptor_pool,
+                    desc.name,
+                );
 
-            let pool: Box<dyn IDescriptorArena> = Box::new(DescriptorArena {
-                _device: self._this.upgrade().unwrap(),
-                descriptor_pool,
-            });
+                let pool: Box<dyn IDescriptorArena> = Box::new(DescriptorArena {
+                    _device: self._this.upgrade().unwrap(),
+                    descriptor_pool,
+                });
 
-            Ok(pool)
+                Ok(pool)
+            })
         })
     }
 
@@ -586,205 +609,209 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError> {
-        // Storage buffer is always enabled as this is the most basic usage, essentially meaning
-        // "bag of bytes".
-        let mut usage = vk::BufferUsageFlags::empty();
+        abort_on_unwind(|| {
+            // Storage buffer is always enabled as this is the most basic usage, essentially meaning
+            // "bag of bytes".
+            let mut usage = vk::BufferUsageFlags::empty();
 
-        if desc.usage.contains(ResourceUsageFlags::COPY_SOURCE) {
-            usage |= vk::BufferUsageFlags::TRANSFER_SRC
-        }
-        if desc.usage.contains(ResourceUsageFlags::COPY_DEST) {
-            usage |= vk::BufferUsageFlags::TRANSFER_DST
-        }
-        if desc.usage.contains(ResourceUsageFlags::SHADER_RESOURCE) {
-            usage |= vk::BufferUsageFlags::STORAGE_BUFFER;
-            usage |= vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER;
-        }
-        if desc.usage.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
-            usage |= vk::BufferUsageFlags::STORAGE_BUFFER;
-            usage |= vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER;
-        }
-        if desc.usage.contains(ResourceUsageFlags::VERTEX_BUFFER) {
-            usage |= vk::BufferUsageFlags::VERTEX_BUFFER;
-        }
-        if desc.usage.contains(ResourceUsageFlags::INDEX_BUFFER) {
-            usage |= vk::BufferUsageFlags::INDEX_BUFFER;
-        }
-        if desc.usage.contains(ResourceUsageFlags::CONSTANT_BUFFER) {
-            usage |= vk::BufferUsageFlags::UNIFORM_BUFFER;
-        }
-        if desc.usage.contains(ResourceUsageFlags::INDIRECT_DRAW_ARGS) {
-            usage |= vk::BufferUsageFlags::INDIRECT_BUFFER;
-        }
-        if desc
-            .usage
-            .contains(ResourceUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT)
-        {
-            usage |= vk::BufferUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR;
-        }
-        if desc
-            .usage
-            .contains(ResourceUsageFlags::ACCELERATION_STRUCTURE_STORAGE)
-        {
-            usage |= vk::BufferUsageFlags::ACCELERATION_STRUCTURE_STORAGE_KHR;
-        }
+            if desc.usage.contains(ResourceUsageFlags::COPY_SOURCE) {
+                usage |= vk::BufferUsageFlags::TRANSFER_SRC
+            }
+            if desc.usage.contains(ResourceUsageFlags::COPY_DEST) {
+                usage |= vk::BufferUsageFlags::TRANSFER_DST
+            }
+            if desc.usage.contains(ResourceUsageFlags::SHADER_RESOURCE) {
+                usage |= vk::BufferUsageFlags::STORAGE_BUFFER;
+                usage |= vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER;
+            }
+            if desc.usage.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
+                usage |= vk::BufferUsageFlags::STORAGE_BUFFER;
+                usage |= vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER;
+            }
+            if desc.usage.contains(ResourceUsageFlags::VERTEX_BUFFER) {
+                usage |= vk::BufferUsageFlags::VERTEX_BUFFER;
+            }
+            if desc.usage.contains(ResourceUsageFlags::INDEX_BUFFER) {
+                usage |= vk::BufferUsageFlags::INDEX_BUFFER;
+            }
+            if desc.usage.contains(ResourceUsageFlags::CONSTANT_BUFFER) {
+                usage |= vk::BufferUsageFlags::UNIFORM_BUFFER;
+            }
+            if desc.usage.contains(ResourceUsageFlags::INDIRECT_DRAW_ARGS) {
+                usage |= vk::BufferUsageFlags::INDIRECT_BUFFER;
+            }
+            if desc
+                .usage
+                .contains(ResourceUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT)
+            {
+                usage |= vk::BufferUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR;
+            }
+            if desc
+                .usage
+                .contains(ResourceUsageFlags::ACCELERATION_STRUCTURE_STORAGE)
+            {
+                usage |= vk::BufferUsageFlags::ACCELERATION_STRUCTURE_STORAGE_KHR;
+            }
 
-        let create_info = vk::BufferCreateInfo::default()
-            .size(desc.size)
-            .usage(usage)
-            .sharing_mode(vk::SharingMode::EXCLUSIVE);
+            let create_info = vk::BufferCreateInfo::default()
+                .size(desc.size)
+                .usage(usage)
+                .sharing_mode(vk::SharingMode::EXCLUSIVE);
 
-        let memory_location = match desc.cpu_access {
-            CpuAccessMode::None => MemoryLocation::GpuLocal,
-            CpuAccessMode::Read => MemoryLocation::GpuToCpu,
-            CpuAccessMode::Write => MemoryLocation::CpuToGpu,
-        };
-        let alloc_info = AllocationDesc {
-            location: memory_location,
-            strategy: Default::default(),
-            desc: create_info,
-        };
+            let memory_location = match desc.cpu_access {
+                CpuAccessMode::None => MemoryLocation::GpuLocal,
+                CpuAccessMode::Read => MemoryLocation::GpuToCpu,
+                CpuAccessMode::Write => MemoryLocation::CpuToGpu,
+            };
+            let alloc_info = AllocationDesc {
+                location: memory_location,
+                strategy: Default::default(),
+                desc: create_info,
+            };
 
-        let (allocation, metadata, buffer) = unsafe {
-            self.allocator
-                .as_ref()
-                .unwrap_unchecked()
-                .allocate_buffer(self, &alloc_info)
-                .ok_or(BufferCreateError::OutOfMemory)?
-        };
+            let (allocation, metadata, buffer) = unsafe {
+                self.allocator
+                    .as_ref()
+                    .unwrap_unchecked()
+                    .allocate_buffer(self, &alloc_info)
+                    .ok_or(BufferCreateError::OutOfMemory)?
+            };
 
-        let out = Buffer {
-            _device: self._this.upgrade().unwrap(),
-            id: self.object_counter.next_buffer(),
-            buffer,
-            allocation: Some(allocation),
-            memory: metadata.memory,
-            map_state: Mutex::new(MapState {
-                count: 0,
-                ptr: metadata.mapped_address,
-            }),
-            desc: OwnedBufferDesc::new(desc.clone()),
-        };
-        let out = Rhi::with(|| Object::new_arc_opaque(out));
-        unsafe { Ok(BufferHandle::new(out)) }
+            let out = Buffer {
+                _device: self._this.upgrade().unwrap(),
+                id: self.object_counter.next_buffer(),
+                buffer,
+                allocation: Some(allocation),
+                memory: metadata.memory,
+                map_state: Mutex::new(MapState {
+                    count: 0,
+                    ptr: metadata.mapped_address,
+                }),
+                desc: OwnedBufferDesc::new(desc.clone()),
+            };
+            let out = Rhi::with(|| Object::new_arc_opaque(out));
+            unsafe { Ok(BufferHandle::new(out)) }
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
+                let bump = bump_cell.scope();
 
-            let image_type = match desc.dimension {
-                TextureDimension::Texture1D => vk::ImageType::TYPE_1D,
-                TextureDimension::Texture2D => vk::ImageType::TYPE_2D,
-                TextureDimension::Texture3D => vk::ImageType::TYPE_3D,
-            };
+                let image_type = match desc.dimension {
+                    TextureDimension::Texture1D => vk::ImageType::TYPE_1D,
+                    TextureDimension::Texture2D => vk::ImageType::TYPE_2D,
+                    TextureDimension::Texture3D => vk::ImageType::TYPE_3D,
+                };
 
-            let format = texture_format_to_vk(desc.format);
+                let format = texture_format_to_vk(desc.format);
 
-            // Select our set of view-compatible formats
-            let iter = desc
-                .format
-                .compatible_view_formats()
-                .iter()
-                .copied()
-                .map(texture_format_to_vk);
-            let mut format_list = BVec::new_in(bump.allocator());
-            format_list.extend(iter);
+                // Select our set of view-compatible formats
+                let iter = desc
+                    .format
+                    .compatible_view_formats()
+                    .iter()
+                    .copied()
+                    .map(texture_format_to_vk);
+                let mut format_list = BVec::new_in(bump.allocator());
+                format_list.extend(iter);
 
-            let mut format_flags = vk::ImageCreateFlags::empty();
-            if format_list.len() > 1 {
-                format_flags |= vk::ImageCreateFlags::MUTABLE_FORMAT
-            }
-
-            let mut format_list =
-                vk::ImageFormatListCreateInfo::default().view_formats(&format_list);
-
-            let samples = match desc.sample_count {
-                1 => vk::SampleCountFlags::TYPE_1,
-                2 => vk::SampleCountFlags::TYPE_2,
-                4 => vk::SampleCountFlags::TYPE_4,
-                8 => vk::SampleCountFlags::TYPE_8,
-                16 => vk::SampleCountFlags::TYPE_16,
-                32 => vk::SampleCountFlags::TYPE_32,
-                _ => return Err(TextureCreateError::InvalidSampleCount(desc.sample_count)),
-            };
-
-            let mut usage = vk::ImageUsageFlags::empty();
-            if desc.usage.contains(ResourceUsageFlags::SHADER_RESOURCE) {
-                usage |= vk::ImageUsageFlags::SAMPLED
-            }
-            if desc.usage.contains(ResourceUsageFlags::COPY_DEST) {
-                usage |= vk::ImageUsageFlags::TRANSFER_DST
-            }
-            if desc.usage.contains(ResourceUsageFlags::COPY_SOURCE) {
-                usage |= vk::ImageUsageFlags::TRANSFER_SRC
-            }
-            if desc.usage.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
-                usage |= vk::ImageUsageFlags::STORAGE
-            }
-            if desc.usage.contains(ResourceUsageFlags::RENDER_TARGET) {
-                if desc.format.is_depth_stencil() {
-                    usage |= vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT
-                } else {
-                    usage |= vk::ImageUsageFlags::COLOR_ATTACHMENT
+                let mut format_flags = vk::ImageCreateFlags::empty();
+                if format_list.len() > 1 {
+                    format_flags |= vk::ImageCreateFlags::MUTABLE_FORMAT
                 }
-            }
 
-            let mut flags = vk::ImageCreateFlags::empty();
-            if desc.usage.contains(ResourceUsageFlags::CUBE_FACE) {
-                flags |= vk::ImageCreateFlags::CUBE_COMPATIBLE;
-            }
+                let mut format_list =
+                    vk::ImageFormatListCreateInfo::default().view_formats(&format_list);
 
-            let create_info = vk::ImageCreateInfo::default()
-                .flags(flags | format_flags)
-                .image_type(image_type)
-                .format(format)
-                .extent(vk::Extent3D {
-                    width: desc.width.max(1),
-                    height: desc.height.max(1),
-                    depth: desc.depth.max(1),
-                })
-                .mip_levels(desc.mip_levels.max(1))
-                .array_layers(desc.array_size.max(1))
-                .samples(samples)
-                .tiling(vk::ImageTiling::OPTIMAL)
-                .usage(usage)
-                .sharing_mode(vk::SharingMode::EXCLUSIVE)
-                .initial_layout(vk::ImageLayout::UNDEFINED);
-            let create_info = create_info.push_next(&mut format_list);
+                let samples = match desc.sample_count {
+                    1 => vk::SampleCountFlags::TYPE_1,
+                    2 => vk::SampleCountFlags::TYPE_2,
+                    4 => vk::SampleCountFlags::TYPE_4,
+                    8 => vk::SampleCountFlags::TYPE_8,
+                    16 => vk::SampleCountFlags::TYPE_16,
+                    32 => vk::SampleCountFlags::TYPE_32,
+                    _ => return Err(TextureCreateError::InvalidSampleCount(desc.sample_count)),
+                };
 
-            let alloc_info = AllocationDesc {
-                location: MemoryLocation::GpuLocal,
-                strategy: Default::default(),
-                desc: create_info,
-            };
+                let mut usage = vk::ImageUsageFlags::empty();
+                if desc.usage.contains(ResourceUsageFlags::SHADER_RESOURCE) {
+                    usage |= vk::ImageUsageFlags::SAMPLED
+                }
+                if desc.usage.contains(ResourceUsageFlags::COPY_DEST) {
+                    usage |= vk::ImageUsageFlags::TRANSFER_DST
+                }
+                if desc.usage.contains(ResourceUsageFlags::COPY_SOURCE) {
+                    usage |= vk::ImageUsageFlags::TRANSFER_SRC
+                }
+                if desc.usage.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
+                    usage |= vk::ImageUsageFlags::STORAGE
+                }
+                if desc.usage.contains(ResourceUsageFlags::RENDER_TARGET) {
+                    if desc.format.is_depth_stencil() {
+                        usage |= vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT
+                    } else {
+                        usage |= vk::ImageUsageFlags::COLOR_ATTACHMENT
+                    }
+                }
 
-            let (allocation, _, image) = unsafe {
-                self.allocator
-                    .as_ref()
-                    .unwrap_unchecked()
-                    .allocate_texture(self, &alloc_info)
-                    .ok_or(TextureCreateError::OutOfMemory)?
-            };
+                let mut flags = vk::ImageCreateFlags::empty();
+                if desc.usage.contains(ResourceUsageFlags::CUBE_FACE) {
+                    flags |= vk::ImageCreateFlags::CUBE_COMPATIBLE;
+                }
 
-            let out = Texture {
-                _device: self._this.upgrade().unwrap(),
-                id: self.object_counter.next_texture(),
-                image,
-                // creation_flags: create_info.flags,
-                // created_usage: create_info.usage,
-                allocation: Some(allocation),
-                is_owned: true,
-                views: Default::default(),
-                rtvs: Default::default(),
-                dsvs: Default::default(),
-                desc: OwnedTextureDesc::new(desc.clone()),
-            };
-            let out = Rhi::with(|| Object::new_arc_opaque(out));
-            unsafe { Ok(TextureHandle::new(out)) }
+                let create_info = vk::ImageCreateInfo::default()
+                    .flags(flags | format_flags)
+                    .image_type(image_type)
+                    .format(format)
+                    .extent(vk::Extent3D {
+                        width: desc.width.max(1),
+                        height: desc.height.max(1),
+                        depth: desc.depth.max(1),
+                    })
+                    .mip_levels(desc.mip_levels.max(1))
+                    .array_layers(desc.array_size.max(1))
+                    .samples(samples)
+                    .tiling(vk::ImageTiling::OPTIMAL)
+                    .usage(usage)
+                    .sharing_mode(vk::SharingMode::EXCLUSIVE)
+                    .initial_layout(vk::ImageLayout::UNDEFINED);
+                let create_info = create_info.push_next(&mut format_list);
+
+                let alloc_info = AllocationDesc {
+                    location: MemoryLocation::GpuLocal,
+                    strategy: Default::default(),
+                    desc: create_info,
+                };
+
+                let (allocation, _, image) = unsafe {
+                    self.allocator
+                        .as_ref()
+                        .unwrap_unchecked()
+                        .allocate_texture(self, &alloc_info)
+                        .ok_or(TextureCreateError::OutOfMemory)?
+                };
+
+                let out = Texture {
+                    _device: self._this.upgrade().unwrap(),
+                    id: self.object_counter.next_texture(),
+                    image,
+                    // creation_flags: create_info.flags,
+                    // created_usage: create_info.usage,
+                    allocation: Some(allocation),
+                    is_owned: true,
+                    views: Default::default(),
+                    rtvs: Default::default(),
+                    dsvs: Default::default(),
+                    desc: OwnedTextureDesc::new(desc.clone()),
+                };
+                let out = Rhi::with(|| Object::new_arc_opaque(out));
+                unsafe { Ok(TextureHandle::new(out)) }
+            })
         })
     }
 
@@ -792,52 +819,54 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_sampler(&self, desc: &SamplerDesc) -> Result<SamplerHandle, SamplerCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
+                let bump = bump_cell.scope();
 
-            let mut create_info = vk::SamplerCreateInfo::default()
-                .mag_filter(sampler_filter_to_vk(desc.mag_filter))
-                .min_filter(sampler_filter_to_vk(desc.min_filter))
-                .mipmap_mode(sampler_mip_filter_to_vk(desc.mip_filter))
-                .address_mode_u(sampler_address_mode_to_vk(desc.address_mode_u))
-                .address_mode_v(sampler_address_mode_to_vk(desc.address_mode_v))
-                .address_mode_w(sampler_address_mode_to_vk(desc.address_mode_w))
-                .mip_lod_bias(desc.lod_bias)
-                .anisotropy_enable(desc.enable_anisotropy)
-                .max_anisotropy(desc.max_anisotropy as f32)
-                .min_lod(desc.min_lod)
-                .max_lod(desc.max_lod)
-                .border_color(sampler_border_color_to_vk(desc.border_color))
-                .unnormalized_coordinates(false);
+                let mut create_info = vk::SamplerCreateInfo::default()
+                    .mag_filter(sampler_filter_to_vk(desc.mag_filter))
+                    .min_filter(sampler_filter_to_vk(desc.min_filter))
+                    .mipmap_mode(sampler_mip_filter_to_vk(desc.mip_filter))
+                    .address_mode_u(sampler_address_mode_to_vk(desc.address_mode_u))
+                    .address_mode_v(sampler_address_mode_to_vk(desc.address_mode_v))
+                    .address_mode_w(sampler_address_mode_to_vk(desc.address_mode_w))
+                    .mip_lod_bias(desc.lod_bias)
+                    .anisotropy_enable(desc.enable_anisotropy)
+                    .max_anisotropy(desc.max_anisotropy as f32)
+                    .min_lod(desc.min_lod)
+                    .max_lod(desc.max_lod)
+                    .border_color(sampler_border_color_to_vk(desc.border_color))
+                    .unnormalized_coordinates(false);
 
-            if let Some(v) = desc.compare_op {
-                create_info = create_info
-                    .compare_enable(true)
-                    .compare_op(compare_op_to_vk(v))
-            }
+                if let Some(v) = desc.compare_op {
+                    create_info = create_info
+                        .compare_enable(true)
+                        .compare_op(compare_op_to_vk(v))
+                }
 
-            let sampler = unsafe {
-                self.device
-                    .create_sampler(&create_info, GLOBAL)
-                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| SamplerCreateError::Platform)?
-            };
+                let sampler = unsafe {
+                    self.device
+                        .create_sampler(&create_info, GLOBAL)
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| SamplerCreateError::Platform)?
+                };
 
-            set_name(
-                self.debug_loader.as_ref(),
-                bump.allocator(),
-                sampler,
-                desc.name,
-            );
+                set_name(
+                    self.debug_loader.as_ref(),
+                    bump.allocator(),
+                    sampler,
+                    desc.name,
+                );
 
-            let out = Sampler {
-                _device: self._this.upgrade().unwrap(),
-                id: self.object_counter.next_sampler(),
-                sampler,
-                desc: OwnedSamplerDesc::new(desc.clone()),
-            };
-            let out = Rhi::with(|| Object::new_arc_opaque(out));
-            unsafe { Ok(SamplerHandle::new(out)) }
+                let out = Sampler {
+                    _device: self._this.upgrade().unwrap(),
+                    id: self.object_counter.next_sampler(),
+                    sampler,
+                    desc: OwnedSamplerDesc::new(desc.clone()),
+                };
+                let out = Rhi::with(|| Object::new_arc_opaque(out));
+                unsafe { Ok(SamplerHandle::new(out)) }
+            })
         })
     }
 
@@ -848,7 +877,8 @@ impl IDevice for Device {
         &self,
         desc: &CommandListDesc,
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
             // First we try and grab a command list from the free list. This way we reuse an old
@@ -947,21 +977,27 @@ impl IDevice for Device {
 
             Ok(out)
         })
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_queue(&self, queue_type: QueueType) -> Option<Arc<dyn IQueue>> {
-        let queue = match queue_type {
-            QueueType::General => self.general_queue.clone(),
-            QueueType::Compute => self.compute_queue.clone(),
-            QueueType::Transfer => self.transfer_queue.clone(),
-        };
-        match queue {
-            None => None,
-            Some(v) => Some(v),
-        }
+        abort_on_unwind(|| {
+            let queue = match queue_type {
+                QueueType::General => self.general_queue.clone(),
+                QueueType::Compute => self.compute_queue.clone(),
+                QueueType::Transfer => self.transfer_queue.clone(),
+            };
+            match queue {
+                None => None,
+                Some(v) => {
+                    let v: Arc<dyn IQueue> = v;
+                    Some(v)
+                }
+            }
+        })
     }
 
     // ========================================================================================== //
@@ -974,21 +1010,23 @@ impl IDevice for Device {
         base: u32,
         writes: &[ParameterWrite],
     ) {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
+                let bump = bump_cell.scope();
 
-            let layout = unwrap::parameter_block_layout(layout);
-            let layout_desc = layout.desc.get();
+                let layout = unwrap::parameter_block_layout(layout);
+                let layout_desc = layout.desc.get();
 
-            let descriptor_writes = translate_descriptor_writes(
-                layout_desc,
-                base,
-                writes,
-                unsafe { std::mem::transmute(block) },
-                bump.allocator(),
-            );
+                let descriptor_writes = translate_descriptor_writes(
+                    layout_desc,
+                    base,
+                    writes,
+                    unsafe { std::mem::transmute(block) },
+                    bump.allocator(),
+                );
 
-            unsafe { self.device.update_descriptor_sets(&descriptor_writes, &[]) };
+                unsafe { self.device.update_descriptor_sets(&descriptor_writes, &[]) };
+            })
         })
     }
 
@@ -996,23 +1034,25 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_fence(&self, value: u64) -> Result<FenceHandle, FenceCreateError> {
-        let semaphore = unsafe {
-            let mut info = vk::SemaphoreTypeCreateInfo::default()
-                .initial_value(value)
-                .semaphore_type(vk::SemaphoreType::TIMELINE);
-            let info = vk::SemaphoreCreateInfo::default().push_next(&mut info);
-            self.device
-                .create_semaphore(&info, GLOBAL)
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(|_| FenceCreateError::Platform)?
-        };
+        abort_on_unwind(|| {
+            let semaphore = unsafe {
+                let mut info = vk::SemaphoreTypeCreateInfo::default()
+                    .initial_value(value)
+                    .semaphore_type(vk::SemaphoreType::TIMELINE);
+                let info = vk::SemaphoreCreateInfo::default().push_next(&mut info);
+                self.device
+                    .create_semaphore(&info, GLOBAL)
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| FenceCreateError::Platform)?
+            };
 
-        let fence = Fence {
-            _device: self._this.upgrade().unwrap(),
-            semaphore,
-        };
-        let fence = Rhi::with(|| Object::new_arc_opaque(fence));
-        unsafe { Ok(FenceHandle::new(fence)) }
+            let fence = Fence {
+                _device: self._this.upgrade().unwrap(),
+                semaphore,
+            };
+            let fence = Rhi::with(|| Object::new_arc_opaque(fence));
+            unsafe { Ok(FenceHandle::new(fence)) }
+        })
     }
 
     // ========================================================================================== //
@@ -1025,48 +1065,50 @@ impl IDevice for Device {
         wait_all: bool,
         timeout: u32,
     ) -> Result<FenceWaitResult, FenceWaitError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
+                let bump = bump_cell.scope();
 
-            assert_eq!(
-                fences.len(),
-                values.len(),
-                "You must provide a matching number of fences and wait values"
-            );
+                assert_eq!(
+                    fences.len(),
+                    values.len(),
+                    "You must provide a matching number of fences and wait values"
+                );
 
-            // If you provide no fences to wait on then we just return immediately. Can't block on
-            // nothing.
-            if fences.is_empty() {
-                return Ok(FenceWaitResult::Complete);
-            }
-
-            let iter = fences.iter().copied().map(Fence::get).map(|v| v.semaphore);
-            let mut fences = BVec::new_in(bump.allocator());
-            fences.extend(iter);
-
-            let mut info = vk::SemaphoreWaitInfo::default();
-            if !wait_all {
-                info = info.flags(vk::SemaphoreWaitFlags::ANY);
-            }
-            info = info.semaphores(&fences);
-            info = info.values(values);
-
-            let timeout = if timeout == u32::MAX {
-                u64::MAX
-            } else {
-                timeout as u64 * 1000000 // Convert to nanoseconds
-            };
-
-            let result = unsafe { self.device.wait_semaphores(&info, timeout) };
-            let out = match result {
-                Ok(_) => FenceWaitResult::Complete,
-                Err(vk::Result::TIMEOUT) => FenceWaitResult::Timeout,
-                Err(v) => {
-                    log::error!("Platform Error: {:#?}", v);
-                    return Err(map_error_class(v));
+                // If you provide no fences to wait on then we just return immediately. Can't block on
+                // nothing.
+                if fences.is_empty() {
+                    return Ok(FenceWaitResult::Complete);
                 }
-            };
-            Ok(out)
+
+                let iter = fences.iter().copied().map(Fence::get).map(|v| v.semaphore);
+                let mut fences = BVec::new_in(bump.allocator());
+                fences.extend(iter);
+
+                let mut info = vk::SemaphoreWaitInfo::default();
+                if !wait_all {
+                    info = info.flags(vk::SemaphoreWaitFlags::ANY);
+                }
+                info = info.semaphores(&fences);
+                info = info.values(values);
+
+                let timeout = if timeout == u32::MAX {
+                    u64::MAX
+                } else {
+                    timeout as u64 * 1000000 // Convert to nanoseconds
+                };
+
+                let result = unsafe { self.device.wait_semaphores(&info, timeout) };
+                let out = match result {
+                    Ok(_) => FenceWaitResult::Complete,
+                    Err(vk::Result::TIMEOUT) => FenceWaitResult::Timeout,
+                    Err(v) => {
+                        log::error!("Platform Error: {:#?}", v);
+                        return Err(map_error_class(v));
+                    }
+                };
+                Ok(out)
+            })
         })
     }
 
@@ -1074,31 +1116,35 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn get_fence_signaled_value(&self, fence: &FenceHandle) -> Result<u64, FencePollError> {
-        let fence = Fence::get(fence);
+        abort_on_unwind(|| {
+            let fence = Fence::get(fence);
 
-        unsafe {
-            self.device
-                .get_semaphore_counter_value(fence.semaphore)
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(map_error_class)
-        }
+            unsafe {
+                self.device
+                    .get_semaphore_counter_value(fence.semaphore)
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(map_error_class)
+            }
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) -> Result<(), FenceSignalError> {
-        let fence = Fence::get(fence);
+        abort_on_unwind(|| {
+            let fence = Fence::get(fence);
 
-        let info = vk::SemaphoreSignalInfo::default()
-            .semaphore(fence.semaphore)
-            .value(value);
-        unsafe {
-            self.device
-                .signal_semaphore(&info)
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(map_error_class)
-        }
+            let info = vk::SemaphoreSignalInfo::default()
+                .semaphore(fence.semaphore)
+                .value(value);
+            unsafe {
+                self.device
+                    .signal_semaphore(&info)
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(map_error_class)
+            }
+        })
     }
 
     // ========================================================================================== //
@@ -1112,56 +1158,56 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn get_buffer_id(&self, buffer: &BufferHandle) -> std::num::NonZeroU64 {
-        Buffer::get(buffer).get_buffer_id()
+        abort_on_unwind(|| Buffer::get(buffer).get_buffer_id())
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
-        Buffer::get(buffer).desc()
+        abort_on_unwind(|| Buffer::get(buffer).desc())
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn map_buffer(&self, buffer: &BufferHandle) -> Result<std::ptr::NonNull<u8>, ResourceMapError> {
-        Buffer::get(buffer).map_buffer(self)
+        abort_on_unwind(|| Buffer::get(buffer).map_buffer(self))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError> {
-        Buffer::get(buffer).unmap_buffer(self)
+        abort_on_unwind(|| Buffer::get(buffer).unmap_buffer(self))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn flush_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
-        Buffer::get(buffer).flush_buffer_range(self, offset, len)
+        abort_on_unwind(|| Buffer::get(buffer).flush_buffer_range(self, offset, len))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn invalidate_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
-        Buffer::get(buffer).invalidate_buffer_range(self, offset, len)
+        abort_on_unwind(|| Buffer::get(buffer).invalidate_buffer_range(self, offset, len))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_texture_id(&self, texture: &TextureHandle) -> std::num::NonZeroU64 {
-        Texture::get(texture).get_id()
+        abort_on_unwind(|| Texture::get(texture).get_id())
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_texture_desc<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
-        Texture::get(texture).desc()
+        abort_on_unwind(|| Texture::get(texture).desc())
     }
 
     // ========================================================================================== //
@@ -1172,7 +1218,7 @@ impl IDevice for Device {
         texture: &TextureHandle,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
-        Texture::get(texture).get_view(self, desc)
+        abort_on_unwind(|| Texture::get(texture).get_view(self, desc))
     }
 
     // ========================================================================================== //
@@ -1183,7 +1229,7 @@ impl IDevice for Device {
         texture: &TextureHandle,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
-        Texture::get(texture).get_rtv(self, desc)
+        abort_on_unwind(|| Texture::get(texture).get_rtv(self, desc))
     }
 
     // ========================================================================================== //
@@ -1194,35 +1240,35 @@ impl IDevice for Device {
         texture: &TextureHandle,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
-        Texture::get(texture).get_dsv(self, desc)
+        abort_on_unwind(|| Texture::get(texture).get_dsv(self, desc))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_sampler_id(&self, sampler: &SamplerHandle) -> std::num::NonZeroU64 {
-        Sampler::get(sampler).id
+        abort_on_unwind(|| Sampler::get(sampler).id)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
-        Sampler::get(sampler).desc()
+        abort_on_unwind(|| Sampler::get(sampler).desc())
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_graphics_pipeline_id(&self, pipeline: &GraphicsPipelineHandle) -> std::num::NonZeroU64 {
-        GraphicsPipeline::get(pipeline).id
+        abort_on_unwind(|| GraphicsPipeline::get(pipeline).id)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_compute_pipeline_id(&self, pipeline: &ComputePipelineHandle) -> std::num::NonZeroU64 {
-        ComputePipeline::get(pipeline).id
+        abort_on_unwind(|| ComputePipeline::get(pipeline).id)
     }
 }
 
@@ -1431,7 +1477,7 @@ impl Device {
 
 impl Drop for Device {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             self.swap_semaphore_pool.destroy(&self.device);
 
             if let Some(queue) = self.general_queue.take() {
@@ -1455,7 +1501,7 @@ impl Drop for Device {
 
             self.device.destroy_device(GLOBAL);
             ManuallyDrop::drop(&mut self.device);
-        }
+        })
     }
 }
 

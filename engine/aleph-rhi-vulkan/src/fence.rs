@@ -31,6 +31,7 @@ use std::sync::Arc;
 
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use ash::vk;
 
 use crate::device::Device;
@@ -53,10 +54,10 @@ impl Fence {
 
 impl Drop for Fence {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             self._device
                 .device
                 .destroy_semaphore(self.semaphore, GLOBAL);
-        }
+        })
     }
 }

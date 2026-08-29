@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_rhi_api::{ContextCreateError, IContext};
-use aleph_rhi_impl_utils::Rhi;
+use aleph_rhi_impl_utils::{Rhi, abort_on_unwind};
 use ash::vk;
 
 use crate::context::{Context, SurfaceLoaders};
@@ -47,7 +47,7 @@ impl VulkanLoader {
             .context_made
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
         {
-            Ok(_) => {
+            Ok(_) => abort_on_unwind(|| {
                 let entry = unsafe {
                     match loader::load() {
                         None => {
@@ -84,16 +84,19 @@ impl VulkanLoader {
                     (_, false) => None,
                 };
 
-                Ok(Arc::new_cyclic(move |v| Context {
-                    _this: v.clone(),
-                    _config: config.clone(),
-                    entry_loader: ManuallyDrop::new(entry),
-                    instance: ManuallyDrop::new(instance),
-                    surface_loaders: extensions.surface_loaders(),
-                    debug_loader: extensions.debug_loader,
-                    messenger,
-                }))
-            }
+                let context: Arc<dyn IContext> = Rhi::with(|| {
+                    Arc::new_cyclic(move |v| Context {
+                        _this: v.clone(),
+                        _config: config.clone(),
+                        entry_loader: ManuallyDrop::new(entry),
+                        instance: ManuallyDrop::new(instance),
+                        surface_loaders: extensions.surface_loaders(),
+                        debug_loader: extensions.debug_loader,
+                        messenger,
+                    })
+                });
+                Ok(context)
+            }),
             Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
         }
     }

@@ -32,8 +32,8 @@ use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedParameterBlockDesc;
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
 use ash::vk;
 
 use crate::device::Device;
@@ -51,7 +51,7 @@ pub struct ParameterBlockLayout {
 
 impl IParameterBlockLayout for ParameterBlockLayout {
     fn upgrade(&self) -> Arc<dyn IParameterBlockLayout> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -71,17 +71,19 @@ impl IParameterBlockLayout for ParameterBlockLayout {
     }
 
     fn is_compatible(&self, other: &dyn IParameterBlockLayout) -> bool {
-        let other = unwrap::parameter_block_layout(other);
-        self.desc.get().is_compatible(other.desc.get())
+        abort_on_unwind(|| {
+            let other = unwrap::parameter_block_layout(other);
+            self.desc.get().is_compatible(other.desc.get())
+        })
     }
 }
 
 impl Drop for ParameterBlockLayout {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             self._device
                 .device
                 .destroy_descriptor_set_layout(self.descriptor_set_layout, GLOBAL);
-        }
+        })
     }
 }

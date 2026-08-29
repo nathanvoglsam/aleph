@@ -37,7 +37,7 @@ use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
-use aleph_rhi_impl_utils::{Rhi, RhiSystem, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind, try_clone_value_into_slot};
 use ash::vk;
 
 use crate::context::Context;
@@ -379,38 +379,41 @@ impl Adapter {
             None
         };
 
-        Ok(Arc::new_cyclic(move |v| {
-            let queues = queues;
-            let mut device = Device {
-                _this: v.clone(),
-                adapter: self._this.upgrade().unwrap(),
-                context: self.context.clone(),
-                device: ManuallyDrop::new(device),
-                push_descriptor,
-                swapchain,
-                debug_loader,
-                allocator: None,
-                general_queue: None,
-                compute_queue: None,
-                transfer_queue: None,
-                command_list_pool: CommandListPool::new(),
-                object_counter: ObjectCounter::new(),
-                swap_semaphore_pool: SemaphorePool::new(),
-            };
+        Rhi::with(|| {
+            let device: Arc<dyn IDevice> = Arc::new_cyclic(move |v| {
+                let queues = queues;
+                let mut device = Device {
+                    _this: v.clone(),
+                    adapter: self._this.upgrade().unwrap(),
+                    context: self.context.clone(),
+                    device: ManuallyDrop::new(device),
+                    push_descriptor,
+                    swapchain,
+                    debug_loader,
+                    allocator: None,
+                    general_queue: None,
+                    compute_queue: None,
+                    transfer_queue: None,
+                    command_list_pool: CommandListPool::new(),
+                    object_counter: ObjectCounter::new(),
+                    swap_semaphore_pool: SemaphorePool::new(),
+                };
 
-            let allocator = ManuallyDrop::new(GpuAllocator::new(&device));
-            device.allocator = Some(allocator);
+                let allocator = ManuallyDrop::new(GpuAllocator::new(&device));
+                device.allocator = Some(allocator);
 
-            unsafe { Self::build_queue_objects(&queues, &mut device) };
+                unsafe { Self::build_queue_objects(&queues, &mut device) };
 
-            device
-        }))
+                device
+            });
+            Ok(device)
+        })
     }
 }
 
 impl IAdapter for Adapter {
     fn upgrade(&self) -> Arc<dyn IAdapter> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -429,7 +432,7 @@ impl IAdapter for Adapter {
     }
 
     fn request_device(&self) -> Result<Arc<dyn IDevice>, RequestDeviceError> {
-        Rhi::with(|| self.inner_request_device())
+        abort_on_unwind(|| Rhi::with(|| self.inner_request_device()))
     }
 }
 

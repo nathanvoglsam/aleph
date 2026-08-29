@@ -33,7 +33,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use aleph_alloc::BVec;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
 use ash::vk::{self, Handle};
 use parking_lot::Mutex;
 
@@ -61,7 +61,7 @@ impl ISwapImage for SwapImage {
     }
 
     fn texture_desc(&self) -> &TextureDesc<'_> {
-        self.swap_chain.device.get_texture_desc(&self.texture)
+        abort_on_unwind(|| self.swap_chain.device.get_texture_desc(&self.texture))
     }
 }
 

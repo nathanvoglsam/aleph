@@ -32,6 +32,7 @@ use std::sync::Arc;
 
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::owned_desc::OwnedSamplerDesc;
 use ash::vk;
 
@@ -61,6 +62,6 @@ impl Sampler {
 
 impl Drop for Sampler {
     fn drop(&mut self) {
-        unsafe { self._device.device.destroy_sampler(self.sampler, GLOBAL) }
+        abort_on_unwind(|| unsafe { self._device.device.destroy_sampler(self.sampler, GLOBAL) })
     }
 }

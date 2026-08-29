@@ -32,7 +32,7 @@ use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
 use aleph_rhi_api::IBindingSignature;
-use aleph_rhi_impl_utils::RhiSystem;
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
 use ash::vk;
 
 use crate::device::Device;
@@ -50,7 +50,7 @@ pub struct BindingSignature {
 
 impl IBindingSignature for BindingSignature {
     fn upgrade(&self) -> Arc<dyn IBindingSignature> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -68,10 +68,10 @@ impl IBindingSignature for BindingSignature {
 
 impl Drop for BindingSignature {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             self._device
                 .device
                 .destroy_pipeline_layout(self.pipeline_layout, GLOBAL);
-        }
+        })
     }
 }

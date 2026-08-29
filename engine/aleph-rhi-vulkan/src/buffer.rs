@@ -34,6 +34,7 @@ use std::sync::Arc;
 use aleph_gpu_allocator::GpuAllocation;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
 use ash::vk;
 use parking_lot::Mutex;
@@ -166,14 +167,14 @@ impl Buffer {
 
 impl Drop for Buffer {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             self._device.device.destroy_buffer(self.buffer, GLOBAL);
             self._device
                 .allocator
                 .as_ref()
                 .unwrap_unchecked()
                 .free_allocation(self._device.as_ref(), self.allocation.take().unwrap());
-        }
+        })
     }
 }
 

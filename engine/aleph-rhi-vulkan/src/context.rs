@@ -33,9 +33,10 @@ use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
 use std::sync::{Arc, Weak};
 
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
-use aleph_rhi_impl_utils::str_from_ptr;
+use aleph_rhi_impl_utils::{Rhi, abort_on_unwind, str_from_ptr};
 use ash::vk;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 
@@ -369,7 +370,7 @@ impl Context {
 
 impl IContext for Context {
     fn upgrade(&self) -> Arc<dyn IContext> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -381,20 +382,24 @@ impl IContext for Context {
     }
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Arc<dyn IAdapter>> {
-        let surface = options.surface.map(unwrap::surface).map(|v| v.surface);
-        Context::select_device(&self.entry_loader, &self.instance, surface, options).map(
-            |(name, vendor, physical_device)| {
-                let out: Arc<dyn IAdapter> = Arc::new_cyclic(move |v| Adapter {
-                    _this: v.clone(),
-                    context: self._this.upgrade().unwrap(),
-                    name,
-                    vendor,
-                    physical_device,
-                    device_info: DeviceInfo::load(&self.instance, physical_device),
-                });
-                out
-            },
-        )
+        abort_on_unwind(|| {
+            let surface = options.surface.map(unwrap::surface).map(|v| v.surface);
+            Context::select_device(&self.entry_loader, &self.instance, surface, options).map(
+                |(name, vendor, physical_device)| {
+                    let out: Arc<dyn IAdapter> = Rhi::with(|| {
+                        Arc::new_cyclic(move |v| Adapter {
+                            _this: v.clone(),
+                            context: self._this.upgrade().unwrap(),
+                            name,
+                            vendor,
+                            physical_device,
+                            device_info: DeviceInfo::load(&self.instance, physical_device),
+                        })
+                    });
+                    out
+                },
+            )
+        })
     }
 
     fn create_surface(
@@ -402,174 +407,189 @@ impl IContext for Context {
         display: &dyn HasDisplayHandle,
         window: &dyn HasWindowHandle,
     ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
-        let display = display.display_handle().unwrap().as_raw();
-        let window = window.window_handle().unwrap().as_raw();
-        let result = unsafe {
-            match (display, window) {
-                #[cfg(any(
-                    target_os = "linux",
-                    target_os = "dragonfly",
-                    target_os = "freebsd",
-                    target_os = "netbsd",
-                    target_os = "openbsd"
-                ))]
-                (RawDisplayHandle::Wayland(display), RawWindowHandle::Wayland(window)) => {
-                    let create_info = vk::WaylandSurfaceCreateInfoKHR {
-                        display: display.display.as_ptr(),
-                        surface: window.surface.as_ptr(),
-                        ..Default::default()
-                    };
+        abort_on_unwind(|| {
+            let display = display.display_handle().unwrap().as_raw();
+            let window = window.window_handle().unwrap().as_raw();
+            let result = unsafe {
+                match (display, window) {
+                    #[cfg(any(
+                        target_os = "linux",
+                        target_os = "dragonfly",
+                        target_os = "freebsd",
+                        target_os = "netbsd",
+                        target_os = "openbsd"
+                    ))]
+                    (RawDisplayHandle::Wayland(display), RawWindowHandle::Wayland(window)) => {
+                        let create_info = vk::WaylandSurfaceCreateInfoKHR {
+                            display: display.display.as_ptr(),
+                            surface: window.surface.as_ptr(),
+                            ..Default::default()
+                        };
 
-                    match self.surface_loaders.wayland.as_ref() {
-                        None => {
-                            panic!(
-                                "Wayland surface provided without support for VK_KHR_wayland_surface"
-                            );
+                        match self.surface_loaders.wayland.as_ref() {
+                            None => {
+                                panic!(
+                                    "Wayland surface provided without support for VK_KHR_wayland_surface"
+                                );
+                            }
+                            Some(v) => v.create_wayland_surface(&create_info, GLOBAL),
                         }
-                        Some(v) => v.create_wayland_surface(&create_info, GLOBAL),
+                    }
+
+                    #[cfg(any(
+                        target_os = "linux",
+                        target_os = "dragonfly",
+                        target_os = "freebsd",
+                        target_os = "netbsd",
+                        target_os = "openbsd"
+                    ))]
+                    (RawDisplayHandle::Xlib(display), RawWindowHandle::Xlib(window)) => {
+                        let create_info = vk::XlibSurfaceCreateInfoKHR {
+                            dpy: display.display.unwrap().as_ptr(),
+                            window: window.window as _,
+                            ..Default::default()
+                        };
+
+                        match self.surface_loaders.xlib.as_ref() {
+                            None => {
+                                panic!(
+                                    "Xlib surface provided without support for VK_KHR_xlib_surface"
+                                );
+                            }
+                            Some(v) => v.create_xlib_surface(&create_info, GLOBAL),
+                        }
+                    }
+
+                    #[cfg(any(
+                        target_os = "linux",
+                        target_os = "dragonfly",
+                        target_os = "freebsd",
+                        target_os = "netbsd",
+                        target_os = "openbsd"
+                    ))]
+                    (RawDisplayHandle::Xcb(display), RawWindowHandle::Xcb(window)) => {
+                        let create_info = vk::XcbSurfaceCreateInfoKHR {
+                            connection: display.connection.unwrap().as_ptr(),
+                            window: window.window.get(),
+                            ..Default::default()
+                        };
+
+                        match self.surface_loaders.xcb.as_ref() {
+                            None => {
+                                panic!(
+                                    "Xcb surface provided without support for VK_KHR_xcb_surface"
+                                );
+                            }
+                            Some(v) => v.create_xcb_surface(&create_info, GLOBAL),
+                        }
+                    }
+
+                    #[cfg(target_os = "macos")]
+                    (RawDisplayHandle::AppKit(_), RawWindowHandle::AppKit(window)) => {
+                        let create_info = vk::MacOSSurfaceCreateInfoMVK {
+                            p_view: window.ns_view.as_ptr(),
+                            ..Default::default()
+                        };
+
+                        self.surface_loaders
+                            .macos
+                            .as_ref()
+                            .unwrap()
+                            .create_mac_os_surface(&create_info, GLOBAL)
+                    }
+
+                    #[cfg(target_os = "ios")]
+                    (RawDisplayHandle::UiKit(_), RawWindowHandle::UiKit(window)) => {
+                        let create_info = vk::IOSSurfaceCreateInfoMVK {
+                            p_view: window.ui_view.as_ptr(),
+                            ..Default::default()
+                        };
+
+                        self.surface_loaders
+                            .ios
+                            .as_ref()
+                            .unwrap()
+                            .create_ios_surface(&create_info, GLOBAL)
+                    }
+
+                    #[cfg(target_os = "windows")]
+                    (RawDisplayHandle::Windows(_), RawWindowHandle::Win32(window)) => {
+                        let create_info = vk::Win32SurfaceCreateInfoKHR {
+                            hinstance: window.hinstance.unwrap().get(),
+                            hwnd: window.hwnd.get(),
+                            ..Default::default()
+                        };
+
+                        self.surface_loaders
+                            .win32
+                            .as_ref()
+                            .unwrap()
+                            .create_win32_surface(&create_info, GLOBAL)
+                    }
+
+                    _ => {
+                        log::error!(
+                            "Requested Surface for unsupported WSI: display {:?} window {:?}",
+                            display,
+                            window
+                        );
+                        return Err(SurfaceCreateError::UnsupportedWSI);
                     }
                 }
+            };
 
-                #[cfg(any(
-                    target_os = "linux",
-                    target_os = "dragonfly",
-                    target_os = "freebsd",
-                    target_os = "netbsd",
-                    target_os = "openbsd"
-                ))]
-                (RawDisplayHandle::Xlib(display), RawWindowHandle::Xlib(window)) => {
-                    let create_info = vk::XlibSurfaceCreateInfoKHR {
-                        dpy: display.display.unwrap().as_ptr(),
-                        window: window.window as _,
-                        ..Default::default()
-                    };
+            let surface = result
+                .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                .map_err(|_| SurfaceCreateError::Platform)?;
 
-                    match self.surface_loaders.xlib.as_ref() {
-                        None => {
-                            panic!("Xlib surface provided without support for VK_KHR_xlib_surface");
-                        }
-                        Some(v) => v.create_xlib_surface(&create_info, GLOBAL),
-                    }
-                }
-
-                #[cfg(any(
-                    target_os = "linux",
-                    target_os = "dragonfly",
-                    target_os = "freebsd",
-                    target_os = "netbsd",
-                    target_os = "openbsd"
-                ))]
-                (RawDisplayHandle::Xcb(display), RawWindowHandle::Xcb(window)) => {
-                    let create_info = vk::XcbSurfaceCreateInfoKHR {
-                        connection: display.connection.unwrap().as_ptr(),
-                        window: window.window.get(),
-                        ..Default::default()
-                    };
-
-                    match self.surface_loaders.xcb.as_ref() {
-                        None => {
-                            panic!("Xcb surface provided without support for VK_KHR_xcb_surface");
-                        }
-                        Some(v) => v.create_xcb_surface(&create_info, GLOBAL),
-                    }
-                }
-
-                #[cfg(target_os = "macos")]
-                (RawDisplayHandle::AppKit(_), RawWindowHandle::AppKit(window)) => {
-                    let create_info = vk::MacOSSurfaceCreateInfoMVK {
-                        p_view: window.ns_view.as_ptr(),
-                        ..Default::default()
-                    };
-
-                    self.surface_loaders
-                        .macos
-                        .as_ref()
-                        .unwrap()
-                        .create_mac_os_surface(&create_info, GLOBAL)
-                }
-
-                #[cfg(target_os = "ios")]
-                (RawDisplayHandle::UiKit(_), RawWindowHandle::UiKit(window)) => {
-                    let create_info = vk::IOSSurfaceCreateInfoMVK {
-                        p_view: window.ui_view.as_ptr(),
-                        ..Default::default()
-                    };
-
-                    self.surface_loaders
-                        .ios
-                        .as_ref()
-                        .unwrap()
-                        .create_ios_surface(&create_info, GLOBAL)
-                }
-
-                #[cfg(target_os = "windows")]
-                (RawDisplayHandle::Windows(_), RawWindowHandle::Win32(window)) => {
-                    let create_info = vk::Win32SurfaceCreateInfoKHR {
-                        hinstance: window.hinstance.unwrap().get(),
-                        hwnd: window.hwnd.get(),
-                        ..Default::default()
-                    };
-
-                    self.surface_loaders
-                        .win32
-                        .as_ref()
-                        .unwrap()
-                        .create_win32_surface(&create_info, GLOBAL)
-                }
-
-                _ => {
-                    log::error!(
-                        "Requested Surface for unsupported WSI handle: display {:?} + window {:?}",
-                        display,
-                        window
-                    );
-                    return Err(SurfaceCreateError::UnsupportedWSI);
-                }
-            }
-        };
-
-        let surface = result
-            .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
-            .map_err(|_| SurfaceCreateError::Platform)?;
-
-        Ok(Arc::new_cyclic(move |v| Surface {
-            _this: v.clone(),
-            surface,
-            context: self._this.upgrade().unwrap(),
-        }))
+            let surface: Arc<dyn ISurface> = Rhi::with(|| {
+                Arc::new_cyclic(move |v| Surface {
+                    _this: v.clone(),
+                    surface,
+                    context: self._this.upgrade().unwrap(),
+                })
+            });
+            Ok(surface)
+        })
     }
 
     fn create_surface_for_metal_layer(
         &self,
         layer: NonNull<c_void>,
     ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
-        if !cfg!(any(target_os = "macos", target_os = "ios")) {
-            log::warn!("Called 'IContext::create_surface_for_metal_layer' on non apple platform!");
-            return Err(SurfaceCreateError::UnsupportedWSI);
-        }
+        abort_on_unwind(|| {
+            if !cfg!(any(target_os = "macos", target_os = "ios")) {
+                log::warn!(
+                    "Called 'IContext::create_surface_for_metal_layer' on non apple platform!"
+                );
+                return Err(SurfaceCreateError::UnsupportedWSI);
+            }
 
-        let result = unsafe {
-            let create_info = vk::MetalSurfaceCreateInfoEXT {
-                p_layer: layer.as_ptr(),
-                ..Default::default()
+            let result = unsafe {
+                let create_info = vk::MetalSurfaceCreateInfoEXT {
+                    p_layer: layer.as_ptr(),
+                    ..Default::default()
+                };
+                self.surface_loaders
+                    .metal
+                    .as_ref()
+                    .unwrap()
+                    .create_metal_surface(&create_info, GLOBAL)
             };
-            self.surface_loaders
-                .metal
-                .as_ref()
-                .unwrap()
-                .create_metal_surface(&create_info, GLOBAL)
-        };
 
-        let surface = result
-            .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
-            .map_err(|_| SurfaceCreateError::Platform)?;
+            let surface = result
+                .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                .map_err(|_| SurfaceCreateError::Platform)?;
 
-        let surface = Arc::new_cyclic(move |v| Surface {
-            _this: v.clone(),
-            surface,
-            context: self._this.upgrade().unwrap(),
-        });
-        Ok(surface)
+            let surface: Arc<dyn ISurface> = Rhi::with(|| {
+                Arc::new_cyclic(move |v| Surface {
+                    _this: v.clone(),
+                    surface,
+                    context: self._this.upgrade().unwrap(),
+                })
+            });
+            Ok(surface)
+        })
     }
 
     fn get_backend_api(&self) -> BackendAPI {
@@ -579,14 +599,14 @@ impl IContext for Context {
 
 impl Drop for Context {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             if let (Some(debug_loader), Some(messenger)) = (&self.debug_loader, &self.messenger) {
                 debug_loader.destroy_debug_utils_messenger(*messenger, GLOBAL);
             }
             self.instance.destroy_instance(GLOBAL);
             ManuallyDrop::drop(&mut self.instance);
             ManuallyDrop::drop(&mut self.entry_loader);
-        }
+        })
     }
 }
 

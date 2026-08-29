@@ -34,8 +34,8 @@ use aleph_alloc::BHashMap;
 use aleph_gpu_allocator::GpuAllocation;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
 use ash::vk;
 use parking_lot::Mutex;
 
@@ -159,7 +159,7 @@ impl Texture {
 
 impl Drop for Texture {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             for (_desc, view) in self.views.get_mut().drain() {
                 self._device.device.destroy_image_view(view, GLOBAL);
             }
@@ -183,6 +183,6 @@ impl Drop for Texture {
                     .unwrap_unchecked()
                     .free_allocation(self._device.as_ref(), allocation);
             }
-        }
+        })
     }
 }

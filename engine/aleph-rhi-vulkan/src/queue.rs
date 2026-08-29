@@ -34,7 +34,7 @@ use std::sync::{Arc, Weak};
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{Rhi, RhiSystem, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind, try_clone_value_into_slot};
 use ash::vk::{self, Handle};
 use crossbeam::queue::SegQueue;
 use parking_lot::Mutex;
@@ -134,7 +134,7 @@ impl Queue {
 
 impl IQueue for Queue {
     fn upgrade(&self) -> Arc<dyn IQueue> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -146,217 +146,228 @@ impl IQueue for Queue {
     }
 
     fn queue_properties(&self) -> QueueProperties {
-        let v = self.info.min_image_transfer_granularity;
-        let min_image_transfer_granularity = Extent3D::new(v.width, v.height, v.depth);
+        abort_on_unwind(|| {
+            let v = self.info.min_image_transfer_granularity;
+            let min_image_transfer_granularity = Extent3D::new(v.width, v.height, v.depth);
 
-        QueueProperties {
-            min_image_transfer_granularity,
-        }
+            QueueProperties {
+                min_image_transfer_granularity,
+            }
+        })
     }
 
     fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
-        let device = self._device.upgrade().unwrap();
+        abort_on_unwind(|| {
+            let device = self._device.upgrade().unwrap();
 
-        // Grab the index of the most recently completed command list on this queue and update
-        // the queue's value
-        //
-        // Like in 'wait_idle' we need an atomic CAS loop to uphold monotonicity guarantees. There
-        // is a window between the GetCompletedValue call and the atomic store for thread
-        // preemption to allow another thread to write in a newer 'GetCompletedValue' with a
-        // higher index before the initial thread gets a chance to write its lower index. Eventually
-        // the initial thread will get execution back and overwrite the higher index with the lower
-        // index it captured before being preempted.
-        //
-        // Atomics are 'fun'.
-        let last_completed = loop {
-            let old_last_completed = self.last_completed_index.load(Ordering::Relaxed);
-            let new_last_completed = unsafe {
-                device
-                    .device
-                    .get_semaphore_counter_value(self.semaphore)
-                    .inspect_err(|v| log::error!("Platform Error: {:?}", v))
-                    .map_err(map_error_class)
+            // Grab the index of the most recently completed command list on this queue and update
+            // the queue's value
+            //
+            // Like in 'wait_idle' we need an atomic CAS loop to uphold monotonicity guarantees.
+            // There is a window between the GetCompletedValue call and the atomic store for thread
+            // preemption to allow another thread to write in a newer 'GetCompletedValue' with a
+            // higher index before the initial thread gets a chance to write its lower index.
+            // Eventually the initial thread will get execution back and overwrite the higher index
+            // with the lower index it captured before being preempted.
+            //
+            // Atomics are 'fun'.
+            let last_completed = loop {
+                let old_last_completed = self.last_completed_index.load(Ordering::Relaxed);
+                let new_last_completed = unsafe {
+                    device
+                        .device
+                        .get_semaphore_counter_value(self.semaphore)
+                        .inspect_err(|v| log::error!("Platform Error: {:?}", v))
+                        .map_err(map_error_class)
+                };
+                match new_last_completed {
+                    // Got the value? Hit our CAS loop
+                    Ok(v) => match self.last_completed_index.compare_exchange(
+                        old_last_completed,
+                        v,
+                        Ordering::Relaxed,
+                        Ordering::Relaxed,
+                    ) {
+                        Ok(_) => break v,
+                        Err(_) => continue,
+                    },
+
+                    // Device lost? Everything is complete on the queue so we can use u64::MAX as
+                    // our completed value.
+                    Err(QueueGarbageCollectError::DeviceLost) => break u64::MAX,
+
+                    // Any other error condition is unrecoverable so we return the error to the
+                    // caller.
+                    Err(e) => return Err(e),
+                }
             };
-            match new_last_completed {
-                // Got the value? Hit our CAS loop
-                Ok(v) => match self.last_completed_index.compare_exchange(
-                    old_last_completed,
-                    v,
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(_) => break v,
-                    Err(_) => continue,
-                },
 
-                // Device lost? Everything is complete on the queue so we can use u64::MAX as our
-                // completed value.
-                Err(QueueGarbageCollectError::DeviceLost) => break u64::MAX,
+            // Capture the current length of the queue. We then pop N items off the queue and check
+            // to see if it is complete based on comparing the list's index with the last completed
+            // index. If the list is done we drop it to release any resources that it was keeping
+            // alive.
+            let num = self.in_flight.len();
+            for _ in 0..num {
+                // Check if the
+                let v = Rhi::with(|| self.in_flight.pop().unwrap());
+                if v.index > last_completed {
+                    Rhi::with(|| self.in_flight.push(v));
+                } else {
+                    // Now that we know the submission is complete we can return the swap semaphore
+                    // (if there is one) to the semaphore pool
+                    if !v.swap_ready_semaphore.is_null() {
+                        let device = self._device.upgrade().unwrap();
+                        device.swap_semaphore_pool.push(v.swap_ready_semaphore);
+                    }
 
-                // Any other error condition is unrecoverable so we return the error to the caller.
-                Err(e) => return Err(e),
-            }
-        };
+                    if let Some(pool) = v.swap_work_semaphore_pool.as_deref() {
+                        assert!(!v.swap_work_semaphore.is_null());
+                        pool.push(v.swap_work_semaphore);
+                    }
 
-        // Capture the current length of the queue. We then pop N items off the queue and check
-        // to see if it is complete based on comparing the list's index with the last completed
-        // index. If the list is done we drop it to release any resources that it was keeping
-        // alive.
-        let num = self.in_flight.len();
-        for _ in 0..num {
-            // Check if the
-            let v = Rhi::with(|| self.in_flight.pop().unwrap());
-            if v.index > last_completed {
-                Rhi::with(|| self.in_flight.push(v));
-            } else {
-                // Now that we know the submission is complete we can return the swap semaphore
-                // (if there is one) to the semaphore pool
-                if !v.swap_ready_semaphore.is_null() {
-                    let device = self._device.upgrade().unwrap();
-                    device.swap_semaphore_pool.push(v.swap_ready_semaphore);
-                }
+                    // Grab the pool for the specific queue type. Don't want to get different
+                    // classes of command list mixed up!
+                    let pool_target = device
+                        .command_list_pool
+                        .get_pool_for_queue_type(self.queue_type);
 
-                if let Some(pool) = v.swap_work_semaphore_pool.as_deref() {
-                    assert!(!v.swap_work_semaphore.is_null());
-                    pool.push(v.swap_work_semaphore);
-                }
+                    for mut list in v.lists.into_iter() {
+                        debug_assert_eq!(list.list_type, self.queue_type);
 
-                // Grab the pool for the specific queue type. Don't want to get different
-                // classes of command list mixed up!
-                let pool_target = device
-                    .command_list_pool
-                    .get_pool_for_queue_type(self.queue_type);
+                        // Take the pool and buffer out of the CommandList object so they don't
+                        // get dropped. We destroy the Box<CommandList> because it also contains
+                        // a back reference to device.
+                        //
+                        // If we store it inside device then we create a reference cycle and we'll
+                        // leak Device. Not great...
+                        let list = FreeCommandList {
+                            pool: std::mem::take(&mut list.pool),
+                            buffer: std::mem::take(&mut list.buffer),
+                            list_type: list.list_type,
+                        };
 
-                for mut list in v.lists.into_iter() {
-                    debug_assert_eq!(list.list_type, self.queue_type);
-
-                    // Take the pool and buffer out of the CommandList object so they don't
-                    // get dropped. We destroy the Box<CommandList> because it also contains
-                    // a back reference to device.
-                    //
-                    // If we store it inside device then we create a reference cycle and we'll
-                    // leak Device. Not great...
-                    let list = FreeCommandList {
-                        pool: std::mem::take(&mut list.pool),
-                        buffer: std::mem::take(&mut list.buffer),
-                        list_type: list.list_type,
-                    };
-
-                    // If we fill the list we just start destroying command lists rather than
-                    // growing the pool.
-                    if let Err(dropped) = pool_target.push(list) {
-                        unsafe {
-                            log::warn!("CommandList free-object-pool overflowing!");
-                            dropped.collect(&device);
+                        // If we fill the list we just start destroying command lists rather than
+                        // growing the pool.
+                        if let Err(dropped) = pool_target.push(list) {
+                            unsafe {
+                                log::warn!("CommandList free-object-pool overflowing!");
+                                dropped.collect(&device);
+                            }
                         }
                     }
                 }
             }
-        }
 
-        Ok(())
+            Ok(())
+        })
     }
 
     fn wait_idle(&self) -> Result<(), QueueWaitError> {
-        let device = self._device.upgrade().unwrap();
+        abort_on_unwind(|| {
+            let device = self._device.upgrade().unwrap();
 
-        unsafe {
-            let _lock = self.submit_lock.lock();
-            device
-                .device
-                .queue_wait_idle(self.handle)
-                .inspect_err(|v| log::error!("Platform Error: {:?}", v))
-                .map_err(map_error_class)
-        }
+            unsafe {
+                let _lock = self.submit_lock.lock();
+                device
+                    .device
+                    .queue_wait_idle(self.handle)
+                    .inspect_err(|v| log::error!("Platform Error: {:?}", v))
+                    .map_err(map_error_class)
+            }
+        })
     }
 
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
-        let device = self._device.upgrade().unwrap();
+        abort_on_unwind(|| {
+            let device = self._device.upgrade().unwrap();
 
-        let mut manager = SubmissionManager::new(desc);
-        let submission = manager.prepare_submission(self, desc)?;
+            let mut manager = SubmissionManager::new(desc);
+            let submission = manager.prepare_submission(self, desc)?;
 
-        let mut timeline_info = manager.timeline_info();
-        let info = manager.submit_info(&mut timeline_info);
+            let mut timeline_info = manager.timeline_info();
+            let info = manager.submit_info(&mut timeline_info);
 
-        unsafe {
-            let _lock = self.submit_lock.lock();
-            let result = device
-                .device
-                .queue_submit(self.handle, &[info], vk::Fence::null());
+            unsafe {
+                let _lock = self.submit_lock.lock();
+                let result = device
+                    .device
+                    .queue_submit(self.handle, &[info], vk::Fence::null());
 
-            if let Err(err) = result {
-                return match err {
-                    vk::Result::ERROR_DEVICE_LOST => Err(QueueSubmitError::DeviceLost),
-                    _ => {
-                        log::error!("Platform Error: {:#?}", err);
-                        Err(QueueSubmitError::Platform)
-                    }
-                };
+                if let Err(err) = result {
+                    return match err {
+                        vk::Result::ERROR_DEVICE_LOST => Err(QueueSubmitError::DeviceLost),
+                        _ => {
+                            log::error!("Platform Error: {:#?}", err);
+                            Err(QueueSubmitError::Platform)
+                        }
+                    };
+                }
             }
-        }
 
-        Rhi::with(|| {
-            self.in_flight.push(submission);
-        });
+            Rhi::with(|| {
+                self.in_flight.push(submission);
+            });
 
-        Ok(())
+            Ok(())
+        })
     }
 
     unsafe fn present(&self, swap_image: Arc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
-        let device = self._device.upgrade().unwrap();
-        let loader = device.swapchain.as_ref().unwrap();
+        abort_on_unwind(|| {
+            let device = self._device.upgrade().unwrap();
+            let loader = device.swapchain.as_ref().unwrap();
 
-        let mut swap_image = {
-            let v = swap_image;
-            unwrap::swap_image_owned(v)
-        };
-        let swap_image = Arc::get_mut(&mut swap_image).unwrap();
+            let mut swap_image = {
+                let v = swap_image;
+                unwrap::swap_image_owned(v)
+            };
+            let swap_image = Arc::get_mut(&mut swap_image).unwrap();
 
-        let swap_chain = &swap_image.swap_chain;
+            let swap_chain = &swap_image.swap_chain;
 
-        // Checks if the queue supports present operations. While this could use a debug_assert
-        // instead like other validation code, the cost of this check compared to the cost of the
-        // present call is tiny.
-        if !swap_chain.present_supported_on_queue(self.queue_type) {
-            return Err(QueuePresentError::QueuePresentationNotSupported(
-                self.queue_type,
-            ));
-        }
-
-        let result = unsafe {
-            let swap_chain = swap_chain.inner.lock();
-
-            let mut wait_semaphores = BVec::new_in(Default::default());
-            std::mem::swap(
-                Mutex::get_mut(&mut swap_image.work_semaphores),
-                &mut wait_semaphores,
-            );
-            let swapchains = [swap_chain.swap_chain];
-            let image_indices = [swap_image.index];
-            let info = vk::PresentInfoKHR::default()
-                .wait_semaphores(&wait_semaphores)
-                .swapchains(&swapchains)
-                .image_indices(&image_indices);
-
-            {
-                let _lock = self.submit_lock.lock();
-                loader.queue_present(self.handle, &info)
+            // Checks if the queue supports present operations. While this could use a debug_assert
+            // instead like other validation code, the cost of this check compared to the cost of
+            // the present call is tiny.
+            if !swap_chain.present_supported_on_queue(self.queue_type) {
+                return Err(QueuePresentError::QueuePresentationNotSupported(
+                    self.queue_type,
+                ));
             }
-        };
 
-        match result {
-            Ok(false) => Ok(()),
-            Ok(true) => Err(QueuePresentError::SubOptimal),
-            Err(vk::Result::ERROR_DEVICE_LOST) => Err(QueuePresentError::DeviceLost),
-            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => Err(QueuePresentError::OutOfDate),
-            Err(vk::Result::ERROR_SURFACE_LOST_KHR) => Err(QueuePresentError::SurfaceLost),
-            Err(e) => {
-                // Coerce everything we don't explicitly handle to an error.
-                log::error!("Platform Error: {:#?}", e);
-                Err(QueuePresentError::Platform)
+            let result = unsafe {
+                let swap_chain = swap_chain.inner.lock();
+
+                let mut wait_semaphores = BVec::new_in(Default::default());
+                std::mem::swap(
+                    Mutex::get_mut(&mut swap_image.work_semaphores),
+                    &mut wait_semaphores,
+                );
+                let swapchains = [swap_chain.swap_chain];
+                let image_indices = [swap_image.index];
+                let info = vk::PresentInfoKHR::default()
+                    .wait_semaphores(&wait_semaphores)
+                    .swapchains(&swapchains)
+                    .image_indices(&image_indices);
+
+                {
+                    let _lock = self.submit_lock.lock();
+                    loader.queue_present(self.handle, &info)
+                }
+            };
+
+            match result {
+                Ok(false) => Ok(()),
+                Ok(true) => Err(QueuePresentError::SubOptimal),
+                Err(vk::Result::ERROR_DEVICE_LOST) => Err(QueuePresentError::DeviceLost),
+                Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => Err(QueuePresentError::OutOfDate),
+                Err(vk::Result::ERROR_SURFACE_LOST_KHR) => Err(QueuePresentError::SurfaceLost),
+                Err(e) => {
+                    // Coerce everything we don't explicitly handle to an error.
+                    log::error!("Platform Error: {:#?}", e);
+                    Err(QueuePresentError::Platform)
+                }
             }
-        }
+        })
     }
 }
 

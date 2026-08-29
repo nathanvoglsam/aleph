@@ -33,7 +33,7 @@ use std::sync::Arc;
 
 use aleph_alloc::BVec;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind, try_clone_value_into_slot};
 use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::Handle;
@@ -79,28 +79,30 @@ impl IDescriptorArena for DescriptorArena {
         &self,
         layout: &dyn IParameterBlockLayout,
     ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
-        let layout = unwrap::parameter_block_layout(layout);
-        let set_layouts = [layout.descriptor_set_layout];
+        abort_on_unwind(|| {
+            let layout = unwrap::parameter_block_layout(layout);
+            let set_layouts = [layout.descriptor_set_layout];
 
-        let allocate_info = vk::DescriptorSetAllocateInfo::default()
-            .descriptor_pool(self.descriptor_pool)
-            .set_layouts(&set_layouts);
+            let allocate_info = vk::DescriptorSetAllocateInfo::default()
+                .descriptor_pool(self.descriptor_pool)
+                .set_layouts(&set_layouts);
 
-        let set = unsafe {
-            let d = &self._device.device;
+            let set = unsafe {
+                let d = &self._device.device;
 
-            let mut desc_set = MaybeUninit::uninit();
-            let result = (d.fp_v1_0().allocate_descriptor_sets)(
-                d.handle(),
-                &allocate_info,
-                desc_set.as_mut_ptr(),
-            );
-            let result = result.assume_init_on_success(desc_set);
+                let mut desc_set = MaybeUninit::uninit();
+                let result = (d.fp_v1_0().allocate_descriptor_sets)(
+                    d.handle(),
+                    &allocate_info,
+                    desc_set.as_mut_ptr(),
+                );
+                let result = result.assume_init_on_success(desc_set);
 
-            Self::handle_allocate_result(result)?
-        };
+                Self::handle_allocate_result(result)?
+            };
 
-        unsafe { Ok(ParameterBlockHandle::from_raw_int(set.as_raw()).unwrap()) }
+            unsafe { Ok(ParameterBlockHandle::from_raw_int(set.as_raw()).unwrap()) }
+        })
     }
 
     fn allocate_blocks(
@@ -108,28 +110,30 @@ impl IDescriptorArena for DescriptorArena {
         layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
     ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
-        let layout = unwrap::parameter_block_layout(layout);
-        let mut set_layouts = BVec::with_capacity_in(num_blocks, RhiSystem::default());
-        for _ in 0..num_blocks {
-            set_layouts.push(layout.descriptor_set_layout);
-        }
+        abort_on_unwind(|| {
+            let layout = unwrap::parameter_block_layout(layout);
+            let mut set_layouts = BVec::with_capacity_in(num_blocks, RhiSystem::default());
+            for _ in 0..num_blocks {
+                set_layouts.push(layout.descriptor_set_layout);
+            }
 
-        let allocate_info = vk::DescriptorSetAllocateInfo::default()
-            .descriptor_pool(self.descriptor_pool)
-            .set_layouts(&set_layouts);
-        let sets = unsafe {
-            let result = self._device.device.allocate_descriptor_sets(&allocate_info);
+            let allocate_info = vk::DescriptorSetAllocateInfo::default()
+                .descriptor_pool(self.descriptor_pool)
+                .set_layouts(&set_layouts);
+            let sets = unsafe {
+                let result = self._device.device.allocate_descriptor_sets(&allocate_info);
 
-            Self::handle_allocate_result(result)?
-        };
+                Self::handle_allocate_result(result)?
+            };
 
-        debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_blocks);
-        unsafe { Ok(core::mem::transmute(sets.into_boxed_slice())) }
+            debug_assert_eq!(sets.len(), sets.capacity());
+            debug_assert_eq!(sets.len(), num_blocks);
+            unsafe { Ok(core::mem::transmute(sets.into_boxed_slice())) }
+        })
     }
 
     unsafe fn free(&self, blocks: &[ParameterBlockHandle]) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             let descriptor_sets = core::slice::from_raw_parts(
                 blocks.as_ptr() as *const vk::DescriptorSet,
                 blocks.len(),
@@ -138,25 +142,25 @@ impl IDescriptorArena for DescriptorArena {
                 .device
                 .free_descriptor_sets(self.descriptor_pool, descriptor_sets)
                 .unwrap()
-        }
+        })
     }
 
     unsafe fn reset(&self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             self._device
                 .device
                 .reset_descriptor_pool(self.descriptor_pool, Default::default())
                 .unwrap();
-        }
+        })
     }
 }
 
 impl Drop for DescriptorArena {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             self._device
                 .device
                 .destroy_descriptor_pool(self.descriptor_pool, GLOBAL);
-        }
+        })
     }
 }

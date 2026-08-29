@@ -32,6 +32,7 @@ use std::sync::Arc;
 
 use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use ash::vk;
 
 use crate::binding_signature::BindingSignature;
@@ -64,9 +65,9 @@ impl GraphicsPipeline {
 
 impl Drop for GraphicsPipeline {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             self._device.device.destroy_pipeline(self.pipeline, GLOBAL);
-        }
+        })
     }
 }
 
@@ -96,8 +97,8 @@ impl ComputePipeline {
 
 impl Drop for ComputePipeline {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             self._device.device.destroy_pipeline(self.pipeline, GLOBAL);
-        }
+        })
     }
 }

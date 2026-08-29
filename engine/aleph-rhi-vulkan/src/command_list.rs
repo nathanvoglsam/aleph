@@ -32,7 +32,7 @@ use std::sync::Arc;
 
 use aleph_alloc::{Blink, BlinkAlloc};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind, try_clone_value_into_slot};
 use ash::vk;
 
 use crate::device::Device;
@@ -65,27 +65,31 @@ unsafe impl Send for CommandList {}
 
 impl ICommandList for CommandList {
     fn begin_general(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        if matches!(self.list_type, QueueType::General) {
-            self.begin()
-        } else {
-            Err(CommandListBeginError::InvalidEncoderType(
-                QueueType::General,
-            ))
-        }
+        abort_on_unwind(|| {
+            if matches!(self.list_type, QueueType::General) {
+                self.begin()
+            } else {
+                Err(CommandListBeginError::InvalidEncoderType(
+                    QueueType::General,
+                ))
+            }
+        })
     }
 
     fn begin_compute(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        if matches!(self.list_type, QueueType::General | QueueType::Compute) {
-            self.begin()
-        } else {
-            Err(CommandListBeginError::InvalidEncoderType(
-                QueueType::Compute,
-            ))
-        }
+        abort_on_unwind(|| {
+            if matches!(self.list_type, QueueType::General | QueueType::Compute) {
+                self.begin()
+            } else {
+                Err(CommandListBeginError::InvalidEncoderType(
+                    QueueType::Compute,
+                ))
+            }
+        })
     }
 
     fn begin_transfer(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        self.begin()
+        abort_on_unwind(|| self.begin())
     }
 }
 
@@ -138,12 +142,12 @@ impl CommandList {
 
 impl Drop for CommandList {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             if self.pool == vk::CommandPool::null() {
                 // The list is destroyed with the pool
                 self._device.device.destroy_command_pool(self.pool, GLOBAL);
             }
-        }
+        })
     }
 }
 

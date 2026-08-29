@@ -37,7 +37,7 @@ use aleph_nstr::{NStr, nstr};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use aleph_rhi_impl_utils::{Rhi, RhiSystem};
+use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind};
 use ash::vk::{self, Handle};
 use parking_lot::Mutex;
 
@@ -68,7 +68,7 @@ impl IGetPlatformInterface for SwapChain {
 
 impl ISwapChain for SwapChain {
     fn upgrade(&self) -> Arc<dyn ISwapChain> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -80,7 +80,7 @@ impl ISwapChain for SwapChain {
     }
 
     fn present_supported_on_queue(&self, queue: QueueType) -> bool {
-        match queue {
+        abort_on_unwind(|| match queue {
             QueueType::General => self
                 .queue_support
                 .contains(QueuePresentSupportFlags::GENERAL),
@@ -90,100 +90,107 @@ impl ISwapChain for SwapChain {
             QueueType::Transfer => self
                 .queue_support
                 .contains(QueuePresentSupportFlags::TRANSFER),
-        }
+        })
     }
 
     fn get_config(&self) -> SwapChainConfiguration {
-        let inner = self.inner.lock();
-        inner.get_config(self.queue_support)
+        abort_on_unwind(|| {
+            let inner = self.inner.lock();
+            inner.get_config(self.queue_support)
+        })
     }
 
     fn rebuild(
         &self,
         new_size: Option<Extent2D>,
     ) -> Result<SwapChainConfiguration, SwapChainRebuildError> {
-        // Lock the swap chain immediately, it prevents acquiring any more images
-        let mut inner = self.inner.lock();
+        abort_on_unwind(|| {
+            // Lock the swap chain immediately, it prevents acquiring any more images
+            let mut inner = self.inner.lock();
 
-        // Trigger a wait idle to flush the GPU of work. Once this returns no work can be in flight
-        // on any swap chain image.
-        match self.device.wait_idle() {
-            Ok(_) => {}
-            Err(QueueWaitError::DeviceLost) => return Err(SwapChainRebuildError::DeviceLost),
-            Err(QueueWaitError::Platform) => return Err(SwapChainRebuildError::Platform),
-        }
+            // Trigger a wait idle to flush the GPU of work. Once this returns no work can be in
+            // flight on any swap chain image.
+            match self.device.wait_idle() {
+                Ok(_) => {}
+                Err(QueueWaitError::DeviceLost) => return Err(SwapChainRebuildError::DeviceLost),
+                Err(QueueWaitError::Platform) => return Err(SwapChainRebuildError::Platform),
+            }
 
-        // Grab a snapshot of the current 'SwapChainConfiguration' that we use as the base for
-        // recreating the vulkan swap chain. Vulkan may change support for present modes or
-        // resolutions depending on whether the window is fullscreen exclusive or windowed.
-        let mut old_config = inner.get_config(self.queue_support);
-        if let Some(new_size) = new_size {
-            // Override the width/height if the user requests a specific extent. This is just a
-            // suggestion and may be ignored (almost certainly will on Vulkan Windows)
-            old_config.width = new_size.width;
-            old_config.height = new_size.height;
-        }
+            // Grab a snapshot of the current 'SwapChainConfiguration' that we use as the base for
+            // recreating the vulkan swap chain. Vulkan may change support for present modes or
+            // resolutions depending on whether the window is fullscreen exclusive or windowed.
+            let mut old_config = inner.get_config(self.queue_support);
+            if let Some(new_size) = new_size {
+                // Override the width/height if the user requests a specific extent. This is just a
+                // suggestion and may be ignored (almost certainly will on Vulkan Windows)
+                old_config.width = new_size.width;
+                old_config.height = new_size.height;
+            }
 
-        unsafe {
-            self.build(&mut inner, &old_config).unwrap();
-        }
+            unsafe {
+                self.build(&mut inner, &old_config).unwrap();
+            }
 
-        // Return the config after 'build' which represents the actual state of the swap chain. The
-        // build function takes the given config as more of a suggestion as Vulkan's support matrix
-        // for swap chain stuff is stupidly complex and largely has safe fallbacks.
-        //
-        // When the exact config requested can't be matched the implementation will fall back to
-        // values that will work.
-        Ok(inner.get_config(self.queue_support))
+            // Return the config after 'build' which represents the actual state of the swap chain.
+            // The build function takes the given config as more of a suggestion as Vulkan's support
+            // matrix for swap chain stuff is stupidly complex and largely has safe fallbacks.
+            //
+            // When the exact config requested can't be matched the implementation will fall back to
+            // values that will work.
+            Ok(inner.get_config(self.queue_support))
+        })
     }
 
     unsafe fn acquire_next_image(&self) -> Result<AcquiredImage, ImageAcquireError> {
-        let ready_semaphore = unsafe { self.device.swap_semaphore_pool.get(&self.device.device) };
+        abort_on_unwind(|| {
+            let ready_semaphore =
+                unsafe { self.device.swap_semaphore_pool.get(&self.device.device) };
 
-        let loader = self.device.swapchain.as_ref().unwrap();
+            let loader = self.device.swapchain.as_ref().unwrap();
 
-        let inner = self.inner.lock();
-        let result = unsafe {
-            loader.acquire_next_image(
-                inner.swap_chain,
-                u64::MAX,
-                ready_semaphore,
-                vk::Fence::null(),
-            )
-        };
+            let inner = self.inner.lock();
+            let result = unsafe {
+                loader.acquire_next_image(
+                    inner.swap_chain,
+                    u64::MAX,
+                    ready_semaphore,
+                    vk::Fence::null(),
+                )
+            };
 
-        match result {
-            Ok((i, sub_optimal)) => {
-                let texture = inner.images[i as usize].clone();
-                let texture = ArcObject::from_object(texture);
-                let texture = unsafe { TextureHandle::new(texture) };
+            match result {
+                Ok((i, sub_optimal)) => {
+                    let texture = inner.images[i as usize].clone();
+                    let texture = ArcObject::from_object(texture);
+                    let texture = unsafe { TextureHandle::new(texture) };
 
-                let semaphore_pool = inner.semaphore_pools[i as usize].clone();
+                    let semaphore_pool = inner.semaphore_pools[i as usize].clone();
 
-                let swap_image = Arc::new(SwapImage {
-                    swap_chain: self._this.upgrade().unwrap(),
-                    index: i,
-                    texture,
-                    ready_semaphore: AtomicU64::new(ready_semaphore.as_raw()),
-                    work_semaphores: Mutex::new(BVec::new_in(Default::default())),
-                    semaphore_pool,
-                });
-                if sub_optimal {
-                    Ok(AcquiredImage::SubOptimal(swap_image))
-                } else {
-                    Ok(AcquiredImage::Ok(swap_image))
+                    let swap_image = Arc::new(SwapImage {
+                        swap_chain: self._this.upgrade().unwrap(),
+                        index: i,
+                        texture,
+                        ready_semaphore: AtomicU64::new(ready_semaphore.as_raw()),
+                        work_semaphores: Mutex::new(BVec::new_in(Default::default())),
+                        semaphore_pool,
+                    });
+                    if sub_optimal {
+                        Ok(AcquiredImage::SubOptimal(swap_image))
+                    } else {
+                        Ok(AcquiredImage::Ok(swap_image))
+                    }
+                }
+                Err(vk::Result::NOT_READY) => unimplemented!(),
+                Err(vk::Result::TIMEOUT) => unimplemented!(),
+                Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => Err(ImageAcquireError::OutOfDate),
+                Err(vk::Result::ERROR_SURFACE_LOST_KHR) => Err(ImageAcquireError::SurfaceLost),
+                Err(e) => {
+                    // Coerce everything we don't explicitly handle to an error.
+                    log::error!("Platform Error: {:#?}", e);
+                    Err(ImageAcquireError::Platform)
                 }
             }
-            Err(vk::Result::NOT_READY) => unimplemented!(),
-            Err(vk::Result::TIMEOUT) => unimplemented!(),
-            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => Err(ImageAcquireError::OutOfDate),
-            Err(vk::Result::ERROR_SURFACE_LOST_KHR) => Err(ImageAcquireError::SurfaceLost),
-            Err(e) => {
-                // Coerce everything we don't explicitly handle to an error.
-                log::error!("Platform Error: {:#?}", e);
-                Err(ImageAcquireError::Platform)
-            }
-        }
+        })
     }
 }
 
@@ -210,8 +217,8 @@ impl SwapChain {
             || capabilities.max_image_extent.width == 0
             || capabilities.max_image_extent.height == 0
         {
-            // TODO: this should not cause creation of ISwapChain to fail, this should be surfaced when trying to
-            //       acquire images instead.
+            // TODO: this should not cause creation of ISwapChain to fail, this should be surfaced
+            //       when trying to acquire images instead.
             return Err(SwapChainCreateError::SurfaceNotAvailable);
         }
 
@@ -444,19 +451,21 @@ impl SwapChain {
 
 impl Drop for SwapChain {
     fn drop(&mut self) {
-        let inner = self.inner.get_mut();
-        let loader = self.device.swapchain.as_ref().unwrap();
-        unsafe {
-            if inner.swap_chain != vk::SwapchainKHR::null() {
-                loader.destroy_swapchain(inner.swap_chain, GLOBAL);
+        abort_on_unwind(|| {
+            let inner = self.inner.get_mut();
+            let loader = self.device.swapchain.as_ref().unwrap();
+            unsafe {
+                if inner.swap_chain != vk::SwapchainKHR::null() {
+                    loader.destroy_swapchain(inner.swap_chain, GLOBAL);
+                }
             }
-        }
-        unsafe {
-            for mut pool in inner.semaphore_pools.drain(..) {
-                let pool = Arc::get_mut(&mut pool).unwrap();
-                pool.destroy(&self.device.device);
+            unsafe {
+                for mut pool in inner.semaphore_pools.drain(..) {
+                    let pool = Arc::get_mut(&mut pool).unwrap();
+                    pool.destroy(&self.device.device);
+                }
             }
-        }
+        })
     }
 }
 

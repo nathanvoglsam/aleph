@@ -46,6 +46,20 @@ pub mod parameter_block_layout_visitor;
 pub mod parameter_block_pool;
 pub mod unwrap;
 
+/// Polyfill for nightly functionality. Catches unwinds within the given function 'f' and promotes
+/// them to an abort.
+///
+/// Specifically, this will abort if the 'f' panics and attempts to unwind past the call to
+/// `abort_on_unwind`.
+///
+/// # MSRV
+///
+/// This only works from rust `1.81` and onwards, which is within our MSRV.
+#[inline]
+pub extern "C" fn abort_on_unwind<F: FnOnce() -> R, R>(f: F) -> R {
+    f()
+}
+
 /// Converts a raw pointer+len pair into a slice, accounting for cases where the pointer is null.
 ///
 /// # Info

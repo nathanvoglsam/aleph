@@ -33,7 +33,7 @@ use std::sync::{Arc, Weak};
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{Rhi, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, abort_on_unwind, try_clone_value_into_slot};
 use ash::vk;
 use parking_lot::Mutex;
 
@@ -105,7 +105,7 @@ impl Surface {
 
 impl ISurface for Surface {
     fn upgrade(&self) -> Arc<dyn ISurface> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -121,51 +121,55 @@ impl ISurface for Surface {
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
     ) -> Result<Arc<dyn ISwapChain>, SwapChainCreateError> {
-        let device = unwrap::device(device);
+        abort_on_unwind(|| {
+            let device = unwrap::device(device);
 
-        let queue_support = unsafe { Surface::get_queue_support(device, self.surface).unwrap() };
+            let queue_support =
+                unsafe { Surface::get_queue_support(device, self.surface).unwrap() };
 
-        let mut semaphore_pools = BVec::with_capacity_in(5, Default::default());
-        let iter = std::iter::repeat_n((), 5).map(|_| Arc::new(SemaphorePool::new()));
-        semaphore_pools.extend(iter);
+            let mut semaphore_pools = BVec::with_capacity_in(5, Default::default());
+            let iter = std::iter::repeat_n((), 5).map(|_| Arc::new(SemaphorePool::new()));
+            semaphore_pools.extend(iter);
 
-        let inner = SwapChainState {
-            swap_chain: vk::SwapchainKHR::null(),
-            format: Format::Bgra8Unorm,
-            vk_format: Default::default(),
-            color_space: Default::default(),
-            present_mode: config.present_mode,
-            vk_present_mode: Default::default(),
-            extent: Default::default(),
-            images: BVec::new_in(Default::default()),
-            semaphore_pools,
-        };
-        let swap_chain = Rhi::with(|| {
-            Arc::new_cyclic(move |v| SwapChain {
-                _this: v.clone(),
-                device: device._this.upgrade().unwrap(),
-                surface: self._this.upgrade().unwrap(),
-                inner: Mutex::new(inner),
-                queue_support,
-            })
-        });
+            let inner = SwapChainState {
+                swap_chain: vk::SwapchainKHR::null(),
+                format: Format::Bgra8Unorm,
+                vk_format: Default::default(),
+                color_space: Default::default(),
+                present_mode: config.present_mode,
+                vk_present_mode: Default::default(),
+                extent: Default::default(),
+                images: BVec::new_in(Default::default()),
+                semaphore_pools,
+            };
+            let swap_chain = Rhi::with(|| {
+                Arc::new_cyclic(move |v| SwapChain {
+                    _this: v.clone(),
+                    device: device._this.upgrade().unwrap(),
+                    surface: self._this.upgrade().unwrap(),
+                    inner: Mutex::new(inner),
+                    queue_support,
+                })
+            });
 
-        // TODO: This is unsound and wrong, no checks have been made yet
-        unsafe {
-            let mut inner = swap_chain.inner.lock();
-            swap_chain.build(&mut inner, config)?;
-        }
+            // TODO: This is unsound and wrong, no checks have been made yet
+            unsafe {
+                let mut inner = swap_chain.inner.lock();
+                swap_chain.build(&mut inner, config)?;
+            }
 
-        Ok(swap_chain)
+            let swap_chain: Arc<dyn ISwapChain> = swap_chain;
+            Ok(swap_chain)
+        })
     }
 }
 
 impl Drop for Surface {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             let loader = self.context.surface_loaders.base.as_ref().unwrap();
             loader.destroy_surface(self.surface, GLOBAL);
-        }
+        })
     }
 }
 
