@@ -156,7 +156,7 @@ thiserror = "2"
 ash = { version = "0.38", default-features = false, features = ["debug"] }
 sdl3 = { version = "0.18", features = ["raw-window-handle"] }
 sdl3-sys = { version = "^0.6", features = ["no-link"] }
-tracy-client = "0.18"
+tracy-client = "0.19"
 
 ## Common Platform
 libc = "0.2"
