@@ -514,6 +514,11 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
     pub fn wait_all_submissions(&self) -> Result<(), RetireError> {
         let mut live = self.submission_manager.live.borrow_mut();
 
+        // If there's nothing in flight then we can just immediately exit
+        if live.is_empty() {
+            return Ok(());
+        }
+
         // Use 'wait_fences' to block on all the fences, rather than waiting on them individually.
         let mut fences: BVec<_, MgAsyncLdrSystem> = BVec::new_in(system());
         let mut values: BVec<_, MgAsyncLdrSystem> = BVec::new_in(system());
