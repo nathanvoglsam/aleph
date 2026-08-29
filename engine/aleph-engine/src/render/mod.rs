@@ -35,6 +35,7 @@ mod shaders;
 
 use std::io::Read;
 use std::sync::Arc;
+use std::thread::JoinHandle;
 
 use ::egui::AEguiRenderData;
 use aleph_magnesium::renderer::builder::RendererBuilder;
@@ -48,7 +49,10 @@ use api::platform::*;
 use api::plugin::*;
 use api::rhi::ARhiProvider;
 use mg::renderer::builder::ApplicationSurface;
-
+use crate::render::async_loader::resources::async_loader_requests::AsyncLoaderRequests;
+use crate::render::async_loader::systems::async_load_resolver::AsyncLoadResolverSystem;
+use crate::render::async_loader::task::buffer_load::BufferLoadTask;
+use crate::render::async_loader::worker::AsyncLoaderWorker;
 use crate::render::config::Config;
 use crate::render::core::resources::render_scene::RenderSceneResource;
 use crate::render::core::systems::capture_previous_transforms::CapturePreviousTransformsSystem;
@@ -60,11 +64,15 @@ use crate::render::egui::render_plane::EguiRenderPlane;
 
 pub struct PluginRender {
     device: Option<Arc<dyn rhi::IDevice>>,
+    loader_thread: Option<JoinHandle<()>>,
 }
 
 impl PluginRender {
     pub fn new() -> Self {
-        Self { device: None }
+        Self {
+            device: None,
+            loader_thread: None,
+        }
     }
 }
 
@@ -134,13 +142,24 @@ impl IPlugin for PluginRender {
             renderer.render_plane(EguiRenderPlane::new(window.clone()));
         }
         renderer.render_ahead_frames(config.render_ahead_frames as usize);
-        registry.core().resources.insert(renderer.build().unwrap());
+        let mut renderer = renderer.build().unwrap();
+
+        let (loader_thread, loader_sender, loader_notify) =
+            AsyncLoaderWorker::spawn_with(&mut renderer).unwrap();
+        self.loader_thread = Some(loader_thread);
+
+        let buffer_loader = BufferLoadTask::new(router.clone());
+
+        registry.core().resources.insert(renderer);
 
         // Construct and register the __render__ scene resource. This is distinct from the
         // simulation scene.
         registry.core().resources.insert(RenderSceneResource {
             scene: World::new(),
         });
+
+        // State maintained for async load requests
+        registry.core().resources.insert(AsyncLoaderRequests::new());
 
         // System to take the send events about the rendering surface into the renderer over the
         // channel that we gave it.
@@ -154,6 +173,13 @@ impl IPlugin for PluginRender {
         // transforms immediately after the last render frame.
         {
             let system = CapturePreviousTransformsSystem;
+            system.register(&mut registry.core().schedule);
+        }
+
+        // System that responds to messages from the async resource loader and applies them to the
+        // scene.
+        {
+            let system = AsyncLoadResolverSystem::new(loader_notify);
             system.register(&mut registry.core().schedule);
         }
 
@@ -177,6 +203,9 @@ impl IPlugin for PluginRender {
     }
 
     fn on_exit(&mut self) {
+        if let Some(loader) = self.loader_thread.take() {
+            loader.join().unwrap();
+        }
         if let Some(device) = self.device.as_deref() {
             // When existing we need to flush all still active GPU work and force a GC cycle to
             // release all references being held live by the resource tracking system. The resource

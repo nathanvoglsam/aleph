@@ -88,6 +88,7 @@ raw-window-handle = { workspace = true }
 smallbox = { workspace = true }
 env_logger = { workspace = true }
 rkyv = { workspace = true }
+thiserror = { workspace = true }
 
 [build-dependencies]
 aleph-compile = { workspace = true }
