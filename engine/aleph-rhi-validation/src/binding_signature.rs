@@ -31,7 +31,7 @@ use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
 
 use crate::{ValidationDevice, ValidationParameterBlockLayout};
 
@@ -45,7 +45,7 @@ pub struct ValidationBindingSignature {
 
 impl IBindingSignature for ValidationBindingSignature {
     fn upgrade(&self) -> Arc<dyn IBindingSignature> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -57,6 +57,6 @@ impl IBindingSignature for ValidationBindingSignature {
     }
 
     fn get_id(&self) -> std::num::NonZeroU64 {
-        self.inner.get_id()
+        abort_on_unwind(|| self.inner.get_id())
     }
 }

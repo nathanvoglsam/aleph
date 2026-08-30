@@ -32,6 +32,7 @@ use std::ptr::NonNull;
 use std::sync::{Arc, Weak};
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 
 use crate::internal::unwrap;
@@ -46,7 +47,7 @@ crate::impl_platform_interface_passthrough!(ValidationContext);
 
 impl IContext for ValidationContext {
     fn upgrade(&self) -> Arc<dyn IContext> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -58,17 +59,19 @@ impl IContext for ValidationContext {
     }
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Arc<dyn IAdapter>> {
-        // Unwrap the ISurface reference to the inner object
-        let mut options = options.clone();
-        options.surface = options.surface.map(|v| unwrap::surface(v).inner.as_ref());
+        abort_on_unwind(|| {
+            // Unwrap the ISurface reference to the inner object
+            let mut options = options.clone();
+            options.surface = options.surface.map(|v| unwrap::surface(v).inner.as_ref());
 
-        let inner = self.inner.request_adapter(&options)?;
-        let adapter = Arc::new_cyclic(move |v| ValidationAdapter {
-            _this: v.clone(),
-            _context: self._this.upgrade().unwrap(),
-            inner,
-        });
-        Some(adapter)
+            let inner = self.inner.request_adapter(&options)?;
+            let adapter: Arc<dyn IAdapter> = Arc::new_cyclic(move |v| ValidationAdapter {
+                _this: v.clone(),
+                _context: self._this.upgrade().unwrap(),
+                inner,
+            });
+            Some(adapter)
+        })
     }
 
     fn create_surface(
@@ -76,32 +79,36 @@ impl IContext for ValidationContext {
         display: &dyn HasDisplayHandle,
         window: &dyn HasWindowHandle,
     ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
-        let inner = self.inner.create_surface(display, window)?;
-        let surface = Arc::new_cyclic(move |v| ValidationSurface {
-            _this: v.clone(),
-            _context: self._this.upgrade().unwrap(),
-            inner,
-            has_swap_chain: Default::default(),
-        });
-        Ok(surface)
+        abort_on_unwind(|| {
+            let inner = self.inner.create_surface(display, window)?;
+            let surface: Arc<dyn ISurface> = Arc::new_cyclic(move |v| ValidationSurface {
+                _this: v.clone(),
+                _context: self._this.upgrade().unwrap(),
+                inner,
+                has_swap_chain: Default::default(),
+            });
+            Ok(surface)
+        })
     }
 
     fn create_surface_for_metal_layer(
         &self,
         layer: NonNull<c_void>,
     ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
-        let inner = self.inner.create_surface_for_metal_layer(layer)?;
-        let surface = Arc::new_cyclic(move |v| ValidationSurface {
-            _this: v.clone(),
-            _context: self._this.upgrade().unwrap(),
-            inner,
-            has_swap_chain: Default::default(),
-        });
-        Ok(surface)
+        abort_on_unwind(|| {
+            let inner = self.inner.create_surface_for_metal_layer(layer)?;
+            let surface: Arc<dyn ISurface> = Arc::new_cyclic(move |v| ValidationSurface {
+                _this: v.clone(),
+                _context: self._this.upgrade().unwrap(),
+                inner,
+                has_swap_chain: Default::default(),
+            });
+            Ok(surface)
+        })
     }
 
     fn get_backend_api(&self) -> BackendAPI {
-        self.inner.get_backend_api()
+        abort_on_unwind(|| self.inner.get_backend_api())
     }
 }
 

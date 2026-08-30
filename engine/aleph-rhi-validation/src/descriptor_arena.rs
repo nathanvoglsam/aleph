@@ -33,6 +33,7 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::parameter_block_pool::{IBlockFactory, ParameterBlockPool};
 
 use crate::internal::parameter_block::ParameterBlock;
@@ -57,22 +58,24 @@ impl IDescriptorArena for ValidationDescriptorArena {
         &self,
         layout: &dyn IParameterBlockLayout,
     ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
-        let layout = unwrap::parameter_block_layout(layout);
-        assert!(
-            !layout
-                .desc()
-                .flags
-                .contains(ParameterBlockFlags::PUSH_DESCRIPTOR),
-            "Allocating from an IDescriptorArena using a IParameterBlockLayout with the 'PUSH_DESCRIPTOR' flag is not allowed"
-        );
+        abort_on_unwind(|| {
+            let layout = unwrap::parameter_block_layout(layout);
+            assert!(
+                !layout
+                    .desc()
+                    .flags
+                    .contains(ParameterBlockFlags::PUSH_DESCRIPTOR),
+                "Allocating from an IDescriptorArena using a IParameterBlockLayout with the 'PUSH_DESCRIPTOR' flag is not allowed"
+            );
 
-        let mut blocks: [MaybeUninit<_>; 1] = [MaybeUninit::uninit(); 1];
-        self.pool.allocate_blocks(layout, &mut blocks)?;
+            let mut blocks: [MaybeUninit<_>; 1] = [MaybeUninit::uninit(); 1];
+            self.pool.allocate_blocks(layout, &mut blocks)?;
 
-        unsafe {
-            let block = blocks[0].assume_init();
-            Ok(block)
-        }
+            unsafe {
+                let block = blocks[0].assume_init();
+                Ok(block)
+            }
+        })
     }
 
     fn allocate_blocks(
@@ -80,34 +83,38 @@ impl IDescriptorArena for ValidationDescriptorArena {
         layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
     ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
-        let mut blocks = Box::new_uninit_slice(num_blocks);
+        abort_on_unwind(|| {
+            let mut blocks = Box::new_uninit_slice(num_blocks);
 
-        for i in 0..num_blocks {
-            let block = self.allocate_block(layout)?;
-            blocks[i].write(block);
-        }
+            for i in 0..num_blocks {
+                let block = self.allocate_block(layout)?;
+                blocks[i].write(block);
+            }
 
-        let blocks = Box::leak(blocks);
-        let blocks = NonNull::from(blocks);
-        let blocks =
-            NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
-        unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
+            let blocks = Box::leak(blocks);
+            let blocks = NonNull::from(blocks);
+            let blocks =
+                NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
+            unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
+        })
     }
 
     unsafe fn free(&self, blocks: &[ParameterBlockHandle]) {
-        assert_ne!(
-            self.arena_type,
-            DescriptorArenaType::Linear,
-            "It is illegal to call 'IDescriptorArena::free' for arena type '{:?}'",
-            self.arena_type
-        );
-        self.pool.free_blocks(blocks)
+        abort_on_unwind(|| {
+            assert_ne!(
+                self.arena_type,
+                DescriptorArenaType::Linear,
+                "It is illegal to call 'IDescriptorArena::free' for arena type '{:?}'",
+                self.arena_type
+            );
+            self.pool.free_blocks(blocks)
+        })
     }
 
     unsafe fn reset(&self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             self.pool.reset_pool();
-        }
+        })
     }
 }
 

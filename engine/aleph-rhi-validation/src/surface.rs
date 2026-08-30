@@ -30,6 +30,7 @@
 use std::sync::{Arc, Weak};
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use parking_lot::Mutex;
 
 use crate::internal::unwrap;
@@ -46,7 +47,7 @@ crate::impl_platform_interface_passthrough!(ValidationSurface);
 
 impl ISurface for ValidationSurface {
     fn upgrade(&self) -> Arc<dyn ISurface> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -62,34 +63,36 @@ impl ISurface for ValidationSurface {
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
     ) -> Result<Arc<dyn ISwapChain>, SwapChainCreateError> {
-        let device = unwrap::device(device);
-        let inner_device = device.inner.as_ref();
+        abort_on_unwind(|| {
+            let device = unwrap::device(device);
+            let inner_device = device.inner.as_ref();
 
-        let inner = {
-            // Check if a swapchain that owns this surface already exists
-            let mut has_swap_chain = self.has_swap_chain.lock();
-            if *has_swap_chain {
-                return Err(SwapChainCreateError::SurfaceAlreadyOwned);
-            }
+            let inner = {
+                // Check if a swapchain that owns this surface already exists
+                let mut has_swap_chain = self.has_swap_chain.lock();
+                if *has_swap_chain {
+                    return Err(SwapChainCreateError::SurfaceAlreadyOwned);
+                }
 
-            let result = self.inner.create_swap_chain(inner_device, config);
+                let result = self.inner.create_swap_chain(inner_device, config);
 
-            // Update the owned flag if we have successfully created a new swap chain
-            if result.is_ok() {
-                *has_swap_chain = true
-            }
+                // Update the owned flag if we have successfully created a new swap chain
+                if result.is_ok() {
+                    *has_swap_chain = true
+                }
 
-            result
-        }?;
+                result
+            }?;
 
-        let swap_chain = Arc::new_cyclic(move |v| ValidationSwapChain {
-            _this: v.clone(),
-            _device: device._this.upgrade().unwrap(),
-            _surface: self._this.upgrade().unwrap(),
-            inner,
-            queue_support: Default::default(),
-            acquired: Default::default(),
-        });
-        Ok(swap_chain)
+            let swap_chain: Arc<dyn ISwapChain> = Arc::new_cyclic(move |v| ValidationSwapChain {
+                _this: v.clone(),
+                _device: device._this.upgrade().unwrap(),
+                _surface: self._this.upgrade().unwrap(),
+                inner,
+                queue_support: Default::default(),
+                acquired: Default::default(),
+            });
+            Ok(swap_chain)
+        })
     }
 }

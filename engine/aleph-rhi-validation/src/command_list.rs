@@ -30,6 +30,7 @@
 use std::sync::Arc;
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 
 use crate::{ValidationDevice, ValidationEncoder};
 
@@ -45,50 +46,56 @@ unsafe impl Send for ValidationCommandList {}
 
 impl ICommandList for ValidationCommandList {
     fn begin_general(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        let inner = self.inner.begin_general()?;
-        let inner = unsafe { inner.into_abi() }; // Safety: this is a-okay
-        let encoder = Box::new(ValidationEncoder {
-            inner,
-            bound_graphics_pipeline: None,
-            bound_compute_pipeline: None,
-            list_type: QueueType::General,
-            render_pass_open: false,
-        });
-        let encoder: Box<dyn ICommandEncoderAbi + '_> = encoder;
+        abort_on_unwind(|| {
+            let inner = self.inner.begin_general()?;
+            let inner = unsafe { inner.into_abi() }; // Safety: this is a-okay
+            let encoder = Box::new(ValidationEncoder {
+                inner,
+                bound_graphics_pipeline: None,
+                bound_compute_pipeline: None,
+                list_type: QueueType::General,
+                render_pass_open: false,
+            });
+            let encoder: Box<dyn ICommandEncoderAbi + '_> = encoder;
 
-        // Safety: This isn't unsound/unsafe
-        unsafe { Ok(CommandEncoder::from_abi(encoder)) }
+            // Safety: This isn't unsound/unsafe
+            unsafe { Ok(CommandEncoder::from_abi(encoder)) }
+        })
     }
 
     fn begin_compute(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        let inner = self.inner.begin_compute()?;
-        let inner = unsafe { inner.into_abi() }; // Safety: this is a-okay
-        let encoder = Box::new(ValidationEncoder {
-            inner,
-            bound_graphics_pipeline: None,
-            bound_compute_pipeline: None,
-            list_type: QueueType::Compute,
-            render_pass_open: false,
-        });
-        let encoder: Box<dyn ICommandEncoderAbi + '_> = encoder;
+        abort_on_unwind(|| {
+            let inner = self.inner.begin_compute()?;
+            let inner = unsafe { inner.into_abi() }; // Safety: this is a-okay
+            let encoder = Box::new(ValidationEncoder {
+                inner,
+                bound_graphics_pipeline: None,
+                bound_compute_pipeline: None,
+                list_type: QueueType::Compute,
+                render_pass_open: false,
+            });
+            let encoder: Box<dyn ICommandEncoderAbi + '_> = encoder;
 
-        // Safety: This isn't unsound/unsafe
-        unsafe { Ok(CommandEncoder::from_abi(encoder)) }
+            // Safety: This isn't unsound/unsafe
+            unsafe { Ok(CommandEncoder::from_abi(encoder)) }
+        })
     }
 
     fn begin_transfer(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        let inner = self.inner.begin_transfer()?;
-        let inner = unsafe { inner.into_abi() }; // Safety: this is a-okay
-        let encoder = Box::new(ValidationEncoder {
-            inner,
-            bound_graphics_pipeline: None,
-            bound_compute_pipeline: None,
-            list_type: QueueType::Transfer,
-            render_pass_open: false,
-        });
-        let encoder: Box<dyn ICommandEncoderAbi + '_> = encoder;
+        abort_on_unwind(|| {
+            let inner = self.inner.begin_transfer()?;
+            let inner = unsafe { inner.into_abi() }; // Safety: this is a-okay
+            let encoder = Box::new(ValidationEncoder {
+                inner,
+                bound_graphics_pipeline: None,
+                bound_compute_pipeline: None,
+                list_type: QueueType::Transfer,
+                render_pass_open: false,
+            });
+            let encoder: Box<dyn ICommandEncoderAbi + '_> = encoder;
 
-        // Safety: This isn't unsound/unsafe
-        unsafe { Ok(CommandEncoder::from_abi(encoder)) }
+            // Safety: This isn't unsound/unsafe
+            unsafe { Ok(CommandEncoder::from_abi(encoder)) }
+        })
     }
 }

@@ -34,7 +34,7 @@ use std::sync::Arc;
 use aleph_alloc::BVec;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
 
 use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::{get_as_unwrapped, unwrap};
@@ -59,17 +59,19 @@ impl<'a, T: IGetPlatformInterface + ?Sized + 'a> IGetPlatformInterface for Valid
 
 impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationEncoder<T> {
     unsafe fn __bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
-        assert!(
-            matches!(self.list_type, QueueType::General),
-            "Called a general command on a non-general capable command list"
-        );
-        let pipeline = ValidationGraphicsPipeline::get_owned(pipeline);
-        unsafe {
-            self.inner.__bind_graphics_pipeline(&pipeline.inner);
-        }
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General),
+                "Called a general command on a non-general capable command list"
+            );
+            let pipeline = ValidationGraphicsPipeline::get_owned(pipeline);
+            unsafe {
+                self.inner.__bind_graphics_pipeline(&pipeline.inner);
+            }
 
-        // We need to know if/what pipeline is bound for validation purposes
-        self.bound_graphics_pipeline = Some(pipeline);
+            // We need to know if/what pipeline is bound for validation purposes
+            self.bound_graphics_pipeline = Some(pipeline);
+        })
     }
 
     unsafe fn __bind_vertex_buffers(
@@ -77,22 +79,24 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
     ) {
-        assert!(
-            matches!(self.list_type, QueueType::General),
-            "Called a general command on a non-general capable command list"
-        );
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General),
+                "Called a general command on a non-general capable command list"
+            );
 
-        let mut new_bindings = BVec::with_capacity_in(bindings.len(), RhiSystem::default());
-        new_bindings.extend(
-            bindings
-                .iter()
-                .map(get_as_unwrapped::input_assembly_buffer_binding),
-        );
+            let mut new_bindings = BVec::with_capacity_in(bindings.len(), RhiSystem::default());
+            new_bindings.extend(
+                bindings
+                    .iter()
+                    .map(get_as_unwrapped::input_assembly_buffer_binding),
+            );
 
-        unsafe {
-            self.inner
-                .__bind_vertex_buffers(first_binding, &new_bindings)
-        }
+            unsafe {
+                self.inner
+                    .__bind_vertex_buffers(first_binding, &new_bindings)
+            }
+        })
     }
 
     unsafe fn __bind_index_buffer(
@@ -100,109 +104,121 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
     ) {
-        assert!(
-            matches!(self.list_type, QueueType::General),
-            "Called a general command on a non-general capable command list"
-        );
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General),
+                "Called a general command on a non-general capable command list"
+            );
 
-        let binding = get_as_unwrapped::input_assembly_buffer_binding(binding);
+            let binding = get_as_unwrapped::input_assembly_buffer_binding(binding);
 
-        unsafe { self.inner.__bind_index_buffer(index_type, &binding) }
+            unsafe { self.inner.__bind_index_buffer(index_type, &binding) }
+        })
     }
 
     unsafe fn __set_viewports(&mut self, viewports: &[Viewport]) {
-        assert!(
-            matches!(self.list_type, QueueType::General),
-            "Called a general command on a non-general capable command list"
-        );
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General),
+                "Called a general command on a non-general capable command list"
+            );
 
-        unsafe { self.inner.__set_viewports(viewports) }
+            unsafe { self.inner.__set_viewports(viewports) }
+        })
     }
 
     unsafe fn __set_scissor_rects(&mut self, rects: &[Rect]) {
-        assert!(
-            matches!(self.list_type, QueueType::General),
-            "Called a general command on a non-general capable command list"
-        );
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General),
+                "Called a general command on a non-general capable command list"
+            );
 
-        unsafe { self.inner.__set_scissor_rects(rects) }
+            unsafe { self.inner.__set_scissor_rects(rects) }
+        })
     }
 
     unsafe fn __set_push_constant_block(&mut self, data: &[u8]) {
-        assert!(
-            matches!(self.list_type, QueueType::General),
-            "Called a general command on a non-general capable command list"
-        );
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General),
+                "Called a general command on a non-general capable command list"
+            );
 
-        // This command can't work without a bound pipeline, we need the pipeline layout so we can
-        // validate the binding data
-        let pipeline = self.bound_graphics_pipeline.as_ref().unwrap().deref();
+            // This command can't work without a bound pipeline, we need the pipeline layout so we can
+            // validate the binding data
+            let pipeline = self.bound_graphics_pipeline.as_ref().unwrap().deref();
 
-        // Lookup the parameter index on the currently bound pipeline (pipeline layout) based on
-        // the constant block index
-        let block = &pipeline
-            ._binding_signature
-            .push_constant_block
-            .as_ref()
-            .unwrap();
+            // Lookup the parameter index on the currently bound pipeline (pipeline layout) based on
+            // the constant block index
+            let block = &pipeline
+                ._binding_signature
+                .push_constant_block
+                .as_ref()
+                .unwrap();
 
-        Self::validate_push_constant_data_buffer(data, block);
+            Self::validate_push_constant_data_buffer(data, block);
 
-        unsafe { self.inner.__set_push_constant_block(data) }
+            unsafe { self.inner.__set_push_constant_block(data) }
+        })
     }
 
     unsafe fn __begin_rendering(&mut self, info: &BeginRenderingInfo) {
-        assert!(
-            matches!(self.list_type, QueueType::General),
-            "Called a general command on a non-general capable command list"
-        );
-        assert!(
-            !self.render_pass_open,
-            "Can't call begin_rendering while a render-pass has already been opened"
-        );
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General),
+                "Called a general command on a non-general capable command list"
+            );
+            assert!(
+                !self.render_pass_open,
+                "Can't call begin_rendering while a render-pass has already been opened"
+            );
 
-        Self::validate_rendering_attachments(info);
+            Self::validate_rendering_attachments(info);
 
-        let mut new_color_attachments =
-            BVec::with_capacity_in(info.color_attachments.len(), RhiSystem::default());
-        new_color_attachments.extend(
-            info.color_attachments
-                .iter()
-                .map(get_as_unwrapped::rendering_color_attachment_info),
-        );
+            let mut new_color_attachments =
+                BVec::with_capacity_in(info.color_attachments.len(), RhiSystem::default());
+            new_color_attachments.extend(
+                info.color_attachments
+                    .iter()
+                    .map(get_as_unwrapped::rendering_color_attachment_info),
+            );
 
-        let depth_stencil_attachment = info
-            .depth_stencil_attachment
-            .map(get_as_unwrapped::rendering_depth_stencil_attachment_info);
+            let depth_stencil_attachment = info
+                .depth_stencil_attachment
+                .map(get_as_unwrapped::rendering_depth_stencil_attachment_info);
 
-        let info = BeginRenderingInfo {
-            layer_count: info.layer_count,
-            extent: info.extent.clone(),
-            color_attachments: &new_color_attachments,
-            depth_stencil_attachment: depth_stencil_attachment.as_ref(),
-            allow_uav_writes: false,
-        };
+            let info = BeginRenderingInfo {
+                layer_count: info.layer_count,
+                extent: info.extent.clone(),
+                color_attachments: &new_color_attachments,
+                depth_stencil_attachment: depth_stencil_attachment.as_ref(),
+                allow_uav_writes: false,
+            };
 
-        self.render_pass_open = true;
+            self.render_pass_open = true;
 
-        unsafe { self.inner.__begin_rendering(&info) }
+            unsafe { self.inner.__begin_rendering(&info) }
+        })
     }
 
     unsafe fn __end_rendering(&mut self) {
-        assert!(
-            matches!(self.list_type, QueueType::General),
-            "Called a general command on a non-general capable command list"
-        );
-        assert!(
-            self.render_pass_open,
-            "Can't call end_rendering while a render-pass has already been opened"
-        );
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General),
+                "Called a general command on a non-general capable command list"
+            );
+            assert!(
+                self.render_pass_open,
+                "Can't call end_rendering while a render-pass has already been opened"
+            );
 
-        unsafe {
-            self.inner.__end_rendering();
-        }
+            unsafe {
+                self.inner.__end_rendering();
+            }
 
-        self.render_pass_open = false;
+            self.render_pass_open = false;
+        })
     }
 
     unsafe fn __draw(
@@ -212,15 +228,17 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
         first_vertex: u32,
         first_instance: u32,
     ) {
-        assert!(
-            matches!(self.list_type, QueueType::General),
-            "Called a general command on a non-general capable command list"
-        );
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General),
+                "Called a general command on a non-general capable command list"
+            );
 
-        unsafe {
-            self.inner
-                .__draw(vertex_count, instance_count, first_vertex, first_instance)
-        }
+            unsafe {
+                self.inner
+                    .__draw(vertex_count, instance_count, first_vertex, first_instance)
+            }
+        })
     }
 
     unsafe fn __draw_indexed(
@@ -231,36 +249,40 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
         first_instance: u32,
         vertex_offset: i32,
     ) {
-        assert!(
-            matches!(self.list_type, QueueType::General),
-            "Called a general command on a non-general capable command list"
-        );
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General),
+                "Called a general command on a non-general capable command list"
+            );
 
-        unsafe {
-            self.inner.__draw_indexed(
-                index_count,
-                instance_count,
-                first_index,
-                first_instance,
-                vertex_offset,
-            )
-        }
+            unsafe {
+                self.inner.__draw_indexed(
+                    index_count,
+                    instance_count,
+                    first_index,
+                    first_instance,
+                    vertex_offset,
+                )
+            }
+        })
     }
 
     unsafe fn __bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
-        assert!(
-            matches!(self.list_type, QueueType::General | QueueType::Compute),
-            "Called a compute command on a non-compute capable command list"
-        );
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General | QueueType::Compute),
+                "Called a compute command on a non-compute capable command list"
+            );
 
-        let pipeline = ValidationComputePipeline::get_owned(pipeline);
+            let pipeline = ValidationComputePipeline::get_owned(pipeline);
 
-        unsafe {
-            self.inner.__bind_compute_pipeline(&pipeline.inner);
-        }
+            unsafe {
+                self.inner.__bind_compute_pipeline(&pipeline.inner);
+            }
 
-        // We need to know if/what pipeline is bound for validation purposes
-        self.bound_compute_pipeline = Some(pipeline);
+            // We need to know if/what pipeline is bound for validation purposes
+            self.bound_compute_pipeline = Some(pipeline);
+        })
     }
 
     unsafe fn __bind_parameter_blocks(
@@ -270,28 +292,30 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
         first_block: u32,
         blocks: &[ParameterBlockHandle],
     ) {
-        assert!(
-            matches!(self.list_type, QueueType::General | QueueType::Compute),
-            "Called a compute command on a non-compute command list"
-        );
-
-        let binding_signature = unwrap::binding_signature(binding_signature).inner.as_ref();
-
-        unsafe {
-            let mut new_blocks = BVec::with_capacity_in(blocks.len(), RhiSystem::default());
-            new_blocks.extend(
-                blocks
-                    .iter()
-                    .map(|&v| v.into_raw::<ParameterBlock>().as_ref().inner.unwrap()),
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General | QueueType::Compute),
+                "Called a compute command on a non-compute command list"
             );
 
-            self.inner.__bind_parameter_blocks(
-                binding_signature,
-                bind_point,
-                first_block,
-                &new_blocks,
-            )
-        }
+            let binding_signature = unwrap::binding_signature(binding_signature).inner.as_ref();
+
+            unsafe {
+                let mut new_blocks = BVec::with_capacity_in(blocks.len(), RhiSystem::default());
+                new_blocks.extend(
+                    blocks
+                        .iter()
+                        .map(|&v| v.into_raw::<ParameterBlock>().as_ref().inner.unwrap()),
+                );
+
+                self.inner.__bind_parameter_blocks(
+                    binding_signature,
+                    bind_point,
+                    first_block,
+                    &new_blocks,
+                )
+            }
+        })
     }
 
     unsafe fn __push_parameters(
@@ -302,42 +326,46 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
         base: u32,
         writes: &[ParameterWrite],
     ) {
-        let binding_signature = unwrap::binding_signature(binding_signature);
-        let block_layout = &binding_signature.parameter_block_layouts[block as usize];
+        abort_on_unwind(|| {
+            let binding_signature = unwrap::binding_signature(binding_signature);
+            let block_layout = &binding_signature.parameter_block_layouts[block as usize];
 
-        assert!(
-            block_layout
-                .desc()
-                .flags
-                .contains(ParameterBlockFlags::PUSH_DESCRIPTOR),
-            "Can't call 'IComptueEncoder::push_parameters' on parameter block layout without 'PUSH_DESCRIPTOR' flag set"
-        );
-        block_layout.validate_updates(base, writes);
-
-        let binding_signature_inner = binding_signature.inner.as_ref();
-        let new_writes = unsafe { get_as_unwrapped::parameter_writes(writes) };
-
-        unsafe {
-            self.inner.__push_parameters(
-                binding_signature_inner,
-                bind_point,
-                block,
-                base,
-                &new_writes,
+            assert!(
+                block_layout
+                    .desc()
+                    .flags
+                    .contains(ParameterBlockFlags::PUSH_DESCRIPTOR),
+                "Can't call 'IComptueEncoder::push_parameters' on parameter block layout without 'PUSH_DESCRIPTOR' flag set"
             );
-        }
+            block_layout.validate_updates(base, writes);
+
+            let binding_signature_inner = binding_signature.inner.as_ref();
+            let new_writes = unsafe { get_as_unwrapped::parameter_writes(writes) };
+
+            unsafe {
+                self.inner.__push_parameters(
+                    binding_signature_inner,
+                    bind_point,
+                    block,
+                    base,
+                    &new_writes,
+                );
+            }
+        })
     }
 
     unsafe fn __dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
-        assert!(
-            matches!(self.list_type, QueueType::General | QueueType::Compute),
-            "Called a compute command on a non-compute command list"
-        );
+        abort_on_unwind(|| {
+            assert!(
+                matches!(self.list_type, QueueType::General | QueueType::Compute),
+                "Called a compute command on a non-compute command list"
+            );
 
-        unsafe {
-            self.inner
-                .__dispatch(group_count_x, group_count_y, group_count_z)
-        }
+            unsafe {
+                self.inner
+                    .__dispatch(group_count_x, group_count_y, group_count_z)
+            }
+        })
     }
 
     unsafe fn __resource_barrier(
@@ -346,41 +374,48 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
         buffer_barriers: &[BufferBarrier],
         texture_barriers: &[TextureBarrier],
     ) {
-        assert!(
-            !self.render_pass_open,
-            "It is invalid to issue barriers inside a render-pass"
-        );
+        abort_on_unwind(|| {
+            assert!(
+                !self.render_pass_open,
+                "It is invalid to issue barriers inside a render-pass"
+            );
 
-        texture_barriers.iter().for_each(|v| {
-            let texture = v.texture.unwrap();
-            let texture = ValidationTexture::get(texture);
-            Self::validate_sub_resource_range_against_texture(&texture.desc, &v.subresource_range);
-        });
+            texture_barriers.iter().for_each(|v| {
+                let texture = v.texture.unwrap();
+                let texture = ValidationTexture::get(texture);
+                Self::validate_sub_resource_range_against_texture(
+                    &texture.desc,
+                    &v.subresource_range,
+                );
+            });
 
-        let mut new_buffer_barriers =
-            BVec::with_capacity_in(buffer_barriers.len(), RhiSystem::default());
-        new_buffer_barriers.extend(buffer_barriers.iter().map(get_as_unwrapped::buffer_barrier));
+            let mut new_buffer_barriers =
+                BVec::with_capacity_in(buffer_barriers.len(), RhiSystem::default());
+            new_buffer_barriers
+                .extend(buffer_barriers.iter().map(get_as_unwrapped::buffer_barrier));
 
-        let mut new_texture_barriers =
-            BVec::with_capacity_in(texture_barriers.len(), RhiSystem::default());
-        new_texture_barriers.extend(
-            texture_barriers
-                .iter()
-                .map(get_as_unwrapped::texture_barrier),
-        );
+            let mut new_texture_barriers =
+                BVec::with_capacity_in(texture_barriers.len(), RhiSystem::default());
+            new_texture_barriers.extend(
+                texture_barriers
+                    .iter()
+                    .map(get_as_unwrapped::texture_barrier),
+            );
 
-        let barrier_num = global_barriers.len() + buffer_barriers.len() + texture_barriers.len();
-        if barrier_num == 0 {
-            log::warn!("ITransferEncoder::resource_barrier called with 0 barriers!");
-        }
+            let barrier_num =
+                global_barriers.len() + buffer_barriers.len() + texture_barriers.len();
+            if barrier_num == 0 {
+                log::warn!("ITransferEncoder::resource_barrier called with 0 barriers!");
+            }
 
-        unsafe {
-            self.inner.__resource_barrier(
-                global_barriers,
-                &new_buffer_barriers,
-                &new_texture_barriers,
-            )
-        }
+            unsafe {
+                self.inner.__resource_barrier(
+                    global_barriers,
+                    &new_buffer_barriers,
+                    &new_texture_barriers,
+                )
+            }
+        })
     }
 
     unsafe fn __copy_buffer_regions(
@@ -389,9 +424,11 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
         dst: &BufferHandle,
         regions: &[BufferCopyRegion],
     ) {
-        let src = &ValidationBuffer::get(src).inner;
-        let dst = &ValidationBuffer::get(dst).inner;
-        unsafe { self.inner.__copy_buffer_regions(src, dst, regions) }
+        abort_on_unwind(|| {
+            let src = &ValidationBuffer::get(src).inner;
+            let dst = &ValidationBuffer::get(dst).inner;
+            unsafe { self.inner.__copy_buffer_regions(src, dst, regions) }
+        })
     }
 
     unsafe fn __copy_buffer_to_texture(
@@ -400,18 +437,20 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
         dst: &TextureHandle,
         regions: &[BufferToTextureCopyRegion],
     ) {
-        regions.iter().for_each(|v| {
-            let dst = ValidationTexture::get(dst);
-            Self::validate_buffer_to_texture_copy_buffer_layout(v);
-            Self::validate_buffer_to_texture_copy_dest_region(dst, dst.desc.format, v)
-        });
+        abort_on_unwind(|| {
+            regions.iter().for_each(|v| {
+                let dst = ValidationTexture::get(dst);
+                Self::validate_buffer_to_texture_copy_buffer_layout(v);
+                Self::validate_buffer_to_texture_copy_dest_region(dst, dst.desc.format, v)
+            });
 
-        let src = &ValidationBuffer::get(src).inner;
-        let dst = get_as_unwrapped::texture(dst);
+            let src = &ValidationBuffer::get(src).inner;
+            let dst = get_as_unwrapped::texture(dst);
 
-        unsafe {
-            self.inner.__copy_buffer_to_texture(src, dst, regions);
-        }
+            unsafe {
+                self.inner.__copy_buffer_to_texture(src, dst, regions);
+            }
+        })
     }
 
     unsafe fn __copy_texture_regions(
@@ -420,27 +459,29 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
         dst: &TextureHandle,
         regions: &[TextureToTextureCopyInfo],
     ) {
-        // TODO: any validation at all
-        let src = get_as_unwrapped::texture(src);
-        let dst = get_as_unwrapped::texture(dst);
+        abort_on_unwind(|| {
+            // TODO: any validation at all
+            let src = get_as_unwrapped::texture(src);
+            let dst = get_as_unwrapped::texture(dst);
 
-        unsafe { self.inner.__copy_texture_regions(src, dst, regions) }
+            unsafe { self.inner.__copy_texture_regions(src, dst, regions) }
+        })
     }
 
     unsafe fn __close(&mut self) -> Result<(), CommandListCloseError> {
-        unsafe { self.inner.__close() }
+        abort_on_unwind(|| unsafe { self.inner.__close() })
     }
 
     unsafe fn __set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
-        unsafe { self.inner.__set_marker(color, message) }
+        abort_on_unwind(|| unsafe { self.inner.__set_marker(color, message) })
     }
 
     unsafe fn __begin_event(&mut self, color: Color, message: &aleph_nstr::NStr) {
-        unsafe { self.inner.__begin_event(color, message) }
+        abort_on_unwind(|| unsafe { self.inner.__begin_event(color, message) })
     }
 
     unsafe fn __end_event(&mut self) {
-        unsafe { self.inner.__end_event() }
+        abort_on_unwind(|| unsafe { self.inner.__end_event() })
     }
 }
 

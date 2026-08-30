@@ -31,6 +31,7 @@ use std::sync::atomic::Ordering;
 use std::sync::{Arc, Weak};
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 
 use crate::internal::{get_as_unwrapped, unwrap};
 use crate::{ValidationCommandList, ValidationDevice, ValidationTexture};
@@ -46,7 +47,7 @@ crate::impl_platform_interface_passthrough!(ValidationQueue);
 
 impl IQueue for ValidationQueue {
     fn upgrade(&self) -> Arc<dyn IQueue> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -58,62 +59,66 @@ impl IQueue for ValidationQueue {
     }
 
     fn queue_properties(&self) -> QueueProperties {
-        self.inner.queue_properties()
+        abort_on_unwind(|| self.inner.queue_properties())
     }
 
     fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
-        self.inner.garbage_collect()
+        abort_on_unwind(|| self.inner.garbage_collect())
     }
 
     fn wait_idle(&self) -> Result<(), QueueWaitError> {
-        self.inner.wait_idle()
+        abort_on_unwind(|| self.inner.wait_idle())
     }
 
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
-        for v in desc.command_lists {
-            let list_box = v.take().unwrap();
-            self.validate_command_list_submission(unwrap::command_list(list_box.as_ref()));
-            v.set(Some(list_box));
-        }
+        abort_on_unwind(|| {
+            for v in desc.command_lists {
+                let list_box = v.take().unwrap();
+                self.validate_command_list_submission(unwrap::command_list(list_box.as_ref()));
+                v.set(Some(list_box));
+            }
 
-        get_as_unwrapped::queue_submit_desc(desc, |inner_desc| {
-            let result = unsafe { self.inner.submit(inner_desc) };
-            result
+            get_as_unwrapped::queue_submit_desc(desc, |inner_desc| {
+                let result = unsafe { self.inner.submit(inner_desc) };
+                result
+            })
         })
     }
 
     unsafe fn present(&self, swap_image: Arc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
-        let mut swap_image = {
-            let v = swap_image;
-            unwrap::swap_image_owned(v)
-        };
-        let swap_image = Arc::get_mut(&mut swap_image).unwrap();
+        abort_on_unwind(|| {
+            let mut swap_image = {
+                let v = swap_image;
+                unwrap::swap_image_owned(v)
+            };
+            let swap_image = Arc::get_mut(&mut swap_image).unwrap();
 
-        {
-            let swap_texture = swap_image.texture.take().unwrap();
-            let swap_texture = swap_texture
-                .into_inner()
-                .downcast::<ValidationTexture>()
-                .unwrap();
-            assert_eq!(Arc::strong_count(&swap_texture), 1);
-        }
+            {
+                let swap_texture = swap_image.texture.take().unwrap();
+                let swap_texture = swap_texture
+                    .into_inner()
+                    .downcast::<ValidationTexture>()
+                    .unwrap();
+                assert_eq!(Arc::strong_count(&swap_texture), 1);
+            }
 
-        let swap_chain = &swap_image._swap_chain;
-        assert_eq!(
-            self.queue_type, swap_chain.queue_support,
-            "Tried to use a swap chain on an unsupported queue"
-        );
-        if swap_chain
-            .acquired
-            .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
-            .is_err()
-        {
-            panic!("Attempted to present an image without having first acquired one");
-        }
+            let swap_chain = &swap_image._swap_chain;
+            assert_eq!(
+                self.queue_type, swap_chain.queue_support,
+                "Tried to use a swap chain on an unsupported queue"
+            );
+            if swap_chain
+                .acquired
+                .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
+                .is_err()
+            {
+                panic!("Attempted to present an image without having first acquired one");
+            }
 
-        let inner_swap_image = swap_image.inner.take().unwrap();
+            let inner_swap_image = swap_image.inner.take().unwrap();
 
-        unsafe { self.inner.present(inner_swap_image) }
+            unsafe { self.inner.present(inner_swap_image) }
+        })
     }
 }
 

@@ -33,6 +33,7 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::parameter_block_pool::{IBlockFactory, ParameterBlockPool};
 
 use crate::internal::parameter_block::ParameterBlock;
@@ -53,37 +54,41 @@ impl IGetPlatformInterface for ValidationDescriptorPool {
 
 impl IDescriptorPool for ValidationDescriptorPool {
     fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
-        let mut blocks: [MaybeUninit<_>; 1] = [MaybeUninit::uninit(); 1];
-        self.pool.allocate_blocks(&self._layout, &mut blocks)?;
+        abort_on_unwind(|| {
+            let mut blocks: [MaybeUninit<_>; 1] = [MaybeUninit::uninit(); 1];
+            self.pool.allocate_blocks(&self._layout, &mut blocks)?;
 
-        unsafe {
-            let block = blocks[0].assume_init();
-            Ok(block)
-        }
+            unsafe {
+                let block = blocks[0].assume_init();
+                Ok(block)
+            }
+        })
     }
 
     fn allocate_blocks(
         &mut self,
         num_blocks: usize,
     ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
-        let mut blocks = Box::new_uninit_slice(num_blocks);
-        self.pool.allocate_blocks(&self._layout, &mut blocks)?;
+        abort_on_unwind(|| {
+            let mut blocks = Box::new_uninit_slice(num_blocks);
+            self.pool.allocate_blocks(&self._layout, &mut blocks)?;
 
-        let blocks = Box::leak(blocks);
-        let blocks = NonNull::from(blocks);
-        let blocks =
-            NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
-        unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
+            let blocks = Box::leak(blocks);
+            let blocks = NonNull::from(blocks);
+            let blocks =
+                NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
+            unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
+        })
     }
 
     unsafe fn free(&mut self, blocks: &[ParameterBlockHandle]) {
-        self.pool.free_blocks(blocks)
+        abort_on_unwind(|| self.pool.free_blocks(blocks))
     }
 
     unsafe fn reset(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             self.pool.reset_pool();
-        }
+        })
     }
 }
 

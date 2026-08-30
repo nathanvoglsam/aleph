@@ -31,6 +31,7 @@ use std::num::NonZeroU64;
 use std::sync::{Arc, Weak};
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 
 use crate::ValidationBuffer;
@@ -46,7 +47,7 @@ pub struct ValidationParameterBlockLayout {
 
 impl IParameterBlockLayout for ValidationParameterBlockLayout {
     fn upgrade(&self) -> Arc<dyn IParameterBlockLayout> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -58,16 +59,18 @@ impl IParameterBlockLayout for ValidationParameterBlockLayout {
     }
 
     fn desc(&self) -> &ParameterBlockDesc<'_> {
-        self.inner.desc()
+        abort_on_unwind(|| self.inner.desc())
     }
 
     fn get_id(&self) -> NonZeroU64 {
-        self.inner.get_id()
+        abort_on_unwind(|| self.inner.get_id())
     }
 
     fn is_compatible(&self, other: &dyn IParameterBlockLayout) -> bool {
-        let other = unwrap::parameter_block_layout(other);
-        self.inner.is_compatible(other)
+        abort_on_unwind(|| {
+            let other = unwrap::parameter_block_layout(other);
+            self.inner.is_compatible(other)
+        })
     }
 }
 

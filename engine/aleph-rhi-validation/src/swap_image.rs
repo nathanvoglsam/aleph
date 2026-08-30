@@ -31,6 +31,7 @@ use std::any::TypeId;
 use std::sync::Arc;
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 
 use crate::ValidationSwapChain;
 
@@ -48,16 +49,20 @@ impl IGetPlatformInterface for ValidationSwapImage {
 
 impl ISwapImage for ValidationSwapImage {
     fn texture(&self) -> &TextureHandle {
-        self.texture.as_ref().unwrap();
-        if let Some(v) = &self.texture {
-            v
-        } else {
-            panic!()
-        }
+        abort_on_unwind(|| {
+            self.texture.as_ref().unwrap();
+            if let Some(v) = &self.texture {
+                v
+            } else {
+                panic!()
+            }
+        })
     }
 
     fn texture_desc(&self) -> &TextureDesc<'_> {
-        let v = self.inner.as_ref().unwrap();
-        v.texture_desc()
+        abort_on_unwind(|| {
+            let v = self.inner.as_ref().unwrap();
+            v.texture_desc()
+        })
     }
 }

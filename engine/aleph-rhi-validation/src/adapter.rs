@@ -30,6 +30,7 @@
 use std::sync::{Arc, Weak};
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 
 use crate::{ValidationContext, ValidationDevice, ValidationQueue};
 
@@ -43,7 +44,7 @@ crate::impl_platform_interface_passthrough!(ValidationAdapter);
 
 impl IAdapter for ValidationAdapter {
     fn upgrade(&self) -> Arc<dyn IAdapter> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -55,44 +56,46 @@ impl IAdapter for ValidationAdapter {
     }
 
     fn description(&self) -> AdapterDescription<'_> {
-        self.inner.description()
+        abort_on_unwind(|| self.inner.description())
     }
 
     fn request_device(&self) -> Result<Arc<dyn IDevice>, RequestDeviceError> {
-        fn query_queue(
-            inner: &dyn IDevice,
-            device_weak: Weak<ValidationDevice>,
-            queue_type: QueueType,
-        ) -> Option<Arc<ValidationQueue>> {
-            inner.get_queue(queue_type).map(|q| {
-                // Query the inner queue for support for the debug interface. This controls whether
-                // ValidationQueue can also expose IQueueDebug.
-                Arc::new_cyclic(move |v| ValidationQueue {
-                    _this: v.clone(),
-                    _device: device_weak,
-                    inner: q,
-                    queue_type,
+        abort_on_unwind(|| {
+            fn query_queue(
+                inner: &dyn IDevice,
+                device_weak: Weak<ValidationDevice>,
+                queue_type: QueueType,
+            ) -> Option<Arc<ValidationQueue>> {
+                inner.get_queue(queue_type).map(|q| {
+                    // Query the inner queue for support for the debug interface. This controls
+                    // whether ValidationQueue can also expose IQueueDebug.
+                    Arc::new_cyclic(move |v| ValidationQueue {
+                        _this: v.clone(),
+                        _device: device_weak,
+                        inner: q,
+                        queue_type,
+                    })
                 })
-            })
-        }
-
-        let inner = self.inner.request_device()?;
-
-        let device = Arc::new_cyclic(move |v| {
-            let general_queue = query_queue(inner.as_ref(), v.clone(), QueueType::General);
-            let compute_queue = query_queue(inner.as_ref(), v.clone(), QueueType::Compute);
-            let transfer_queue = query_queue(inner.as_ref(), v.clone(), QueueType::Transfer);
-            ValidationDevice {
-                _this: v.clone(),
-                _adapter: self._this.upgrade().unwrap(),
-                _context: self._context._this.upgrade().unwrap(),
-                inner,
-                pool_counter: Default::default(),
-                general_queue,
-                compute_queue,
-                transfer_queue,
             }
-        });
-        Ok(device)
+
+            let inner = self.inner.request_device()?;
+
+            let device: Arc<dyn IDevice> = Arc::new_cyclic(move |v| {
+                let general_queue = query_queue(inner.as_ref(), v.clone(), QueueType::General);
+                let compute_queue = query_queue(inner.as_ref(), v.clone(), QueueType::Compute);
+                let transfer_queue = query_queue(inner.as_ref(), v.clone(), QueueType::Transfer);
+                ValidationDevice {
+                    _this: v.clone(),
+                    _adapter: self._this.upgrade().unwrap(),
+                    _context: self._context._this.upgrade().unwrap(),
+                    inner,
+                    pool_counter: Default::default(),
+                    general_queue,
+                    compute_queue,
+                    transfer_queue,
+                }
+            });
+            Ok(device)
+        })
     }
 }
