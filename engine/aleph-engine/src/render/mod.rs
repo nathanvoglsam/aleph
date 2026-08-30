@@ -49,9 +49,10 @@ use api::platform::*;
 use api::plugin::*;
 use api::rhi::ARhiProvider;
 use mg::renderer::builder::ApplicationSurface;
+
+use crate::render::async_loader::resources::async_loader_channel::AsyncLoaderChannel;
 use crate::render::async_loader::resources::async_loader_requests::AsyncLoaderRequests;
 use crate::render::async_loader::systems::async_load_resolver::AsyncLoadResolverSystem;
-use crate::render::async_loader::task::buffer_load::BufferLoadTask;
 use crate::render::async_loader::worker::AsyncLoaderWorker;
 use crate::render::config::Config;
 use crate::render::core::resources::render_scene::RenderSceneResource;
@@ -148,8 +149,6 @@ impl IPlugin for PluginRender {
             AsyncLoaderWorker::spawn_with(&mut renderer).unwrap();
         self.loader_thread = Some(loader_thread);
 
-        let buffer_loader = BufferLoadTask::new(router.clone());
-
         registry.core().resources.insert(renderer);
 
         // Construct and register the __render__ scene resource. This is distinct from the
@@ -160,6 +159,10 @@ impl IPlugin for PluginRender {
 
         // State maintained for async load requests
         registry.core().resources.insert(AsyncLoaderRequests::new());
+        registry
+            .core()
+            .resources
+            .insert(AsyncLoaderChannel::new(loader_sender, router.clone()));
 
         // System to take the send events about the rendering surface into the renderer over the
         // channel that we gave it.
@@ -203,9 +206,6 @@ impl IPlugin for PluginRender {
     }
 
     fn on_exit(&mut self) {
-        if let Some(loader) = self.loader_thread.take() {
-            loader.join().unwrap();
-        }
         if let Some(device) = self.device.as_deref() {
             // When existing we need to flush all still active GPU work and force a GC cycle to
             // release all references being held live by the resource tracking system. The resource
@@ -217,6 +217,9 @@ impl IPlugin for PluginRender {
     }
 
     fn on_shutdown(&mut self) {
+        if let Some(loader) = self.loader_thread.take() {
+            loader.join().unwrap();
+        }
         if let Some(device) = self.device.take() {
             log::debug!(
                 "IDevice::strong_count = '{}' at 'on_shutdown'",

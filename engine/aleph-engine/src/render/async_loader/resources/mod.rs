@@ -27,4 +27,5 @@
 // SOFTWARE.
 //
 
+pub mod async_loader_channel;
 pub mod async_loader_requests;

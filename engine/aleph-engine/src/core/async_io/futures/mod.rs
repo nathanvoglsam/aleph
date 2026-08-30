@@ -27,7 +27,26 @@
 // SOFTWARE.
 //
 
-pub mod alloc;
-pub mod async_io;
-pub mod platform;
-pub mod rhi;
+use std::cell::Cell;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+
+use aleph_vfs::file::AsyncReadResponse;
+
+/// Basic future that simply polls the executor's internal slot to receive an [`AsyncReadResponse`].
+///
+/// This will not work outside the executor it was designed to run in.
+pub struct AsyncRead<'a> {
+    pub(crate) response_slot: &'a Cell<Option<AsyncReadResponse>>,
+}
+
+impl<'a> Future for AsyncRead<'a> {
+    type Output = AsyncReadResponse;
+
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        match self.response_slot.take() {
+            None => Poll::Pending,
+            Some(message) => Poll::Ready(message),
+        }
+    }
+}

@@ -30,122 +30,15 @@
 pub mod buffer_load;
 
 use std::any::Any;
-use std::cell::Cell;
 use std::io;
 use std::pin::Pin;
-use std::ptr::NonNull;
-use std::task::{Context, Poll};
 
-use aleph_gen_arena::{HandleType, RawHandle};
-use aleph_vfs::file::{AsyncReadResponse, IAsyncVFile};
-use crossbeam::channel::Sender;
 use mg::async_resource_loader::AsyncResourceLoader;
 use smallbox::SmallBox;
 use thiserror::Error;
 
+use crate::core::async_io::context::IoContext;
 use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
-
-/// Context struct given to all async tasks that provides access to the executor and vfs.
-///
-/// Provides utilities so file IO can be performed asynchronously in a way the executor is able to
-/// wake and poll the correct future with our completion based async io system.
-pub struct TaskContext<'a> {
-    pub(crate) handle: RawHandle,
-    pub(crate) sender: &'a Sender<AsyncReadResponse>,
-    pub(crate) response_slot: &'a Cell<Option<AsyncReadResponse>>,
-}
-
-impl<'a> TaskContext<'a> {
-    /// Wrapper over [`IAsyncVFile::read_at`] that will correctly route the completion responses
-    /// to the executor the future is running in.
-    pub unsafe fn read_file_at(
-        &self,
-        file: &dyn IAsyncVFile,
-        buf: NonNull<[u8]>,
-        offset: u64,
-    ) -> io::Result<AsyncRead<'_>> {
-        unsafe {
-            file.read_at(
-                buf,
-                offset,
-                self.sender.clone(),
-                self.handle.to_bare_handle().into_int().get(),
-            )
-            .map_err(|_| {
-                io::Error::new(
-                    io::ErrorKind::ConnectionAborted,
-                    "The async file worker has disconnected.",
-                )
-            })?;
-        }
-        Ok(AsyncRead {
-            response_slot: self.response_slot,
-        })
-    }
-
-    /// Wrapper over [`IAsyncVFile::read_exact_at`] that will correctly route the completion
-    /// responses to the executor the future is running in.
-    pub unsafe fn read_file_exact_at(
-        &self,
-        file: &dyn IAsyncVFile,
-        buf: NonNull<[u8]>,
-        offset: u64,
-    ) -> io::Result<AsyncRead<'_>> {
-        unsafe {
-            file.read_exact_at(
-                buf,
-                offset,
-                self.sender.clone(),
-                self.handle.to_bare_handle().into_int().get(),
-            )
-            .map_err(|_| {
-                io::Error::new(
-                    io::ErrorKind::ConnectionAborted,
-                    "The async file worker has disconnected.",
-                )
-            })?;
-        }
-        Ok(AsyncRead {
-            response_slot: self.response_slot,
-        })
-    }
-
-    /// Wrapper over [`IAsyncVFile::load_file`] that will correctly route the completion responses
-    /// to the executor the future is running in.
-    pub fn load_file(&self, file: &dyn IAsyncVFile) -> io::Result<AsyncRead<'_>> {
-        file.load(
-            self.sender.clone(),
-            self.handle.to_bare_handle().into_int().get(),
-        )
-        .map_err(|_| {
-            io::Error::new(
-                io::ErrorKind::ConnectionAborted,
-                "The async file worker has disconnected.",
-            )
-        })?;
-        Ok(AsyncRead {
-            response_slot: self.response_slot,
-        })
-    }
-}
-
-/// Basic future that simply polls the executor's internal slot to receive an [`AsyncReadResponse`].
-///
-/// This will not work outside the executor it was designed to run in.
-pub struct AsyncRead<'a> {
-    response_slot: &'a Cell<Option<AsyncReadResponse>>,
-}
-
-impl<'a> Future for AsyncRead<'a> {
-    type Output = AsyncReadResponse;
-
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        match self.response_slot.take() {
-            None => Poll::Pending,
-            Some(message) => Poll::Ready(message),
-        }
-    }
-}
 
 /// Alias of `Result<T, TaskError>`
 pub type TaskResult<T> = Result<T, TaskError>;
@@ -172,7 +65,7 @@ pub trait ITaskFactory: Send + Sync + 'static {
     ///
     /// The async executor we use is very basic, and is only designed to work with our custom async
     /// IO primitives. Our executor is completion based, and will not interact with wakers at all.
-    /// Any future other than those spawned via [`TaskContext`] will not work as the executor does
+    /// Any future other than those spawned via [`IoContext`] will not work as the executor does
     /// not use the 'waker' to know when to poll the future again.
     ///
     /// ## Why?
@@ -187,7 +80,7 @@ pub trait ITaskFactory: Send + Sync + 'static {
     /// RHI with no intermediate copies within the engine.
     fn spawn_new<'a>(
         &self,
-        ctx: TaskContext<'a>,
+        ctx: IoContext,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
         msg: TaskPayload,
     ) -> Pin<Box<TaskFuture<'a>>>;

@@ -32,6 +32,7 @@ use std::cell::Cell;
 use std::num::NonZero;
 use std::pin::Pin;
 use std::process::abort;
+use std::rc::Rc;
 use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
 use std::thread;
@@ -46,9 +47,10 @@ use mg::async_resource_loader::loader_notify::LoaderNotify;
 use mg::async_resource_loader::{AsyncResourceLoader, FlushError};
 
 use crate::core::alloc::EngineSystem;
+use crate::core::async_io::context::IoContext;
 use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
 use crate::render::async_loader::task::{
-    ITaskFactory, TaskContext, TaskError, TaskFuture, TaskPayload, TaskResult,
+    ITaskFactory, TaskError, TaskFuture, TaskPayload, TaskResult,
 };
 
 pub struct WorkerTask {
@@ -57,7 +59,7 @@ pub struct WorkerTask {
 }
 
 impl WorkerTask {
-    pub fn make<T: Any + Send + 'static>(factory: Arc<dyn ITaskFactory>, message: T) -> Self {
+    pub fn new<T: Any + Send + 'static>(factory: Arc<dyn ITaskFactory>, message: T) -> Self {
         Self {
             factory,
             message: smallbox::smallbox!(message),
@@ -93,9 +95,12 @@ impl AsyncLoaderWorker {
             loader,
         };
 
-        let handle = thread::spawn(move || {
-            this.run();
-        });
+        let handle = thread::Builder::new()
+            .name("async-worker".into())
+            .spawn(move || {
+                this.run();
+            })
+            .expect("Failed to spawn AsyncLoaderWorker thread");
 
         (handle, request_send)
     }
@@ -103,7 +108,7 @@ impl AsyncLoaderWorker {
     pub fn run(&mut self) {
         let request_recv = &self.request_recv;
         let (response_send, response_recv) = unbounded();
-        let response_slot = Cell::new(None);
+        let response_slot = Rc::new(Cell::new(None));
 
         {
             let tasks = GenArena::new_in();
@@ -112,7 +117,7 @@ impl AsyncLoaderWorker {
                 &request_recv,
                 &response_recv,
                 &response_send,
-                &response_slot,
+                response_slot.clone(),
                 &self.loader,
             )
         }
@@ -123,7 +128,7 @@ impl AsyncLoaderWorker {
         request_recv: &'a Receiver<WorkerTask>,
         response_recv: &'a Receiver<AsyncReadResponse>,
         response_send: &'a Sender<AsyncReadResponse>,
-        response_slot: &'a Cell<Option<AsyncReadResponse>>,
+        response_slot: Rc<Cell<Option<AsyncReadResponse>>>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
     ) {
         let mut should_close = false;
@@ -136,13 +141,13 @@ impl AsyncLoaderWorker {
                 recv(request_recv) -> msg => Self::worker_message(
                     &mut tasks,
                     response_send,
-                    response_slot,
+                    &response_slot,
                     loader,
                     msg,
                 ),
                 recv(response_recv) -> msg => Self::async_message(
                     &mut tasks,
-                    response_slot,
+                    &response_slot,
                     msg,
                 ),
                 default(Duration::from_millis(8)) => 'timeout: {
@@ -177,13 +182,13 @@ impl AsyncLoaderWorker {
                         recv(request_recv) -> msg => Self::worker_message(
                             &mut tasks,
                             response_send,
-                            response_slot,
+                            &response_slot,
                             loader,
                             msg,
                         ),
                         recv(response_recv) -> msg => Self::async_message(
                             &mut tasks,
-                            response_slot,
+                            &response_slot,
                             msg,
                         ),
                     }
@@ -273,8 +278,8 @@ impl AsyncLoaderWorker {
 
     fn worker_message<'a>(
         tasks: &mut Tasks<'a>,
-        response_send: &'a Sender<AsyncReadResponse>,
-        response_slot: &'a Cell<Option<AsyncReadResponse>>,
+        response_send: &Sender<AsyncReadResponse>,
+        response_slot: &Rc<Cell<Option<AsyncReadResponse>>>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
         msg: Result<WorkerTask, RecvError>,
     ) -> Poll<TaskResult<()>> {
@@ -287,10 +292,10 @@ impl AsyncLoaderWorker {
         };
 
         let task = tasks.alloc_cyclic(move |handle| {
-            let ctx = TaskContext {
+            let ctx = IoContext {
                 handle,
-                sender: response_send,
-                response_slot,
+                sender: response_send.clone(),
+                response_slot: response_slot.clone(),
             };
             msg.factory.spawn_new(ctx, loader, msg.message)
         });
@@ -300,7 +305,7 @@ impl AsyncLoaderWorker {
 
     fn async_message<'a>(
         tasks: &mut Tasks<'a>,
-        response_slot: &'a Cell<Option<AsyncReadResponse>>,
+        response_slot: &Cell<Option<AsyncReadResponse>>,
         msg: Result<AsyncReadResponse, RecvError>,
     ) -> Poll<TaskResult<()>> {
         let msg = match msg {

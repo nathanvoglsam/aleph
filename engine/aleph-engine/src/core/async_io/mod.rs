@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-pub mod alloc;
-pub mod async_io;
-pub mod platform;
-pub mod rhi;
+pub mod context;
+pub mod executor;
+pub mod futures;
+pub mod task;

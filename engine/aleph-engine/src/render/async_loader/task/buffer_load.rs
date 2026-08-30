@@ -36,9 +36,10 @@ use aleph_vfs::path::VPathBuf;
 use aleph_vfs::{IRouter, IRouterExt};
 use mg::async_resource_loader::AsyncResourceLoader;
 
+use crate::core::async_io::context::IoContext;
 use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
 use crate::render::async_loader::task::{
-    ITaskFactory, TaskContext, TaskError, TaskFuture, TaskPayload, TaskResult,
+    ITaskFactory, TaskError, TaskFuture, TaskPayload, TaskResult,
 };
 use crate::render::async_loader::utils::try_allocate_buffer_range_for;
 
@@ -68,7 +69,7 @@ impl BufferLoadTask {
 
     async fn task<'a>(
         vfs: Arc<dyn IRouter>,
-        ctx: TaskContext<'a>,
+        ctx: IoContext,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
         msg: BufferLoadPayload,
     ) -> TaskResult<()> {
@@ -157,7 +158,7 @@ impl BufferLoadTask {
 impl ITaskFactory for BufferLoadTask {
     fn spawn_new<'a>(
         &self,
-        ctx: TaskContext<'a>,
+        ctx: IoContext,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
         msg: TaskPayload,
     ) -> Pin<Box<TaskFuture<'a>>> {
