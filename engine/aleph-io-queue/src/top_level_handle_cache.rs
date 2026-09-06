@@ -35,7 +35,7 @@ use std::sync::{Arc, Mutex};
 use aleph_alloc::BHashMap;
 use aleph_alloc::instrumentation::IAllocationCategory;
 
-use crate::async_io::{AsyncIo, AsyncIoSystem};
+use crate::{AsyncIo, AsyncIoSystem};
 
 /// A global, send+sync file handle cache.
 ///

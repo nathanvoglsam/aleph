@@ -36,8 +36,8 @@ use std::sync::Arc;
 use aleph_alloc::BHashMap;
 use aleph_alloc::instrumentation::IAllocationCategory;
 
-use crate::async_io::top_level_handle_cache::TopLevelHandleCache;
-use crate::async_io::{AsyncIo, AsyncIoSystem};
+use crate::top_level_handle_cache::TopLevelHandleCache;
+use crate::{AsyncIo, AsyncIoSystem};
 
 /// A bottom level cache, and sibling of [`TopLevelHandleCache`]. It exposes a similar interface.
 ///

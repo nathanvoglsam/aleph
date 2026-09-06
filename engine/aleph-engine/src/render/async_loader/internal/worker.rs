@@ -40,7 +40,7 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use aleph_gen_arena::{GenArena, RawHandle};
-use aleph_vfs::file::AsyncReadResponse;
+use aleph_vfs::async_io::AsyncIoMessage;
 use crossbeam::channel::{Receiver, RecvError, Sender, unbounded};
 use crossbeam::select;
 use mg::async_resource_loader::loader_notify::LoaderNotify;
@@ -126,9 +126,9 @@ impl AsyncLoaderWorker {
     fn run_inner<'a>(
         mut tasks: Tasks<'a>,
         request_recv: &'a Receiver<WorkerTask>,
-        response_recv: &'a Receiver<AsyncIoResponse>,
-        response_send: &'a Sender<AsyncIoResponse>,
-        response_slot: Rc<Cell<Option<AsyncIoResponse>>>,
+        response_recv: &'a Receiver<AsyncIoMessage>,
+        response_send: &'a Sender<AsyncIoMessage>,
+        response_slot: Rc<Cell<Option<AsyncIoMessage>>>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
     ) {
         let mut should_close = false;
@@ -278,8 +278,8 @@ impl AsyncLoaderWorker {
 
     fn worker_message<'a>(
         tasks: &mut Tasks<'a>,
-        response_send: &Sender<AsyncIoResponse>,
-        response_slot: &Rc<Cell<Option<AsyncIoResponse>>>,
+        response_send: &Sender<AsyncIoMessage>,
+        response_slot: &Rc<Cell<Option<AsyncIoMessage>>>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
         msg: Result<WorkerTask, RecvError>,
     ) -> Poll<TaskResult<()>> {
@@ -305,8 +305,8 @@ impl AsyncLoaderWorker {
 
     fn async_message<'a>(
         tasks: &mut Tasks<'a>,
-        response_slot: &Cell<Option<AsyncIoResponse>>,
-        msg: Result<AsyncIoResponse, RecvError>,
+        response_slot: &Cell<Option<AsyncIoMessage>>,
+        msg: Result<AsyncIoMessage, RecvError>,
     ) -> Poll<TaskResult<()>> {
         let msg = match msg {
             Ok(v) => v,

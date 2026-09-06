@@ -31,7 +31,7 @@ use std::pin::Pin;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
-use aleph_vfs::file::AsyncReadResponse;
+use aleph_vfs::async_io::AsyncIoMessage;
 use aleph_vfs::path::VPathBuf;
 use aleph_vfs::{IRouter, IRouterExt};
 use mg::async_resource_loader::AsyncResourceLoader;
@@ -88,7 +88,7 @@ impl BufferLoadTask {
         };
 
         let path = msg.path.as_path();
-        let file = match vfs.open_async(path) {
+        let file = match vfs.open_for_async(path) {
             Ok(v) => v,
             Err(e) => {
                 log::error!("Failed to open file '{path}' with error '{e:?}'.");
@@ -128,7 +128,7 @@ impl BufferLoadTask {
             let response = future.await;
 
             match response {
-                AsyncReadResponse::ReadSuccess {
+                AsyncIoMessage::ReadSuccess {
                     bytes_transferred, ..
                 } => {
                     file_offset = file_offset + bytes_transferred as u64;
@@ -140,14 +140,16 @@ impl BufferLoadTask {
                         )
                     };
                 }
-                AsyncReadResponse::ReadFail { err, .. } => {
+                AsyncIoMessage::ReadFail { err, .. } => {
                     // There are no in-flight IO requests on this request so it is safe to fail it.
                     log::error!("Failed to read file '{path}' with error '{err:?}'.");
                     loader.fail_buffer_load(handle);
                     return Err(TaskError::Io(err));
                 }
-                AsyncReadResponse::LoadSuccess { .. } => {}
-                AsyncReadResponse::LoadFail { .. } => {}
+                AsyncIoMessage::LoadSuccess { .. } => {}
+                AsyncIoMessage::LoadFail { .. } => {}
+                AsyncIoMessage::OpenSuccess { .. } => {}
+                AsyncIoMessage::OpenFail { .. } => {}
             }
         }
 

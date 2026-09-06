@@ -31,17 +31,17 @@ use std::cell::Cell;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use aleph_vfs::file::AsyncReadResponse;
+use aleph_vfs::async_io::AsyncIoMessage;
 
-/// Basic future that simply polls the executor's internal slot to receive an [`AsyncReadResponse`].
+/// Basic future that simply polls the executor's internal slot to receive an [`AsyncIoMessage`].
 ///
 /// This will not work outside the executor it was designed to run in.
 pub struct AsyncRead<'a> {
-    pub(crate) response_slot: &'a Cell<Option<AsyncReadResponse>>,
+    pub(crate) response_slot: &'a Cell<Option<AsyncIoMessage>>,
 }
 
 impl<'a> Future for AsyncRead<'a> {
-    type Output = AsyncReadResponse;
+    type Output = AsyncIoMessage;
 
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
         match self.response_slot.take() {

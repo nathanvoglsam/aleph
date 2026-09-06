@@ -30,13 +30,14 @@
 use std::io;
 use std::io::Read;
 
+use aleph_io_queue::IoQueue;
+use aleph_io_queue::top_level_handle_cache::TopLevelHandleCache;
 use camino::Utf8PathBuf;
 use crossbeam::channel::unbounded;
 
-use crate::async_io::IoQueue;
-use crate::async_io::top_level_handle_cache::TopLevelHandleCache;
+use crate::async_io::{AsyncIoMessage, AsyncIoSender};
 use crate::directory_layer::DirectoryLayer;
-use crate::file::{AsyncReadResponse, IAsyncVFileExt};
+use crate::file::IAsyncVFileExt;
 use crate::{IRouterExt, LayerDesc, Router};
 
 #[test]
@@ -134,7 +135,7 @@ pub fn single_directory_mount() {
     let err = router.open("package_b/file.text").err().unwrap();
     assert!(matches!(err.kind(), io::ErrorKind::NotFound));
 
-    let err = router.open_async("/package_a/file.txt").err().unwrap();
+    let err = router.open_for_async("/package_a/file.txt").err().unwrap();
     assert!(matches!(err.kind(), io::ErrorKind::Unsupported));
 }
 
@@ -250,16 +251,64 @@ pub fn async_read_test() {
     assert_eq!(string, "Hello, World!");
 
     let (sender, receiver) = unbounded();
+    let sender = AsyncIoSender(sender);
 
-    let file = router.open_async("/package_a/file.txt").unwrap();
+    let file = router.open_for_async("/package_a/file.txt").unwrap();
     file.load(sender, 21).unwrap();
 
     let result = receiver.recv().unwrap();
     match result {
-        AsyncReadResponse::LoadSuccess { data, cookie, .. } => {
+        AsyncIoMessage::LoadSuccess { data, opaque, .. } => {
             let data = String::from_utf8(data).unwrap();
             assert_eq!(data, "Hello, World!");
-            assert_eq!(cookie, 21);
+            assert_eq!(opaque, 21);
+        }
+        _ => panic!("Unexpected response"),
+    }
+}
+
+#[test]
+pub fn async_open_test() {
+    let queue = IoQueue::new(TopLevelHandleCache::new(2));
+    let layers = [LayerDesc {
+        mount_name: "package_a",
+        layer: DirectoryLayer::new_with_io_queue(Utf8PathBuf::from("./test-data/package_a"), queue),
+    }];
+
+    let router = Router::new(layers).unwrap();
+
+    let file = router.open("/package_a/file.txt").unwrap();
+    let mut reader = file.reader();
+
+    let mut string = String::new();
+    reader.read_to_string(&mut string).unwrap();
+
+    assert_eq!(string, "Hello, World!");
+
+    let (sender, receiver) = unbounded::<AsyncIoMessage>();
+    let sender = AsyncIoSender(sender);
+
+    router
+        .open_async(sender.clone(), "/package_a/file.txt", 21)
+        .unwrap();
+
+    let result = receiver.recv().unwrap();
+    let file = match result {
+        AsyncIoMessage::OpenSuccess { file, opaque, .. } => {
+            assert_eq!(opaque, 21);
+            file
+        }
+        _ => panic!("Unexpected response"),
+    };
+
+    file.load(sender, 22).unwrap();
+
+    let result = receiver.recv().unwrap();
+    match result {
+        AsyncIoMessage::LoadSuccess { data, opaque, .. } => {
+            let data = String::from_utf8(data).unwrap();
+            assert_eq!(data, "Hello, World!");
+            assert_eq!(opaque, 22);
         }
         _ => panic!("Unexpected response"),
     }

@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-vfs"
+name = "aleph-io-queue"
 version = "0.1.0"
 authors.workspace = true
-description = "A simple vfs for loading assets from package mounts"
+description = "A completion based async file io queue"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-vfs/"
+documentation = "https://docs.rs/aleph-io-queue/"
 edition.workspace = true
 
 [badges]
@@ -44,7 +44,6 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies]
 aleph-alloc = { workspace = true }
 aleph-gen-arena = { workspace = true }
-aleph-io-queue = { workspace = true }
 
 crossbeam = { workspace = true }
 log = { workspace = true }

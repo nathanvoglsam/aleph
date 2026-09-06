@@ -34,7 +34,8 @@ use std::ptr::NonNull;
 use std::rc::Rc;
 
 use aleph_gen_arena::{HandleType, RawHandle};
-use aleph_vfs::file::{AsyncReadResponse, IAsyncVFile, IAsyncVFileExt};
+use aleph_vfs::async_io::{AsyncIoMessage, AsyncIoSender};
+use aleph_vfs::file::{IAsyncVFile, IAsyncVFileExt};
 use crossbeam::channel::Sender;
 
 use crate::core::async_io::futures::AsyncRead;
@@ -45,8 +46,8 @@ use crate::core::async_io::futures::AsyncRead;
 /// wake and poll the correct future with our completion based async io system.
 pub struct IoContext {
     pub(crate) handle: RawHandle,
-    pub(crate) sender: Sender<AsyncReadResponse>,
-    pub(crate) response_slot: Rc<Cell<Option<AsyncReadResponse>>>,
+    pub(crate) sender: Sender<AsyncIoMessage>,
+    pub(crate) response_slot: Rc<Cell<Option<AsyncIoMessage>>>,
 }
 
 impl UnwindSafe for IoContext {}
@@ -65,7 +66,7 @@ impl IoContext {
             file.read_at(
                 buf,
                 offset,
-                self.sender.clone(),
+                AsyncIoSender(self.sender.clone()),
                 self.handle.to_bare_handle().into_int().get(),
             )
             .map_err(|_| {
@@ -92,7 +93,7 @@ impl IoContext {
             file.read_exact_at(
                 buf,
                 offset,
-                self.sender.clone(),
+                AsyncIoSender(self.sender.clone()),
                 self.handle.to_bare_handle().into_int().get(),
             )
             .map_err(|_| {
@@ -111,7 +112,7 @@ impl IoContext {
     /// to the executor the future is running in.
     pub fn load_file(&self, file: &dyn IAsyncVFile) -> io::Result<AsyncRead<'_>> {
         file.load(
-            self.sender.clone(),
+            AsyncIoSender(self.sender.clone()),
             self.handle.to_bare_handle().into_int().get(),
         )
         .map_err(|_| {

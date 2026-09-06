@@ -40,6 +40,8 @@ use std::sync::Arc;
 
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_alloc::{BBox, BHashMap};
+use aleph_io_queue::channel::OpenChannel;
+use smallbox::{SmallBox, smallbox};
 
 use crate::file::{IAsyncVFile, VFile};
 use crate::path::{Component, Components, VPath};
@@ -155,40 +157,6 @@ impl Router {
         Ok(Self { layers })
     }
 
-    /// The core implementation of `open` with the generic args stripped away so we don't monomorph
-    /// the whole method body for every type that implements `AsRef<VPath>`.
-    fn ___open(&self, path: &VPath) -> io::Result<VFile<'_>> {
-        let mut components = path.components();
-
-        let layer_name = Self::parse_target_layer(&mut components)?;
-
-        // Try and find the layer mounted at the given name
-        if let Some(layer) = self.layers.get(layer_name) {
-            // Take the remaining path in 'components' as the path we send into the layer to find
-            // the true asset.
-            layer.query_entity(components.as_path())
-        } else {
-            Err(io::Error::new(io::ErrorKind::NotFound, "No such file."))
-        }
-    }
-
-    /// The core implementation of `open_async` with the generic args stripped away so we don't
-    /// monomorph the whole method body for every type that implements `AsRef<VPath>`.
-    fn ___open_async(&self, path: &VPath) -> io::Result<Arc<dyn IAsyncVFile>> {
-        let mut components = path.components();
-
-        let layer_name = Self::parse_target_layer(&mut components)?;
-
-        // Try and find the layer mounted at the given name
-        if let Some(layer) = self.layers.get(layer_name) {
-            // Take the remaining path in 'components' as the path we send into the layer to find
-            // the true asset.
-            layer.query_entity_async_io(components.as_path())
-        } else {
-            Err(io::Error::new(io::ErrorKind::NotFound, "No such file."))
-        }
-    }
-
     fn parse_target_layer<'a>(components: &'a mut Components) -> io::Result<&'a str> {
         let layer_name = match components.next() {
             // The empty path categorically doesn't refer to any elements, so bail
@@ -235,28 +203,84 @@ impl Router {
 
 impl IRouter for Router {
     fn __open(&self, path: &VPath) -> io::Result<VFile<'_>> {
-        self.___open(path)
+        let mut components = path.components();
+
+        let layer_name = Self::parse_target_layer(&mut components)?;
+
+        // Try and find the layer mounted at the given name
+        if let Some(layer) = self.layers.get(layer_name) {
+            // Take the remaining path in 'components' as the path we send into the layer to find
+            // the true asset.
+            layer.query_entity(components.as_path())
+        } else {
+            Err(io::Error::new(io::ErrorKind::NotFound, "No such file."))
+        }
     }
 
-    fn __open_async(&self, path: &VPath) -> io::Result<Arc<dyn IAsyncVFile>> {
-        self.___open_async(path)
+    fn __open_for_async(&self, path: &VPath) -> io::Result<Arc<dyn IAsyncVFile>> {
+        let mut components = path.components();
+
+        let layer_name = Self::parse_target_layer(&mut components)?;
+
+        // Try and find the layer mounted at the given name
+        if let Some(layer) = self.layers.get(layer_name) {
+            // Take the remaining path in 'components' as the path we send into the layer to find
+            // the true asset.
+            layer.sync_query_entity_async_io(components.as_path())
+        } else {
+            Err(io::Error::new(io::ErrorKind::NotFound, "No such file."))
+        }
+    }
+
+    fn __open_async(
+        &self,
+        sender: SmallBox<dyn OpenChannel<Arc<dyn IAsyncVFile>>, [u128; 1]>,
+        path: &VPath,
+        opaque: u64,
+    ) -> io::Result<()> {
+        let mut components = path.components();
+
+        let layer_name = Self::parse_target_layer(&mut components)?;
+
+        // Try and find the layer mounted at the given name
+        if let Some(layer) = self.layers.get(layer_name) {
+            // Take the remaining path in 'components' as the path we send into the layer to find
+            // the true asset.
+            layer.async_query_entity_async_io(sender, components.as_path(), opaque)
+        } else {
+            Err(io::Error::new(io::ErrorKind::NotFound, "No such file."))
+        }
     }
 }
 
 /// 'ABI' level trait that exposes the interface for [`Router`] as a trait object. See
 /// [`IRouterExt`] for cleaner interfaces.
 pub trait IRouter: Send + Sync + 'static {
-    /// The core implementation of [`Router::open`] with the generic args stripped away so we don't
-    /// monomorph the whole method body for every type that implements `AsRef<VPath>`.
+    /// Attempts to open a [`VFile`] by searching for a file at the given path.
     ///
-    /// Use [`Router::open`] or [`IRouter::open`] instead.
+    /// Use [`IRouterExt::open`] instead.
     fn __open(&self, path: &VPath) -> io::Result<VFile<'_>>;
 
-    /// The core implementation of [`Router::open`] with the generic args stripped away so we don't
-    /// monomorph the whole method body for every type that implements `AsRef<VPath>`.
+    /// Attempts to open a [`IAsyncVFile`] by searching for a file at the given path.
     ///
-    /// Use [`Router::open_async`] or [`IRouter::open_async`] instead.
-    fn __open_async(&self, path: &VPath) -> io::Result<Arc<dyn IAsyncVFile>>;
+    /// This is a __synchronous__ API, and will block to open the file handle (if needed).
+    ///
+    /// Use  [`IRouterExt::open_for_async`] instead.
+    fn __open_for_async(&self, path: &VPath) -> io::Result<Arc<dyn IAsyncVFile>>;
+
+    /// Attempts to open a [`IAsyncVFile`] by searching for a file at the given path.
+    ///
+    /// This is an __asynchronous__ API, and will not block on any IO operations on the calling
+    /// thread. A request will be dispatched onto an asynchronous queue to open the file handle.
+    /// The result of the operation will be sent onto the given 'sender'.
+    ///
+    /// Use  [`IRouterExt::open_async`] instead.
+    fn __open_async(
+        &self,
+        sender: SmallBox<dyn OpenChannel<Arc<dyn IAsyncVFile>>, [u128; 1]>,
+        path: &VPath,
+        opaque: u64,
+    ) -> io::Result<()>;
 }
 
 /// An extension over [`IRouter`] that providers neater interfaces. We need this layer because we
@@ -268,8 +292,25 @@ pub trait IRouterExt: IRouter + Send + Sync + 'static {
     }
 
     /// Attempts to open a [`IAsyncVFile`] by searching for a file at the given path.
-    fn open_async<P: AsRef<VPath>>(&self, path: P) -> io::Result<Arc<dyn IAsyncVFile>> {
-        self.__open_async(path.as_ref())
+    ///
+    /// This is a __synchronous__ API, and will block to open the file handle (if needed).
+    fn open_for_async<P: AsRef<VPath>>(&self, path: P) -> io::Result<Arc<dyn IAsyncVFile>> {
+        self.__open_for_async(path.as_ref())
+    }
+
+    /// Attempts to open a [`IAsyncVFile`] by searching for a file at the given path.
+    ///
+    /// This is an __asynchronous__ API, and will not block on any IO operations on the calling
+    /// thread. A request will be dispatched onto an asynchronous queue to open the file handle.
+    /// The result of the operation will be sent onto the given 'sender'.
+    fn open_async<P: AsRef<VPath>, T: OpenChannel<Arc<dyn IAsyncVFile>>>(
+        &self,
+        sender: T,
+        path: P,
+        opaque: u64,
+    ) -> io::Result<()> {
+        let sender: SmallBox<dyn OpenChannel<Arc<dyn IAsyncVFile>>, _> = smallbox!(sender);
+        self.__open_async(sender, path.as_ref(), opaque)
     }
 }
 
@@ -307,7 +348,34 @@ pub trait ILayer: Send + Sync + 'static {
     /// 'path' is absolute then the 'root' will be defined as the root of this layer.
     fn query_entity(&self, path: &VPath) -> io::Result<VFile<'_>>;
 
-    fn query_entity_async_io(&self, path: &VPath) -> io::Result<Arc<dyn IAsyncVFile>>;
+    /// Query for an entity at the given 'path'.
+    ///
+    /// 'path' must be a local path scoped to just this _layer_. The mount point should not be
+    /// included.
+    ///
+    /// If 'path' is relative then it will be assumed to be relative to the root of this layer. If
+    /// 'path' is absolute then the 'root' will be defined as the root of this layer.
+    ///
+    /// This will perform a synchronous file open operation and immediately return an object that
+    /// async io can be performed on.
+    fn sync_query_entity_async_io(&self, path: &VPath) -> io::Result<Arc<dyn IAsyncVFile>>;
+
+    /// Query for an entity at the given 'path'.
+    ///
+    /// 'path' must be a local path scoped to just this _layer_. The mount point should not be
+    /// included.
+    ///
+    /// If 'path' is relative then it will be assumed to be relative to the root of this layer. If
+    /// 'path' is absolute then the 'root' will be defined as the root of this layer.
+    ///
+    /// This will not block the calling thread. The file open operation will be dispatched to an
+    /// async queue and the result will eventually be sent back via 'sender'.
+    fn async_query_entity_async_io(
+        &self,
+        sender: SmallBox<dyn OpenChannel<Arc<dyn IAsyncVFile>>, [u128; 1]>,
+        path: &VPath,
+        opaque: u64,
+    ) -> io::Result<()>;
 }
 
 /// Utility for boxing a layer implementation into the tagged box types we use for allocation
