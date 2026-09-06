@@ -93,7 +93,7 @@ impl VPathBuf {
     /// Pushing a relative path extends the existing path:
     ///
     /// ```
-    /// use aleph_engine::vpath::VPathBuf;
+    /// use aleph_vfs::path::VPathBuf;
     ///
     /// let mut path = VPathBuf::from("/tmp");
     /// path.push("file.bk");
@@ -103,7 +103,7 @@ impl VPathBuf {
     /// Pushing an absolute path replaces the existing path:
     ///
     /// ```
-    /// use aleph_engine::vpath::VPathBuf;
+    /// use aleph_vfs::path::VPathBuf;
     ///
     /// let mut path = VPathBuf::from("/tmp");
     /// path.push("/etc");
@@ -124,7 +124,7 @@ impl VPathBuf {
             // If the input path is absolute then we just replace the existing path string in
             // self.
             self.0.clear();
-            self.0.push('/');
+            self.0.push(SEPARATOR);
         }
 
         // If the existing path in 'self' doesn't have a trailing separator already we need
@@ -138,7 +138,7 @@ impl VPathBuf {
         loop {
             match components.next() {
                 None => break,
-                Some(Component::Root) => unreachable!(),
+                Some(Component::Root) => continue,
                 Some(Component::Segment(v)) => {
                     self.0.push_str(v);
                     if components.peek().is_some() {
@@ -298,7 +298,7 @@ impl VPath {
     /// # Examples
     ///
     /// ```
-    /// use aleph_engine::vpath::{VPath, VPathBuf};
+    /// use aleph_vfs::path::{VPath, VPathBuf};
     ///
     /// let path_buf = VPath::new("foo.txt").to_path_buf();
     /// assert_eq!(path_buf, VPathBuf::from("foo.txt"));
@@ -340,7 +340,7 @@ impl VPath {
     /// # Examples
     ///
     /// ```
-    /// use aleph_engine::vpath::VPath;
+    /// use aleph_vfs::path::VPath;
     ///
     /// assert!(VPath::new("dir/").has_trailing_sep());
     /// assert!(VPath::new("dir//").has_trailing_sep());
@@ -360,7 +360,7 @@ impl VPath {
     /// # Examples
     ///
     /// ```
-    /// use aleph_engine::vpath::VPath;
+    /// use aleph_vfs::path::VPath;
     ///
     /// let mut ancestors = VPath::new("/foo/bar").ancestors();
     /// assert_eq!(ancestors.next(), Some(VPath::new("/foo/bar")));
@@ -394,8 +394,8 @@ impl VPath {
     /// # Examples
     ///
     /// ```
-    /// use aleph_engine::vpath::VPath;
-    /// use aleph_engine::vpath::Component;
+    /// use aleph_vfs::path::VPath;
+    /// use aleph_vfs::path::Component;
     ///
     /// let mut components = VPath::new("/tmp/foo.txt").components();
     ///
@@ -420,8 +420,8 @@ impl VPath {
     /// # Examples
     ///
     /// ```
-    /// use aleph_engine::vpath::VPath;
-    /// use aleph_engine::vpath::Component;
+    /// use aleph_vfs::path::VPath;
+    /// use aleph_vfs::path::Component;
     ///
     /// let mut components = VPath::new("/tmp/foo.txt").reverse_components();
     ///
@@ -442,7 +442,7 @@ impl VPath {
     ///
     /// # Examples
     /// ```
-    /// use aleph_engine::vpath::VPath;
+    /// use aleph_vfs::path::VPath;
     ///
     /// let path = VPath::new("/foo/bar");
     /// let parent = path.parent().unwrap();
@@ -485,7 +485,7 @@ impl VPath {
     ///
     /// ```
     /// use std::ffi::OsStr;
-    /// use aleph_engine::vpath::VPath;
+    /// use aleph_vfs::path::VPath;
     ///
     /// assert_eq!(VPath::new("dir//").trim_trailing_sep().to_str(), "dir");
     /// assert_eq!(VPath::new("dir/").trim_trailing_sep().to_str(), "dir");
@@ -624,7 +624,7 @@ impl_cmp!(Cow<'_, VPath>, VPathBuf);
 /// # Examples
 ///
 /// ```
-/// use aleph_engine::vpath::VPath;
+/// use aleph_vfs::path::VPath;
 ///
 /// let path = VPath::new("/foo/bar");
 ///
@@ -667,7 +667,7 @@ pub enum Component<'a> {
 /// # Examples
 ///
 /// ```
-/// use aleph_engine::vpath::VPath;
+/// use aleph_vfs::path::VPath;
 ///
 /// let path = VPath::new("/tmp/foo/bar.txt");
 ///
@@ -777,7 +777,7 @@ impl std::iter::FusedIterator for Components<'_> {}
 /// # Examples
 ///
 /// ```
-/// use aleph_engine::vpath::VPath;
+/// use aleph_vfs::path::VPath;
 ///
 /// let path = VPath::new("/tmp/foo/bar.txt");
 ///
