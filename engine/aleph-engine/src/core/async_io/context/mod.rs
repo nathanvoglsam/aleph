@@ -34,7 +34,7 @@ use std::ptr::NonNull;
 use std::rc::Rc;
 
 use aleph_gen_arena::{HandleType, RawHandle};
-use aleph_vfs::file::{AsyncReadResponse, IAsyncVFile};
+use aleph_vfs::file::{AsyncReadResponse, IAsyncVFile, IAsyncVFileExt};
 use crossbeam::channel::Sender;
 
 use crate::core::async_io::futures::AsyncRead;
