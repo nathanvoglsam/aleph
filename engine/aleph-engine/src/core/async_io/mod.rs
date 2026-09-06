@@ -28,6 +28,5 @@
 //
 
 pub mod context;
-pub mod executor;
 pub mod futures;
 pub mod task;
