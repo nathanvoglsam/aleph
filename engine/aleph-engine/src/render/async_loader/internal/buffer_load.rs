@@ -37,11 +37,11 @@ use aleph_vfs::{IRouter, IRouterExt};
 use mg::async_resource_loader::AsyncResourceLoader;
 
 use crate::core::async_io::context::IoContext;
-use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
-use crate::render::async_loader::task::{
+use crate::render::async_loader::internal::task::{
     ITaskFactory, TaskError, TaskFuture, TaskPayload, TaskResult,
 };
-use crate::render::async_loader::utils::try_allocate_buffer_range_for;
+use crate::render::async_loader::internal::utils::try_allocate_buffer_range_for;
+use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
 
 pub struct BufferLoadPayload {
     /// Cookie tag to correlate messages with the initial request.

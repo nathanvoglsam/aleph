@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-pub mod buffer_load;
-
 use std::any::Any;
 use std::io;
 use std::pin::Pin;

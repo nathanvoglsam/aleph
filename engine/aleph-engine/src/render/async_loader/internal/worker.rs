@@ -48,10 +48,10 @@ use mg::async_resource_loader::{AsyncResourceLoader, FlushError};
 
 use crate::core::alloc::EngineSystem;
 use crate::core::async_io::context::IoContext;
-use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
-use crate::render::async_loader::task::{
+use crate::render::async_loader::internal::task::{
     ITaskFactory, TaskError, TaskFuture, TaskPayload, TaskResult,
 };
+use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
 
 pub struct WorkerTask {
     factory: Arc<dyn ITaskFactory>,
@@ -126,9 +126,9 @@ impl AsyncLoaderWorker {
     fn run_inner<'a>(
         mut tasks: Tasks<'a>,
         request_recv: &'a Receiver<WorkerTask>,
-        response_recv: &'a Receiver<AsyncReadResponse>,
-        response_send: &'a Sender<AsyncReadResponse>,
-        response_slot: Rc<Cell<Option<AsyncReadResponse>>>,
+        response_recv: &'a Receiver<AsyncIoResponse>,
+        response_send: &'a Sender<AsyncIoResponse>,
+        response_slot: Rc<Cell<Option<AsyncIoResponse>>>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
     ) {
         let mut should_close = false;
@@ -278,8 +278,8 @@ impl AsyncLoaderWorker {
 
     fn worker_message<'a>(
         tasks: &mut Tasks<'a>,
-        response_send: &Sender<AsyncReadResponse>,
-        response_slot: &Rc<Cell<Option<AsyncReadResponse>>>,
+        response_send: &Sender<AsyncIoResponse>,
+        response_slot: &Rc<Cell<Option<AsyncIoResponse>>>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
         msg: Result<WorkerTask, RecvError>,
     ) -> Poll<TaskResult<()>> {
@@ -305,8 +305,8 @@ impl AsyncLoaderWorker {
 
     fn async_message<'a>(
         tasks: &mut Tasks<'a>,
-        response_slot: &Cell<Option<AsyncReadResponse>>,
-        msg: Result<AsyncReadResponse, RecvError>,
+        response_slot: &Cell<Option<AsyncIoResponse>>,
+        msg: Result<AsyncIoResponse, RecvError>,
     ) -> Poll<TaskResult<()>> {
         let msg = match msg {
             Ok(v) => v,
@@ -316,7 +316,7 @@ impl AsyncLoaderWorker {
             }
         };
 
-        let task = msg.cookie();
+        let task = msg.opaque();
         let task = match NonZero::new(task) {
             None => return Poll::Ready(Err(TaskError::Other)),
             Some(v) => v,

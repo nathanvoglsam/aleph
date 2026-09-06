@@ -34,12 +34,12 @@ use aleph_vfs::IRouter;
 use api::ecs::entity::EntityHandle;
 use crossbeam::channel::Sender;
 
+use crate::render::async_loader::internal::buffer_load::{BufferLoadPayload, BufferLoadTask};
+use crate::render::async_loader::internal::task::ITaskFactory;
+use crate::render::async_loader::internal::worker::WorkerTask;
 use crate::render::async_loader::resources::async_loader_requests::{
     AsyncLoaderRequests, ResourceLoadState,
 };
-use crate::render::async_loader::task::ITaskFactory;
-use crate::render::async_loader::task::buffer_load::{BufferLoadPayload, BufferLoadTask};
-use crate::render::async_loader::worker::WorkerTask;
 
 pub struct AsyncLoaderChannel {
     pub(crate) loader_sender: Sender<WorkerTask>,
@@ -47,7 +47,7 @@ pub struct AsyncLoaderChannel {
 }
 
 impl AsyncLoaderChannel {
-    pub fn new(loader_sender: Sender<WorkerTask>, vfs: Arc<dyn IRouter>) -> Self {
+    pub(crate) fn new(loader_sender: Sender<WorkerTask>, vfs: Arc<dyn IRouter>) -> Self {
         Self {
             loader_sender,
             buffer_loader: BufferLoadTask::new(vfs),

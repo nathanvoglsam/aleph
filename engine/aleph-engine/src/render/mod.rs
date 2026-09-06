@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-mod async_loader;
+pub mod async_loader;
 mod config;
 mod core;
 mod egui;
@@ -50,10 +50,10 @@ use api::plugin::*;
 use api::rhi::ARhiProvider;
 use mg::renderer::builder::ApplicationSurface;
 
+use crate::render::async_loader::internal::worker::AsyncLoaderWorker;
 use crate::render::async_loader::resources::async_loader_channel::AsyncLoaderChannel;
 use crate::render::async_loader::resources::async_loader_requests::AsyncLoaderRequests;
 use crate::render::async_loader::systems::async_load_resolver::AsyncLoadResolverSystem;
-use crate::render::async_loader::worker::AsyncLoaderWorker;
 use crate::render::config::Config;
 use crate::render::core::resources::render_scene::RenderSceneResource;
 use crate::render::core::systems::capture_previous_transforms::CapturePreviousTransformsSystem;

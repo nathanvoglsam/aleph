@@ -32,8 +32,8 @@ use mg::async_resource_loader::{
     AllocateRangeError, AsyncResourceLoader, BufferLoadHandle, RetireError,
 };
 
+use crate::render::async_loader::internal::task::{TaskError, TaskResult};
 use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
-use crate::render::async_loader::task::{TaskError, TaskResult};
 
 /// Utility wrapper over [`AsyncResourceLoader::allocate_range_for_buffer_load`] that handles
 /// wait and retry logic for allocating upload ranges.
