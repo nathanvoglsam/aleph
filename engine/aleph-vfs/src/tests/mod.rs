@@ -36,7 +36,7 @@ use crossbeam::channel::unbounded;
 use crate::async_io::IoQueue;
 use crate::async_io::top_level_handle_cache::TopLevelHandleCache;
 use crate::directory_layer::DirectoryLayer;
-use crate::file::AsyncReadResponse;
+use crate::file::{AsyncReadResponse, IAsyncVFileExt};
 use crate::{IRouterExt, LayerDesc, Router};
 
 #[test]

@@ -42,6 +42,7 @@ use std::thread::JoinHandle;
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use crossbeam::channel::{Receiver, SendError, Sender, unbounded};
+use smallbox::{SmallBox, smallbox};
 
 use crate::async_io::local_handle_cache::LocalHandleCache;
 use crate::async_io::top_level_handle_cache::TopLevelHandleCache;
@@ -110,7 +111,7 @@ impl IoQueue {
     ///
     /// This will prime the top level handle cache for the given file, and return if the file failed
     /// to open.
-    pub fn open(&self, file: &Path) -> Result<(), std::io::Error> {
+    pub fn open(&self, file: &Path) -> Result<(), io::Error> {
         self.top_level_handle_cache.get_or_open(file)?;
         Ok(())
     }
@@ -126,16 +127,17 @@ impl IoQueue {
     /// The async queue takes temporary ownership of `buf` while the request in flight. It is the
     /// caller's responsibility to respect the transferred ownership until a message is returned
     /// on the response queue that ends the lifetime of the dynamic borrow.
-    pub unsafe fn async_read(
+    pub unsafe fn async_read<T: ISender>(
         &self,
         file: Arc<Path>,
         dst: NonNull<[u8]>,
         offset: u64,
-        sender: Arc<dyn ISender>,
-        opaque: [u64; 4],
+        sender: T,
+        opaque: u64,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
+            let sender: SmallBox<dyn ISender, _> = smallbox!(sender);
             let result = channel.send(AsyncRequest::ReadData {
                 file,
                 buf: dst,
@@ -167,16 +169,17 @@ impl IoQueue {
     /// The async queue takes temporary ownership of `buf` while the request in flight. It is the
     /// caller's responsibility to respect the transferred ownership until a message is returned
     /// on the response queue that ends the lifetime of the dynamic borrow.
-    pub unsafe fn async_read_exact(
+    pub unsafe fn async_read_exact<T: ISender>(
         &self,
         file: Arc<Path>,
         dst: NonNull<[u8]>,
         offset: u64,
-        sender: Arc<dyn ISender>,
-        opaque: [u64; 4],
+        sender: T,
+        opaque: u64,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
+            let sender: SmallBox<dyn ISender, _> = smallbox!(sender);
             let result = channel.send(AsyncRequest::ReadDataExact {
                 file,
                 buf: dst,
@@ -194,14 +197,15 @@ impl IoQueue {
 
     /// Enqueue an async _load_ operation. This will attempt to load the entire file into a buffer
     /// and then pass that buffer back via the given `sender`.
-    pub fn async_load(
+    pub fn async_load<T: ISender>(
         &self,
         file: Arc<Path>,
-        sender: Arc<dyn ISender>,
-        opaque: [u64; 4],
+        sender: T,
+        opaque: u64,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
+            let sender: SmallBox<dyn ISender, _> = smallbox!(sender);
             let result = channel.send(AsyncRequest::LoadFile {
                 file,
                 sender,
@@ -400,36 +404,28 @@ impl IoQueueWorker {
     }
 }
 
-pub trait ISender: Send + Sync {
+pub trait ISender<P = Arc<Path>>: Send + Sync + 'static {
     fn send_success(
         &self,
-        opaque: [u64; 4],
-        file: Arc<Path>,
+        opaque: u64,
+        file: P,
         buf: NonNull<[u8]>,
         offset: u64,
         bytes_transferred: usize,
-    ) -> Result<(), SendError<()>>;
+    ) -> Result<(), SenderError>;
     fn send_fail(
         &self,
-        opaque: [u64; 4],
-        file: Arc<Path>,
+        opaque: u64,
+        file: P,
         buf: NonNull<[u8]>,
         offset: u64,
         err: io::Error,
-    ) -> Result<(), SendError<()>>;
-    fn send_load_success(
-        &self,
-        opaque: [u64; 4],
-        file: Arc<Path>,
-        data: Vec<u8>,
-    ) -> Result<(), SendError<()>>;
-    fn send_load_fail(
-        &self,
-        opaque: [u64; 4],
-        file: Arc<Path>,
-        err: io::Error,
-    ) -> Result<(), SendError<()>>;
+    ) -> Result<(), SenderError>;
+    fn send_load_success(&self, opaque: u64, file: P, data: Vec<u8>) -> Result<(), SenderError>;
+    fn send_load_fail(&self, opaque: u64, file: P, err: io::Error) -> Result<(), SenderError>;
 }
+
+pub struct SenderError;
 
 enum AsyncRequest {
     ReadData {
@@ -443,10 +439,10 @@ enum AsyncRequest {
         offset: u64,
 
         /// The channel on which to send result messages to
-        sender: Arc<dyn ISender>,
+        sender: SmallBox<dyn ISender, [u128; 2]>,
 
         /// Opaque
-        opaque: [u64; 4],
+        opaque: u64,
     },
     ReadDataExact {
         /// The path to the file to read
@@ -459,20 +455,20 @@ enum AsyncRequest {
         offset: u64,
 
         /// The channel on which to send result messages to
-        sender: Arc<dyn ISender>,
+        sender: SmallBox<dyn ISender, [u128; 2]>,
 
         /// Opaque
-        opaque: [u64; 4],
+        opaque: u64,
     },
     LoadFile {
         /// The path to the file to read
         file: Arc<Path>,
 
         /// The channel on which to send result messages to
-        sender: Arc<dyn ISender>,
+        sender: SmallBox<dyn ISender, [u128; 2]>,
 
         /// Opaque
-        opaque: [u64; 4],
+        opaque: u64,
     },
 }
 

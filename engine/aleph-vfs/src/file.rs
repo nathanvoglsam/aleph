@@ -34,7 +34,10 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 
 use crossbeam::channel::{SendError, Sender};
+use crossbeam::queue::{ArrayQueue, SegQueue};
+use smallbox::{SmallBox, smallbox};
 
+use crate::async_io::{ISender, SenderError};
 use crate::path::VPath;
 
 /// Analogue of [`std::fs::File`]. Represents a 'handle' to an open file within a virtual file
@@ -157,23 +160,76 @@ impl<'vfs> io::Seek for VFileReader<'vfs> {
 }
 
 pub trait IAsyncVFile {
-    unsafe fn read_at(
+    unsafe fn __read_at(
         &self,
         buf: NonNull<[u8]>,
         offset: u64,
-        sender: Sender<AsyncReadResponse>,
+        sender: SmallBox<dyn ISender<Arc<VPath>>, [u128; 1]>,
         cookie: u64,
     ) -> Result<(), SendError<()>>;
 
-    unsafe fn read_exact_at(
+    unsafe fn __read_exact_at(
         &self,
         buf: NonNull<[u8]>,
         offset: u64,
-        sender: Sender<AsyncReadResponse>,
+        sender: SmallBox<dyn ISender<Arc<VPath>>, [u128; 1]>,
         cookie: u64,
     ) -> Result<(), SendError<()>>;
 
-    fn load(&self, sender: Sender<AsyncReadResponse>, cookie: u64) -> Result<(), SendError<()>>;
+    fn __load(
+        &self,
+        sender: SmallBox<dyn ISender<Arc<VPath>>, [u128; 1]>,
+        cookie: u64,
+    ) -> Result<(), SendError<()>>;
+}
+
+pub trait IAsyncVFileExt {
+    unsafe fn read_at<T: ISender<Arc<VPath>>>(
+        &self,
+        buf: NonNull<[u8]>,
+        offset: u64,
+        sender: T,
+        cookie: u64,
+    ) -> Result<(), SendError<()>>;
+
+    unsafe fn read_exact_at<T: ISender<Arc<VPath>>>(
+        &self,
+        buf: NonNull<[u8]>,
+        offset: u64,
+        sender: T,
+        cookie: u64,
+    ) -> Result<(), SendError<()>>;
+
+    fn load<T: ISender<Arc<VPath>>>(&self, sender: T, cookie: u64) -> Result<(), SendError<()>>;
+}
+
+impl<TT: IAsyncVFile + ?Sized> IAsyncVFileExt for TT {
+    unsafe fn read_at<T: ISender<Arc<VPath>>>(
+        &self,
+        buf: NonNull<[u8]>,
+        offset: u64,
+        sender: T,
+        cookie: u64,
+    ) -> Result<(), SendError<()>> {
+        let sender: SmallBox<dyn ISender<Arc<VPath>>, _> = smallbox!(sender);
+        unsafe { self.__read_at(buf, offset, sender, cookie) }
+    }
+
+    unsafe fn read_exact_at<T: ISender<Arc<VPath>>>(
+        &self,
+        buf: NonNull<[u8]>,
+        offset: u64,
+        sender: T,
+        cookie: u64,
+    ) -> Result<(), SendError<()>> {
+        let sender: SmallBox<dyn ISender<Arc<VPath>>, _> = smallbox!(sender);
+        unsafe { self.__read_exact_at(buf, offset, sender, cookie) }
+    }
+
+    fn load<T: ISender<Arc<VPath>>>(&self, sender: T, cookie: u64) -> Result<(), SendError<()>> {
+        let sender: SmallBox<dyn ISender<Arc<VPath>>, _> = smallbox!(sender);
+        self.__load(sender, cookie)
+    }
 }
 
 pub enum AsyncReadResponse {
@@ -229,4 +285,226 @@ pub(crate) struct VFileVtable {
     pub(crate) read_at: fn(NonZero<u64>, &mut [u8], u64) -> io::Result<usize>,
     pub(crate) size: fn(NonZero<u64>) -> io::Result<u64>,
     pub(crate) close: fn(NonZero<u64>),
+}
+
+impl ISender<Arc<VPath>> for Sender<AsyncReadResponse> {
+    fn send_success(
+        &self,
+        opaque: u64,
+        file: Arc<VPath>,
+        buf: NonNull<[u8]>,
+        offset: u64,
+        bytes_transferred: usize,
+    ) -> Result<(), SenderError> {
+        let result = self.send(AsyncReadResponse::ReadSuccess {
+            path: file,
+            buf,
+            offset,
+            bytes_transferred,
+            cookie: opaque,
+        });
+        match result {
+            Ok(_) => Ok(()),
+            Err(_) => Err(SenderError),
+        }
+    }
+
+    fn send_fail(
+        &self,
+        opaque: u64,
+        file: Arc<VPath>,
+        buf: NonNull<[u8]>,
+        offset: u64,
+        err: io::Error,
+    ) -> Result<(), SenderError> {
+        let result = self.send(AsyncReadResponse::ReadFail {
+            path: file,
+            buf,
+            offset,
+            err,
+            cookie: opaque,
+        });
+        match result {
+            Ok(_) => Ok(()),
+            Err(_) => Err(SenderError),
+        }
+    }
+
+    fn send_load_success(
+        &self,
+        opaque: u64,
+        file: Arc<VPath>,
+        data: Vec<u8>,
+    ) -> Result<(), SenderError> {
+        let result = self.send(AsyncReadResponse::LoadSuccess {
+            path: file,
+            data,
+            cookie: opaque,
+        });
+        match result {
+            Ok(_) => Ok(()),
+            Err(_) => Err(SenderError),
+        }
+    }
+
+    fn send_load_fail(
+        &self,
+        opaque: u64,
+        file: Arc<VPath>,
+        err: io::Error,
+    ) -> Result<(), SenderError> {
+        let result = self.send(AsyncReadResponse::LoadFail {
+            path: file,
+            err,
+            cookie: opaque,
+        });
+        match result {
+            Ok(_) => Ok(()),
+            Err(_) => Err(SenderError),
+        }
+    }
+}
+
+impl ISender<Arc<VPath>> for ArrayQueue<AsyncReadResponse> {
+    fn send_success(
+        &self,
+        opaque: u64,
+        file: Arc<VPath>,
+        buf: NonNull<[u8]>,
+        offset: u64,
+        bytes_transferred: usize,
+    ) -> Result<(), SenderError> {
+        let result = self.push(AsyncReadResponse::ReadSuccess {
+            path: file,
+            buf,
+            offset,
+            bytes_transferred,
+            cookie: opaque,
+        });
+        match result {
+            Ok(_) => Ok(()),
+            Err(_) => Err(SenderError),
+        }
+    }
+
+    fn send_fail(
+        &self,
+        opaque: u64,
+        file: Arc<VPath>,
+        buf: NonNull<[u8]>,
+        offset: u64,
+        err: io::Error,
+    ) -> Result<(), SenderError> {
+        let result = self.push(AsyncReadResponse::ReadFail {
+            path: file,
+            buf,
+            offset,
+            err,
+            cookie: opaque,
+        });
+        match result {
+            Ok(_) => Ok(()),
+            Err(_) => Err(SenderError),
+        }
+    }
+
+    fn send_load_success(
+        &self,
+        opaque: u64,
+        file: Arc<VPath>,
+        data: Vec<u8>,
+    ) -> Result<(), SenderError> {
+        let result = self.push(AsyncReadResponse::LoadSuccess {
+            path: file,
+            data,
+            cookie: opaque,
+        });
+        match result {
+            Ok(_) => Ok(()),
+            Err(_) => Err(SenderError),
+        }
+    }
+
+    fn send_load_fail(
+        &self,
+        opaque: u64,
+        file: Arc<VPath>,
+        err: io::Error,
+    ) -> Result<(), SenderError> {
+        let result = self.push(AsyncReadResponse::LoadFail {
+            path: file,
+            err,
+            cookie: opaque,
+        });
+        match result {
+            Ok(_) => Ok(()),
+            Err(_) => Err(SenderError),
+        }
+    }
+}
+
+impl ISender<Arc<VPath>> for SegQueue<AsyncReadResponse> {
+    fn send_success(
+        &self,
+        opaque: u64,
+        file: Arc<VPath>,
+        buf: NonNull<[u8]>,
+        offset: u64,
+        bytes_transferred: usize,
+    ) -> Result<(), SenderError> {
+        self.push(AsyncReadResponse::ReadSuccess {
+            path: file,
+            buf,
+            offset,
+            bytes_transferred,
+            cookie: opaque,
+        });
+        Ok(())
+    }
+
+    fn send_fail(
+        &self,
+        opaque: u64,
+        file: Arc<VPath>,
+        buf: NonNull<[u8]>,
+        offset: u64,
+        err: io::Error,
+    ) -> Result<(), SenderError> {
+        self.push(AsyncReadResponse::ReadFail {
+            path: file,
+            buf,
+            offset,
+            err,
+            cookie: opaque,
+        });
+        Ok(())
+    }
+
+    fn send_load_success(
+        &self,
+        opaque: u64,
+        file: Arc<VPath>,
+        data: Vec<u8>,
+    ) -> Result<(), SenderError> {
+        self.push(AsyncReadResponse::LoadSuccess {
+            path: file,
+            data,
+            cookie: opaque,
+        });
+        Ok(())
+    }
+
+    fn send_load_fail(
+        &self,
+        opaque: u64,
+        file: Arc<VPath>,
+        err: io::Error,
+    ) -> Result<(), SenderError> {
+        self.push(AsyncReadResponse::LoadFail {
+            path: file,
+            err,
+            cookie: opaque,
+        });
+        Ok(())
+    }
 }

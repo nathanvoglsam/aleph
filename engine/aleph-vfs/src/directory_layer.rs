@@ -30,7 +30,6 @@
 use std::cell::RefCell;
 use std::fs::File;
 use std::io;
-use std::io::Error;
 use std::num::NonZero;
 use std::path::Path;
 use std::ptr::NonNull;
@@ -40,10 +39,11 @@ use aleph_alloc::BBox;
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_gen_arena::{GenArena, Handle, HandleType, RawHandle};
 use camino::Utf8PathBuf;
-use crossbeam::channel::{SendError, Sender};
+use crossbeam::channel::SendError;
+use smallbox::SmallBox;
 
-use crate::async_io::{ISender, IoQueue};
-use crate::file::{AsyncReadResponse, IAsyncVFile, VFile, VFileVtable};
+use crate::async_io::{ISender, IoQueue, SenderError};
+use crate::file::{IAsyncVFile, VFile, VFileVtable};
 use crate::path::{Component, VPath};
 use crate::{ILayer, Vfs, VfsSystem, box_layer};
 
@@ -300,11 +300,11 @@ struct AsyncVFile {
 }
 
 impl IAsyncVFile for AsyncVFile {
-    unsafe fn read_at(
+    unsafe fn __read_at(
         &self,
         buf: NonNull<[u8]>,
         offset: u64,
-        sender: Sender<AsyncReadResponse>,
+        sender: SmallBox<dyn ISender<Arc<VPath>>, [u128; 1]>,
         cookie: u64,
     ) -> Result<(), SendError<()>> {
         unsafe {
@@ -312,21 +312,16 @@ impl IAsyncVFile for AsyncVFile {
                 path: self.virtual_path.clone(),
                 sender,
             };
-            self.queue.async_read(
-                self.path.clone(),
-                buf,
-                offset,
-                Arc::new(remap_sender),
-                [cookie, 0, 0, 0],
-            )
+            self.queue
+                .async_read(self.path.clone(), buf, offset, remap_sender, cookie)
         }
     }
 
-    unsafe fn read_exact_at(
+    unsafe fn __read_exact_at(
         &self,
         buf: NonNull<[u8]>,
         offset: u64,
-        sender: Sender<AsyncReadResponse>,
+        sender: SmallBox<dyn ISender<Arc<VPath>>, [u128; 1]>,
         cookie: u64,
     ) -> Result<(), SendError<()>> {
         unsafe {
@@ -334,23 +329,22 @@ impl IAsyncVFile for AsyncVFile {
                 path: self.virtual_path.clone(),
                 sender,
             };
-            self.queue.async_read_exact(
-                self.path.clone(),
-                buf,
-                offset,
-                Arc::new(remap_sender),
-                [cookie, 0, 0, 0],
-            )
+            self.queue
+                .async_read_exact(self.path.clone(), buf, offset, remap_sender, cookie)
         }
     }
 
-    fn load(&self, sender: Sender<AsyncReadResponse>, cookie: u64) -> Result<(), SendError<()>> {
+    fn __load(
+        &self,
+        sender: SmallBox<dyn ISender<Arc<VPath>>, [u128; 1]>,
+        cookie: u64,
+    ) -> Result<(), SendError<()>> {
         let remap_sender = RemapSender {
             path: self.virtual_path.clone(),
             sender,
         };
         self.queue
-            .async_load(self.path.clone(), Arc::new(remap_sender), [cookie, 0, 0, 0])
+            .async_load(self.path.clone(), remap_sender, cookie)
     }
 }
 
@@ -359,83 +353,50 @@ impl IAsyncVFile for AsyncVFile {
 /// io results.
 struct RemapSender {
     path: Arc<VPath>,
-    sender: Sender<AsyncReadResponse>,
+    sender: SmallBox<dyn ISender<Arc<VPath>>, [u128; 1]>,
 }
 
-impl ISender for RemapSender {
+impl<P> ISender<P> for RemapSender {
     fn send_success(
         &self,
-        opaque: [u64; 4],
-        _file: Arc<Path>,
+        opaque: u64,
+        _file: P,
         buf: NonNull<[u8]>,
         offset: u64,
         bytes_transferred: usize,
-    ) -> Result<(), SendError<()>> {
-        let result = self.sender.send(AsyncReadResponse::ReadSuccess {
-            path: self.path.clone(),
-            buf,
-            offset,
-            bytes_transferred,
-            cookie: opaque[0],
-        });
-        match result {
-            Ok(_) => Ok(()),
-            Err(_) => Err(SendError(())),
-        }
+    ) -> Result<(), SenderError> {
+        self.sender
+            .send_success(opaque, self.path.clone(), buf, offset, bytes_transferred)
     }
 
     fn send_fail(
         &self,
-        opaque: [u64; 4],
-        _file: Arc<Path>,
+        opaque: u64,
+        _file: P,
         buf: NonNull<[u8]>,
         offset: u64,
         err: io::Error,
-    ) -> Result<(), SendError<()>> {
-        let result = self.sender.send(AsyncReadResponse::ReadFail {
-            path: self.path.clone(),
-            buf,
-            offset,
-            err,
-            cookie: opaque[0],
-        });
-        match result {
-            Ok(_) => Ok(()),
-            Err(_) => Err(SendError(())),
-        }
+    ) -> Result<(), SenderError> {
+        self.sender
+            .send_fail(opaque, self.path.clone(), buf, offset, err)
     }
 
     fn send_load_success(
         &self,
-        opaque: [u64; 4],
-        _file: Arc<Path>,
+        opaque: u64,
+        _file: P,
         data: Vec<u8>,
-    ) -> Result<(), SendError<()>> {
-        let result = self.sender.send(AsyncReadResponse::LoadSuccess {
-            path: self.path.clone(),
-            data,
-            cookie: opaque[0],
-        });
-        match result {
-            Ok(_) => Ok(()),
-            Err(_) => Err(SendError(())),
-        }
+    ) -> Result<(), SenderError> {
+        self.sender
+            .send_load_success(opaque, self.path.clone(), data)
     }
 
     fn send_load_fail(
         &self,
-        opaque: [u64; 4],
-        _file: Arc<Path>,
-        err: Error,
-    ) -> Result<(), SendError<()>> {
-        let result = self.sender.send(AsyncReadResponse::LoadFail {
-            path: self.path.clone(),
-            err,
-            cookie: opaque[0],
-        });
-        match result {
-            Ok(_) => Ok(()),
-            Err(_) => Err(SendError(())),
-        }
+        opaque: u64,
+        _file: P,
+        err: io::Error,
+    ) -> Result<(), SenderError> {
+        self.sender.send_load_fail(opaque, self.path.clone(), err)
     }
 }
