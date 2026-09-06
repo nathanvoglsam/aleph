@@ -381,22 +381,12 @@ impl<P> ISender<P> for RemapSender {
             .send_fail(opaque, self.path.clone(), buf, offset, err)
     }
 
-    fn send_load_success(
-        &self,
-        opaque: u64,
-        _file: P,
-        data: Vec<u8>,
-    ) -> Result<(), SenderError> {
+    fn send_load_success(&self, opaque: u64, _file: P, data: Vec<u8>) -> Result<(), SenderError> {
         self.sender
             .send_load_success(opaque, self.path.clone(), data)
     }
 
-    fn send_load_fail(
-        &self,
-        opaque: u64,
-        _file: P,
-        err: io::Error,
-    ) -> Result<(), SenderError> {
+    fn send_load_fail(&self, opaque: u64, _file: P, err: io::Error) -> Result<(), SenderError> {
         self.sender.send_load_fail(opaque, self.path.clone(), err)
     }
 }
