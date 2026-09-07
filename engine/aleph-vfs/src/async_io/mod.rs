@@ -317,8 +317,9 @@ impl IoQueueWorker {
                             use std::os::unix::fs::FileExt;
                             handle.read_exact_at(buf.as_mut(), offset)
                         },
-                        windows => unsafe {
-                            let mut buf = buf.as_mut();
+                        windows => 'read: {
+                            use std::os::windows::fs::FileExt;
+                            let mut buf = unsafe { buf.as_mut() };
                             let mut offset = offset;
                             while !buf.is_empty() {
                                 match handle.seek_read(buf, offset) {
@@ -328,8 +329,8 @@ impl IoQueueWorker {
                                         buf = &mut tmp[n..];
                                         offset += n as u64;
                                     }
-                                    Err(ref e) if e.is_interrupted() => {}
-                                    Err(e) => break Err(e),
+                                    Err(ref e) if e.kind() == io::ErrorKind::Interrupted => {}
+                                    Err(e) => break 'read Err(e),
                                 }
                             }
                             if !buf.is_empty() {
@@ -340,7 +341,7 @@ impl IoQueueWorker {
                             } else {
                                 Ok(())
                             }
-                        },
+                        }
                         _ => {
                             unimplemented!()
                         }
