@@ -571,17 +571,33 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
     }
 
     pub fn flush_submitted_uploads(&self) -> Result<(), FlushError> {
+        if !self.queue_manager.queue.borrow().is_empty() {
+            self.maybe_record_and_dispatch_commands()?;
+        }
+
+        // The very last thing we do is poll our in-flight submissions for completion and release
+        // any resources we were holding alive for the GPU. We do this last to give the GPU as much
+        // time as possible to complete the work before we try and poll.
+        match self.retire_completed_submissions() {
+            Ok(_) => Ok(()),
+            Err(RetireError::DeviceLost) => Err(FlushError::DeviceLost),
+            Err(RetireError::WaitFailure) => Err(FlushError::WaitFailure),
+            Err(RetireError::RendererDisconnected) => Err(FlushError::RendererDisconnected),
+        }
+    }
+
+    fn maybe_record_and_dispatch_commands(&self) -> Result<(), FlushError> {
+        let request_states = self.request_states.borrow();
+        let mut queue = self.queue_manager.queue.borrow_mut();
+
         let mut list = self
             .device
             .create_command_list(&rhi::CommandListDesc {
                 queue_type: rhi::QueueType::Transfer,
                 name: None,
             })
-            .inspect_err(|err| log::error!("{}", err))
+            .inspect_err(|err| log::error!("IDevice 'create_command_list': '{}'", err))
             .map_err(|_| FlushError::CommandRecordingFailure)?;
-
-        let request_states = self.request_states.borrow();
-        let mut queue = self.queue_manager.queue.borrow_mut();
 
         // Create our submission bundle that tracks retired resources and completed uploads within
         // the submission so they can be released once the submission is observed complete on the
@@ -591,7 +607,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         unsafe {
             let mut encoder = list
                 .begin_transfer()
-                .inspect_err(|err| log::error!("{}", err))
+                .inspect_err(|err| log::error!("ICommandList 'begin_transfer' error: '{}'", err))
                 .map_err(|_| FlushError::CommandRecordingFailure)?;
 
             let mut transfer = encoder.begin_transfer(nstr!("AsyncResourceLoader::flush"));
@@ -762,7 +778,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
 
             encoder
                 .close()
-                .inspect_err(|err| log::error!("{}", err))
+                .inspect_err(|err| log::error!("ICommandList 'close' error: '{}'", err))
                 .map_err(|_| FlushError::CommandRecordingFailure)?;
         }
 
@@ -778,7 +794,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
                     signal_values: &[submission.signal_value],
                     swap_image: None,
                 })
-                .inspect_err(|err| log::error!("{}", err));
+                .inspect_err(|err| log::error!("IQueue 'submit' error: '{}'", err));
             if let Err(e) = result {
                 return match e {
                     rhi::QueueSubmitError::InvalidCommandListState => {
@@ -808,20 +824,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             self.submission_manager.submit(submission);
         }
 
-        // Need to drop our ref cell borrows so 'retire_completed' doesn't panic trying to borrow
-        // them a second time.
-        drop(request_states);
-        drop(queue);
-
-        // The very last thing we do is poll our in-flight submissions for completion and release
-        // any resources we were holding alive for the GPU. We do this last to give the GPU as much
-        // time as possible to complete the work before we try and poll.
-        match self.retire_completed_submissions() {
-            Ok(_) => Ok(()),
-            Err(RetireError::DeviceLost) => Err(FlushError::DeviceLost),
-            Err(RetireError::WaitFailure) => Err(FlushError::WaitFailure),
-            Err(RetireError::RendererDisconnected) => Err(FlushError::RendererDisconnected),
-        }
+        Ok(())
     }
 }
 
