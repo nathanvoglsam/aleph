@@ -106,7 +106,11 @@ impl CommandList {
                         .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
                         .map_err(|_| CommandListBeginError::Platform)?;
 
-                    self.list.SetDescriptorHeaps(&self.descriptor_heaps);
+                    // It's not legal to SetDescriptorHeaps on copy queues in D3D12. They have no
+                    // use there anyway.
+                    if self.list_type != QueueType::Transfer {
+                        self.list.SetDescriptorHeaps(&self.descriptor_heaps);
+                    }
                 }
 
                 self.state = ListState::Open;

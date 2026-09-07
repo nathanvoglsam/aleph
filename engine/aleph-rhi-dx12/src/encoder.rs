@@ -458,6 +458,12 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
     ) {
         #![allow(non_snake_case)]
 
+        // D3D12 throws an error on empty barriers, but we allow them so we should bail if all the
+        // lists are empty.
+        if global_barriers.is_empty() && buffer_barriers.is_empty() && texture_barriers.is_empty() {
+            return;
+        }
+
         let mut translated_global_barriers =
             BVec::with_capacity_in(global_barriers.len(), self.arena.allocator());
         let mut translated_buffer_barriers =
