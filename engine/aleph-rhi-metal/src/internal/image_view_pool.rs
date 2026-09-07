@@ -60,7 +60,7 @@ impl<const NUM_POOLS: usize> ShardedImageViewPool<NUM_POOLS> {
     ///
     /// Needs to retain a reference to the device for creating new image view pools.
     pub fn new(device: Retained<ProtocolObject<dyn MTLDevice>>) -> Self {
-        let mut pools = BVec::new_in(RhiSystem::make_handle());
+        let mut pools = BVec::new_in(RhiSystem::HANDLE);
         for _ in 0..NUM_POOLS {
             let pool = ImageViewPool::new();
             pools.push(pool);

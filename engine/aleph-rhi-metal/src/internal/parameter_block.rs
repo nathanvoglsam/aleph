@@ -32,8 +32,6 @@ use std::ptr::NonNull;
 
 use aleph_alloc::offset_allocator;
 
-use crate::parameter_block_layout::ParameterBlockLayout;
-
 /// This internal struct is a critical piece of the implementation of the parameter block API. The
 /// RHI API specifies [`ParameterBlockHandle`] as an opaque handle to a 'descriptor set object'.
 /// This *is* that object, for the Metal implementation.
