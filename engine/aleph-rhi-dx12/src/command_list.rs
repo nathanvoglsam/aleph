@@ -30,8 +30,9 @@
 use std::any::TypeId;
 use std::sync::Arc;
 
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind, try_clone_value_into_slot};
 use blink_alloc::{Blink, BlinkAlloc};
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -132,7 +133,7 @@ impl CommandList {
                     bound_graphics_sets: vec![None; 16].into(),
                     bound_compute_sets: vec![None; 16].into(),
                 };
-                let encoder = Box::new(encoder);
+                let encoder = Rhi::with(|| Box::new(encoder));
 
                 // Safety: This isn't unsound/unsafe
                 unsafe { Ok(CommandEncoder::from_abi(encoder)) }

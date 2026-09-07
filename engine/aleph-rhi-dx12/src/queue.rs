@@ -32,8 +32,10 @@ use std::ptr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
 
+use aleph_alloc::BVec;
+use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind, try_clone_value_into_slot};
 use crossbeam::queue::SegQueue;
 use parking_lot::Mutex;
 use windows::Win32::Foundation::HANDLE;
@@ -90,16 +92,18 @@ impl Queue {
         handle: ID3D12CommandQueue,
     ) -> Arc<Self> {
         unsafe {
-            Arc::new_cyclic(|v| Self {
-                this: v.clone(),
-                device: device.this.clone(),
-                queue_type,
-                handle,
-                submit_lock: Mutex::new(()),
-                fence: device.device.CreateFence(1, D3D12_FENCE_FLAG_NONE).unwrap(),
-                last_submitted_index: AtomicU64::new(1),
-                last_completed_index: AtomicU64::new(1),
-                in_flight: SegQueue::new(),
+            Rhi::with(|| {
+                Arc::new_cyclic(|v| Self {
+                    this: v.clone(),
+                    device: device.this.clone(),
+                    queue_type,
+                    handle,
+                    submit_lock: Mutex::new(()),
+                    fence: device.device.CreateFence(1, D3D12_FENCE_FLAG_NONE).unwrap(),
+                    last_submitted_index: AtomicU64::new(1),
+                    last_completed_index: AtomicU64::new(1),
+                    in_flight: SegQueue::new(),
+                })
             })
         }
     }
@@ -307,9 +311,10 @@ impl IQueue for Queue {
                     .map_err(|_| QueueSubmitError::Platform)?;
             }
 
-            let mut lists: Vec<Box<CommandList>> = Vec::with_capacity(desc.command_lists.len());
-            let mut handles: Vec<Option<ID3D12CommandList>> =
-                Vec::with_capacity(desc.command_lists.len());
+            let mut lists: BVec<Box<CommandList>, RhiSystem> =
+                BVec::with_capacity_in(desc.command_lists.len(), system());
+            let mut handles: BVec<Option<ID3D12CommandList>, RhiSystem> =
+                BVec::with_capacity_in(desc.command_lists.len(), system());
             for list in desc.command_lists {
                 let list = list.take().unwrap();
                 let list = {
@@ -428,5 +433,5 @@ pub struct QueueSubmission {
 
     /// A list of command lists that are in flight in this submission. These lists will eventually
     /// be recycled!
-    pub lists: Vec<Box<CommandList>>,
+    pub lists: BVec<Box<CommandList>, RhiSystem>,
 }

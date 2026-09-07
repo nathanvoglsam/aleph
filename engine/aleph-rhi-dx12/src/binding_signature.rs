@@ -30,9 +30,10 @@
 use std::num::NonZeroU64;
 use std::sync::{Arc, Weak};
 
+use aleph_alloc::instrumentation::system;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::abort_on_unwind;
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
 use allocator_api2::alloc::Allocator;
 use allocator_api2::vec::Vec as BVec;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -45,7 +46,7 @@ pub struct BindingSignature {
     pub(crate) this: Weak<Self>,
     pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
-    pub(crate) _parameter_block_layouts: Vec<Arc<ParameterBlockLayout>>,
+    pub(crate) _parameter_block_layouts: BVec<Arc<ParameterBlockLayout>, RhiSystem>,
     pub(crate) root_signature: ID3D12RootSignature,
     pub(crate) compiled: CompiledBindingSignature,
 }
@@ -179,7 +180,7 @@ pub struct CompiledBindingSignature {
     /// Table that associates with the index of each [`IParameterBlockLayout`] given in
     /// [`BindingSignatureDesc`] that is used to look up the base index in the root signature the
     /// block should be bound to.
-    pub block_offsets: Vec<CompiledBlockOffset>,
+    pub block_offsets: BVec<CompiledBlockOffset, RhiSystem>,
 
     /// Table that is present when a push constant block was defined in [`BindingSignatureDesc`].
     /// Stores the root parameter index and the number of DWORDs the block consumes.
@@ -202,7 +203,7 @@ impl CompiledBindingSignature {
             num_parameters += 1;
         }
 
-        let mut block_offsets = Vec::with_capacity(block_layouts.len());
+        let mut block_offsets = BVec::with_capacity_in(block_layouts.len(), system());
         for layout in block_layouts {
             block_offsets.push(CompiledBlockOffset {
                 root_parameter_index: num_parameters,

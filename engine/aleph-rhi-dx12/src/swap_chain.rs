@@ -32,10 +32,14 @@ use std::mem::{ManuallyDrop, size_of};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Weak};
 
+use aleph_alloc::BVec;
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use aleph_rhi_impl_utils::{abort_on_unwind, manually_drop, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{
+    Rhi, RhiSystem, abort_on_unwind, manually_drop, try_clone_value_into_slot,
+};
 use blink_alloc::Blink;
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -67,7 +71,7 @@ impl IGetPlatformInterface for SwapChain {
 
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
-    pub textures: Vec<Arc<Object<Texture>>>,
+    pub textures: BVec<Arc<Object<Texture>>, RhiSystem>,
     pub dxgi_format: DXGI_FORMAT,
     pub dxgi_flags: DXGI_SWAP_CHAIN_FLAG,
 }
@@ -288,9 +292,11 @@ impl ISwapChain for SwapChain {
             let texture = ArcObject::from_object(texture);
             let texture = unsafe { TextureHandle::new(texture) };
 
-            let swap_image = Arc::new(SwapImage {
-                swap_chain: self.this.upgrade().unwrap(),
-                texture,
+            let swap_image = Rhi::with(|| {
+                Arc::new(SwapImage {
+                    swap_chain: self.this.upgrade().unwrap(),
+                    texture,
+                })
             });
             Ok(AcquiredImage::Ok(swap_image))
         })

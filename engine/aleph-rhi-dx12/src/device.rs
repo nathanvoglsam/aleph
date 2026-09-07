@@ -33,6 +33,7 @@ use std::ops::Deref;
 use std::ptr::NonNull;
 use std::sync::{Arc, Weak};
 
+use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_alloc::offset_allocator::OffsetAllocator;
 use aleph_gpu_allocator::{AllocationDesc, GpuAllocator, MemoryLocation};
 use aleph_object_system::Object;
@@ -44,7 +45,7 @@ use aleph_rhi_impl_utils::owned_desc::{
 };
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
-use aleph_rhi_impl_utils::{abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, abort_on_unwind, try_clone_value_into_slot};
 use allocator_api2::alloc::Allocator;
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::{Blink, BlinkAlloc};
@@ -182,12 +183,14 @@ impl IDevice for Device {
             || -> Result<Arc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
                 let compiled = CompiledParameterBlockLayout::new(desc);
 
-                let layout = Arc::new_cyclic(move |v| ParameterBlockLayout {
-                    this: v.clone(),
-                    _device: self.this.upgrade().unwrap(),
-                    id: self.object_counter.next_parameter_block_layout(),
-                    desc: OwnedParameterBlockDesc::new(desc),
-                    compiled,
+                let layout = Rhi::with(|| {
+                    Arc::new_cyclic(move |v| ParameterBlockLayout {
+                        this: v.clone(),
+                        _device: self.this.upgrade().unwrap(),
+                        id: self.object_counter.next_parameter_block_layout(),
+                        desc: OwnedParameterBlockDesc::new(desc),
+                        compiled,
+                    })
                 });
 
                 Ok(layout)
@@ -208,7 +211,7 @@ impl IDevice for Device {
                     let bump = bump_cell.scope();
 
                     let mut parameter_block_layouts =
-                        Vec::with_capacity(desc.parameter_block_layouts.len());
+                        BVec::with_capacity_in(desc.parameter_block_layouts.len(), system());
                     for layout in desc.parameter_block_layouts {
                         let layout = unwrap::parameter_block_layout_d(layout);
                         parameter_block_layouts.push(layout.this.upgrade().unwrap());
@@ -235,13 +238,15 @@ impl IDevice for Device {
                         set_name(&root_signature, name).unwrap();
                     }
 
-                    let signature = Arc::new_cyclic(move |v| BindingSignature {
-                        this: v.clone(),
-                        _device: self.this.upgrade().unwrap(),
-                        id: self.object_counter.next_binding_signature(),
-                        _parameter_block_layouts: parameter_block_layouts,
-                        root_signature,
-                        compiled,
+                    let signature = Rhi::with(|| {
+                        Arc::new_cyclic(move |v| BindingSignature {
+                            this: v.clone(),
+                            _device: self.this.upgrade().unwrap(),
+                            id: self.object_counter.next_binding_signature(),
+                            _parameter_block_layouts: parameter_block_layouts,
+                            root_signature,
+                            compiled,
+                        })
                     });
 
                     Ok(signature)
@@ -416,11 +421,13 @@ impl IDevice for Device {
                 };
                 let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
 
-                let pool = Box::new(DescriptorPool {
-                    _device: self.this.upgrade().unwrap(),
-                    _layout: layout.this.upgrade().unwrap(),
-                    resource_arena,
-                    pool,
+                let pool = Rhi::with(|| {
+                    Box::new(DescriptorPool {
+                        _device: self.this.upgrade().unwrap(),
+                        _layout: layout.this.upgrade().unwrap(),
+                        resource_arena,
+                        pool,
+                    })
                 });
 
                 Ok(pool)
@@ -451,10 +458,12 @@ impl IDevice for Device {
                         };
                         let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
 
-                        let pool = Box::new(DescriptorArenaLinear {
-                            _device: self.this.upgrade().unwrap(),
-                            resource_arena,
-                            pool,
+                        let pool = Rhi::with(|| {
+                            Box::new(DescriptorArenaLinear {
+                                _device: self.this.upgrade().unwrap(),
+                                resource_arena,
+                                pool,
+                            })
                         });
 
                         Ok(pool)
@@ -470,15 +479,17 @@ impl IDevice for Device {
                             resource_block.num_descriptors,
                             desc.num_blocks * 2,
                         );
-                        let resource_pool = Box::new(resource_pool);
+                        let resource_pool = Rhi::with(|| Box::new(resource_pool));
 
                         let factory = crate::descriptor_arena::HeapBlockFactory { resource_pool };
                         let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
 
-                        let pool = Box::new(DescriptorArenaHeap {
-                            _device: self.this.upgrade().unwrap(),
-                            resource_block,
-                            pool,
+                        let pool = Rhi::with(|| {
+                            Box::new(DescriptorArenaHeap {
+                                _device: self.this.upgrade().unwrap(),
+                                resource_block,
+                                pool,
+                            })
                         });
 
                         Ok(pool)
@@ -667,13 +678,15 @@ impl IDevice for Device {
                 // free list.
                 //
                 // Typically, this will be done in 'garbage_collect'.
-                let out: Box<dyn ICommandList> = Box::new(CommandList {
-                    _device: self.this.upgrade().unwrap(),
-                    allocator,
-                    list,
-                    descriptor_heaps,
-                    list_type,
-                    state: ListState::Empty,
+                let out: Box<dyn ICommandList> = Rhi::with(|| {
+                    Box::new(CommandList {
+                        _device: self.this.upgrade().unwrap(),
+                        allocator,
+                        list,
+                        descriptor_heaps,
+                        list_type,
+                        state: ListState::Empty,
+                    })
                 });
                 return Ok(out);
             }
@@ -720,7 +733,7 @@ impl IDevice for Device {
                 list,
                 state: ListState::Empty,
             };
-            Ok(Box::new(command_list))
+            Ok(Rhi::with(|| Box::new(command_list)))
         })
     }
 

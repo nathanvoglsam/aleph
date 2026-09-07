@@ -30,8 +30,10 @@
 use std::any::TypeId;
 use std::sync::{Arc, Weak};
 
+use aleph_alloc::BVec;
+use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::abort_on_unwind;
+use aleph_rhi_impl_utils::{Rhi, abort_on_unwind};
 use parking_lot::Mutex;
 use raw_window_handle::{HandleError, HasWindowHandle, RawWindowHandle, WindowHandle};
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -162,18 +164,20 @@ impl Surface {
 
         let inner = SwapChainState {
             config: config.clone(),
-            textures: Vec::with_capacity(desc.BufferCount as usize),
+            textures: BVec::with_capacity_in(desc.BufferCount as usize, system()),
             dxgi_format: in_memory_format,
             dxgi_flags: flags,
         };
-        let swap_chain = Arc::new_cyclic(move |v| SwapChain {
-            this: v.clone(),
-            device: device.this.upgrade().unwrap(),
-            surface: self.this.upgrade().unwrap(),
-            swap_chain,
-            queue_support: queue_type,
-            inner: Mutex::new(inner),
-            acquired: Default::default(),
+        let swap_chain = Rhi::with(|| {
+            Arc::new_cyclic(move |v| SwapChain {
+                this: v.clone(),
+                device: device.this.upgrade().unwrap(),
+                surface: self.this.upgrade().unwrap(),
+                swap_chain,
+                queue_support: queue_type,
+                inner: Mutex::new(inner),
+                acquired: Default::default(),
+            })
         });
 
         unsafe {

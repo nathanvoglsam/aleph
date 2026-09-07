@@ -32,10 +32,11 @@ use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::sync::{Arc, Weak};
 
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
-use aleph_rhi_impl_utils::{abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, abort_on_unwind, try_clone_value_into_slot};
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -160,27 +161,29 @@ impl IAdapter for Adapter {
                 .map_err(|_| RequestDeviceError::Platform)?;
 
             // Bundle and return the device
-            let device = Arc::new_cyclic(move |v| {
-                let mut v = Device {
-                    this: v.clone(),
-                    _context: self.context.clone(),
-                    _adapter: self.this.upgrade().unwrap(),
-                    debug_message_cookie,
-                    descriptor_heaps,
-                    device,
-                    allocator: None,
-                    general_queue: None,
-                    compute_queue: None,
-                    transfer_queue: None,
-                    command_list_pool: CommandListPool::new(),
-                    object_counter: ObjectCounter::new(),
-                };
+            let device = Rhi::with(|| {
+                Arc::new_cyclic(move |v| {
+                    let mut v = Device {
+                        this: v.clone(),
+                        _context: self.context.clone(),
+                        _adapter: self.this.upgrade().unwrap(),
+                        debug_message_cookie,
+                        descriptor_heaps,
+                        device,
+                        allocator: None,
+                        general_queue: None,
+                        compute_queue: None,
+                        transfer_queue: None,
+                        command_list_pool: CommandListPool::new(),
+                        object_counter: ObjectCounter::new(),
+                    };
 
-                let allocator = ManuallyDrop::new(GpuAllocator::new(&v));
-                v.allocator = Some(allocator);
+                    let allocator = ManuallyDrop::new(GpuAllocator::new(&v));
+                    v.allocator = Some(allocator);
 
-                create_queues(&mut v);
-                v
+                    create_queues(&mut v);
+                    v
+                })
             });
             Ok(device)
         })

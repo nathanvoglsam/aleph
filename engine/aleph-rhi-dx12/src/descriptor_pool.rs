@@ -32,9 +32,10 @@ use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
+use aleph_rhi_impl_utils::{Rhi, abort_on_unwind};
 
 use crate::descriptor_arena::LinearBlockFactory;
 use crate::device::Device;
@@ -73,7 +74,7 @@ impl IDescriptorPool for DescriptorPool {
         num_blocks: usize,
     ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         abort_on_unwind(|| {
-            let mut blocks = Box::new_uninit_slice(num_blocks);
+            let mut blocks = Rhi::with(|| Box::new_uninit_slice(num_blocks));
             self.pool
                 .allocate_blocks((self.resource_arena.as_ref(), &self._layout), &mut blocks)?;
 

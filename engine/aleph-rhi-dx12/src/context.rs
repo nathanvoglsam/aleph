@@ -33,9 +33,10 @@ use std::ops::Deref;
 use std::ptr::NonNull;
 use std::sync::{Arc, Weak};
 
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
-use aleph_rhi_impl_utils::{abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, abort_on_unwind, try_clone_value_into_slot};
 use parking_lot::Mutex;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 use windows::Win32::Graphics::Direct3D::*;
@@ -349,12 +350,14 @@ impl IContext for Context {
                 let name =
                     adapter_description_string(&desc).unwrap_or_else(|| "Unknown".to_string());
 
-                let adapter = Arc::new_cyclic(move |v| Adapter {
-                    this: v.clone(),
-                    context: self.this.upgrade().unwrap(),
-                    name,
-                    vendor,
-                    adapter: Mutex::new(adapter),
+                let adapter = Rhi::with(|| {
+                    Arc::new_cyclic(move |v| Adapter {
+                        this: v.clone(),
+                        context: self.this.upgrade().unwrap(),
+                        name,
+                        vendor,
+                        adapter: Mutex::new(adapter),
+                    })
                 });
                 Some(adapter)
             } else {
@@ -385,11 +388,13 @@ impl IContext for Context {
                 }
             }
 
-            let surface = Arc::new_cyclic(move |v| Surface {
-                this: v.clone(),
-                context: self.this.upgrade().unwrap(),
-                handle,
-                has_swap_chain: Default::default(),
+            let surface = Rhi::with(|| {
+                Arc::new_cyclic(move |v| Surface {
+                    this: v.clone(),
+                    context: self.this.upgrade().unwrap(),
+                    handle,
+                    has_swap_chain: Default::default(),
+                })
             });
             Ok(surface)
         })
