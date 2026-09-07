@@ -53,29 +53,15 @@ pub type TaskPayload = SmallBox<dyn Any + Send + 'static, [u128; 6]>;
 /// This type is not the future itself, it spawns the future. The expectation is that a task
 /// factory is constructed once, at engine boot time, and is then shared with the async workers via
 /// an `Arc`. The factory is then invoked via [`ITaskFactory::spawn_new`] with a per-task payload.
+///
+/// This is a dyn-safe layer on top of [`TaskFactory`]. You should not need to implement this
+/// interface directly. A blanket impl is provided for all types that impl [`TaskFactory`] that
+/// correctly handles the necessary boilerplate plumbing.
 pub trait ITaskFactory: Send + Sync + 'static {
     /// Constructs a new boxed future that encapsulates the logic of the task that will be executed
     /// on the async loader thread.
     ///
-    /// The async loader executor takes responsibility of polling these to completion.
-    ///
-    /// # Async
-    ///
-    /// The async executor we use is very basic, and is only designed to work with our custom async
-    /// IO primitives. Our executor is completion based, and will not interact with wakers at all.
-    /// Any future other than those spawned via [`IoContext`] will not work as the executor does
-    /// not use the 'waker' to know when to poll the future again.
-    ///
-    /// ## Why?
-    ///
-    /// On some operating systems the best interface available is completion based. Completion based
-    /// async IO does not match very will with the [`Future`] trait without caveats and careful
-    /// integration with the executor. Performance is key, and our interface has been designed to
-    /// minimize the number of copies from disk -> GPU.
-    ///
-    /// We choose to trade flexibility for the ability to use certain platforms completion based
-    /// async io primitives. This enables issuing async reads _directly_ into memory mapped from the
-    /// RHI with no intermediate copies within the engine.
+    /// See [`TaskFactory::task`] for more info.
     fn spawn_new<'a>(
         &self,
         ctx: IoContext,
@@ -143,4 +129,80 @@ pub enum TaskError {
     /// application instead.
     #[error("A fatal error occurred that it is unsound to unwind. Root cause has been logged.")]
     FatalAbort,
+}
+
+/// Factory object shared with the loader that will spawn the task future on the async loading
+/// thread.
+///
+/// This type is not the future itself, it spawns the future. The expectation is that a task
+/// factory is constructed once, at engine boot time, and is then shared with the async workers via
+/// an `Arc`. The factory is then invoked via [`TaskFactory::task`] with a per-task payload.
+///
+/// This is a non-dyn-safe layer below [`ITaskFactory`]. A blanket impl is provided that implements
+/// the dyn-safe interface in terms of [`TaskFactory`]. You shouldn't need to implement
+/// [`ITaskFactory`] directly.
+pub trait TaskFactory: Send + Sync + 'static {
+    /// Context type that each spawned future will receive an instance of. Generally this will clone
+    /// handles stored in the factory to be given to the spawned future.
+    type Context: Send + Sync + 'static;
+
+    /// Payload type that each spawned future will receive an instance of. Each spawned future will
+    /// be given an instance constructed by the caller who queued the task. This is the primary
+    /// channel to pass task specific arguments.
+    type Payload: Any;
+
+    /// Constructs a new [`TaskFactory::Context`] instance. It is expected this will be passed to
+    /// [`TaskFactory::task`].
+    fn context(&self) -> Self::Context;
+
+    /// The async future that encapsulates the logic of the task that will be executed on the async
+    /// loader thread.
+    ///
+    /// The async loader executor takes responsibility of polling these to completion.
+    ///
+    /// # Async
+    ///
+    /// The async executor we use is very basic, and is only designed to work with our custom async
+    /// IO primitives. Our executor is completion based, and will not interact with wakers at all.
+    /// Any future other than those spawned via [`IoContext`] will not work as the executor does
+    /// not use the 'waker' to know when to poll the future again.
+    ///
+    /// ## Why?
+    ///
+    /// On some operating systems the best interface available is completion based. Completion based
+    /// async IO does not match very will with the [`Future`] trait without caveats and careful
+    /// integration with the executor. Performance is key, and our interface has been designed to
+    /// minimize the number of copies from disk -> GPU.
+    ///
+    /// We choose to trade flexibility for the ability to use certain platforms completion based
+    /// async io primitives. This enables issuing async reads _directly_ into memory mapped from the
+    /// RHI with no intermediate copies within the engine.
+    async fn task(
+        ctx: Self::Context,
+        io: IoContext,
+        loader: &AsyncResourceLoader<ResourceLoadHandle>,
+        msg: Self::Payload,
+    ) -> TaskResult<()>;
+}
+
+impl<T: TaskFactory> ITaskFactory for T {
+    fn spawn_new<'a>(
+        &self,
+        io: IoContext,
+        loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
+        msg: TaskPayload,
+    ) -> Pin<Box<TaskFuture<'a>>> {
+        let ctx = self.context();
+        let future = async move {
+            let msg = match TaskPayload::downcast::<T::Payload>(msg) {
+                Ok(v) => v,
+                Err(_) => {
+                    log::error!("Tried to spawn task with incorrect payload type!");
+                    return Err(TaskError::Other);
+                }
+            };
+            Self::task(ctx, io, loader, msg.into_inner()).await
+        };
+        Box::pin(future)
+    }
 }

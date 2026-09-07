@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::pin::Pin;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
@@ -38,7 +37,7 @@ use mg::async_resource_loader::AsyncResourceLoader;
 
 use crate::core::async_io::context::IoContext;
 use crate::render::async_loader::internal::task::{
-    ITaskFactory, TaskError, TaskFuture, TaskPayload, TaskResult,
+    ITaskFactory, TaskError, TaskFactory, TaskResult,
 };
 use crate::render::async_loader::internal::utils::try_allocate_buffer_range_for;
 use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
@@ -58,6 +57,7 @@ pub struct BufferLoadPayload {
     pub size: u64,
 }
 
+#[derive(Clone)]
 pub struct BufferLoadTask {
     vfs: Arc<dyn IRouter>,
 }
@@ -66,12 +66,21 @@ impl BufferLoadTask {
     pub fn new(vfs: Arc<dyn IRouter>) -> Arc<dyn ITaskFactory> {
         Arc::new(Self { vfs })
     }
+}
 
-    async fn task<'a>(
-        vfs: Arc<dyn IRouter>,
-        ctx: IoContext,
-        loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
-        msg: BufferLoadPayload,
+impl TaskFactory for BufferLoadTask {
+    type Context = BufferLoadTask;
+    type Payload = BufferLoadPayload;
+
+    fn context(&self) -> Self::Context {
+        self.clone()
+    }
+
+    async fn task(
+        ctx: Self::Context,
+        io: IoContext,
+        loader: &AsyncResourceLoader<ResourceLoadHandle>,
+        msg: Self::Payload,
     ) -> TaskResult<()> {
         let handle = match loader.begin_buffer_load(msg.size, msg.cookie) {
             Ok(v) => v,
@@ -88,7 +97,7 @@ impl BufferLoadTask {
         };
 
         let path = msg.path.as_path();
-        let file = match vfs.open_for_async(path) {
+        let file = match ctx.vfs.open_for_async(path) {
             Ok(v) => v,
             Err(e) => {
                 log::error!("Failed to open file '{path}' with error '{e:?}'.");
@@ -114,7 +123,7 @@ impl BufferLoadTask {
             //         failure or panic that could lead to the buffer being freed from underneath
             //         the in-flight request is promoted to an abort before it can cause UB.
             let future =
-                match unsafe { ctx.read_file_at(file.as_ref(), range.as_ptr(), file_offset) } {
+                match unsafe { io.read_file_at(file.as_ref(), range.as_ptr(), file_offset) } {
                     Ok(v) => v,
                     Err(_) => {
                         // The only way the read_file_at call can fail is if the async reader system
@@ -154,27 +163,5 @@ impl BufferLoadTask {
         }
 
         Ok(())
-    }
-}
-
-impl ITaskFactory for BufferLoadTask {
-    fn spawn_new<'a>(
-        &self,
-        ctx: IoContext,
-        loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
-        msg: TaskPayload,
-    ) -> Pin<Box<TaskFuture<'a>>> {
-        let vfs = self.vfs.clone();
-        let future = async move {
-            let msg = match TaskPayload::downcast::<BufferLoadPayload>(msg) {
-                Ok(v) => v,
-                Err(_) => {
-                    log::error!("Tried to spawn 'BufferLoadTask' with incorrect payload type!");
-                    return Err(TaskError::Other);
-                }
-            };
-            Self::task(vfs, ctx, loader, msg.into_inner()).await
-        };
-        Box::pin(future)
     }
 }
