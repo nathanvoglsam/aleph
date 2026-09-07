@@ -180,6 +180,8 @@ pub trait IAsyncVFile: Send + Sync + 'static {
         sender: SmallBox<dyn LoadChannel<Arc<VPath>>, [u128; 1]>,
         opaque: u64,
     ) -> Result<(), SendError<()>>;
+
+    fn path(&self) -> &VPath;
 }
 
 pub trait IAsyncVFileExt {

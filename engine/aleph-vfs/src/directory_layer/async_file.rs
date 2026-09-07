@@ -93,6 +93,10 @@ impl IAsyncVFile for AsyncVFile {
         self.queue
             .async_load(self.path.clone(), remap_sender, opaque)
     }
+
+    fn path(&self) -> &VPath {
+        self.virtual_path.as_ref()
+    }
 }
 
 /// This is an internal [`ISender`] implementation that's intended to be used for async io on a
