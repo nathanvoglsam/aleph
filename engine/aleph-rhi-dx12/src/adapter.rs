@@ -35,7 +35,7 @@ use std::sync::{Arc, Weak};
 use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::{abort_on_unwind, try_clone_value_into_slot};
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -92,7 +92,7 @@ impl Adapter {
 
 impl IAdapter for Adapter {
     fn upgrade(&self) -> Arc<dyn IAdapter> {
-        self.this.upgrade().unwrap()
+        abort_on_unwind(|| self.this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -111,77 +111,79 @@ impl IAdapter for Adapter {
     }
 
     fn request_device(&self) -> Result<Arc<dyn IDevice>, RequestDeviceError> {
-        let adapter = self.adapter.lock();
+        abort_on_unwind(|| -> Result<Arc<dyn IDevice>, RequestDeviceError> {
+            let adapter = self.adapter.lock();
 
-        // Create the actual d3d12 device
-        let device = create_device(adapter.deref(), D3D_FEATURE_LEVEL_12_1)
-            .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
-            .map_err(|_| RequestDeviceError::Platform)?;
+            // Create the actual d3d12 device
+            let device = create_device(adapter.deref(), D3D_FEATURE_LEVEL_12_1)
+                .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                .map_err(|_| RequestDeviceError::Platform)?;
 
-        fn create_queues(v: &mut Device) {
-            // Load our 3 queues
-            v.general_queue = Adapter::create_queue(v, QueueType::General);
-            v.compute_queue = Adapter::create_queue(v, QueueType::Compute);
-            v.transfer_queue = Adapter::create_queue(v, QueueType::Transfer);
-        }
-
-        let debug_message_cookie = if self.context.debug.is_some() {
-            // SAFETY: Should be safe but I don't have a proof
-            unsafe {
-                device_register_message_callback(
-                    &device,
-                    move |category, severity, id, description| {
-                        let category = category_name(&category).unwrap_or("Unknown Category");
-                        let level = match severity {
-                            D3D12_MESSAGE_SEVERITY_CORRUPTION => log::Level::Error,
-                            D3D12_MESSAGE_SEVERITY_ERROR => log::Level::Error,
-                            D3D12_MESSAGE_SEVERITY_WARNING => log::Level::Warn,
-                            D3D12_MESSAGE_SEVERITY_INFO => log::Level::Info,
-                            D3D12_MESSAGE_SEVERITY_MESSAGE => log::Level::Info,
-                            _ => log::Level::Info,
-                        };
-                        let id = message_id_name(&id).unwrap_or("Unknown ID");
-
-                        log::log!(level, "[{:?}] [{:?}] {:?}", category, id, description);
-
-                        // Break on debugger, if one is attached (assuming the platform supports the behavior)
-                        debug_break();
-                    },
-                )
-                .ok()
+            fn create_queues(v: &mut Device) {
+                // Load our 3 queues
+                v.general_queue = Adapter::create_queue(v, QueueType::General);
+                v.compute_queue = Adapter::create_queue(v, QueueType::Compute);
+                v.transfer_queue = Adapter::create_queue(v, QueueType::Transfer);
             }
-        } else {
-            None
-        };
 
-        let descriptor_heaps = DescriptorHeaps::new(&device)
-            .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
-            .map_err(|_| RequestDeviceError::Platform)?;
+            let debug_message_cookie = if self.context.debug.is_some() {
+                // SAFETY: Should be safe but I don't have a proof
+                unsafe {
+                    device_register_message_callback(
+                        &device,
+                        move |category, severity, id, description| {
+                            let category = category_name(&category).unwrap_or("Unknown Category");
+                            let level = match severity {
+                                D3D12_MESSAGE_SEVERITY_CORRUPTION => log::Level::Error,
+                                D3D12_MESSAGE_SEVERITY_ERROR => log::Level::Error,
+                                D3D12_MESSAGE_SEVERITY_WARNING => log::Level::Warn,
+                                D3D12_MESSAGE_SEVERITY_INFO => log::Level::Info,
+                                D3D12_MESSAGE_SEVERITY_MESSAGE => log::Level::Info,
+                                _ => log::Level::Info,
+                            };
+                            let id = message_id_name(&id).unwrap_or("Unknown ID");
 
-        // Bundle and return the device
-        let device = Arc::new_cyclic(move |v| {
-            let mut v = Device {
-                this: v.clone(),
-                _context: self.context.clone(),
-                _adapter: self.this.upgrade().unwrap(),
-                debug_message_cookie,
-                descriptor_heaps,
-                device,
-                allocator: None,
-                general_queue: None,
-                compute_queue: None,
-                transfer_queue: None,
-                command_list_pool: CommandListPool::new(),
-                object_counter: ObjectCounter::new(),
+                            log::log!(level, "[{:?}] [{:?}] {:?}", category, id, description);
+
+                            // Break on debugger, if one is attached (assuming the platform supports the behavior)
+                            debug_break();
+                        },
+                    )
+                    .ok()
+                }
+            } else {
+                None
             };
 
-            let allocator = ManuallyDrop::new(GpuAllocator::new(&v));
-            v.allocator = Some(allocator);
+            let descriptor_heaps = DescriptorHeaps::new(&device)
+                .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                .map_err(|_| RequestDeviceError::Platform)?;
 
-            create_queues(&mut v);
-            v
-        });
-        Ok(device)
+            // Bundle and return the device
+            let device = Arc::new_cyclic(move |v| {
+                let mut v = Device {
+                    this: v.clone(),
+                    _context: self.context.clone(),
+                    _adapter: self.this.upgrade().unwrap(),
+                    debug_message_cookie,
+                    descriptor_heaps,
+                    device,
+                    allocator: None,
+                    general_queue: None,
+                    compute_queue: None,
+                    transfer_queue: None,
+                    command_list_pool: CommandListPool::new(),
+                    object_counter: ObjectCounter::new(),
+                };
+
+                let allocator = ManuallyDrop::new(GpuAllocator::new(&v));
+                v.allocator = Some(allocator);
+
+                create_queues(&mut v);
+                v
+            });
+            Ok(device)
+        })
     }
 }
 

@@ -35,7 +35,7 @@ use std::sync::{Arc, Weak};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use aleph_rhi_impl_utils::{manually_drop, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{abort_on_unwind, manually_drop, try_clone_value_into_slot};
 use blink_alloc::Blink;
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -165,7 +165,7 @@ impl SwapChain {
 
 impl ISwapChain for SwapChain {
     fn upgrade(&self) -> Arc<dyn ISwapChain> {
-        self.this.upgrade().unwrap()
+        abort_on_unwind(|| self.this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -177,128 +177,134 @@ impl ISwapChain for SwapChain {
     }
 
     fn present_supported_on_queue(&self, queue: QueueType) -> bool {
-        queue == self.queue_support
+        abort_on_unwind(|| queue == self.queue_support)
     }
 
     fn get_config(&self) -> SwapChainConfiguration {
-        self.inner.lock().config.clone()
+        abort_on_unwind(|| self.inner.lock().config.clone())
     }
 
     fn rebuild(
         &self,
         new_size: Option<Extent2D>,
     ) -> Result<SwapChainConfiguration, SwapChainRebuildError> {
-        let mut inner = self.inner.lock();
+        abort_on_unwind(|| {
+            let mut inner = self.inner.lock();
 
-        let (width, height) = if let Some(Extent2D { width, height }) = new_size {
-            (width, height)
-        } else {
-            (0, 0)
-        };
+            let (width, height) = if let Some(Extent2D { width, height }) = new_size {
+                (width, height)
+            } else {
+                (0, 0)
+            };
 
-        // D3D12 requires releasing all references to the D3D12_RESOURCE handles associated with a
-        // swap chain *before* calling ResizeBuffers. In order to meet this requirement we will
-        // force a full device queue flush and garbage collection cycle.
-        //
-        // This way we know the only places that can be holding a reference to any of the swap chain
-        // resources is the swap chain itself. That means we now have exclusive ownership of the
-        // images and releasing the handles should leave them all freed. Assuming no implementation
-        // bugs anyway.
-        match self.device.wait_idle() {
-            Ok(_) => {}
-            Err(QueueWaitError::DeviceLost) => return Err(SwapChainRebuildError::DeviceLost),
-            Err(QueueWaitError::Platform) => return Err(SwapChainRebuildError::Platform),
-        }
-
-        // Assert that we have the only reference to the swap chain textures. D3D12 requires
-        // that ID3D12Resources created from the swap chain are fully released before resizing
-        // the swap chain
-        #[cfg(debug_assertions)]
-        for v in inner.textures.iter_mut() {
-            assert!(
-                Arc::weak_count(v) == 0 && Arc::strong_count(v) == 1,
-                "It is invalid to resize a swap chain while still holding references to its images"
-            )
-        }
-
-        let queue = match self.queue_support {
-            QueueType::General => self.device.general_queue.as_ref().unwrap().handle.clone(),
-            QueueType::Compute => self.device.compute_queue.as_ref().unwrap().handle.clone(),
-            QueueType::Transfer => self.device.transfer_queue.as_ref().unwrap().handle.clone(),
-        };
-
-        unsafe {
-            // Empty the images array as, assuming the rest of the code is correct, that array will
-            // hold the only remaining references to the swap chain images.
+            // D3D12 requires releasing all references to the D3D12_RESOURCE handles associated with
+            // a swap chain *before* calling ResizeBuffers. In order to meet this requirement we
+            // will force a full device queue flush and garbage collection cycle.
             //
-            // This also handles creating the list of queues we pass to ResizeBuffers
-            let queues_list: Vec<ManuallyDrop<ID3D12CommandQueue>> = inner
-                .textures
-                .drain(..)
-                .map(|_| {
-                    // Take a shadow copy queue into ManuallyDrop so we don't increment the
-                    // reference count just to pack it into the array.
-                    //
-                    // This is sound so long as 'queue' always outlives the array and our shadow
-                    // copies.
-                    core::mem::transmute_copy(&queue)
-                })
-                .collect();
-            let queues = manually_drop::view_list_as_inner(&queues_list);
+            // This way we know the only places that can be holding a reference to any of the swap
+            // chain resources is the swap chain itself. That means we now have exclusive ownership
+            // of the images and releasing the handles should leave them all freed. Assuming no
+            // implementation bugs anyway.
+            match self.device.wait_idle() {
+                Ok(_) => {}
+                Err(QueueWaitError::DeviceLost) => return Err(SwapChainRebuildError::DeviceLost),
+                Err(QueueWaitError::Platform) => return Err(SwapChainRebuildError::Platform),
+            }
 
-            self.resize_buffers(
-                queues.len() as u32,
-                width,
-                height,
-                DXGI_FORMAT_UNKNOWN,
-                inner.dxgi_flags,
-                queues,
-            )
-            .unwrap();
+            // Assert that we have the only reference to the swap chain textures. D3D12 requires
+            // that ID3D12Resources created from the swap chain are fully released before resizing
+            // the swap chain
+            #[cfg(debug_assertions)]
+            for v in inner.textures.iter_mut() {
+                assert!(
+                    Arc::weak_count(v) == 0 && Arc::strong_count(v) == 1,
+                    "It is invalid to resize a swap chain while still holding references to its images"
+                )
+            }
 
-            inner.config.width = width;
-            inner.config.height = height;
-            self.recreate_swap_images(&mut inner, queues.len() as u32)
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(|_| SwapChainRebuildError::Platform)?;
-        }
+            let queue = match self.queue_support {
+                QueueType::General => self.device.general_queue.as_ref().unwrap().handle.clone(),
+                QueueType::Compute => self.device.compute_queue.as_ref().unwrap().handle.clone(),
+                QueueType::Transfer => self.device.transfer_queue.as_ref().unwrap().handle.clone(),
+            };
 
-        self.acquired.store(false, Ordering::SeqCst);
+            unsafe {
+                // Empty the images array as, assuming the rest of the code is correct, that array
+                // will hold the only remaining references to the swap chain images.
+                //
+                // This also handles creating the list of queues we pass to ResizeBuffers
+                let queues_list: Vec<ManuallyDrop<ID3D12CommandQueue>> = inner
+                    .textures
+                    .drain(..)
+                    .map(|_| {
+                        // Take a shadow copy queue into ManuallyDrop so we don't increment the
+                        // reference count just to pack it into the array.
+                        //
+                        // This is sound so long as 'queue' always outlives the array and our shadow
+                        // copies.
+                        core::mem::transmute_copy(&queue)
+                    })
+                    .collect();
+                let queues = manually_drop::view_list_as_inner(&queues_list);
 
-        Ok(inner.config.clone())
+                self.resize_buffers(
+                    queues.len() as u32,
+                    width,
+                    height,
+                    DXGI_FORMAT_UNKNOWN,
+                    inner.dxgi_flags,
+                    queues,
+                )
+                .unwrap();
+
+                inner.config.width = width;
+                inner.config.height = height;
+                self.recreate_swap_images(&mut inner, queues.len() as u32)
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| SwapChainRebuildError::Platform)?;
+            }
+
+            self.acquired.store(false, Ordering::SeqCst);
+
+            Ok(inner.config.clone())
+        })
     }
 
     unsafe fn acquire_next_image(&self) -> Result<AcquiredImage, ImageAcquireError> {
-        let inner = self.inner.lock();
+        abort_on_unwind(|| {
+            let inner = self.inner.lock();
 
-        if self
-            .acquired
-            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-            .is_err()
-        {
-            panic!("Attempted to acquire an image while one is already acquired");
-        }
+            if self
+                .acquired
+                .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                .is_err()
+            {
+                panic!("Attempted to acquire an image while one is already acquired");
+            }
 
-        let index = unsafe { self.swap_chain.GetCurrentBackBufferIndex() };
+            let index = unsafe { self.swap_chain.GetCurrentBackBufferIndex() };
 
-        let texture = inner.textures[index as usize].clone();
-        let texture = ArcObject::from_object(texture);
-        let texture = unsafe { TextureHandle::new(texture) };
+            let texture = inner.textures[index as usize].clone();
+            let texture = ArcObject::from_object(texture);
+            let texture = unsafe { TextureHandle::new(texture) };
 
-        let swap_image = Arc::new(SwapImage {
-            swap_chain: self.this.upgrade().unwrap(),
-            texture,
-        });
-        Ok(AcquiredImage::Ok(swap_image))
+            let swap_image = Arc::new(SwapImage {
+                swap_chain: self.this.upgrade().unwrap(),
+                texture,
+            });
+            Ok(AcquiredImage::Ok(swap_image))
+        })
     }
 }
 
 impl Drop for SwapChain {
     fn drop(&mut self) {
-        let mut has_swap_chain = self.surface.has_swap_chain.lock();
+        abort_on_unwind(|| {
+            let mut has_swap_chain = self.surface.has_swap_chain.lock();
 
-        // Release the surface as the swap chain no longer owns it
-        assert!(*has_swap_chain);
-        *has_swap_chain = false;
+            // Release the surface as the swap chain no longer owns it
+            assert!(*has_swap_chain);
+            *has_swap_chain = false;
+        })
     }
 }

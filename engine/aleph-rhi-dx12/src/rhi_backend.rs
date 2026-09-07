@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use aleph_rhi_api::{ContextCreateError, IContext};
+use aleph_rhi_impl_utils::abort_on_unwind;
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Dxgi::*;
 
@@ -24,7 +25,9 @@ pub struct D3D12Loader {
 
 impl D3D12Loader {
     pub fn is_available(&self) -> bool {
-        unsafe { DXGI_CREATE_FN.get().is_ok() && DEVICE_CREATE_FN.get().is_ok() }
+        abort_on_unwind(|| unsafe {
+            DXGI_CREATE_FN.get().is_ok() && DEVICE_CREATE_FN.get().is_ok()
+        })
     }
 
     pub fn make_context(
@@ -33,29 +36,33 @@ impl D3D12Loader {
         debug: bool,
         _config: &D3D12Config,
     ) -> Result<Arc<dyn IContext>, ContextCreateError> {
-        match self
-            .context_made
-            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
-        {
-            Ok(_) => {
-                let dxgi_factory = create_dxgi_factory(validation)
-                    .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
-                    .map_err(|_| ContextCreateError::Platform)?;
+        abort_on_unwind(|| -> Result<Arc<dyn IContext>, ContextCreateError> {
+            match self.context_made.compare_exchange(
+                false,
+                true,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => {
+                    let dxgi_factory = create_dxgi_factory(validation)
+                        .inspect_err(|e| log::error!("Platform Error: {:#?}", e))
+                        .map_err(|_| ContextCreateError::Platform)?;
 
-                let gpu_assisted = true;
-                let debug_interface = unsafe { setup_debug_layer(validation, gpu_assisted) };
-                let dxgi_debug = unsafe { setup_dxgi_debug_interface(debug) };
+                    let gpu_assisted = true;
+                    let debug_interface = unsafe { setup_debug_layer(validation, gpu_assisted) };
+                    let dxgi_debug = unsafe { setup_dxgi_debug_interface(debug) };
 
-                let context = Arc::new_cyclic(move |v| Context {
-                    this: v.clone(),
-                    debug: debug_interface,
-                    dxgi_debug: dxgi_debug.map(Mutex::new),
-                    factory: Some(Mutex::new(dxgi_factory)),
-                });
-                Ok(context)
+                    let context = Arc::new_cyclic(move |v| Context {
+                        this: v.clone(),
+                        debug: debug_interface,
+                        dxgi_debug: dxgi_debug.map(Mutex::new),
+                        factory: Some(Mutex::new(dxgi_factory)),
+                    });
+                    Ok(context)
+                }
+                Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
             }
-            Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
-        }
+        })
     }
 }
 

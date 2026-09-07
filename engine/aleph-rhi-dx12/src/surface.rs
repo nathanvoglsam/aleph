@@ -31,6 +31,7 @@ use std::any::TypeId;
 use std::sync::{Arc, Weak};
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use parking_lot::Mutex;
 use raw_window_handle::{HandleError, HasWindowHandle, RawWindowHandle, WindowHandle};
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -189,7 +190,7 @@ impl Surface {
 
 impl ISurface for Surface {
     fn upgrade(&self) -> Arc<dyn ISurface> {
-        self.this.upgrade().unwrap()
+        abort_on_unwind(|| self.this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -205,27 +206,31 @@ impl ISurface for Surface {
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
     ) -> Result<Arc<dyn ISwapChain>, SwapChainCreateError> {
-        // Check if the surface is currently taken with an existing swap chain
-        let mut has_swap_chain = self.has_swap_chain.lock();
-        if *has_swap_chain {
-            return Err(SwapChainCreateError::SurfaceAlreadyOwned);
-        }
+        abort_on_unwind(|| {
+            // Check if the surface is currently taken with an existing swap chain
+            let mut has_swap_chain = self.has_swap_chain.lock();
+            if *has_swap_chain {
+                return Err(SwapChainCreateError::SurfaceAlreadyOwned);
+            }
 
-        let result = unsafe { self.inner_create_swap_chain(device, config) };
+            let result = unsafe { self.inner_create_swap_chain(device, config) };
 
-        // If we successfully created the swap chain then we update the owned flag to prevent
-        // creating more.
-        if result.is_ok() {
-            *has_swap_chain = true;
-        }
+            // If we successfully created the swap chain then we update the owned flag to prevent
+            // creating more.
+            if result.is_ok() {
+                *has_swap_chain = true;
+            }
 
-        result
+            result
+        })
     }
 }
 
 impl HasWindowHandle for Surface {
     fn window_handle(&self) -> Result<WindowHandle<'_>, HandleError> {
-        let handle = unsafe { WindowHandle::borrow_raw(self.handle) };
-        Ok(handle)
+        abort_on_unwind(|| {
+            let handle = unsafe { WindowHandle::borrow_raw(self.handle) };
+            Ok(handle)
+        })
     }
 }

@@ -35,7 +35,7 @@ use std::sync::{Arc, Weak};
 
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::{abort_on_unwind, try_clone_value_into_slot};
 use parking_lot::Mutex;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 use windows::Win32::Graphics::Direct3D::*;
@@ -313,7 +313,7 @@ impl Context {
 
 impl IContext for Context {
     fn upgrade(&self) -> Arc<dyn IContext> {
-        self.this.upgrade().unwrap()
+        abort_on_unwind(|| self.this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -325,39 +325,42 @@ impl IContext for Context {
     }
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Arc<dyn IAdapter>> {
-        let factory = self.factory.as_ref().unwrap().lock();
-        let selected_adapter = self.select_adapter(options, &factory, |candidate| {
-            Self::adapter_meets_requirements(options, &factory, candidate)
-        });
-
-        if let Some(adapter) = selected_adapter {
-            let device = create_device(&adapter, D3D_FEATURE_LEVEL_12_1).ok()?;
-
-            if let Some(surface) = options.surface {
-                let surface = unwrap::surface(surface);
-                Self::check_surface_compatibility(&factory, &device, surface)?;
-            }
-
-            let desc = unsafe {
-                let desc = adapter
-                    .GetDesc1()
-                    .expect("Failed to get adapter description. Something very wrong");
-                desc
-            };
-            let vendor = pci_id_to_vendor(desc.VendorId);
-            let name = adapter_description_string(&desc).unwrap_or_else(|| "Unknown".to_string());
-
-            let adapter = Arc::new_cyclic(move |v| Adapter {
-                this: v.clone(),
-                context: self.this.upgrade().unwrap(),
-                name,
-                vendor,
-                adapter: Mutex::new(adapter),
+        abort_on_unwind(|| -> Option<Arc<dyn IAdapter>> {
+            let factory = self.factory.as_ref().unwrap().lock();
+            let selected_adapter = self.select_adapter(options, &factory, |candidate| {
+                Self::adapter_meets_requirements(options, &factory, candidate)
             });
-            Some(adapter)
-        } else {
-            None
-        }
+
+            if let Some(adapter) = selected_adapter {
+                let device = create_device(&adapter, D3D_FEATURE_LEVEL_12_1).ok()?;
+
+                if let Some(surface) = options.surface {
+                    let surface = unwrap::surface(surface);
+                    Self::check_surface_compatibility(&factory, &device, surface)?;
+                }
+
+                let desc = unsafe {
+                    let desc = adapter
+                        .GetDesc1()
+                        .expect("Failed to get adapter description. Something very wrong");
+                    desc
+                };
+                let vendor = pci_id_to_vendor(desc.VendorId);
+                let name =
+                    adapter_description_string(&desc).unwrap_or_else(|| "Unknown".to_string());
+
+                let adapter = Arc::new_cyclic(move |v| Adapter {
+                    this: v.clone(),
+                    context: self.this.upgrade().unwrap(),
+                    name,
+                    vendor,
+                    adapter: Mutex::new(adapter),
+                });
+                Some(adapter)
+            } else {
+                None
+            }
+        })
     }
 
     fn create_surface(
@@ -365,37 +368,41 @@ impl IContext for Context {
         display: &dyn HasDisplayHandle,
         window: &dyn HasWindowHandle,
     ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
-        let display_handle = display.display_handle().unwrap().as_raw();
-        let handle = window.window_handle().unwrap().as_raw();
+        abort_on_unwind(|| -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
+            let display_handle = display.display_handle().unwrap().as_raw();
+            let handle = window.window_handle().unwrap().as_raw();
 
-        match (display_handle, handle) {
-            (RawDisplayHandle::Windows(_), RawWindowHandle::Win32(_))
-            | (RawDisplayHandle::Windows(_), RawWindowHandle::WinRt(_)) => {}
-            _ => {
-                log::error!(
-                    "Requested Surface for unsupported WSI handle: display {:?} + window {:?}",
-                    display_handle,
-                    handle
-                );
-                return Err(SurfaceCreateError::UnsupportedWSI);
+            match (display_handle, handle) {
+                (RawDisplayHandle::Windows(_), RawWindowHandle::Win32(_))
+                | (RawDisplayHandle::Windows(_), RawWindowHandle::WinRt(_)) => {}
+                _ => {
+                    log::error!(
+                        "Requested Surface for unsupported WSI handle: display {:?} + window {:?}",
+                        display_handle,
+                        handle
+                    );
+                    return Err(SurfaceCreateError::UnsupportedWSI);
+                }
             }
-        }
 
-        let surface = Arc::new_cyclic(move |v| Surface {
-            this: v.clone(),
-            context: self.this.upgrade().unwrap(),
-            handle,
-            has_swap_chain: Default::default(),
-        });
-        Ok(surface)
+            let surface = Arc::new_cyclic(move |v| Surface {
+                this: v.clone(),
+                context: self.this.upgrade().unwrap(),
+                handle,
+                has_swap_chain: Default::default(),
+            });
+            Ok(surface)
+        })
     }
 
     fn create_surface_for_metal_layer(
         &self,
         _layer: NonNull<c_void>,
     ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
-        log::warn!("Called 'ISurface::create_surface_for_metal_layer' on non Apple platform!");
-        return Err(SurfaceCreateError::UnsupportedWSI);
+        abort_on_unwind(|| {
+            log::warn!("Called 'ISurface::create_surface_for_metal_layer' on non Apple platform!");
+            Err(SurfaceCreateError::UnsupportedWSI)
+        })
     }
 
     fn get_backend_api(&self) -> BackendAPI {
@@ -405,15 +412,17 @@ impl IContext for Context {
 
 impl Drop for Context {
     fn drop(&mut self) {
-        self.debug = None;
-        self.factory = None;
-        if let Some(dxgi_debug) = &mut self.dxgi_debug {
-            let dxgi_debug = dxgi_debug.get_mut();
-            unsafe {
-                dxgi_debug
-                    .ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL)
-                    .unwrap();
+        abort_on_unwind(|| {
+            self.debug = None;
+            self.factory = None;
+            if let Some(dxgi_debug) = &mut self.dxgi_debug {
+                let dxgi_debug = dxgi_debug.get_mut();
+                unsafe {
+                    dxgi_debug
+                        .ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL)
+                        .unwrap();
+                }
             }
-        }
+        })
     }
 }

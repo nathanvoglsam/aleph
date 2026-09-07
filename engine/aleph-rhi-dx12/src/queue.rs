@@ -33,7 +33,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
 
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::{abort_on_unwind, try_clone_value_into_slot};
 use crossbeam::queue::SegQueue;
 use parking_lot::Mutex;
 use windows::Win32::Foundation::HANDLE;
@@ -141,7 +141,7 @@ impl Queue {
 
 impl IQueue for Queue {
     fn upgrade(&self) -> Arc<dyn IQueue> {
-        self.this.upgrade().unwrap()
+        abort_on_unwind(|| self.this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -153,88 +153,90 @@ impl IQueue for Queue {
     }
 
     fn queue_properties(&self) -> QueueProperties {
-        QueueProperties {
+        abort_on_unwind(|| QueueProperties {
             min_image_transfer_granularity: Extent3D::new(0, 0, 0),
-        }
+        })
     }
 
     fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
-        let device = self.device.upgrade().unwrap();
+        abort_on_unwind(|| {
+            let device = self.device.upgrade().unwrap();
 
-        // Grab the index of the most recently completed command list on this queue and update
-        // the queue's value
-        //
-        // Like in 'wait_idle' we need an atomic CAS loop to uphold monotonicity guarantees. There
-        // is a window between GetCompletedValue and the atomic store for thread preemption to allow
-        // another thread to write in a newer 'GetCompletedValue' with a higher index before the
-        // initial thread gets a chance to write its lower index. Eventually the initial thread will
-        // get execution back and overwrite the higher index with the lower index it captured before
-        // being preempted.
-        //
-        // Atomics are 'fun'.
-        let last_completed = loop {
-            let old_last_completed = self.last_completed_index.load(Ordering::Relaxed);
-            let new_last_completed = unsafe { self.fence.GetCompletedValue() };
-            match self.last_completed_index.compare_exchange(
-                old_last_completed,
-                new_last_completed,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => break new_last_completed,
-                Err(_) => continue,
-            }
-        };
+            // Grab the index of the most recently completed command list on this queue and update
+            // the queue's value
+            //
+            // Like in 'wait_idle' we need an atomic CAS loop to uphold monotonicity guarantees. There
+            // is a window between GetCompletedValue and the atomic store for thread preemption to allow
+            // another thread to write in a newer 'GetCompletedValue' with a higher index before the
+            // initial thread gets a chance to write its lower index. Eventually the initial thread will
+            // get execution back and overwrite the higher index with the lower index it captured before
+            // being preempted.
+            //
+            // Atomics are 'fun'.
+            let last_completed = loop {
+                let old_last_completed = self.last_completed_index.load(Ordering::Relaxed);
+                let new_last_completed = unsafe { self.fence.GetCompletedValue() };
+                match self.last_completed_index.compare_exchange(
+                    old_last_completed,
+                    new_last_completed,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => break new_last_completed,
+                    Err(_) => continue,
+                }
+            };
 
-        // Capture the current length of the queue. We then pop N items off the queue and check
-        // to see if it is complete based on comparing the list's index with the last completed
-        // index. If the list is done we drop it to release any resources that it was keeping
-        // alive.
-        let num = self.in_flight.len();
-        for _ in 0..num {
-            // Check if the
-            let v = self.in_flight.pop().unwrap();
-            if v.index > last_completed {
-                self.in_flight.push(v);
-            } else {
-                // If the submission is complete we recycle the command lists
-                //
-                // Grab the pool for the specific queue type. Don't want to get different
-                // classes of command list mixed up!
-                let pool_target = device
-                    .command_list_pool
-                    .get_pool_for_queue_type(self.queue_type);
-
-                for list in v.lists.into_iter() {
-                    debug_assert_eq!(list.list_type, self.queue_type);
-
-                    // Take the pool and buffer out of the CommandList object so they don't
-                    // get dropped. We destroy the Box<CommandList> because it also contains
-                    // a back reference to device.
+            // Capture the current length of the queue. We then pop N items off the queue and check
+            // to see if it is complete based on comparing the list's index with the last completed
+            // index. If the list is done we drop it to release any resources that it was keeping
+            // alive.
+            let num = self.in_flight.len();
+            for _ in 0..num {
+                // Check if the
+                let v = self.in_flight.pop().unwrap();
+                if v.index > last_completed {
+                    self.in_flight.push(v);
+                } else {
+                    // If the submission is complete we recycle the command lists
                     //
-                    // If we store it inside device then we create a reference cycle and leak
-                    // Device. Not great...
-                    let list = FreeCommandList {
-                        allocator: list.allocator,
-                        list: list.list,
-                        descriptor_heaps: list.descriptor_heaps,
-                        list_type: list.list_type,
-                    };
+                    // Grab the pool for the specific queue type. Don't want to get different
+                    // classes of command list mixed up!
+                    let pool_target = device
+                        .command_list_pool
+                        .get_pool_for_queue_type(self.queue_type);
 
-                    // If we fill the list we just start destroying command lists rather than
-                    // growing the pool.
-                    if pool_target.push(list).is_err() {
-                        log::warn!("CommandList free-object-pool overflowing!");
+                    for list in v.lists.into_iter() {
+                        debug_assert_eq!(list.list_type, self.queue_type);
+
+                        // Take the pool and buffer out of the CommandList object so they don't
+                        // get dropped. We destroy the Box<CommandList> because it also contains
+                        // a back reference to device.
+                        //
+                        // If we store it inside device then we create a reference cycle and leak
+                        // Device. Not great...
+                        let list = FreeCommandList {
+                            allocator: list.allocator,
+                            list: list.list,
+                            descriptor_heaps: list.descriptor_heaps,
+                            list_type: list.list_type,
+                        };
+
+                        // If we fill the list we just start destroying command lists rather than
+                        // growing the pool.
+                        if pool_target.push(list).is_err() {
+                            log::warn!("CommandList free-object-pool overflowing!");
+                        }
                     }
                 }
             }
-        }
 
-        Ok(())
+            Ok(())
+        })
     }
 
     fn wait_idle(&self) -> Result<(), QueueWaitError> {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             // This function may run in parallel with submissions and wait_idle/garbage_collect
             // calls from any number of other threads. A naive implementation could allow a data
             // race to break the monotonicity property of last_completed_index and
@@ -278,11 +280,11 @@ impl IQueue for Queue {
                     Err(_) => continue,
                 }
             }
-        }
+        })
     }
 
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
             // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
             // either.
@@ -359,11 +361,11 @@ impl IQueue for Queue {
             self.in_flight.push(QueueSubmission { index, lists });
 
             Ok(())
-        }
+        })
     }
 
     unsafe fn present(&self, swap_image: Arc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             let swap_image = unwrap::swap_image_owned(swap_image);
             let swap_chain = swap_image.swap_chain.as_ref();
             let swap_state = swap_chain.inner.lock();
@@ -416,7 +418,7 @@ impl IQueue for Queue {
                 .map_err(|_| QueuePresentError::Platform)?;
 
             Ok(())
-        }
+        })
     }
 }
 

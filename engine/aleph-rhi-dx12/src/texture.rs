@@ -39,7 +39,7 @@ use aleph_gpu_allocator::GpuAllocation;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind, try_clone_value_into_slot};
 use blink_alloc::Blink;
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -558,34 +558,36 @@ unsafe impl Sync for Texture {}
 impl Drop for Texture {
     #[inline]
     fn drop(&mut self) {
-        // Free all RTVs associated with this texture
-        for (_, view) in self.views.get_mut().drain() {
-            let view = unsafe { view.as_ref().handle };
-            self.device.descriptor_heaps.cpu_view_heap().free(view);
-        }
-
-        // Free all RTVs associated with this texture
-        for (_, rtv) in self.rtvs.get_mut().drain() {
-            let rtv = unsafe { rtv.as_ref().handle };
-            self.device.descriptor_heaps.cpu_rtv_heap().free(rtv);
-        }
-
-        // Free all DSVs associated with this texture
-        for (_, dsv) in self.dsvs.get_mut().drain() {
-            let dsv = unsafe { dsv.as_ref().handle };
-            self.device.descriptor_heaps.cpu_dsv_heap().free(dsv);
-        }
-
-        unsafe {
-            ManuallyDrop::drop(&mut self.resource);
-            if let Some(v) = self.allocation.take() {
-                self.device
-                    .allocator
-                    .as_ref()
-                    .unwrap_unchecked()
-                    .free_allocation(self.device.as_ref(), v);
+        abort_on_unwind(|| {
+            // Free all RTVs associated with this texture
+            for (_, view) in self.views.get_mut().drain() {
+                let view = unsafe { view.as_ref().handle };
+                self.device.descriptor_heaps.cpu_view_heap().free(view);
             }
-        }
+
+            // Free all RTVs associated with this texture
+            for (_, rtv) in self.rtvs.get_mut().drain() {
+                let rtv = unsafe { rtv.as_ref().handle };
+                self.device.descriptor_heaps.cpu_rtv_heap().free(rtv);
+            }
+
+            // Free all DSVs associated with this texture
+            for (_, dsv) in self.dsvs.get_mut().drain() {
+                let dsv = unsafe { dsv.as_ref().handle };
+                self.device.descriptor_heaps.cpu_dsv_heap().free(dsv);
+            }
+
+            unsafe {
+                ManuallyDrop::drop(&mut self.resource);
+                if let Some(v) = self.allocation.take() {
+                    self.device
+                        .allocator
+                        .as_ref()
+                        .unwrap_unchecked()
+                        .free_allocation(self.device.as_ref(), v);
+                }
+            }
+        })
     }
 }
 

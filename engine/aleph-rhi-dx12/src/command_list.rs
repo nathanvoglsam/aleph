@@ -31,7 +31,7 @@ use std::any::TypeId;
 use std::sync::Arc;
 
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{RhiSystem, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind, try_clone_value_into_slot};
 use blink_alloc::{Blink, BlinkAlloc};
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -65,27 +65,31 @@ unsafe impl Send for CommandList {}
 
 impl ICommandList for CommandList {
     fn begin_general(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        if matches!(self.list_type, QueueType::General) {
-            self.begin()
-        } else {
-            Err(CommandListBeginError::InvalidEncoderType(
-                QueueType::General,
-            ))
-        }
+        abort_on_unwind(|| {
+            if matches!(self.list_type, QueueType::General) {
+                self.begin()
+            } else {
+                Err(CommandListBeginError::InvalidEncoderType(
+                    QueueType::General,
+                ))
+            }
+        })
     }
 
     fn begin_compute(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        if matches!(self.list_type, QueueType::General | QueueType::Compute) {
-            self.begin()
-        } else {
-            Err(CommandListBeginError::InvalidEncoderType(
-                QueueType::Compute,
-            ))
-        }
+        abort_on_unwind(|| {
+            if matches!(self.list_type, QueueType::General | QueueType::Compute) {
+                self.begin()
+            } else {
+                Err(CommandListBeginError::InvalidEncoderType(
+                    QueueType::Compute,
+                ))
+            }
+        })
     }
 
     fn begin_transfer(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        self.begin()
+        abort_on_unwind(|| self.begin())
     }
 }
 

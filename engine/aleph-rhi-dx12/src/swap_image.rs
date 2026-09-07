@@ -31,6 +31,7 @@ use std::any::TypeId;
 use std::sync::Arc;
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 
 use crate::swap_chain::SwapChain;
 
@@ -47,10 +48,10 @@ impl IGetPlatformInterface for SwapImage {
 
 impl ISwapImage for SwapImage {
     fn texture(&self) -> &TextureHandle {
-        &self.texture
+        abort_on_unwind(|| &self.texture)
     }
 
     fn texture_desc(&self) -> &TextureDesc<'_> {
-        self.swap_chain.device.get_texture_desc(&self.texture)
+        abort_on_unwind(|| self.swap_chain.device.get_texture_desc(&self.texture))
     }
 }

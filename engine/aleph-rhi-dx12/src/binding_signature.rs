@@ -32,6 +32,7 @@ use std::sync::{Arc, Weak};
 
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use allocator_api2::alloc::Allocator;
 use allocator_api2::vec::Vec as BVec;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -53,7 +54,7 @@ unsafe_impl_iobject!(BindingSignature, "01944fef-c9e8-7563-b77a-5bda76bb4330");
 
 impl IBindingSignature for BindingSignature {
     fn upgrade(&self) -> Arc<dyn IBindingSignature> {
-        self.this.upgrade().unwrap()
+        abort_on_unwind(|| self.this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {

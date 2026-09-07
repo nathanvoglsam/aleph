@@ -44,7 +44,7 @@ use aleph_rhi_impl_utils::owned_desc::{
 };
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::{abort_on_unwind, try_clone_value_into_slot};
 use allocator_api2::alloc::Allocator;
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::{Blink, BlinkAlloc};
@@ -118,7 +118,7 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn upgrade(&self) -> Arc<dyn IDevice> {
-        self.this.upgrade().unwrap()
+        abort_on_unwind(|| self.this.upgrade().unwrap())
     }
 
     // ========================================================================================== //
@@ -139,32 +139,36 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
-        if let Some(queue) = &self.general_queue {
-            queue.garbage_collect()?;
-        }
-        if let Some(queue) = &self.compute_queue {
-            queue.garbage_collect()?;
-        }
-        if let Some(queue) = &self.transfer_queue {
-            queue.garbage_collect()?;
-        }
-        Ok(())
+        abort_on_unwind(|| {
+            if let Some(queue) = &self.general_queue {
+                queue.garbage_collect()?;
+            }
+            if let Some(queue) = &self.compute_queue {
+                queue.garbage_collect()?;
+            }
+            if let Some(queue) = &self.transfer_queue {
+                queue.garbage_collect()?;
+            }
+            Ok(())
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn wait_idle(&self) -> Result<(), QueueWaitError> {
-        if let Some(queue) = &self.general_queue {
-            queue.wait_idle()?;
-        }
-        if let Some(queue) = &self.compute_queue {
-            queue.wait_idle()?;
-        }
-        if let Some(queue) = &self.transfer_queue {
-            queue.wait_idle()?;
-        }
-        Ok(())
+        abort_on_unwind(|| {
+            if let Some(queue) = &self.general_queue {
+                queue.wait_idle()?;
+            }
+            if let Some(queue) = &self.compute_queue {
+                queue.wait_idle()?;
+            }
+            if let Some(queue) = &self.transfer_queue {
+                queue.wait_idle()?;
+            }
+            Ok(())
+        })
     }
 
     // ========================================================================================== //
@@ -174,17 +178,21 @@ impl IDevice for Device {
         &self,
         desc: &ParameterBlockDesc,
     ) -> Result<Arc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
-        let compiled = CompiledParameterBlockLayout::new(desc);
+        abort_on_unwind(
+            || -> Result<Arc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
+                let compiled = CompiledParameterBlockLayout::new(desc);
 
-        let layout = Arc::new_cyclic(move |v| ParameterBlockLayout {
-            this: v.clone(),
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_parameter_block_layout(),
-            desc: OwnedParameterBlockDesc::new(desc),
-            compiled,
-        });
+                let layout = Arc::new_cyclic(move |v| ParameterBlockLayout {
+                    this: v.clone(),
+                    _device: self.this.upgrade().unwrap(),
+                    id: self.object_counter.next_parameter_block_layout(),
+                    desc: OwnedParameterBlockDesc::new(desc),
+                    compiled,
+                });
 
-        Ok(layout)
+                Ok(layout)
+            },
+        )
     }
 
     // ========================================================================================== //
@@ -194,49 +202,52 @@ impl IDevice for Device {
         &self,
         desc: &BindingSignatureDesc,
     ) -> Result<Arc<dyn IBindingSignature>, BindingSignatureCreateError> {
-        let out = DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(
+                |bump_cell| -> Result<Arc<dyn IBindingSignature>, BindingSignatureCreateError> {
+                    let bump = bump_cell.scope();
 
-            let mut parameter_block_layouts =
-                Vec::with_capacity(desc.parameter_block_layouts.len());
-            for layout in desc.parameter_block_layouts {
-                let layout = unwrap::parameter_block_layout_d(layout);
-                parameter_block_layouts.push(layout.this.upgrade().unwrap());
-            }
+                    let mut parameter_block_layouts =
+                        Vec::with_capacity(desc.parameter_block_layouts.len());
+                    for layout in desc.parameter_block_layouts {
+                        let layout = unwrap::parameter_block_layout_d(layout);
+                        parameter_block_layouts.push(layout.this.upgrade().unwrap());
+                    }
 
-            let compiled = CompiledBindingSignature::new(&parameter_block_layouts, desc)?;
+                    let compiled = CompiledBindingSignature::new(&parameter_block_layouts, desc)?;
 
-            let root_signature = unsafe {
-                let desc = BindingSignature::translate_root_signature_desc(
-                    &parameter_block_layouts,
-                    &compiled,
-                    bump.allocator(),
-                );
-                let blob = RootSignatureBlob::new(&desc)
-                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| BindingSignatureCreateError::Platform)?;
-                self.device
-                    .CreateRootSignature::<ID3D12RootSignature>(0, &blob)
-                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| BindingSignatureCreateError::Platform)?
-            };
+                    let root_signature = unsafe {
+                        let desc = BindingSignature::translate_root_signature_desc(
+                            &parameter_block_layouts,
+                            &compiled,
+                            bump.allocator(),
+                        );
+                        let blob = RootSignatureBlob::new(&desc)
+                            .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                            .map_err(|_| BindingSignatureCreateError::Platform)?;
+                        self.device
+                            .CreateRootSignature::<ID3D12RootSignature>(0, &blob)
+                            .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                            .map_err(|_| BindingSignatureCreateError::Platform)?
+                    };
 
-            if let Some(name) = desc.name {
-                set_name(&root_signature, name).unwrap();
-            }
+                    if let Some(name) = desc.name {
+                        set_name(&root_signature, name).unwrap();
+                    }
 
-            let signature = Arc::new_cyclic(move |v| BindingSignature {
-                this: v.clone(),
-                _device: self.this.upgrade().unwrap(),
-                id: self.object_counter.next_binding_signature(),
-                _parameter_block_layouts: parameter_block_layouts,
-                root_signature,
-                compiled,
-            });
+                    let signature = Arc::new_cyclic(move |v| BindingSignature {
+                        this: v.clone(),
+                        _device: self.this.upgrade().unwrap(),
+                        id: self.object_counter.next_binding_signature(),
+                        _parameter_block_layouts: parameter_block_layouts,
+                        root_signature,
+                        compiled,
+                    });
 
-            Ok(signature)
-        })?;
-        Ok(out)
+                    Ok(signature)
+                },
+            )
+        })
     }
 
     // ========================================================================================== //
@@ -247,82 +258,86 @@ impl IDevice for Device {
         &self,
         desc: &GraphicsPipelineDesc,
     ) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
+                let bump = bump_cell.scope();
 
-            // Unwrap the binding signature trait object into the concrete implementation
-            let binding_signature = unwrap::binding_signature(desc.binding_signature);
+                // Unwrap the binding signature trait object into the concrete implementation
+                let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
-            let builder = GraphicsPipelineStateStreamBuilder::new();
+                let builder = GraphicsPipelineStateStreamBuilder::new();
 
-            // Add all shaders in the list to their corresponding slot
-            let builder = Self::translate_shader_stage_list(desc.shader_stages, builder)?;
+                // Add all shaders in the list to their corresponding slot
+                let builder = Self::translate_shader_stage_list(desc.shader_stages, builder)?;
 
-            let builder = builder.root_signature(binding_signature.root_signature.clone());
+                let builder = builder.root_signature(binding_signature.root_signature.clone());
 
-            let (input_binding_strides, input_layout) =
-                Self::translate_vertex_input_state_desc(bump.allocator(), desc.vertex_layout);
-            let builder = builder.input_layout(&input_layout);
+                let (input_binding_strides, input_layout) =
+                    Self::translate_vertex_input_state_desc(bump.allocator(), desc.vertex_layout);
+                let builder = builder.input_layout(&input_layout);
 
-            let (builder, primitive_topology) =
-                Self::translate_input_assembly_state_desc(desc, builder);
+                let (builder, primitive_topology) =
+                    Self::translate_input_assembly_state_desc(desc, builder);
 
-            let rasterizer_state = Self::translate_rasterizer_state_desc(desc.rasterizer_state);
-            let builder = builder.rasterizer_state(rasterizer_state);
+                let rasterizer_state = Self::translate_rasterizer_state_desc(desc.rasterizer_state);
+                let builder = builder.rasterizer_state(rasterizer_state);
 
-            let (depth_bounds, depth_stencil_state) =
-                Self::translate_depth_stencil_desc(desc.depth_stencil_state);
-            let builder = builder.depth_stencil_state(depth_stencil_state);
+                let (depth_bounds, depth_stencil_state) =
+                    Self::translate_depth_stencil_desc(desc.depth_stencil_state);
+                let builder = builder.depth_stencil_state(depth_stencil_state);
 
-            let blend_state = Self::translate_blend_state_desc(desc.blend_state);
-            let builder = builder.blend_state(blend_state);
+                let blend_state = Self::translate_blend_state_desc(desc.blend_state);
+                let builder = builder.blend_state(blend_state);
 
-            // TODO: we should be able to expose this in the API
-            let builder = builder.sample_mask(u32::MAX);
+                // TODO: we should be able to expose this in the API
+                let builder = builder.sample_mask(u32::MAX);
 
-            // Render target format translation is straight forward, just convert the formats and add
-            let mut rtv_formats =
-                BVec::with_capacity_in(desc.render_target_formats.len(), bump.allocator());
-            for v in desc.render_target_formats.iter().copied() {
-                rtv_formats.push(texture_format_to_dxgi(v))
-            }
-            let builder = builder.rtv_formats(&rtv_formats);
-            let builder =
-                if let Some(dsv_format) = desc.depth_stencil_format.map(texture_format_to_dxgi) {
+                // Render target format translation is straight forward, just convert the formats and add
+                let mut rtv_formats =
+                    BVec::with_capacity_in(desc.render_target_formats.len(), bump.allocator());
+                for v in desc.render_target_formats.iter().copied() {
+                    rtv_formats.push(texture_format_to_dxgi(v))
+                }
+                let builder = builder.rtv_formats(&rtv_formats);
+                let builder = if let Some(dsv_format) =
+                    desc.depth_stencil_format.map(texture_format_to_dxgi)
+                {
                     builder.dsv_format(dsv_format)
                 } else {
                     builder
                 };
 
-            // Construct the D3D12 pipeline object
-            let state_stream = builder.build();
-            let state_stream_ref = D3D12_PIPELINE_STATE_STREAM_DESC {
-                SizeInBytes: std::mem::size_of_val(&state_stream),
-                pPipelineStateSubobjectStream: &state_stream as *const GraphicsPipelineStateStream
-                    as *mut _,
-            };
-            let pipeline = unsafe {
-                self.device
-                    .CreatePipelineState(&state_stream_ref)
-                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| PipelineCreateError::Platform)?
-            };
+                // Construct the D3D12 pipeline object
+                let state_stream = builder.build();
+                let state_stream_ref = D3D12_PIPELINE_STATE_STREAM_DESC {
+                    SizeInBytes: std::mem::size_of_val(&state_stream),
+                    pPipelineStateSubobjectStream: &state_stream
+                        as *const GraphicsPipelineStateStream
+                        as *mut _,
+                };
+                let pipeline = unsafe {
+                    self.device
+                        .CreatePipelineState(&state_stream_ref)
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| PipelineCreateError::Platform)?
+                };
 
-            if let Some(name) = desc.name {
-                set_name(&pipeline, name).unwrap();
-            }
+                if let Some(name) = desc.name {
+                    set_name(&pipeline, name).unwrap();
+                }
 
-            let out = GraphicsPipeline {
-                _device: self.this.upgrade().unwrap(),
-                id: self.object_counter.next_graphics_pipeline(),
-                pipeline,
-                binding_signature: binding_signature.this.upgrade().unwrap(),
-                primitive_topology,
-                input_binding_strides,
-                depth_bounds,
-            };
-            let out = Object::new_arc_opaque(out);
-            unsafe { Ok(GraphicsPipelineHandle::new(out)) }
+                let out = GraphicsPipeline {
+                    _device: self.this.upgrade().unwrap(),
+                    id: self.object_counter.next_graphics_pipeline(),
+                    pipeline,
+                    binding_signature: binding_signature.this.upgrade().unwrap(),
+                    primitive_topology,
+                    input_binding_strides,
+                    depth_bounds,
+                };
+                let out = Object::new_arc_opaque(out);
+                unsafe { Ok(GraphicsPipelineHandle::new(out)) }
+            })
         })
     }
 
@@ -334,44 +349,46 @@ impl IDevice for Device {
         &self,
         desc: &ComputePipelineDesc,
     ) -> Result<ComputePipelineHandle, PipelineCreateError> {
-        // Unwrap the binding signature trait object into the concrete implementation
-        let binding_signature = unwrap::binding_signature(desc.binding_signature);
+        abort_on_unwind(|| {
+            // Unwrap the binding signature trait object into the concrete implementation
+            let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
-        let shader = desc.shader_module.get_dxil();
+            let shader = desc.shader_module.get_dxil();
 
-        let pipeline_desc = D3D12_COMPUTE_PIPELINE_STATE_DESC {
-            pRootSignature: unsafe { transmute_copy(&binding_signature.root_signature) },
-            CS: D3D12_SHADER_BYTECODE {
-                pShaderBytecode: shader.as_ptr() as *const _,
-                BytecodeLength: shader.len(),
-            },
-            NodeMask: 0,
-            CachedPSO: D3D12_CACHED_PIPELINE_STATE {
-                pCachedBlob: std::ptr::null(),
-                CachedBlobSizeInBytes: 0,
-            },
-            Flags: D3D12_PIPELINE_STATE_FLAGS::default(),
-        };
+            let pipeline_desc = D3D12_COMPUTE_PIPELINE_STATE_DESC {
+                pRootSignature: unsafe { transmute_copy(&binding_signature.root_signature) },
+                CS: D3D12_SHADER_BYTECODE {
+                    pShaderBytecode: shader.as_ptr() as *const _,
+                    BytecodeLength: shader.len(),
+                },
+                NodeMask: 0,
+                CachedPSO: D3D12_CACHED_PIPELINE_STATE {
+                    pCachedBlob: std::ptr::null(),
+                    CachedBlobSizeInBytes: 0,
+                },
+                Flags: D3D12_PIPELINE_STATE_FLAGS::default(),
+            };
 
-        let pipeline = unsafe {
-            self.device
-                .CreateComputePipelineState(&pipeline_desc)
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(|_| PipelineCreateError::Platform)?
-        };
+            let pipeline = unsafe {
+                self.device
+                    .CreateComputePipelineState(&pipeline_desc)
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| PipelineCreateError::Platform)?
+            };
 
-        if let Some(name) = desc.name {
-            set_name(&pipeline, name).unwrap();
-        }
+            if let Some(name) = desc.name {
+                set_name(&pipeline, name).unwrap();
+            }
 
-        let out = ComputePipeline {
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_compute_pipeline(),
-            pipeline,
-            binding_signature: binding_signature.this.upgrade().unwrap(),
-        };
-        let out = Object::new_arc_opaque(out);
-        unsafe { Ok(ComputePipelineHandle::new(out)) }
+            let out = ComputePipeline {
+                _device: self.this.upgrade().unwrap(),
+                id: self.object_counter.next_compute_pipeline(),
+                pipeline,
+                binding_signature: binding_signature.this.upgrade().unwrap(),
+            };
+            let out = Object::new_arc_opaque(out);
+            unsafe { Ok(ComputePipelineHandle::new(out)) }
+        })
     }
 
     // ========================================================================================== //
@@ -381,30 +398,34 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
-        let layout = unwrap::parameter_block_layout(desc.layout);
+        abort_on_unwind(
+            || -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
+                use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
+                let layout = unwrap::parameter_block_layout(desc.layout);
 
-        let num_resources = layout.compiled.resources.num_resources();
+                let num_resources = layout.compiled.resources.num_resources();
 
-        let resource_arena = DescriptorChunk::new(
-            self.descriptor_heaps.gpu_view_heap(),
-            desc.num_blocks * num_resources,
-        )?;
+                let resource_arena = DescriptorChunk::new(
+                    self.descriptor_heaps.gpu_view_heap(),
+                    desc.num_blocks * num_resources,
+                )?;
 
-        let factory = crate::descriptor_arena::LinearBlockFactory {
-            next_resource_index: 0,
-            arena: BlinkAlloc::new(),
-        };
-        let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
+                let factory = crate::descriptor_arena::LinearBlockFactory {
+                    next_resource_index: 0,
+                    arena: BlinkAlloc::new(),
+                };
+                let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
 
-        let pool = Box::new(DescriptorPool {
-            _device: self.this.upgrade().unwrap(),
-            _layout: layout.this.upgrade().unwrap(),
-            resource_arena,
-            pool,
-        });
+                let pool = Box::new(DescriptorPool {
+                    _device: self.this.upgrade().unwrap(),
+                    _layout: layout.this.upgrade().unwrap(),
+                    resource_arena,
+                    pool,
+                });
 
-        Ok(pool)
+                Ok(pool)
+            },
+        )
     }
 
     // ========================================================================================== //
@@ -414,186 +435,199 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorArenaDesc,
     ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
-        match desc.arena_type {
-            DescriptorArenaType::Linear => {
-                let resource_arena = DescriptorChunk::new(
-                    self.descriptor_heaps.gpu_view_heap(),
-                    desc.num_blocks * 16,
-                )?
-                .unwrap();
+        abort_on_unwind(
+            || -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
+                match desc.arena_type {
+                    DescriptorArenaType::Linear => {
+                        let resource_arena = DescriptorChunk::new(
+                            self.descriptor_heaps.gpu_view_heap(),
+                            desc.num_blocks * 16,
+                        )?
+                        .unwrap();
 
-                let factory = crate::descriptor_arena::LinearBlockFactory {
-                    next_resource_index: 0,
-                    arena: BlinkAlloc::new(),
-                };
-                let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
+                        let factory = crate::descriptor_arena::LinearBlockFactory {
+                            next_resource_index: 0,
+                            arena: BlinkAlloc::new(),
+                        };
+                        let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
 
-                let pool = Box::new(DescriptorArenaLinear {
-                    _device: self.this.upgrade().unwrap(),
-                    resource_arena,
-                    pool,
-                });
+                        let pool = Box::new(DescriptorArenaLinear {
+                            _device: self.this.upgrade().unwrap(),
+                            resource_arena,
+                            pool,
+                        });
 
-                Ok(pool)
-            }
-            DescriptorArenaType::Heap => {
-                let resource_block = DescriptorChunk::new(
-                    self.descriptor_heaps.gpu_view_heap(),
-                    desc.num_blocks * 16,
-                )?
-                .unwrap();
+                        Ok(pool)
+                    }
+                    DescriptorArenaType::Heap => {
+                        let resource_block = DescriptorChunk::new(
+                            self.descriptor_heaps.gpu_view_heap(),
+                            desc.num_blocks * 16,
+                        )?
+                        .unwrap();
 
-                let resource_pool =
-                    OffsetAllocator::new(resource_block.num_descriptors, desc.num_blocks * 2);
-                let resource_pool = Box::new(resource_pool);
+                        let resource_pool = OffsetAllocator::new(
+                            resource_block.num_descriptors,
+                            desc.num_blocks * 2,
+                        );
+                        let resource_pool = Box::new(resource_pool);
 
-                let factory = crate::descriptor_arena::HeapBlockFactory { resource_pool };
-                let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
+                        let factory = crate::descriptor_arena::HeapBlockFactory { resource_pool };
+                        let pool = ParameterBlockPool::new(factory, desc.num_blocks as usize);
 
-                let pool = Box::new(DescriptorArenaHeap {
-                    _device: self.this.upgrade().unwrap(),
-                    resource_block,
-                    pool,
-                });
+                        let pool = Box::new(DescriptorArenaHeap {
+                            _device: self.this.upgrade().unwrap(),
+                            resource_block,
+                            pool,
+                        });
 
-                Ok(pool)
-            }
-        }
+                        Ok(pool)
+                    }
+                }
+            },
+        )
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError> {
-        let mut resource_desc = D3D12_RESOURCE_DESC1 {
-            // Fields that will be the same regardless of the requested buffer desc
-            Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,
-            Alignment: 0,
-            Width: 0,
-            Height: 1,
-            DepthOrArraySize: 1,
-            MipLevels: 1,
-            Format: Default::default(),
-            SampleDesc: DXGI_SAMPLE_DESC {
-                Count: 1,
-                Quality: 0,
-            },
-            Layout: D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-            SamplerFeedbackMipRegion: Default::default(),
-            Flags: Default::default(),
-        };
+        abort_on_unwind(|| {
+            let mut resource_desc = D3D12_RESOURCE_DESC1 {
+                // Fields that will be the same regardless of the requested buffer desc
+                Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,
+                Alignment: 0,
+                Width: 0,
+                Height: 1,
+                DepthOrArraySize: 1,
+                MipLevels: 1,
+                Format: Default::default(),
+                SampleDesc: DXGI_SAMPLE_DESC {
+                    Count: 1,
+                    Quality: 0,
+                },
+                Layout: D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+                SamplerFeedbackMipRegion: Default::default(),
+                Flags: Default::default(),
+            };
 
-        resource_desc.Width = desc.size;
+            resource_desc.Width = desc.size;
 
-        if desc.usage.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
-            resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        }
+            if desc.usage.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
+                resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+            }
 
-        let location = match desc.cpu_access {
-            CpuAccessMode::None => MemoryLocation::GpuLocal,
-            CpuAccessMode::Read => MemoryLocation::GpuToCpu,
-            CpuAccessMode::Write => MemoryLocation::CpuToGpu,
-        };
-        let allocation_desc = AllocationDesc {
-            location,
-            strategy: Default::default(),
-            desc: ExtendedResourceDesc {
-                desc: resource_desc,
-                initial_layout: D3D12_BARRIER_LAYOUT_UNDEFINED,
-                optimized_clear_value: None,
-                pcastableformats: None,
-            },
-        };
-        let (allocation, _metadata, resource) = unsafe {
-            let allocator = self.allocator.as_ref().unwrap();
-            allocator
-                .allocate_buffer(self, &allocation_desc)
-                .ok_or(BufferCreateError::OutOfMemory)?
-        };
-        let base_address =
-            unsafe { GPUDescriptorHandle::try_from(resource.GetGPUVirtualAddress()).unwrap() };
+            let location = match desc.cpu_access {
+                CpuAccessMode::None => MemoryLocation::GpuLocal,
+                CpuAccessMode::Read => MemoryLocation::GpuToCpu,
+                CpuAccessMode::Write => MemoryLocation::CpuToGpu,
+            };
+            let allocation_desc = AllocationDesc {
+                location,
+                strategy: Default::default(),
+                desc: ExtendedResourceDesc {
+                    desc: resource_desc,
+                    initial_layout: D3D12_BARRIER_LAYOUT_UNDEFINED,
+                    optimized_clear_value: None,
+                    pcastableformats: None,
+                },
+            };
+            let (allocation, _metadata, resource) = unsafe {
+                let allocator = self.allocator.as_ref().unwrap();
+                allocator
+                    .allocate_buffer(self, &allocation_desc)
+                    .ok_or(BufferCreateError::OutOfMemory)?
+            };
+            let base_address =
+                unsafe { GPUDescriptorHandle::try_from(resource.GetGPUVirtualAddress()).unwrap() };
 
-        if let Some(name) = desc.name {
-            set_name(&resource, name).unwrap();
-        }
+            if let Some(name) = desc.name {
+                set_name(&resource, name).unwrap();
+            }
 
-        let out = Buffer {
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_buffer(),
-            allocation: Some(allocation),
-            resource: ManuallyDrop::new(resource),
-            base_address,
-            map_state: Mutex::new(Default::default()),
-            desc: OwnedBufferDesc::new(desc.clone()),
-        };
-        let out = Object::new_arc_opaque(out);
-        unsafe { Ok(BufferHandle::new(out)) }
+            let out = Buffer {
+                _device: self.this.upgrade().unwrap(),
+                id: self.object_counter.next_buffer(),
+                allocation: Some(allocation),
+                resource: ManuallyDrop::new(resource),
+                base_address,
+                map_state: Mutex::new(Default::default()),
+                desc: OwnedBufferDesc::new(desc.clone()),
+            };
+            let out = Object::new_arc_opaque(out);
+            unsafe { Ok(BufferHandle::new(out)) }
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError> {
-        let resource_desc = texture_create_desc_to_dx12(desc)?;
-        let optimized_clear_value = texture_create_clear_value_to_dx12(desc, resource_desc.Format)?;
+        abort_on_unwind(|| {
+            let resource_desc = texture_create_desc_to_dx12(desc)?;
+            let optimized_clear_value =
+                texture_create_clear_value_to_dx12(desc, resource_desc.Format)?;
 
-        let allocation_desc = AllocationDesc {
-            location: MemoryLocation::GpuLocal,
-            strategy: Default::default(),
-            desc: ExtendedResourceDesc {
-                desc: resource_desc,
-                initial_layout: D3D12_BARRIER_LAYOUT_UNDEFINED,
-                optimized_clear_value: optimized_clear_value.as_ref(),
-                pcastableformats: None,
-            },
-        };
-        let (allocation, _metadata, resource) = unsafe {
-            let allocator = self.allocator.as_ref().unwrap();
-            allocator
-                .allocate_texture(self, &allocation_desc)
-                .ok_or(TextureCreateError::OutOfMemory)?
-        };
+            let allocation_desc = AllocationDesc {
+                location: MemoryLocation::GpuLocal,
+                strategy: Default::default(),
+                desc: ExtendedResourceDesc {
+                    desc: resource_desc,
+                    initial_layout: D3D12_BARRIER_LAYOUT_UNDEFINED,
+                    optimized_clear_value: optimized_clear_value.as_ref(),
+                    pcastableformats: None,
+                },
+            };
+            let (allocation, _metadata, resource) = unsafe {
+                let allocator = self.allocator.as_ref().unwrap();
+                allocator
+                    .allocate_texture(self, &allocation_desc)
+                    .ok_or(TextureCreateError::OutOfMemory)?
+            };
 
-        if let Some(name) = desc.name {
-            set_name(&resource, name).unwrap();
-        }
+            if let Some(name) = desc.name {
+                set_name(&resource, name).unwrap();
+            }
 
-        let out = Texture {
-            device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_texture(),
-            allocation: Some(allocation),
-            resource: ManuallyDrop::new(resource),
-            desc: OwnedTextureDesc::new(desc.clone()),
-            dxgi_format: resource_desc.Format,
-            views: Default::default(),
-            rtvs: Default::default(),
-            dsvs: Default::default(),
-            image_views: Mutex::new(Blink::with_chunk_size(size_of::<ImageViewObject>() * 8)),
-        };
-        let out = Object::new_arc_opaque(out);
-        unsafe { Ok(TextureHandle::new(out)) }
+            let out = Texture {
+                device: self.this.upgrade().unwrap(),
+                id: self.object_counter.next_texture(),
+                allocation: Some(allocation),
+                resource: ManuallyDrop::new(resource),
+                desc: OwnedTextureDesc::new(desc.clone()),
+                dxgi_format: resource_desc.Format,
+                views: Default::default(),
+                rtvs: Default::default(),
+                dsvs: Default::default(),
+                image_views: Mutex::new(Blink::with_chunk_size(size_of::<ImageViewObject>() * 8)),
+            };
+            let out = Object::new_arc_opaque(out);
+            unsafe { Ok(TextureHandle::new(out)) }
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_sampler(&self, desc: &SamplerDesc) -> Result<SamplerHandle, SamplerCreateError> {
-        let gpu_handle = self
-            .descriptor_heaps
-            .gpu_sampler_cache()
-            .get(desc)
-            .ok_or(SamplerCreateError::OutOfSamplers)?;
+        abort_on_unwind(|| {
+            let gpu_handle = self
+                .descriptor_heaps
+                .gpu_sampler_cache()
+                .get(desc)
+                .ok_or(SamplerCreateError::OutOfSamplers)?;
 
-        // TODO: we probably need to validate the sampler description to keep this API safe.
+            // TODO: we probably need to validate the sampler description to keep this API safe.
 
-        let out = Sampler {
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_sampler(),
-            desc: OwnedSamplerDesc::new(desc.clone()),
-            gpu_handle,
-        };
-        let out = Object::new_arc_opaque(out);
-        unsafe { Ok(SamplerHandle::new(out)) }
+            let out = Sampler {
+                _device: self.this.upgrade().unwrap(),
+                id: self.object_counter.next_sampler(),
+                desc: OwnedSamplerDesc::new(desc.clone()),
+                gpu_handle,
+            };
+            let out = Object::new_arc_opaque(out);
+            unsafe { Ok(SamplerHandle::new(out)) }
+        })
     }
 
     // ========================================================================================== //
@@ -603,104 +637,108 @@ impl IDevice for Device {
         &self,
         desc: &CommandListDesc,
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
-        // First we try and grab a command list from the free list. This way we reuse an old
-        // list before we try and make a new one. This can save a lot of performance even if the
-        // free list is a bit slow.
-        //
-        // Some drivers will lazily allocate pages for the command list on first use. If we're
-        // only using fresh allocators then we hit that (very) slow path every time. To avoid
-        // this we front creating new command pools with a free list so we recycle old ones
-        // first.
-        if let Some(list) = self.command_list_pool.get_for_queue_type(desc.queue_type) {
+        abort_on_unwind(|| {
+            // First we try and grab a command list from the free list. This way we reuse an old
+            // list before we try and make a new one. This can save a lot of performance even if the
+            // free list is a bit slow.
+            //
+            // Some drivers will lazily allocate pages for the command list on first use. If we're
+            // only using fresh allocators then we hit that (very) slow path every time. To avoid
+            // this we front creating new command pools with a free list so we recycle old ones
+            // first.
+            if let Some(list) = self.command_list_pool.get_for_queue_type(desc.queue_type) {
+                if let Some(name) = desc.name {
+                    set_name(&list.allocator, name)
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| CommandListCreateError::Platform)?;
+                    set_name(&list.list, name)
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| CommandListCreateError::Platform)?;
+                }
+
+                let FreeCommandList {
+                    allocator,
+                    list,
+                    descriptor_heaps,
+                    list_type,
+                } = list;
+
+                // It is assumed that only command lists that are safe to reuse are placed into the
+                // free list.
+                //
+                // Typically, this will be done in 'garbage_collect'.
+                let out: Box<dyn ICommandList> = Box::new(CommandList {
+                    _device: self.this.upgrade().unwrap(),
+                    allocator,
+                    list,
+                    descriptor_heaps,
+                    list_type,
+                    state: ListState::Empty,
+                });
+                return Ok(out);
+            }
+
+            log::warn!(
+                "CommandList free-object-pool empty. Taking slow-path for creating a new object!"
+            );
+
+            let platform_list_type = queue_type_to_dx12(desc.queue_type);
+
+            let allocator = unsafe {
+                self.device
+                    .CreateCommandAllocator(platform_list_type)
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| CommandListCreateError::Platform)?
+            };
+
+            let list = unsafe {
+                self.device
+                    .CreateCommandList1(0, platform_list_type, Default::default())
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| CommandListCreateError::Platform)?
+            };
+
             if let Some(name) = desc.name {
-                set_name(&list.allocator, name)
+                set_name(&allocator, name)
                     .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
                     .map_err(|_| CommandListCreateError::Platform)?;
-                set_name(&list.list, name)
+                set_name(&list, name)
                     .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
                     .map_err(|_| CommandListCreateError::Platform)?;
             }
 
-            let FreeCommandList {
-                allocator,
-                list,
-                descriptor_heaps,
-                list_type,
-            } = list;
+            let descriptor_heaps = [
+                Some(self.descriptor_heaps.gpu_view_heap().heap().clone()),
+                Some(self.descriptor_heaps.gpu_sampler_cache().heap().clone()),
+            ];
 
-            // It is assumed that only command lists that are safe to reuse are placed into the
-            // free list.
-            //
-            // Typically, this will be done in 'garbage_collect'.
-            let out: Box<dyn ICommandList> = Box::new(CommandList {
+            let command_list = CommandList {
                 _device: self.this.upgrade().unwrap(),
+                list_type: desc.queue_type,
+                descriptor_heaps,
                 allocator,
                 list,
-                descriptor_heaps,
-                list_type,
                 state: ListState::Empty,
-            });
-            return Ok(out);
-        }
-
-        log::warn!(
-            "CommandList free-object-pool empty. Taking slow-path for creating a new object!"
-        );
-
-        let platform_list_type = queue_type_to_dx12(desc.queue_type);
-
-        let allocator = unsafe {
-            self.device
-                .CreateCommandAllocator(platform_list_type)
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(|_| CommandListCreateError::Platform)?
-        };
-
-        let list = unsafe {
-            self.device
-                .CreateCommandList1(0, platform_list_type, Default::default())
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(|_| CommandListCreateError::Platform)?
-        };
-
-        if let Some(name) = desc.name {
-            set_name(&allocator, name)
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(|_| CommandListCreateError::Platform)?;
-            set_name(&list, name)
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(|_| CommandListCreateError::Platform)?;
-        }
-
-        let descriptor_heaps = [
-            Some(self.descriptor_heaps.gpu_view_heap().heap().clone()),
-            Some(self.descriptor_heaps.gpu_sampler_cache().heap().clone()),
-        ];
-
-        let command_list = CommandList {
-            _device: self.this.upgrade().unwrap(),
-            list_type: desc.queue_type,
-            descriptor_heaps,
-            allocator,
-            list,
-            state: ListState::Empty,
-        };
-        Ok(Box::new(command_list))
+            };
+            Ok(Box::new(command_list))
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_queue(&self, queue_type: QueueType) -> Option<Arc<dyn IQueue>> {
-        let device = match queue_type {
-            QueueType::General => self.general_queue.clone(),
-            QueueType::Compute => self.compute_queue.clone(),
-            QueueType::Transfer => self.transfer_queue.clone(),
-        };
-        match device {
-            None => None,
-            Some(v) => Some(v),
-        }
+        abort_on_unwind(|| -> Option<Arc<dyn IQueue>> {
+            let device = match queue_type {
+                QueueType::General => self.general_queue.clone(),
+                QueueType::Compute => self.compute_queue.clone(),
+                QueueType::Transfer => self.transfer_queue.clone(),
+            };
+            match device {
+                None => None,
+                Some(v) => Some(v),
+            }
+        })
     }
 
     // ========================================================================================== //
@@ -713,123 +751,127 @@ impl IDevice for Device {
         base: u32,
         writes: &[ParameterWrite],
     ) {
-        let layout = unwrap::parameter_block_layout(layout);
-        let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
+        abort_on_unwind(|| {
+            let layout = unwrap::parameter_block_layout(layout);
+            let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
 
-        let visitor =
-            ParameterBlockLayoutVisitor::new(layout.desc.get(), base as u64, writes).unwrap();
-        for v in visitor {
-            let param = &layout.compiled.mapping.params[v.binding as usize];
+            let visitor =
+                ParameterBlockLayoutVisitor::new(layout.desc.get(), base as u64, writes).unwrap();
+            for v in visitor {
+                let param = &layout.compiled.mapping.params[v.binding as usize];
 
-            if v.ty.is_sampler() {
-                let base_offset = param.register_offset as usize;
-                let base_offset = base_offset + v.element as usize;
+                if v.ty.is_sampler() {
+                    let base_offset = param.register_offset as usize;
+                    let base_offset = base_offset + v.element as usize;
 
-                for (i, write) in v.writes.iter().enumerate() {
-                    let final_offset = base_offset + i;
+                    for (i, write) in v.writes.iter().enumerate() {
+                        let final_offset = base_offset + i;
 
-                    match write {
-                        ParameterWrite::Sampler(write) => unsafe {
-                            let src = Sampler::get(write.sampler);
-                            let dst = block.samplers.as_mut();
-                            dst[final_offset] = Some(src.gpu_handle);
-                        },
-                        _ => unreachable!(),
+                        match write {
+                            ParameterWrite::Sampler(write) => unsafe {
+                                let src = Sampler::get(write.sampler);
+                                let dst = block.samplers.as_mut();
+                                dst[final_offset] = Some(src.gpu_handle);
+                            },
+                            _ => unreachable!(),
+                        }
                     }
-                }
-            } else {
-                let base_offset = param.storage_offset as usize;
-                let base_offset = base_offset + v.element as usize;
+                } else {
+                    let base_offset = param.storage_offset as usize;
+                    let base_offset = base_offset + v.element as usize;
 
-                for (i, write) in v.writes.iter().enumerate() {
-                    let final_offset = base_offset + i;
-                    let (dst, _) = unsafe { block.assume_r_handle() };
-                    let dst = dst.add_increments(
-                        final_offset,
-                        self.descriptor_heaps.gpu_view_heap().descriptor_increment() as usize,
-                    );
+                    for (i, write) in v.writes.iter().enumerate() {
+                        let final_offset = base_offset + i;
+                        let (dst, _) = unsafe { block.assume_r_handle() };
+                        let dst = dst.add_increments(
+                            final_offset,
+                            self.descriptor_heaps.gpu_view_heap().descriptor_increment() as usize,
+                        );
 
-                    match write {
-                        ParameterWrite::Sampler(_) => unreachable!(),
-                        ParameterWrite::Texture(write) => unsafe {
-                            // SAFETY: It is the caller's responsibility to ensure that the view
-                            //         points to a live and valid ImageViewObject. The objects are
-                            //         immutable so parallel access is safe implicitly.
-                            let src = write.image_view.into_raw::<ImageViewObject>().as_ref();
-                            let src = src.handle;
+                        match write {
+                            ParameterWrite::Sampler(_) => unreachable!(),
+                            ParameterWrite::Texture(write) => unsafe {
+                                // SAFETY: It is the caller's responsibility to ensure that the view
+                                //         points to a live and valid ImageViewObject. The objects
+                                //         are immutable so parallel access is safe implicitly.
+                                let src = write.image_view.into_raw::<ImageViewObject>().as_ref();
+                                let src = src.handle;
 
-                            self.device.CopyDescriptorsSimple(
-                                1,
-                                dst.into(),
-                                src.into(),
-                                D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-                            );
-                        },
-                        ParameterWrite::Buffer(write) => unsafe {
-                            let buffer = Buffer::get(write.buffer);
-                            match v.ty {
-                                ParameterType::ConstantBuffer => {
-                                    self.update_uniform_buffer_descriptor(buffer, write, dst);
+                                self.device.CopyDescriptorsSimple(
+                                    1,
+                                    dst.into(),
+                                    src.into(),
+                                    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+                                );
+                            },
+                            ParameterWrite::Buffer(write) => unsafe {
+                                let buffer = Buffer::get(write.buffer);
+                                match v.ty {
+                                    ParameterType::ConstantBuffer => {
+                                        self.update_uniform_buffer_descriptor(buffer, write, dst);
+                                    }
+                                    ParameterType::StructuredBuffer => {
+                                        self.update_structured_buffer_descriptor_srv(
+                                            buffer, write, dst,
+                                        );
+                                    }
+                                    ParameterType::RWStructuredBuffer => {
+                                        self.update_structured_buffer_descriptor_uav(
+                                            buffer, write, dst,
+                                        );
+                                    }
+                                    ParameterType::ByteAddressBuffer => {
+                                        self.update_byte_address_buffer_descriptor_srv(
+                                            buffer, write, dst,
+                                        );
+                                    }
+                                    ParameterType::RWByteAddressBuffer => {
+                                        self.update_byte_address_buffer_descriptor_uav(
+                                            buffer, write, dst,
+                                        );
+                                    }
+                                    ParameterType::AccelerationStructure => unimplemented!(),
+                                    _ => unreachable!(),
                                 }
-                                ParameterType::StructuredBuffer => {
-                                    self.update_structured_buffer_descriptor_srv(
-                                        buffer, write, dst,
-                                    );
+                            },
+                            ParameterWrite::TextureBuffer(write) => unsafe {
+                                let buffer = Buffer::get(write.buffer);
+                                match v.ty {
+                                    ParameterType::Buffer => {
+                                        self.update_texel_buffer_descriptor_srv(buffer, write, dst)
+                                    }
+                                    ParameterType::RWBuffer => {
+                                        self.update_texel_buffer_descriptor_uav(buffer, write, dst)
+                                    }
+                                    _ => unreachable!(),
                                 }
-                                ParameterType::RWStructuredBuffer => {
-                                    self.update_structured_buffer_descriptor_uav(
-                                        buffer, write, dst,
-                                    );
-                                }
-                                ParameterType::ByteAddressBuffer => {
-                                    self.update_byte_address_buffer_descriptor_srv(
-                                        buffer, write, dst,
-                                    );
-                                }
-                                ParameterType::RWByteAddressBuffer => {
-                                    self.update_byte_address_buffer_descriptor_uav(
-                                        buffer, write, dst,
-                                    );
-                                }
-                                ParameterType::AccelerationStructure => unimplemented!(),
-                                _ => unreachable!(),
-                            }
-                        },
-                        ParameterWrite::TextureBuffer(write) => unsafe {
-                            let buffer = Buffer::get(write.buffer);
-                            match v.ty {
-                                ParameterType::Buffer => {
-                                    self.update_texel_buffer_descriptor_srv(buffer, write, dst)
-                                }
-                                ParameterType::RWBuffer => {
-                                    self.update_texel_buffer_descriptor_uav(buffer, write, dst)
-                                }
-                                _ => unreachable!(),
-                            }
-                        },
+                            },
+                        }
                     }
                 }
             }
-        }
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_fence(&self, value: u64) -> Result<FenceHandle, FenceCreateError> {
-        let fence: ID3D12Fence = unsafe {
-            self.device
-                .CreateFence(value, D3D12_FENCE_FLAG_NONE)
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(|_| FenceCreateError::Platform)?
-        };
+        abort_on_unwind(|| {
+            let fence: ID3D12Fence = unsafe {
+                self.device
+                    .CreateFence(value, D3D12_FENCE_FLAG_NONE)
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(|_| FenceCreateError::Platform)?
+            };
 
-        let fence = Fence {
-            _device: self.this.upgrade().unwrap(),
-            fence,
-        };
-        let fence = Object::new_arc_opaque(fence);
-        unsafe { Ok(FenceHandle::new(fence)) }
+            let fence = Fence {
+                _device: self.this.upgrade().unwrap(),
+                fence,
+            };
+            let fence = Object::new_arc_opaque(fence);
+            unsafe { Ok(FenceHandle::new(fence)) }
+        })
     }
 
     // ========================================================================================== //
@@ -842,73 +884,75 @@ impl IDevice for Device {
         wait_all: bool,
         timeout: u32,
     ) -> Result<FenceWaitResult, FenceWaitError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        abort_on_unwind(|| {
+            DEVICE_BUMP.with(|bump_cell| {
+                let bump = bump_cell.scope();
 
-            match fences.len() {
-                0 => {
-                    // Do nothing on empty list,
-                    Ok(FenceWaitResult::Complete)
-                }
-                1 => {
-                    // Special case a single fence with 'SetEventOnCompletion'
-                    thread_local! {
-                        pub static WAIT_HANDLE: HANDLE = unsafe {
-                            CreateEventW(None, false, false, None).unwrap()
-                        };
+                match fences.len() {
+                    0 => {
+                        // Do nothing on empty list,
+                        Ok(FenceWaitResult::Complete)
                     }
-                    let fence = Fence::get(fences[0]);
-                    let wait_value = values[0];
+                    1 => {
+                        // Special case a single fence with 'SetEventOnCompletion'
+                        thread_local! {
+                            pub static WAIT_HANDLE: HANDLE = unsafe {
+                                CreateEventW(None, false, false, None).unwrap()
+                            };
+                        }
+                        let fence = Fence::get(fences[0]);
+                        let wait_value = values[0];
 
-                    WAIT_HANDLE.with(|handle| unsafe {
-                        fence
-                            .fence
-                            .SetEventOnCompletion(wait_value, *handle)
-                            .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                            .map_err(map_error_class)?;
-                        handle_wait_result(WaitForSingleObject(*handle, timeout))
-                    })
-                }
-                _ => {
-                    // Handle the 'n' case with 'SetEventOnMultipleFenceCompletion'
-                    thread_local! {
-
-                        pub static MULTIPLE_WAIT_HANDLE: HANDLE = unsafe {
-                            CreateEventW(None, false, false, None).unwrap()
-                        };
+                        WAIT_HANDLE.with(|handle| unsafe {
+                            fence
+                                .fence
+                                .SetEventOnCompletion(wait_value, *handle)
+                                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                                .map_err(map_error_class)?;
+                            handle_wait_result(WaitForSingleObject(*handle, timeout))
+                        })
                     }
+                    _ => {
+                        // Handle the 'n' case with 'SetEventOnMultipleFenceCompletion'
+                        thread_local! {
 
-                    // Unwrap the fences into the form accepted by D3D12, and produce a matching array
-                    // of values filled with the expected value for a signalled fence.
-                    assert_eq!(fences.len(), values.len());
-                    let mut inner_fences: BVec<Option<ID3D12Fence>, _> =
-                        BVec::with_capacity_in(fences.len(), bump.allocator());
-                    for fence in fences.iter().copied().map(Fence::get) {
-                        inner_fences.push(Some(fence.fence.clone()));
+                            pub static MULTIPLE_WAIT_HANDLE: HANDLE = unsafe {
+                                CreateEventW(None, false, false, None).unwrap()
+                            };
+                        }
+
+                        // Unwrap the fences into the form accepted by D3D12, and produce a matching array
+                        // of values filled with the expected value for a signalled fence.
+                        assert_eq!(fences.len(), values.len());
+                        let mut inner_fences: BVec<Option<ID3D12Fence>, _> =
+                            BVec::with_capacity_in(fences.len(), bump.allocator());
+                        for fence in fences.iter().copied().map(Fence::get) {
+                            inner_fences.push(Some(fence.fence.clone()));
+                        }
+
+                        MULTIPLE_WAIT_HANDLE.with(|handle| unsafe {
+                            let flags = if wait_all {
+                                D3D12_MULTIPLE_FENCE_WAIT_FLAG_ALL
+                            } else {
+                                D3D12_MULTIPLE_FENCE_WAIT_FLAG_ANY
+                            };
+
+                            self.device
+                                .SetEventOnMultipleFenceCompletion(
+                                    inner_fences.as_ptr(),
+                                    values.as_ptr(),
+                                    fences.len() as u32,
+                                    flags,
+                                    *handle,
+                                )
+                                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                                .map_err(map_error_class)?;
+
+                            handle_wait_result(WaitForSingleObject(*handle, timeout))
+                        })
                     }
-
-                    MULTIPLE_WAIT_HANDLE.with(|handle| unsafe {
-                        let flags = if wait_all {
-                            D3D12_MULTIPLE_FENCE_WAIT_FLAG_ALL
-                        } else {
-                            D3D12_MULTIPLE_FENCE_WAIT_FLAG_ANY
-                        };
-
-                        self.device
-                            .SetEventOnMultipleFenceCompletion(
-                                inner_fences.as_ptr(),
-                                values.as_ptr(),
-                                fences.len() as u32,
-                                flags,
-                                *handle,
-                            )
-                            .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                            .map_err(map_error_class)?;
-
-                        handle_wait_result(WaitForSingleObject(*handle, timeout))
-                    })
                 }
-            }
+            })
         })
     }
 
@@ -916,87 +960,95 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn get_fence_signaled_value(&self, fence: &FenceHandle) -> Result<u64, FencePollError> {
-        let fence = Fence::get(fence);
-        unsafe { Ok(fence.fence.GetCompletedValue()) }
+        abort_on_unwind(|| {
+            let fence = Fence::get(fence);
+            unsafe { Ok(fence.fence.GetCompletedValue()) }
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) -> Result<(), FenceSignalError> {
-        let fence = Fence::get(fence);
-        unsafe {
-            fence
-                .fence
-                .Signal(value)
-                .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                .map_err(map_error_class)
-        }
+        abort_on_unwind(|| {
+            let fence = Fence::get(fence);
+            unsafe {
+                fence
+                    .fence
+                    .Signal(value)
+                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                    .map_err(map_error_class)
+            }
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_backend_api(&self) -> BackendAPI {
-        BackendAPI::D3D12
+        abort_on_unwind(|| BackendAPI::D3D12)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_buffer_id(&self, buffer: &BufferHandle) -> std::num::NonZeroU64 {
-        Buffer::get(buffer).get_id()
+        abort_on_unwind(|| Buffer::get(buffer).get_id())
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
-        Buffer::get(buffer).desc()
+        abort_on_unwind(|| Buffer::get(buffer).desc())
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn map_buffer(&self, buffer: &BufferHandle) -> Result<NonNull<u8>, ResourceMapError> {
-        Buffer::get(buffer).map()
+        abort_on_unwind(|| Buffer::get(buffer).map())
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError> {
-        Buffer::get(buffer).unmap()
+        abort_on_unwind(|| Buffer::get(buffer).unmap())
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn flush_buffer_range(&self, buffer: &BufferHandle, _offset: u64, _len: u64) {
-        let _ = Buffer::get(buffer);
-        // intentional no-op
+        abort_on_unwind(|| {
+            let _ = Buffer::get(buffer);
+            // intentional no-op
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn invalidate_buffer_range(&self, buffer: &BufferHandle, _offset: u64, _len: u64) {
-        let _ = Buffer::get(buffer);
-        // intentional no-op
+        abort_on_unwind(|| {
+            let _ = Buffer::get(buffer);
+            // intentional no-op
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_texture_id(&self, texture: &TextureHandle) -> std::num::NonZeroU64 {
-        Texture::get(texture).get_id()
+        abort_on_unwind(|| Texture::get(texture).get_id())
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_texture_desc<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
-        Texture::get(texture).desc()
+        abort_on_unwind(|| Texture::get(texture).desc())
     }
 
     // ========================================================================================== //
@@ -1007,7 +1059,7 @@ impl IDevice for Device {
         texture: &TextureHandle,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
-        Texture::get(texture).get_view(desc)
+        abort_on_unwind(|| Texture::get(texture).get_view(desc))
     }
 
     // ========================================================================================== //
@@ -1018,7 +1070,7 @@ impl IDevice for Device {
         texture: &TextureHandle,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
-        Texture::get(texture).get_rtv(desc)
+        abort_on_unwind(|| Texture::get(texture).get_rtv(desc))
     }
 
     // ========================================================================================== //
@@ -1029,35 +1081,35 @@ impl IDevice for Device {
         texture: &TextureHandle,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
-        Texture::get(texture).get_dsv(desc)
+        abort_on_unwind(|| Texture::get(texture).get_dsv(desc))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_sampler_id(&self, sampler: &SamplerHandle) -> std::num::NonZeroU64 {
-        Sampler::get(sampler).id
+        abort_on_unwind(|| Sampler::get(sampler).id)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
-        Sampler::get(sampler).desc()
+        abort_on_unwind(|| Sampler::get(sampler).desc())
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_graphics_pipeline_id(&self, pipeline: &GraphicsPipelineHandle) -> std::num::NonZeroU64 {
-        GraphicsPipeline::get(pipeline).id
+        abort_on_unwind(|| GraphicsPipeline::get(pipeline).id)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_compute_pipeline_id(&self, pipeline: &ComputePipelineHandle) -> std::num::NonZeroU64 {
-        ComputePipeline::get(pipeline).id
+        abort_on_unwind(|| ComputePipeline::get(pipeline).id)
     }
 }
 
@@ -1579,11 +1631,11 @@ impl Device {
 impl Drop for Device {
     fn drop(&mut self) {
         // SAFETY: This should be safe but I can't prove it
-        unsafe {
+        abort_on_unwind(|| unsafe {
             if let Some(cookie) = self.debug_message_cookie {
                 let _sink = device_unregister_message_callback(&self.device, cookie);
             }
-        }
+        })
     }
 }
 
