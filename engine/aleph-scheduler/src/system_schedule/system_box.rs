@@ -51,7 +51,7 @@ pub struct SystemBox<T> {
 }
 
 impl<A: ScheduleArgs> SystemBox<SystemCell<A>> {
-    pub fn new<S: System<In = A, Out = ()> + Send + Sync>(label: Label, system: S) -> Self {
+    pub fn new<S: System<In = A, Out = ()> + Send>(label: Label, system: S) -> Self {
         assert!(SystemCell::<A>::is_lock_free());
         Self {
             system: SystemCell::new(Some(Box::new(Box::new(system)))),
