@@ -31,6 +31,7 @@ use std::any::Any;
 use std::io;
 use std::pin::Pin;
 
+use aleph_vfs::async_io::AsyncIoSender;
 use mg::async_resource_loader::AsyncResourceLoader;
 use smallbox::SmallBox;
 use thiserror::Error;
@@ -64,7 +65,7 @@ pub trait ITaskFactory: Send + Sync + 'static {
     /// See [`TaskFactory::task`] for more info.
     fn spawn_new<'a>(
         &self,
-        ctx: IoContext,
+        ctx: IoContext<AsyncIoSender>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
         msg: TaskPayload,
     ) -> Pin<Box<TaskFuture<'a>>>;
@@ -179,7 +180,7 @@ pub trait TaskFactory: Send + Sync + 'static {
     /// RHI with no intermediate copies within the engine.
     async fn task(
         ctx: Self::Context,
-        io: IoContext,
+        io: IoContext<AsyncIoSender>,
         loader: &AsyncResourceLoader<ResourceLoadHandle>,
         msg: Self::Payload,
     ) -> TaskResult<()>;
@@ -188,7 +189,7 @@ pub trait TaskFactory: Send + Sync + 'static {
 impl<T: TaskFactory> ITaskFactory for T {
     fn spawn_new<'a>(
         &self,
-        io: IoContext,
+        io: IoContext<AsyncIoSender>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
         msg: TaskPayload,
     ) -> Pin<Box<TaskFuture<'a>>> {

@@ -32,28 +32,49 @@ use std::io;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::ptr::NonNull;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use aleph_gen_arena::{HandleType, RawHandle};
-use aleph_vfs::async_io::{AsyncIoMessage, AsyncIoSender};
+use aleph_io_queue::channel::{LoadChannel, OpenChannel, ReadChannel};
+use aleph_vfs::async_io::AsyncIoMessage;
 use aleph_vfs::file::{IAsyncVFile, IAsyncVFileExt};
-use crossbeam::channel::Sender;
+use aleph_vfs::path::VPath;
+use aleph_vfs::{IRouter, IRouterExt};
 
-use crate::core::async_io::futures::AsyncRead;
+use crate::core::async_io::futures::{FileLoad, FileOpen, FileRead};
 
 /// Context struct given to all async tasks that provides access to the executor and vfs.
 ///
 /// Provides utilities so file IO can be performed asynchronously in a way the executor is able to
 /// wake and poll the correct future with our completion based async io system.
-pub struct IoContext {
+pub struct IoContext<T> {
     pub(crate) handle: RawHandle,
-    pub(crate) sender: Sender<AsyncIoMessage>,
+    pub(crate) sender: T,
     pub(crate) response_slot: Rc<Cell<Option<AsyncIoMessage>>>,
 }
 
-impl UnwindSafe for IoContext {}
-impl RefUnwindSafe for IoContext {}
+impl<T> UnwindSafe for IoContext<T> where
+    T: ReadChannel<Arc<VPath>>
+        + LoadChannel<Arc<VPath>>
+        + OpenChannel<Arc<dyn IAsyncVFile>>
+        + Clone
+{
+}
+impl<T> RefUnwindSafe for IoContext<T> where
+    T: ReadChannel<Arc<VPath>>
+        + LoadChannel<Arc<VPath>>
+        + OpenChannel<Arc<dyn IAsyncVFile>>
+        + Clone
+{
+}
 
-impl IoContext {
+impl<T> IoContext<T>
+where
+    T: ReadChannel<Arc<VPath>>
+        + LoadChannel<Arc<VPath>>
+        + OpenChannel<Arc<dyn IAsyncVFile>>
+        + Clone,
+{
     /// Wrapper over [`IAsyncVFile::read_at`] that will correctly route the completion responses
     /// to the executor the future is running in.
     pub unsafe fn read_file_at(
@@ -61,12 +82,12 @@ impl IoContext {
         file: &dyn IAsyncVFile,
         buf: NonNull<[u8]>,
         offset: u64,
-    ) -> io::Result<AsyncRead<'_>> {
+    ) -> io::Result<FileRead<'_>> {
         unsafe {
             file.read_at(
                 buf,
                 offset,
-                AsyncIoSender(self.sender.clone()),
+                self.sender.clone(),
                 self.handle.to_bare_handle().into_int().get(),
             )
             .map_err(|_| {
@@ -76,7 +97,7 @@ impl IoContext {
                 )
             })?;
         }
-        Ok(AsyncRead {
+        Ok(FileRead {
             response_slot: self.response_slot.as_ref(),
         })
     }
@@ -88,12 +109,12 @@ impl IoContext {
         file: &dyn IAsyncVFile,
         buf: NonNull<[u8]>,
         offset: u64,
-    ) -> io::Result<AsyncRead<'_>> {
+    ) -> io::Result<FileRead<'_>> {
         unsafe {
             file.read_exact_at(
                 buf,
                 offset,
-                AsyncIoSender(self.sender.clone()),
+                self.sender.clone(),
                 self.handle.to_bare_handle().into_int().get(),
             )
             .map_err(|_| {
@@ -103,16 +124,16 @@ impl IoContext {
                 )
             })?;
         }
-        Ok(AsyncRead {
+        Ok(FileRead {
             response_slot: self.response_slot.as_ref(),
         })
     }
 
     /// Wrapper over [`IAsyncVFile::load_file`] that will correctly route the completion responses
     /// to the executor the future is running in.
-    pub fn load_file(&self, file: &dyn IAsyncVFile) -> io::Result<AsyncRead<'_>> {
+    pub fn load_file(&self, file: &dyn IAsyncVFile) -> io::Result<FileLoad<'_>> {
         file.load(
-            AsyncIoSender(self.sender.clone()),
+            self.sender.clone(),
             self.handle.to_bare_handle().into_int().get(),
         )
         .map_err(|_| {
@@ -121,7 +142,30 @@ impl IoContext {
                 "The async file worker has disconnected.",
             )
         })?;
-        Ok(AsyncRead {
+        Ok(FileLoad {
+            response_slot: self.response_slot.as_ref(),
+        })
+    }
+
+    /// Wrapper over [`IRouter::open_file`] that will correctly route the completion responses
+    /// to the executor the future is running in.
+    pub fn open_file(
+        &self,
+        vfs: &dyn IRouter,
+        path: impl AsRef<VPath>,
+    ) -> io::Result<FileOpen<'_>> {
+        vfs.open_async(
+            self.sender.clone(),
+            path,
+            self.handle.to_bare_handle().into_int().get(),
+        )
+        .map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::ConnectionAborted,
+                "The async file worker has disconnected.",
+            )
+        })?;
+        Ok(FileOpen {
             response_slot: self.response_slot.as_ref(),
         })
     }

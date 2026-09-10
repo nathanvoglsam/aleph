@@ -30,9 +30,9 @@
 use std::ptr::NonNull;
 use std::sync::Arc;
 
-use aleph_vfs::async_io::AsyncIoMessage;
+use aleph_vfs::IRouter;
+use aleph_vfs::async_io::AsyncIoSender;
 use aleph_vfs::path::VPathBuf;
-use aleph_vfs::{IRouter, IRouterExt};
 use mg::async_resource_loader::AsyncResourceLoader;
 
 use crate::core::async_io::context::IoContext;
@@ -78,7 +78,7 @@ impl TaskFactory for BufferLoadTask {
 
     async fn task(
         ctx: Self::Context,
-        io: IoContext,
+        io: IoContext<AsyncIoSender>,
         loader: &AsyncResourceLoader<ResourceLoadHandle>,
         msg: Self::Payload,
     ) -> TaskResult<()> {
@@ -97,7 +97,15 @@ impl TaskFactory for BufferLoadTask {
         };
 
         let path = msg.path.as_path();
-        let file = match ctx.vfs.open_for_async(path) {
+        let result = match io.open_file(ctx.vfs.as_ref(), path) {
+            Ok(v) => v,
+            Err(e) => {
+                log::error!("Failed to open file '{path}' with error '{e:?}'.");
+                loader.fail_buffer_load(handle);
+                return Err(TaskError::Io(e));
+            }
+        };
+        let file = match result.await {
             Ok(v) => v,
             Err(e) => {
                 log::error!("Failed to open file '{path}' with error '{e:?}'.");
@@ -134,12 +142,8 @@ impl TaskFactory for BufferLoadTask {
                     }
                 };
 
-            let response = future.await;
-
-            match response {
-                AsyncIoMessage::ReadSuccess {
-                    bytes_transferred, ..
-                } => {
+            match future.await {
+                Ok(bytes_transferred) => {
                     file_offset = file_offset + bytes_transferred as u64;
                     buffer = unsafe {
                         let remaining = buffer.len() - bytes_transferred;
@@ -149,16 +153,12 @@ impl TaskFactory for BufferLoadTask {
                         )
                     };
                 }
-                AsyncIoMessage::ReadFail { err, .. } => {
+                Err(err) => {
                     // There are no in-flight IO requests on this request so it is safe to fail it.
                     log::error!("Failed to read file '{path}' with error '{err:?}'.");
                     loader.fail_buffer_load(handle);
                     return Err(TaskError::Io(err));
                 }
-                AsyncIoMessage::LoadSuccess { .. } => {}
-                AsyncIoMessage::LoadFail { .. } => {}
-                AsyncIoMessage::OpenSuccess { .. } => {}
-                AsyncIoMessage::OpenFail { .. } => {}
             }
         }
 

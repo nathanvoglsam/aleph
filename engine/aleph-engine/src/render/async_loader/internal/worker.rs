@@ -40,7 +40,7 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use aleph_gen_arena::{GenArena, RawHandle};
-use aleph_vfs::async_io::AsyncIoMessage;
+use aleph_vfs::async_io::{AsyncIoMessage, AsyncIoSender};
 use crossbeam::channel::{Receiver, RecvError, Sender, unbounded};
 use crossbeam::select;
 use mg::async_resource_loader::loader_notify::LoaderNotify;
@@ -294,7 +294,7 @@ impl AsyncLoaderWorker {
         let task = tasks.alloc_cyclic(move |handle| {
             let ctx = IoContext {
                 handle,
-                sender: response_send.clone(),
+                sender: AsyncIoSender(response_send.clone()),
                 response_slot: response_slot.clone(),
             };
             msg.factory.spawn_new(ctx, loader, msg.message)
