@@ -27,23 +27,4 @@
 // SOFTWARE.
 //
 
-// =================================================================================================
-// Crate Imports
-// =================================================================================================
-
-// Re-export useful crates
-pub extern crate aleph_egui as egui;
-pub extern crate aleph_engine_api as api;
-pub extern crate aleph_magnesium as mg;
-pub extern crate aleph_rhi_api as rhi;
-pub extern crate aleph_target as target;
-
-// =================================================================================================
-// Modules
-// =================================================================================================
-
-pub mod core;
-pub mod engine;
-pub mod gltf;
-pub mod plugin_registry;
-pub mod render;
+pub mod gltf_scene_loader_requests;

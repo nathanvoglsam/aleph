@@ -27,23 +27,17 @@
 // SOFTWARE.
 //
 
-// =================================================================================================
-// Crate Imports
-// =================================================================================================
+use aleph_object_system::unsafe_impl_iobject;
 
-// Re-export useful crates
-pub extern crate aleph_egui as egui;
-pub extern crate aleph_engine_api as api;
-pub extern crate aleph_magnesium as mg;
-pub extern crate aleph_rhi_api as rhi;
-pub extern crate aleph_target as target;
+pub struct GltfSceneLoaderRequests {}
 
-// =================================================================================================
-// Modules
-// =================================================================================================
+impl GltfSceneLoaderRequests {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
 
-pub mod core;
-pub mod engine;
-pub mod gltf;
-pub mod plugin_registry;
-pub mod render;
+unsafe_impl_iobject!(
+    GltfSceneLoaderRequests,
+    "01a07569-c4be-7b23-8243-86ec89e6861e"
+);

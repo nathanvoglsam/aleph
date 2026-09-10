@@ -124,7 +124,7 @@ impl<A: ScheduleArgs> Schedule<A> {
     #[inline]
     pub fn set_run_criteria<
         Param,
-        T: System<In = (), Out = ShouldRun> + Send + Sync,
+        T: System<In = (), Out = ShouldRun> + Send,
         S: IntoSystem<(), ShouldRun, Param, System = T>,
     >(
         &mut self,
@@ -216,7 +216,7 @@ impl<A: ScheduleArgs> Schedule<A> {
     #[inline]
     pub fn add_system_to_stage<
         Param,
-        T: System<In = A, Out = ()> + Send + Sync,
+        T: System<In = A, Out = ()> + Send,
         S: IntoSystem<A, (), Param, System = T>,
     >(
         &mut self,

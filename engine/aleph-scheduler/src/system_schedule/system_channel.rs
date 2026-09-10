@@ -73,7 +73,7 @@ impl<A, T> Default for SystemChannel<A, T> {
 impl<A: ScheduleArgs> SystemChannel<A, SystemCell<A>> {
     pub fn add_system<
         Param,
-        T: System<In = A, Out = ()> + Send + Sync,
+        T: System<In = A, Out = ()> + Send,
         S: IntoSystem<A, (), Param, System = T>,
     >(
         &mut self,

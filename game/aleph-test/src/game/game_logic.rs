@@ -136,23 +136,6 @@ impl IPlugin for PluginGameLogic {
 
         let standard_material = StandardMaterial::new();
 
-        // let async_texture_loader = AsyncTextureLoader::new(renderer.device().upgrade());
-
-        // let mut arena = BumpThingy::new(renderer.device());
-
-        // let mut thinkers = Vec::new();
-        // for scene in config.scenes.iter() {
-        //     load_scene(
-        //         world,
-        //         renderer,
-        //         &mut arena,
-        //         &mut thinkers,
-        //         &standard_material,
-        //         &async_texture_loader,
-        //         Path::new(&scene),
-        //     );
-        // }
-
         let (idx, vtx) = upload_cube_buffers(renderer);
 
         let white_tex =
@@ -211,25 +194,14 @@ impl IPlugin for PluginGameLogic {
             },
         ));
 
-        // resources.insert(async_texture_loader);
-
         let mut free_camera = FreeCamera::new(frame_timer.clone(), gamepads.get_accessor(), camera);
         let throbber_logic = ThrobberLogic::new(frame_timer.clone(), throbber);
         schedule.add_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::logic"),
-            move |(mut world, mut renderer): (ResMut<WorldResource>, ResMut<Renderer>)| {
+            move |mut world: ResMut<WorldResource>| {
                 free_camera.tick(&mut world.0);
                 throbber_logic.tick(&mut world.0);
-                // loader.think(&mut renderer);
-                // thinkers.retain_mut(|t| match t.poll_and_resolve(&mut renderer) {
-                //     PollResult::Success => false,
-                //     PollResult::Waiting => true,
-                //     PollResult::Fail => {
-                //         log::error!("Thinker Failed!");
-                //         false
-                //     }
-                // });
             },
         );
     }

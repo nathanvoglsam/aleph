@@ -37,7 +37,7 @@ use crate::system::System;
 use crate::system_schedule::access_descriptor::SystemAccessDescriptor;
 
 /// Type alias for a boxed system trait object
-pub type BoxedSystem<A> = Box<dyn System<In = A, Out = ()> + Send + Sync>;
+pub type BoxedSystem<A> = Box<dyn System<In = A, Out = ()> + Send>;
 
 /// Type alias for a boxed system trait object
 pub type BoxedExclusiveSystem<A> = Box<dyn System<In = A, Out = ()>>;
