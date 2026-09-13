@@ -27,12 +27,13 @@
 // SOFTWARE.
 //
 
+use std::io;
+
 use mg::async_resource_loader::buffer_upload_range::BufferUploadRange;
 use mg::async_resource_loader::{
     AllocateRangeError, AsyncResourceLoader, BufferLoadHandle, RetireError,
 };
 
-use crate::render::async_loader::internal::task::{TaskError, TaskResult};
 use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
 
 /// Utility wrapper over [`AsyncResourceLoader::allocate_range_for_buffer_load`] that handles
@@ -47,7 +48,7 @@ use crate::render::async_loader::resources::async_loader_requests::ResourceLoadH
 pub fn try_allocate_buffer_range_for(
     loader: &AsyncResourceLoader<ResourceLoadHandle>,
     handle: BufferLoadHandle,
-) -> TaskResult<Option<BufferUploadRange<'_, ResourceLoadHandle>>> {
+) -> io::Result<Option<BufferUploadRange<'_, ResourceLoadHandle>>> {
     let mut attempt = 0;
     'alloc: loop {
         match loader.allocate_range_for_buffer_load(handle, u64::MAX) {
@@ -62,7 +63,7 @@ pub fn try_allocate_buffer_range_for(
                 // hit this case. We never ask for more data before
                 // submitting an existing block.
                 log::error!("Upload memory allocation failed with 'OutstandingRange' error.");
-                return Err(TaskError::Other);
+                return Err(io::Error::from(io::ErrorKind::Other));
             }
             Err(AllocateRangeError::NotEnoughUploadMemory) => {
                 // If we run out of memory in the internal pool then we must
@@ -79,19 +80,20 @@ pub fn try_allocate_buffer_range_for(
                             continue 'alloc;
                         }
                         Err(RetireError::DeviceLost) => {
-                            return Err(TaskError::DeviceLost);
+                            log::error!("GPU device lost.");
+                            return Err(io::Error::from(io::ErrorKind::Other));
                         }
                         Err(RetireError::RendererDisconnected) => {
-                            return Err(TaskError::RendererDisconnected);
+                            log::error!("Renderer disconnected.");
+                            return Err(io::Error::from(io::ErrorKind::ConnectionAborted));
                         }
                         Err(RetireError::WaitFailure) => {
-                            log::error!("Failed to wait on the GPU.");
-                            return Err(TaskError::FatalAbort);
+                            panic!("Failed to wait on the GPU.");
                         }
                     }
                 } else {
                     log::error!("Not enough memory in async loader pool.");
-                    return Err(TaskError::NotEnoughMemory);
+                    return Err(io::Error::from(io::ErrorKind::OutOfMemory));
                 }
             }
             Err(AllocateRangeError::LoadHandleInvalid) => {
@@ -101,14 +103,15 @@ pub fn try_allocate_buffer_range_for(
                 return Ok(None);
             }
             Err(AllocateRangeError::DeviceLost) => {
-                return Err(TaskError::DeviceLost);
+                log::error!("GPU device lost.");
+                return Err(io::Error::from(io::ErrorKind::Other));
             }
             Err(AllocateRangeError::WaitFailure) => {
-                log::error!("Failed to wait on the GPU.");
-                return Err(TaskError::FatalAbort);
+                panic!("Failed to wait on the GPU.");
             }
             Err(AllocateRangeError::RendererDisconnected) => {
-                return Err(TaskError::RendererDisconnected);
+                log::error!("Renderer disconnected.");
+                return Err(io::Error::from(io::ErrorKind::ConnectionAborted));
             }
         }
     }

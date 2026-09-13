@@ -61,6 +61,7 @@ aleph-sys-info = { workspace = true }
 aleph-profile = { workspace = true }
 aleph-config = { workspace = true }
 aleph-identity-hasher = { workspace = true }
+aleph-io-queue = { workspace = true }
 aleph-rhi-loader = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-objc = { workspace = true }

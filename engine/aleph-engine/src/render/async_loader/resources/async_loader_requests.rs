@@ -27,21 +27,57 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
+
 use aleph_gen_arena::{GenArena, Handle, make_handle_id};
 use aleph_object_system::unsafe_impl_iobject;
+use aleph_vfs::IRouter;
 use api::ecs::entity::EntityHandle;
 
 use crate::core::alloc::EngineSystem;
+use crate::core::async_io::task::ITaskFactory;
+use crate::core::async_io::worker::AsyncLoaderQueue;
+use crate::render::async_loader::internal::buffer_load::{BufferLoadPayload, BufferLoadTask};
 
 pub struct AsyncLoaderRequests {
     pub(crate) states: GenArena<ResourceLoadState, ResourceLoadHandle, EngineSystem>,
+    pub(crate) buffer_loader: Arc<dyn ITaskFactory>,
 }
 
 impl AsyncLoaderRequests {
-    pub fn new() -> Self {
+    pub(crate) fn new(vfs: Arc<dyn IRouter>) -> Self {
         Self {
             states: GenArena::new_in(),
+            buffer_loader: BufferLoadTask::new(vfs),
         }
+    }
+
+    pub fn spawn_vertex_buffer_load(&mut self, queue: &AsyncLoaderQueue, entity: EntityHandle) {
+        let load_handle = self
+            .states
+            .alloc(ResourceLoadState::VertexBuffer { entity });
+        let _ = queue.spawn(
+            self.buffer_loader.clone(),
+            BufferLoadPayload {
+                cookie: load_handle,
+                path: "i".into(),
+                offset: 0,
+                size: 0,
+            },
+        );
+    }
+
+    pub fn spawn_index_buffer_load(&mut self, queue: &AsyncLoaderQueue, entity: EntityHandle) {
+        let load_handle = self.states.alloc(ResourceLoadState::IndexBuffer { entity });
+        let _ = queue.spawn(
+            self.buffer_loader.clone(),
+            BufferLoadPayload {
+                cookie: load_handle,
+                path: "i".into(),
+                offset: 0,
+                size: 0,
+            },
+        );
     }
 }
 

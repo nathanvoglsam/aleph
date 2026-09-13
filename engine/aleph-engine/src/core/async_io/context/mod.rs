@@ -27,11 +27,9 @@
 // SOFTWARE.
 //
 
-use std::cell::Cell;
 use std::io;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::ptr::NonNull;
-use std::rc::Rc;
 use std::sync::Arc;
 
 use aleph_gen_arena::{HandleType, RawHandle};
@@ -40,6 +38,7 @@ use aleph_vfs::async_io::AsyncIoMessage;
 use aleph_vfs::file::{IAsyncVFile, IAsyncVFileExt};
 use aleph_vfs::path::VPath;
 use aleph_vfs::{IRouter, IRouterExt};
+use crossbeam::queue::ArrayQueue;
 
 use crate::core::async_io::futures::{FileLoad, FileOpen, FileRead};
 
@@ -50,7 +49,7 @@ use crate::core::async_io::futures::{FileLoad, FileOpen, FileRead};
 pub struct IoContext<T> {
     pub(crate) handle: RawHandle,
     pub(crate) sender: T,
-    pub(crate) response_slot: Rc<Cell<Option<AsyncIoMessage>>>,
+    pub(crate) response_slot: Arc<ArrayQueue<AsyncIoMessage>>,
 }
 
 impl<T> UnwindSafe for IoContext<T> where
@@ -91,10 +90,8 @@ where
                 self.handle.to_bare_handle().into_int().get(),
             )
             .map_err(|_| {
-                io::Error::new(
-                    io::ErrorKind::ConnectionAborted,
-                    "The async file worker has disconnected.",
-                )
+                log::error!("The async file worker has disconnected.");
+                io::Error::from(io::ErrorKind::ConnectionAborted)
             })?;
         }
         Ok(FileRead {
@@ -118,10 +115,8 @@ where
                 self.handle.to_bare_handle().into_int().get(),
             )
             .map_err(|_| {
-                io::Error::new(
-                    io::ErrorKind::ConnectionAborted,
-                    "The async file worker has disconnected.",
-                )
+                log::error!("The async file worker has disconnected.");
+                io::Error::from(io::ErrorKind::ConnectionAborted)
             })?;
         }
         Ok(FileRead {
@@ -137,10 +132,8 @@ where
             self.handle.to_bare_handle().into_int().get(),
         )
         .map_err(|_| {
-            io::Error::new(
-                io::ErrorKind::ConnectionAborted,
-                "The async file worker has disconnected.",
-            )
+            log::error!("The async file worker has disconnected.");
+            io::Error::from(io::ErrorKind::ConnectionAborted)
         })?;
         Ok(FileLoad {
             response_slot: self.response_slot.as_ref(),
@@ -160,10 +153,8 @@ where
             self.handle.to_bare_handle().into_int().get(),
         )
         .map_err(|_| {
-            io::Error::new(
-                io::ErrorKind::ConnectionAborted,
-                "The async file worker has disconnected.",
-            )
+            log::error!("The async file worker has disconnected.");
+            io::Error::from(io::ErrorKind::ConnectionAborted)
         })?;
         Ok(FileOpen {
             response_slot: self.response_slot.as_ref(),

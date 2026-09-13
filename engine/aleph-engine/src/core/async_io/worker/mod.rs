@@ -28,41 +28,46 @@
 //
 
 use std::any::Any;
-use std::cell::Cell;
 use std::num::NonZero;
 use std::pin::Pin;
-use std::process::abort;
-use std::rc::Rc;
 use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
-use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
+use std::{io, thread};
 
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_gen_arena::{GenArena, RawHandle};
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_vfs::async_io::{AsyncIoMessage, AsyncIoSender};
-use crossbeam::channel::{Receiver, RecvError, Sender, unbounded};
+use crossbeam::channel::{Receiver, RecvError, SendError, Sender, unbounded};
+use crossbeam::queue::ArrayQueue;
 use crossbeam::select;
 use mg::async_resource_loader::loader_notify::LoaderNotify;
 use mg::async_resource_loader::{AsyncResourceLoader, FlushError};
 
-use crate::core::alloc::EngineSystem;
+use crate::core::alloc::{Engine, EngineSystem};
 use crate::core::async_io::context::IoContext;
-use crate::render::async_loader::internal::task::{
-    ITaskFactory, TaskError, TaskFuture, TaskPayload, TaskResult,
-};
+use crate::core::async_io::task::{ITaskFactory, TaskFuture, TaskPayload};
 use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
 
-pub struct WorkerTask {
-    factory: Arc<dyn ITaskFactory>,
-    message: TaskPayload,
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct AsyncLoaderQueue {
+    sender: Sender<WorkerTask>,
 }
 
-impl WorkerTask {
-    pub fn new<T: Any + Send + 'static>(factory: Arc<dyn ITaskFactory>, message: T) -> Self {
-        Self {
-            factory,
-            message: smallbox::smallbox!(message),
+unsafe_impl_iobject!(AsyncLoaderQueue, "01a09968-96a7-7521-84fa-6824a6e21498");
+
+impl AsyncLoaderQueue {
+    pub fn spawn<T: Any + Send + 'static>(
+        &self,
+        factory: Arc<dyn ITaskFactory>,
+        message: T,
+    ) -> Result<(), SendError<()>> {
+        match self.sender.send(WorkerTask::new(factory, message)) {
+            Ok(()) => Ok(()),
+            Err(_) => Err(SendError(())),
         }
     }
 }
@@ -77,7 +82,7 @@ impl AsyncLoaderWorker {
         renderer: &mut mg::renderer::Renderer,
     ) -> Option<(
         JoinHandle<()>,
-        Sender<WorkerTask>,
+        AsyncLoaderQueue,
         LoaderNotify<ResourceLoadHandle>,
     )> {
         let (loader, loader_notify) = renderer.create_async_resource_loader(Default::default())?;
@@ -87,7 +92,7 @@ impl AsyncLoaderWorker {
 
     pub fn spawn(
         loader: AsyncResourceLoader<ResourceLoadHandle>,
-    ) -> (JoinHandle<()>, Sender<WorkerTask>) {
+    ) -> (JoinHandle<()>, AsyncLoaderQueue) {
         let (request_send, request_recv) = unbounded();
 
         let mut this = Self {
@@ -97,10 +102,12 @@ impl AsyncLoaderWorker {
 
         let handle = thread::Builder::new()
             .name("async-worker".into())
-            .spawn(move || {
-                this.run();
-            })
+            .spawn(move || Engine::with(|| this.run()))
             .expect("Failed to spawn AsyncLoaderWorker thread");
+
+        let request_send = AsyncLoaderQueue {
+            sender: request_send,
+        };
 
         (handle, request_send)
     }
@@ -108,7 +115,7 @@ impl AsyncLoaderWorker {
     pub fn run(&mut self) {
         let request_recv = &self.request_recv;
         let (response_send, response_recv) = unbounded();
-        let response_slot = Rc::new(Cell::new(None));
+        let response_slot = Arc::new(ArrayQueue::new(1));
 
         {
             let tasks = GenArena::new_in();
@@ -128,7 +135,7 @@ impl AsyncLoaderWorker {
         request_recv: &'a Receiver<WorkerTask>,
         response_recv: &'a Receiver<AsyncIoMessage>,
         response_send: &'a Sender<AsyncIoMessage>,
-        response_slot: Rc<Cell<Option<AsyncIoMessage>>>,
+        response_slot: Arc<ArrayQueue<AsyncIoMessage>>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
     ) {
         let mut should_close = false;
@@ -137,19 +144,32 @@ impl AsyncLoaderWorker {
                 break 'main;
             }
 
-            let result: Poll<TaskResult<()>> = select! {
-                recv(request_recv) -> msg => Self::worker_message(
-                    &mut tasks,
-                    response_send,
-                    &response_slot,
-                    loader,
-                    msg,
-                ),
-                recv(response_recv) -> msg => Self::async_message(
-                    &mut tasks,
-                    &response_slot,
-                    msg,
-                ),
+            let result: io::Result<()> = select! {
+                recv(request_recv) -> msg => {
+                    let result = Self::worker_message(
+                        &mut should_close,
+                        &mut tasks,
+                        response_send,
+                        &response_slot,
+                        loader,
+                        msg,
+                    );
+                    match result {
+                        Poll::Ready(v) => v,
+                        Poll::Pending => continue 'main,
+                    }
+                },
+                recv(response_recv) -> msg => {
+                    let result = Self::async_message(
+                        &mut tasks,
+                        &response_slot,
+                        msg,
+                    );
+                    match result {
+                        Poll::Ready(v) => v,
+                        Poll::Pending => continue 'main,
+                    }
+                },
                 default(Duration::from_millis(8)) => 'timeout: {
                     // If we've gone to sleep for an extended time it's likely that we've retired
                     // all our work. It's possible that there are submitted uploads that aren't
@@ -160,26 +180,27 @@ impl AsyncLoaderWorker {
                     // going into a deeper sleep.
                     match loader.flush_submitted_uploads() {
                         Ok(_) => {},
-                        Err(FlushError::DeviceLost) => {
-                            log::error!("GPU device lost.");
-                            break 'timeout Poll::Ready(Err(TaskError::DeviceLost))
+                        Err(e @ FlushError::DeviceLost) => {
+                            log::error!("Error: {e:?}");
+                            break 'timeout Err(io::Error::from(io::ErrorKind::Other));
                         }
-                        Err(FlushError::RendererDisconnected) => {
-                            log::error!("Target renderer has been destroyed.");
-                            break 'timeout Poll::Ready(Err(TaskError::RendererDisconnected))
+                        Err(e @ FlushError::RendererDisconnected) => {
+                            log::error!("Error: {e:?}");
+                            break 'timeout Err(io::Error::from(io::ErrorKind::ConnectionAborted));
                         }
                         Err(e @ FlushError::CommandRecordingFailure) => {
-                            log::error!("Fatal: {e:?}");
-                            break 'timeout Poll::Ready(Err(TaskError::CommandRecordingFailure))
+                            log::error!("Error: {e:?}");
+                            break 'timeout Err(io::Error::from(io::ErrorKind::Other));
                         }
                         Err(e @ FlushError::WaitFailure) => {
-                            log::error!("Fatal: {e:?}");
-                            break 'timeout Poll::Ready(Err(TaskError::FatalAbort))
+                            log::error!("Error: {e:?}");
+                            abort_unwind(|| panic!("Error: {e:?}"))
                         }
                     };
 
-                    select! {
+                    let result = select! {
                         recv(request_recv) -> msg => Self::worker_message(
+                            &mut should_close,
                             &mut tasks,
                             response_send,
                             &response_slot,
@@ -191,14 +212,12 @@ impl AsyncLoaderWorker {
                             &response_slot,
                             msg,
                         ),
+                    };
+                    match result {
+                        Poll::Ready(v) => v,
+                        Poll::Pending => continue 'main,
                     }
                 },
-            };
-
-            // Task still waiting, go back to sleep waiting for responses
-            let result = match result {
-                Poll::Ready(v) => v,
-                Poll::Pending => continue 'main,
             };
 
             // We completed, but was there an error? We may need to handle it. No errors? Back to
@@ -208,86 +227,24 @@ impl AsyncLoaderWorker {
                 Ok(_) => continue 'main,
             };
 
-            match error {
-                // This class of error is (slightly) less catastrophic than 'FatalAbort'. In this
-                // case we might be able to still unwind the stack and shutdown cleanly.
-                TaskError::RendererDisconnected
-                | TaskError::CommandRecordingFailure
-                | TaskError::DeviceLost => {
-                    'inner: for (_, mut task) in tasks.drain() {
-                        response_slot.set(None);
-                        let result = abort_unwind(|| {
-                            task.as_mut().poll(&mut Context::from_waker(Waker::noop()))
-                        });
-                        let result = match result {
-                            Poll::Ready(v) => v,
-                            Poll::Pending => {
-                                // If any futures are still outstanding we must abort.
-                                // Because we use completion based futures that lend memory
-                                // from the future onto the async io system it is not
-                                // possible to drop futures if they are still pending.
-                                log::error!("Fatal exit promoted to abort");
-                                abort()
-                            }
-                        };
-                        let error = match result {
-                            Err(e) => e,
-                            Ok(_) => continue 'inner,
-                        };
-                        match error {
-                            TaskError::FatalAbort => {
-                                log::error!("Fatal exit promoted to abort");
-                                abort()
-                            }
-                            TaskError::Io(_)
-                            | TaskError::NotEnoughMemory
-                            | TaskError::ResourceCreationFailed
-                            | TaskError::DeviceLost
-                            | TaskError::RendererDisconnected
-                            | TaskError::SenderDisconnected
-                            | TaskError::CommandRecordingFailure
-                            | TaskError::Other => {}
-                        }
-                    }
-                    break 'main;
-                }
-                // There are some failure conditions that can only be safely handled by
-                // aborting. Basically anything where the async lifetimes get hairy or
-                // impossible to resolve cleanly.
-                //
-                // Some classes of GPU errors will cause this. Depending on where we
-                // fail it might also be caused by IO.
-                TaskError::FatalAbort => {
-                    log::error!("A catastrophic fatal error occurred. Aborting...");
-                    abort();
-                }
-                // These error classes are simply failures of an individual task and do not
-                // constitute failure of the entire loader. We can safely continue from
-                // these.
-                TaskError::Io(_)
-                | TaskError::NotEnoughMemory
-                | TaskError::ResourceCreationFailed
-                | TaskError::Other => continue 'main,
-                TaskError::SenderDisconnected => {
-                    should_close = true;
-                    continue 'main;
-                }
-            }
+            log::error!("Async IO task failed with error: '{error:?}'");
         }
     }
 
     fn worker_message<'a>(
+        should_close: &mut bool,
         tasks: &mut Tasks<'a>,
         response_send: &Sender<AsyncIoMessage>,
-        response_slot: &Rc<Cell<Option<AsyncIoMessage>>>,
+        response_slot: &Arc<ArrayQueue<AsyncIoMessage>>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
         msg: Result<WorkerTask, RecvError>,
-    ) -> Poll<TaskResult<()>> {
+    ) -> Poll<io::Result<()>> {
         let msg = match msg {
             Ok(v) => v,
             Err(_) => {
                 log::error!("AsyncLoaderWorker message sender disconnected.");
-                return Poll::Ready(Err(TaskError::SenderDisconnected));
+                *should_close = true;
+                return Poll::Ready(Ok(()));
             }
         };
 
@@ -305,34 +262,34 @@ impl AsyncLoaderWorker {
 
     fn async_message<'a>(
         tasks: &mut Tasks<'a>,
-        response_slot: &Cell<Option<AsyncIoMessage>>,
+        response_slot: &ArrayQueue<AsyncIoMessage>,
         msg: Result<AsyncIoMessage, RecvError>,
-    ) -> Poll<TaskResult<()>> {
+    ) -> Poll<io::Result<()>> {
         let msg = match msg {
             Ok(v) => v,
             Err(_) => {
                 log::error!("Async IO queue disconnected.");
-                return Poll::Ready(Err(TaskError::Other));
+                return Poll::Ready(Err(io::Error::from(io::ErrorKind::Other)));
             }
         };
 
         let task = msg.opaque();
         let task = match NonZero::new(task) {
-            None => return Poll::Ready(Err(TaskError::Other)),
+            None => return Poll::Ready(Err(io::Error::from(io::ErrorKind::Other))),
             Some(v) => v,
         };
         let task = RawHandle::from_int(task);
 
-        response_slot.set(Some(msg));
+        response_slot.force_push(msg);
 
         Self::poll_task(tasks, task)
     }
 
-    fn poll_task(tasks: &mut Tasks, handle: RawHandle) -> Poll<TaskResult<()>> {
+    fn poll_task(tasks: &mut Tasks, handle: RawHandle) -> Poll<io::Result<()>> {
         let task = match tasks.get_mut(handle) {
             None => {
                 log::error!("Tried to poll a task with an invalid or out of date handle.");
-                return Poll::Ready(Err(TaskError::Other));
+                return Poll::Ready(Err(io::Error::from(io::ErrorKind::Other)));
             }
             Some(v) => v,
         };
@@ -353,6 +310,20 @@ impl AsyncLoaderWorker {
             Poll::Pending => {}
         }
         result
+    }
+}
+
+struct WorkerTask {
+    factory: Arc<dyn ITaskFactory>,
+    message: TaskPayload,
+}
+
+impl WorkerTask {
+    fn new<T: Any + Send + 'static>(factory: Arc<dyn ITaskFactory>, message: T) -> Self {
+        Self {
+            factory,
+            message: smallbox::smallbox!(message),
+        }
     }
 }
 

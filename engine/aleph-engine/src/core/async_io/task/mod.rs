@@ -34,16 +34,12 @@ use std::pin::Pin;
 use aleph_vfs::async_io::AsyncIoSender;
 use mg::async_resource_loader::AsyncResourceLoader;
 use smallbox::SmallBox;
-use thiserror::Error;
 
 use crate::core::async_io::context::IoContext;
 use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
 
-/// Alias of `Result<T, TaskError>`
-pub type TaskResult<T> = Result<T, TaskError>;
-
 /// Interface of our tasks futures (once boxed, hence the `dyn`).
-pub type TaskFuture<'a> = dyn Future<Output = TaskResult<()>> + 'a;
+pub type TaskFuture<'a> = dyn Future<Output = io::Result<()>> + 'a;
 
 /// Alias of [`SmallBox`] that covers the requirements of a task payload.
 pub type TaskPayload = SmallBox<dyn Any + Send + 'static, [u128; 6]>;
@@ -69,67 +65,6 @@ pub trait ITaskFactory: Send + Sync + 'static {
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
         msg: TaskPayload,
     ) -> Pin<Box<TaskFuture<'a>>>;
-}
-
-#[derive(Error, Debug)]
-pub enum TaskError {
-    /// Error code for when any IO request fails. The executor is expected to retire the task
-    /// and continue working on other requests.
-    #[error("An IO operation failed: {0}.")]
-    Io(#[from] io::Error),
-
-    /// There is not enough upload memory available to complete the upload request. The executor is
-    /// expected to retire the task and continue working on other requests.
-    #[error("Not enough memory available to complete the upload request.")]
-    NotEnoughMemory,
-
-    /// The task failed to create the GPU resource. The executor can retire the task and continue
-    /// working when encountering this error.
-    #[error("The task failed to create the GPU resource.")]
-    ResourceCreationFailed,
-
-    /// The task has failed as the GPU device has been lost. This is a GPU crash. This error is
-    /// fatal for the loader, but the loader may still be cleanly shut down in some circumstances.
-    #[error("The GPU device was lost.")]
-    DeviceLost,
-
-    /// The task has failed because the renderer it is uploading data for has disconnected. This
-    /// will typically occur when the renderer is shut down.
-    ///
-    /// This error will cause the loader to attempt to cleanly shut down.
-    #[error("The attached renderer object has disconnected.")]
-    RendererDisconnected,
-
-    /// This error occurs when the request channel has been closed. This means no new requests can
-    /// be received and is thrown when the worker is awoken to find a closed channel.
-    ///
-    /// The loader should attempt to retire all in-flight work and shut down cleanly.
-    #[error("The channel on which new upload requests are received has disconnected.")]
-    SenderDisconnected,
-
-    /// The task has failed because it was unable to record commands on the GPU.
-    ///
-    /// This error will cause the loader to attempt to cleanly shut down.
-    #[error("An error occurred while recording and submitting commands to the GPU.")]
-    CommandRecordingFailure,
-
-    /// The task failed for some other reason. The executor can retire the task and continue working
-    /// when encountering this error.
-    #[error("An unknown error occurred.")]
-    Other,
-
-    /// A fatal error where the executor is expected to shut down cleanly. This should be returned
-    /// when a task discovers an error that will prevent other tasks from completing.
-    ///
-    /// This fatal error class is returned when the error leaves the executor in a state where it is
-    /// unable to correctly shut down cleanly. This is possible when an error occurs while an IO
-    /// request is still outstanding, or if a GPU command buffer submission fails without a device
-    /// lost.
-    ///
-    /// When it is not possible to prove resources are safe to destroy the executor will abort the
-    /// application instead.
-    #[error("A fatal error occurred that it is unsound to unwind. Root cause has been logged.")]
-    FatalAbort,
 }
 
 /// Factory object shared with the loader that will spawn the task future on the async loading
@@ -178,12 +113,12 @@ pub trait TaskFactory: Send + Sync + 'static {
     /// We choose to trade flexibility for the ability to use certain platforms completion based
     /// async io primitives. This enables issuing async reads _directly_ into memory mapped from the
     /// RHI with no intermediate copies within the engine.
-    async fn task(
+    fn task(
         ctx: Self::Context,
         io: IoContext<AsyncIoSender>,
         loader: &AsyncResourceLoader<ResourceLoadHandle>,
         msg: Self::Payload,
-    ) -> TaskResult<()>;
+    ) -> impl Future<Output = io::Result<()>>;
 }
 
 impl<T: TaskFactory> ITaskFactory for T {
@@ -199,7 +134,7 @@ impl<T: TaskFactory> ITaskFactory for T {
                 Ok(v) => v,
                 Err(_) => {
                     log::error!("Tried to spawn task with incorrect payload type!");
-                    return Err(TaskError::Other);
+                    return Err(io::Error::from(io::ErrorKind::InvalidInput));
                 }
             };
             Self::task(ctx, io, loader, msg.into_inner()).await

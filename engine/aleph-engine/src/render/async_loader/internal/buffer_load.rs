@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::io;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
@@ -36,9 +37,7 @@ use aleph_vfs::path::VPathBuf;
 use mg::async_resource_loader::AsyncResourceLoader;
 
 use crate::core::async_io::context::IoContext;
-use crate::render::async_loader::internal::task::{
-    ITaskFactory, TaskError, TaskFactory, TaskResult,
-};
+use crate::core::async_io::task::{ITaskFactory, TaskFactory};
 use crate::render::async_loader::internal::utils::try_allocate_buffer_range_for;
 use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
 
@@ -81,7 +80,7 @@ impl TaskFactory for BufferLoadTask {
         io: IoContext<AsyncIoSender>,
         loader: &AsyncResourceLoader<ResourceLoadHandle>,
         msg: Self::Payload,
-    ) -> TaskResult<()> {
+    ) -> io::Result<()> {
         let handle = match loader.begin_buffer_load(msg.size, msg.cookie) {
             Ok(v) => v,
             Err(e) => {
@@ -91,8 +90,8 @@ impl TaskFactory for BufferLoadTask {
                 //
                 // The magnesium loader handles notifying the renderer. We just
                 // log a message.
-                log::error!("Failed to create GPU resource '{e:?}'.");
-                return Err(TaskError::ResourceCreationFailed);
+                log::error!("Failed to create GPU resource with error '{e:?}'.");
+                return Err(io::Error::from(io::ErrorKind::Other));
             }
         };
 
@@ -102,7 +101,7 @@ impl TaskFactory for BufferLoadTask {
             Err(e) => {
                 log::error!("Failed to open file '{path}' with error '{e:?}'.");
                 loader.fail_buffer_load(handle);
-                return Err(TaskError::Io(e));
+                return Err(e);
             }
         };
         let file = match result.await {
@@ -110,7 +109,7 @@ impl TaskFactory for BufferLoadTask {
             Err(e) => {
                 log::error!("Failed to open file '{path}' with error '{e:?}'.");
                 loader.fail_buffer_load(handle);
-                return Err(TaskError::Io(e));
+                return Err(e);
             }
         };
 
@@ -133,12 +132,12 @@ impl TaskFactory for BufferLoadTask {
             let future =
                 match unsafe { io.read_file_at(file.as_ref(), range.as_ptr(), file_offset) } {
                     Ok(v) => v,
-                    Err(_) => {
+                    Err(e) => {
                         // The only way the read_file_at call can fail is if the async reader system
                         // has shut down.
                         log::error!("Async IO system has disconnected.");
                         loader.fail_buffer_load(handle);
-                        return Err(TaskError::Other);
+                        return Err(e);
                     }
                 };
 
@@ -157,7 +156,7 @@ impl TaskFactory for BufferLoadTask {
                     // There are no in-flight IO requests on this request so it is safe to fail it.
                     log::error!("Failed to read file '{path}' with error '{err:?}'.");
                     loader.fail_buffer_load(handle);
-                    return Err(TaskError::Io(err));
+                    return Err(err);
                 }
             }
         }

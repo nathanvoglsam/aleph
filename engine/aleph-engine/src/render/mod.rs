@@ -50,8 +50,7 @@ use api::plugin::*;
 use api::rhi::ARhiProvider;
 use mg::renderer::builder::ApplicationSurface;
 
-use crate::render::async_loader::internal::worker::AsyncLoaderWorker;
-use crate::render::async_loader::resources::async_loader_channel::AsyncLoaderChannel;
+use crate::core::async_io::worker::AsyncLoaderWorker;
 use crate::render::async_loader::resources::async_loader_requests::AsyncLoaderRequests;
 use crate::render::async_loader::systems::async_load_resolver::AsyncLoadResolverSystem;
 use crate::render::config::Config;
@@ -158,11 +157,11 @@ impl IPlugin for PluginRender {
         });
 
         // State maintained for async load requests
-        registry.core().resources.insert(AsyncLoaderRequests::new());
         registry
             .core()
             .resources
-            .insert(AsyncLoaderChannel::new(loader_sender, router.clone()));
+            .insert(AsyncLoaderRequests::new(router.clone()));
+        registry.core().resources.insert(loader_sender.clone());
 
         // System to take the send events about the rendering surface into the renderer over the
         // channel that we gave it.
