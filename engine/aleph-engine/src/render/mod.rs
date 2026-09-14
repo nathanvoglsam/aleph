@@ -50,7 +50,7 @@ use api::plugin::*;
 use api::rhi::ARhiProvider;
 use mg::renderer::builder::ApplicationSurface;
 
-use crate::core::async_io::worker::AsyncLoaderWorker;
+use crate::core::async_io::worker::{AsyncLoaderQueue, AsyncLoaderWorker};
 use crate::render::async_loader::resources::async_loader_requests::AsyncLoaderRequests;
 use crate::render::async_loader::systems::async_load_resolver::AsyncLoadResolverSystem;
 use crate::render::config::Config;
@@ -87,6 +87,8 @@ impl IPlugin for PluginRender {
         registrar.requires::<ARouter>(InitOrder::After);
 
         registrar.uses::<AEguiRenderData>(InitOrder::After);
+
+        registrar.provides::<AsyncLoaderQueue>(Provides::Always);
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
@@ -144,7 +146,7 @@ impl IPlugin for PluginRender {
         renderer.render_ahead_frames(config.render_ahead_frames as usize);
         let mut renderer = renderer.build().unwrap();
 
-        let (loader_thread, loader_sender, loader_notify) =
+        let (loader_thread, loader_queue, loader_notify) =
             AsyncLoaderWorker::spawn_with(&mut renderer).unwrap();
         self.loader_thread = Some(loader_thread);
 
@@ -157,11 +159,10 @@ impl IPlugin for PluginRender {
         });
 
         // State maintained for async load requests
-        registry
-            .core()
-            .resources
-            .insert(AsyncLoaderRequests::new(router.clone()));
-        registry.core().resources.insert(loader_sender.clone());
+        registry.core().resources.insert(AsyncLoaderRequests::new(
+            loader_queue.clone(),
+            router.clone(),
+        ));
 
         // System to take the send events about the rendering surface into the renderer over the
         // channel that we gave it.
@@ -202,6 +203,8 @@ impl IPlugin for PluginRender {
             let system = RenderSystem::new(device, &config);
             system.register(&mut registry.core().schedule);
         }
+
+        registry.provide(loader_queue);
     }
 
     fn on_exit(&mut self) {

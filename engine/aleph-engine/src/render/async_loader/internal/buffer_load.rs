@@ -34,7 +34,7 @@ use std::sync::Arc;
 use aleph_vfs::IRouter;
 use aleph_vfs::async_io::AsyncIoSender;
 use aleph_vfs::path::VPathBuf;
-use mg::async_resource_loader::AsyncResourceLoader;
+use mg::async_resource_loader::{AsyncResourceLoader, FlushError};
 
 use crate::core::async_io::context::IoContext;
 use crate::core::async_io::task::{ITaskFactory, TaskFactory};
@@ -77,7 +77,7 @@ impl TaskFactory for BufferLoadTask {
 
     async fn task(
         ctx: Self::Context,
-        io: IoContext<AsyncIoSender>,
+        io: IoContext<'_, AsyncIoSender>,
         loader: &AsyncResourceLoader<ResourceLoadHandle>,
         msg: Self::Payload,
     ) -> io::Result<()> {
@@ -113,54 +113,89 @@ impl TaskFactory for BufferLoadTask {
             }
         };
 
-        let range = match try_allocate_buffer_range_for(loader, handle)? {
-            None => return Ok(()),
-            Some(r) => r,
-        };
-
-        let mut buffer = range.as_ptr();
-        let mut file_offset = msg.offset;
-
-        while !buffer.is_empty() {
-            // Safety: the safety issues are related to our use of range.as_ptr(). we never touch
-            //         the upload memory here and never issue overlapping requests so we should be
-            //         golden.
-            //
-            //         we also structure our executor and error conditions in a way where any
-            //         failure or panic that could lead to the buffer being freed from underneath
-            //         the in-flight request is promoted to an abort before it can cause UB.
-            let future =
-                match unsafe { io.read_file_at(file.as_ref(), range.as_ptr(), file_offset) } {
-                    Ok(v) => v,
-                    Err(e) => {
-                        // The only way the read_file_at call can fail is if the async reader system
-                        // has shut down.
-                        log::error!("Async IO system has disconnected.");
-                        loader.fail_buffer_load(handle);
-                        return Err(e);
-                    }
-                };
-
-            match future.await {
-                Ok(bytes_transferred) => {
-                    file_offset = file_offset + bytes_transferred as u64;
-                    buffer = unsafe {
-                        let remaining = buffer.len() - bytes_transferred;
-                        NonNull::slice_from_raw_parts(
-                            buffer.byte_add(buffer.len()).cast(),
-                            remaining,
-                        )
-                    };
-                }
-                Err(err) => {
-                    // There are no in-flight IO requests on this request so it is safe to fail it.
-                    log::error!("Failed to read file '{path}' with error '{err:?}'.");
+        loop {
+            let range = match try_allocate_buffer_range_for(loader, handle) {
+                Ok(None) => return Ok(()),
+                Ok(Some(r)) => r,
+                Err(e) => {
+                    log::error!("Error: {e:?}");
                     loader.fail_buffer_load(handle);
-                    return Err(err);
+                    return Err(e);
+                }
+            };
+
+            let mut buffer = range.as_ptr();
+            let mut file_offset = msg.offset;
+
+            while !buffer.is_empty() {
+                // Safety: the safety issues are related to our use of range.as_ptr(). we never
+                //         touch the upload memory here and never issue overlapping requests so we
+                //         should be golden.
+                //
+                // we also structure our executor and error conditions in a way where any failure or
+                // panic that could lead to the buffer being freed from underneath the in-flight
+                // request is promoted to an abort before it can cause UB.
+                let future =
+                    match unsafe { io.read_file_at(file.as_ref(), range.as_ptr(), file_offset) } {
+                        Ok(v) => v,
+                        Err(e) => {
+                            // The only way the read_file_at call can fail is if the async reader
+                            // system has shut down.
+                            log::error!("Async IO system has disconnected.");
+                            loader.fail_buffer_load(handle);
+                            return Err(e);
+                        }
+                    };
+
+                match future.await {
+                    Ok(bytes_transferred) => {
+                        file_offset = file_offset + bytes_transferred as u64;
+                        buffer = unsafe {
+                            let remaining = buffer.len() - bytes_transferred;
+                            NonNull::slice_from_raw_parts(
+                                buffer.byte_add(buffer.len()).cast(),
+                                remaining,
+                            )
+                        };
+                    }
+                    Err(err) => {
+                        // There are no in-flight IO requests on this request so it is safe to fail
+                        // it.
+                        log::error!("Failed to read file '{path}' with error '{err:?}'.");
+                        loader.fail_buffer_load(handle);
+                        return Err(err);
+                    }
                 }
             }
-        }
 
-        Ok(())
+            match range.submit() {
+                Ok(_) => {}
+                Err(e) => match e {
+                    FlushError::CommandRecordingFailure => {
+                        log::error!("Error: {e:?}");
+                        loader.fail_buffer_load(handle);
+                        return Err(io::Error::from(io::ErrorKind::Other));
+                    }
+                    FlushError::DeviceLost => {
+                        log::error!("Error: {e:?}");
+                        loader.fail_buffer_load(handle);
+                        return Err(io::Error::from(io::ErrorKind::Other));
+                    }
+                    FlushError::WaitFailure => {
+                        log::error!("Error: {e:?}");
+                        abort_unwind(|| panic!("Error: {e:?}"))
+                    }
+                    FlushError::RendererDisconnected => {
+                        log::error!("Error: {e:?}");
+                        loader.fail_buffer_load(handle);
+                        return Err(io::Error::from(io::ErrorKind::ConnectionAborted));
+                    }
+                },
+            }
+        }
     }
+}
+
+extern "C" fn abort_unwind<F: FnOnce() -> R, R>(f: F) -> R {
+    f()
 }

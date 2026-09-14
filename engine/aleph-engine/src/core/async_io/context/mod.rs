@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::cell::Cell;
 use std::io;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::ptr::NonNull;
@@ -38,7 +39,6 @@ use aleph_vfs::async_io::AsyncIoMessage;
 use aleph_vfs::file::{IAsyncVFile, IAsyncVFileExt};
 use aleph_vfs::path::VPath;
 use aleph_vfs::{IRouter, IRouterExt};
-use crossbeam::queue::ArrayQueue;
 
 use crate::core::async_io::futures::{FileLoad, FileOpen, FileRead};
 
@@ -46,20 +46,20 @@ use crate::core::async_io::futures::{FileLoad, FileOpen, FileRead};
 ///
 /// Provides utilities so file IO can be performed asynchronously in a way the executor is able to
 /// wake and poll the correct future with our completion based async io system.
-pub struct IoContext<T> {
+pub struct IoContext<'a, T> {
     pub(crate) handle: RawHandle,
     pub(crate) sender: T,
-    pub(crate) response_slot: Arc<ArrayQueue<AsyncIoMessage>>,
+    pub(crate) response_slot: &'a Cell<Option<AsyncIoMessage>>,
 }
 
-impl<T> UnwindSafe for IoContext<T> where
+impl<'a, T> UnwindSafe for IoContext<'a, T> where
     T: ReadChannel<Arc<VPath>>
         + LoadChannel<Arc<VPath>>
         + OpenChannel<Arc<dyn IAsyncVFile>>
         + Clone
 {
 }
-impl<T> RefUnwindSafe for IoContext<T> where
+impl<'a, T> RefUnwindSafe for IoContext<'a, T> where
     T: ReadChannel<Arc<VPath>>
         + LoadChannel<Arc<VPath>>
         + OpenChannel<Arc<dyn IAsyncVFile>>
@@ -67,7 +67,7 @@ impl<T> RefUnwindSafe for IoContext<T> where
 {
 }
 
-impl<T> IoContext<T>
+impl<'a, T> IoContext<'a, T>
 where
     T: ReadChannel<Arc<VPath>>
         + LoadChannel<Arc<VPath>>
@@ -95,7 +95,7 @@ where
             })?;
         }
         Ok(FileRead {
-            response_slot: self.response_slot.as_ref(),
+            response_slot: self.response_slot,
         })
     }
 
@@ -120,7 +120,7 @@ where
             })?;
         }
         Ok(FileRead {
-            response_slot: self.response_slot.as_ref(),
+            response_slot: self.response_slot,
         })
     }
 
@@ -136,7 +136,7 @@ where
             io::Error::from(io::ErrorKind::ConnectionAborted)
         })?;
         Ok(FileLoad {
-            response_slot: self.response_slot.as_ref(),
+            response_slot: self.response_slot,
         })
     }
 
@@ -157,7 +157,7 @@ where
             io::Error::from(io::ErrorKind::ConnectionAborted)
         })?;
         Ok(FileOpen {
-            response_slot: self.response_slot.as_ref(),
+            response_slot: self.response_slot,
         })
     }
 }

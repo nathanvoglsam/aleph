@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::cell::Cell;
 use std::io;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -34,20 +35,19 @@ use std::task::{Context, Poll};
 
 use aleph_vfs::async_io::AsyncIoMessage;
 use aleph_vfs::file::IAsyncVFile;
-use crossbeam::queue::ArrayQueue;
 
 /// Basic future that simply polls the executor's internal slot to receive an [`AsyncIoMessage`].
 ///
 /// This will not work outside the executor it was designed to run in.
 pub struct FileRead<'a> {
-    pub(crate) response_slot: &'a ArrayQueue<AsyncIoMessage>,
+    pub(crate) response_slot: &'a Cell<Option<AsyncIoMessage>>,
 }
 
 impl<'a> Future for FileRead<'a> {
     type Output = io::Result<usize>;
 
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        match self.response_slot.pop() {
+        match self.response_slot.take() {
             Some(msg) => match msg {
                 AsyncIoMessage::ReadSuccess {
                     bytes_transferred, ..
@@ -70,14 +70,14 @@ impl<'a> Future for FileRead<'a> {
 ///
 /// This will not work outside the executor it was designed to run in.
 pub struct FileLoad<'a> {
-    pub(crate) response_slot: &'a ArrayQueue<AsyncIoMessage>,
+    pub(crate) response_slot: &'a Cell<Option<AsyncIoMessage>>,
 }
 
 impl<'a> Future for FileLoad<'a> {
     type Output = io::Result<Vec<u8>>;
 
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        match self.response_slot.pop() {
+        match self.response_slot.take() {
             Some(msg) => match msg {
                 AsyncIoMessage::LoadSuccess { data, .. } => Poll::Ready(Ok(data)),
                 AsyncIoMessage::LoadFail { err, .. } => Poll::Ready(Err(err)),
@@ -98,14 +98,14 @@ impl<'a> Future for FileLoad<'a> {
 ///
 /// This will not work outside the executor it was designed to run in.
 pub struct FileOpen<'a> {
-    pub(crate) response_slot: &'a ArrayQueue<AsyncIoMessage>,
+    pub(crate) response_slot: &'a Cell<Option<AsyncIoMessage>>,
 }
 
 impl<'a> Future for FileOpen<'a> {
     type Output = io::Result<Arc<dyn IAsyncVFile>>;
 
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        match self.response_slot.pop() {
+        match self.response_slot.take() {
             Some(msg) => match msg {
                 AsyncIoMessage::OpenSuccess { file, .. } => Poll::Ready(Ok(file)),
                 AsyncIoMessage::OpenFail { err, .. } => Poll::Ready(Err(err)),

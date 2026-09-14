@@ -40,23 +40,25 @@ use crate::core::async_io::worker::AsyncLoaderQueue;
 use crate::render::async_loader::internal::buffer_load::{BufferLoadPayload, BufferLoadTask};
 
 pub struct AsyncLoaderRequests {
+    pub(crate) queue: AsyncLoaderQueue,
     pub(crate) states: GenArena<ResourceLoadState, ResourceLoadHandle, EngineSystem>,
     pub(crate) buffer_loader: Arc<dyn ITaskFactory>,
 }
 
 impl AsyncLoaderRequests {
-    pub(crate) fn new(vfs: Arc<dyn IRouter>) -> Self {
+    pub(crate) fn new(queue: AsyncLoaderQueue, vfs: Arc<dyn IRouter>) -> Self {
         Self {
+            queue,
             states: GenArena::new_in(),
             buffer_loader: BufferLoadTask::new(vfs),
         }
     }
 
-    pub fn spawn_vertex_buffer_load(&mut self, queue: &AsyncLoaderQueue, entity: EntityHandle) {
+    pub fn spawn_vertex_buffer_load(&mut self, entity: EntityHandle) {
         let load_handle = self
             .states
             .alloc(ResourceLoadState::VertexBuffer { entity });
-        let _ = queue.spawn(
+        let _ = self.queue.spawn(
             self.buffer_loader.clone(),
             BufferLoadPayload {
                 cookie: load_handle,
@@ -67,9 +69,9 @@ impl AsyncLoaderRequests {
         );
     }
 
-    pub fn spawn_index_buffer_load(&mut self, queue: &AsyncLoaderQueue, entity: EntityHandle) {
+    pub fn spawn_index_buffer_load(&mut self, entity: EntityHandle) {
         let load_handle = self.states.alloc(ResourceLoadState::IndexBuffer { entity });
-        let _ = queue.spawn(
+        let _ = self.queue.spawn(
             self.buffer_loader.clone(),
             BufferLoadPayload {
                 cookie: load_handle,
