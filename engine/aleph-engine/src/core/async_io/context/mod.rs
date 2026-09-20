@@ -76,88 +76,108 @@ where
 {
     /// Wrapper over [`IAsyncVFile::read_at`] that will correctly route the completion responses
     /// to the executor the future is running in.
-    pub unsafe fn read_file_at(
+    pub async unsafe fn read_file_at(
         &self,
         file: &dyn IAsyncVFile,
         buf: NonNull<[u8]>,
         offset: u64,
-    ) -> io::Result<FileRead<'_>> {
-        unsafe {
+    ) -> io::Result<usize> {
+        let result = unsafe {
             file.read_at(
                 buf,
                 offset,
                 self.sender.clone(),
                 self.handle.to_bare_handle().into_int().get(),
             )
-            .map_err(|_| {
+        };
+
+        let future = match result {
+            Ok(_) => FileRead {
+                response_slot: self.response_slot,
+            },
+            Err(_) => {
                 log::error!("The async file worker has disconnected.");
-                io::Error::from(io::ErrorKind::ConnectionAborted)
-            })?;
-        }
-        Ok(FileRead {
-            response_slot: self.response_slot,
-        })
+                return Err(io::Error::from(io::ErrorKind::ConnectionAborted));
+            }
+        };
+
+        future.await
     }
 
     /// Wrapper over [`IAsyncVFile::read_exact_at`] that will correctly route the completion
     /// responses to the executor the future is running in.
-    pub unsafe fn read_file_exact_at(
+    pub async unsafe fn read_file_exact_at(
         &self,
         file: &dyn IAsyncVFile,
         buf: NonNull<[u8]>,
         offset: u64,
-    ) -> io::Result<FileRead<'_>> {
-        unsafe {
+    ) -> io::Result<usize> {
+        let result = unsafe {
             file.read_exact_at(
                 buf,
                 offset,
                 self.sender.clone(),
                 self.handle.to_bare_handle().into_int().get(),
             )
-            .map_err(|_| {
+        };
+
+        let future = match result {
+            Ok(_) => FileRead {
+                response_slot: self.response_slot,
+            },
+            Err(_) => {
                 log::error!("The async file worker has disconnected.");
-                io::Error::from(io::ErrorKind::ConnectionAborted)
-            })?;
-        }
-        Ok(FileRead {
-            response_slot: self.response_slot,
-        })
+                return Err(io::Error::from(io::ErrorKind::ConnectionAborted));
+            }
+        };
+
+        future.await
     }
 
     /// Wrapper over [`IAsyncVFile::load_file`] that will correctly route the completion responses
     /// to the executor the future is running in.
-    pub fn load_file(&self, file: &dyn IAsyncVFile) -> io::Result<FileLoad<'_>> {
-        file.load(
+    pub async fn load_file(&self, file: &dyn IAsyncVFile) -> io::Result<Vec<u8>> {
+        let result = file.load(
             self.sender.clone(),
             self.handle.to_bare_handle().into_int().get(),
-        )
-        .map_err(|_| {
-            log::error!("The async file worker has disconnected.");
-            io::Error::from(io::ErrorKind::ConnectionAborted)
-        })?;
-        Ok(FileLoad {
-            response_slot: self.response_slot,
-        })
+        );
+
+        let future = match result {
+            Ok(_) => FileLoad {
+                response_slot: self.response_slot,
+            },
+            Err(_) => {
+                log::error!("The async file worker has disconnected.");
+                return Err(io::Error::from(io::ErrorKind::ConnectionAborted));
+            }
+        };
+
+        future.await
     }
 
     /// Wrapper over [`IRouter::open_file`] that will correctly route the completion responses
     /// to the executor the future is running in.
-    pub fn open_file(
+    pub async fn open_file(
         &self,
         vfs: &dyn IRouter,
         path: impl AsRef<VPath>,
-    ) -> io::Result<FileOpen<'_>> {
-        vfs.open_async(
+    ) -> io::Result<Arc<dyn IAsyncVFile>> {
+        let result = vfs.open_async(
             self.sender.clone(),
             path,
             self.handle.to_bare_handle().into_int().get(),
-        )
-        .map_err(|_| {
-            log::error!("The async file worker has disconnected.");
-            io::Error::from(io::ErrorKind::ConnectionAborted)
-        })?;
-        Ok(FileOpen {
-            response_slot: self.response_slot,
-        })
+        );
+
+        let future = match result {
+            Ok(_) => FileOpen {
+                response_slot: self.response_slot,
+            },
+            Err(_) => {
+                log::error!("The async file worker has disconnected.");
+                return Err(io::Error::from(io::ErrorKind::ConnectionAborted));
+            }
+        };
+
+        future.await
     }
 }

@@ -35,14 +35,14 @@ use aleph_vfs::IRouter;
 use api::ecs::entity::EntityHandle;
 
 use crate::core::alloc::EngineSystem;
-use crate::core::async_io::task::ITaskFactory;
 use crate::core::async_io::worker::AsyncLoaderQueue;
-use crate::render::async_loader::internal::buffer_load::{BufferLoadPayload, BufferLoadTask};
+use crate::render::async_loader::internal::buffer_load;
+use crate::render::async_loader::internal::buffer_load::BufferLoadPayload;
 
 pub struct AsyncLoaderRequests {
     pub(crate) queue: AsyncLoaderQueue,
     pub(crate) states: GenArena<ResourceLoadState, ResourceLoadHandle, EngineSystem>,
-    pub(crate) buffer_loader: Arc<dyn ITaskFactory>,
+    pub(crate) vfs: Arc<dyn IRouter>,
 }
 
 impl AsyncLoaderRequests {
@@ -50,7 +50,7 @@ impl AsyncLoaderRequests {
         Self {
             queue,
             states: GenArena::new_in(),
-            buffer_loader: BufferLoadTask::new(vfs),
+            vfs,
         }
     }
 
@@ -58,28 +58,32 @@ impl AsyncLoaderRequests {
         let load_handle = self
             .states
             .alloc(ResourceLoadState::VertexBuffer { entity });
-        let _ = self.queue.spawn(
-            self.buffer_loader.clone(),
-            BufferLoadPayload {
-                cookie: load_handle,
-                path: "i".into(),
-                offset: 0,
-                size: 0,
-            },
-        );
+
+        let vfs = self.vfs.clone();
+        let payload = BufferLoadPayload {
+            cookie: load_handle,
+            path: "i".into(),
+            offset: 0,
+            size: 0,
+        };
+        let _ = self
+            .queue
+            .spawn(async move |io, loader| buffer_load::task(vfs, io, loader, payload).await);
     }
 
     pub fn spawn_index_buffer_load(&mut self, entity: EntityHandle) {
         let load_handle = self.states.alloc(ResourceLoadState::IndexBuffer { entity });
-        let _ = self.queue.spawn(
-            self.buffer_loader.clone(),
-            BufferLoadPayload {
-                cookie: load_handle,
-                path: "i".into(),
-                offset: 0,
-                size: 0,
-            },
-        );
+
+        let vfs = self.vfs.clone();
+        let payload = BufferLoadPayload {
+            cookie: load_handle,
+            path: "i".into(),
+            offset: 0,
+            size: 0,
+        };
+        let _ = self
+            .queue
+            .spawn(async move |io, loader| buffer_load::task(vfs, io, loader, payload).await);
     }
 }
 
