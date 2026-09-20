@@ -512,6 +512,41 @@ impl VPath {
             VPath::new(unsafe { str::from_utf8_unchecked(&bytes[..end]) })
         }
     }
+
+    /// Creates an owned [`VPathBuf`] with `path` adjoined to `self`.
+    ///
+    /// If `path` is absolute, it replaces the current path.
+    ///
+    /// On Windows:
+    ///
+    /// * if `path` has a root but no prefix (e.g., `\windows`), it
+    ///   replaces and returns everything except for the prefix (if any) of `self`.
+    /// * if `path` has a prefix but no root, `self` is ignored and `path` is returned.
+    /// * if `self` has a verbatim prefix (e.g. `\\?\C:\windows`)
+    ///   and `path` is not empty, the new path is normalized: all references
+    ///   to `.` and `..` are removed.
+    ///
+    /// See [`PathBuf::push`] for more details on what it means to adjoin a path.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use aleph_vfs::path::VPath;
+    /// use aleph_vfs::path::VPathBuf;
+    ///
+    /// assert_eq!(VPath::new("/etc").join("passwd"), VPathBuf::from("/etc/passwd"));
+    /// assert_eq!(VPath::new("/etc").join("/bin/sh"), VPathBuf::from("/bin/sh"));
+    /// ```
+    #[must_use]
+    pub fn join<P: AsRef<VPath>>(&self, path: P) -> VPathBuf {
+        self._join(path.as_ref())
+    }
+
+    fn _join(&self, path: &VPath) -> VPathBuf {
+        let mut buf = self.to_path_buf();
+        buf.push(path);
+        buf
+    }
 }
 
 // == DISPLAY TRAITS == //
