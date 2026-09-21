@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::any::Any;
 use std::cell::Cell;
 use std::num::NonZero;
 use std::pin::Pin;
@@ -44,11 +43,10 @@ use crossbeam::channel::{Receiver, RecvError, SendError, Sender, unbounded};
 use crossbeam::select;
 use mg::async_resource_loader::loader_notify::LoaderNotify;
 use mg::async_resource_loader::{AsyncResourceLoader, FlushError};
-use smallbox::{SmallBox, smallbox};
 
 use crate::core::alloc::{Engine, EngineSystem};
 use crate::core::async_io::context::IoContext;
-use crate::core::async_io::task::TaskFuture;
+use crate::core::async_io::task::{FutureSpawner, TaskFuture};
 use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
 
 #[derive(Clone)]
@@ -66,14 +64,10 @@ impl AsyncLoaderQueue {
                 IoContext<'a, AsyncIoSender>,
                 &'a AsyncResourceLoader<ResourceLoadHandle>,
             ) -> io::Result<()>)
-            + Any
             + Send
             + 'static,
     {
-        let spawner = FutureSpawner {
-            spawner: smallbox!(spawner),
-            unwrapper: unwrapper::<_, T>,
-        };
+        let spawner = FutureSpawner::new(spawner);
         match self.sender.send(spawner) {
             Ok(()) => Ok(()),
             Err(_) => Err(SendError(())),
@@ -263,7 +257,7 @@ impl AsyncLoaderWorker {
                 sender: AsyncIoSender(response_send.clone()),
                 response_slot,
             };
-            (msg.unwrapper)(io, loader, msg.spawner)
+            msg.spawn(io, loader)
         });
 
         Self::poll_task(tasks, task)
@@ -319,37 +313,6 @@ impl AsyncLoaderWorker {
         }
         result
     }
-}
-
-/// Contains the object we send across to the async executor thread that invokes the async fn to
-/// be executed on the async thread.
-struct FutureSpawner {
-    spawner: SmallBox<dyn Any + Send + 'static, [u128; 8]>,
-    unwrapper: UnwrapperFn<[u128; 8]>,
-}
-
-type UnwrapperFn<Space> = for<'a> fn(
-    IoContext<'a, AsyncIoSender>,
-    &'a AsyncResourceLoader<ResourceLoadHandle>,
-    SmallBox<dyn Any + Send + 'static, Space>,
-) -> Pin<Box<TaskFuture<'a>>>;
-
-fn unwrapper<'aa, Space, T>(
-    ctx: IoContext<'aa, AsyncIoSender>,
-    loader: &'aa AsyncResourceLoader<ResourceLoadHandle>,
-    f: SmallBox<dyn Any + Send + 'static, Space>,
-) -> Pin<Box<TaskFuture<'aa>>>
-where
-    for<'a> T: (AsyncFnOnce(
-            IoContext<'a, AsyncIoSender>,
-            &'a AsyncResourceLoader<ResourceLoadHandle>,
-        ) -> io::Result<()>)
-        + Any
-        + Send
-        + 'static,
-{
-    let f: SmallBox<T, Space> = SmallBox::<dyn Any + Send + 'static, Space>::downcast(f).unwrap();
-    Box::pin(f.into_inner()(ctx, loader))
 }
 
 type RootBoxedFuture<'a> = Pin<Box<TaskFuture<'a>>>;

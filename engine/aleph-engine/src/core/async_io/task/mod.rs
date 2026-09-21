@@ -28,6 +28,114 @@
 //
 
 use std::io;
+use std::pin::Pin;
+use std::ptr::NonNull;
+
+use aleph_vfs::async_io::AsyncIoSender;
+use mg::async_resource_loader::AsyncResourceLoader;
+
+use crate::core::async_io::context::IoContext;
+use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
 
 /// Interface of our tasks futures (once boxed, hence the `dyn`).
 pub type TaskFuture<'a> = dyn Future<Output = io::Result<()>> + 'a;
+
+/// Contains the object we send across to the async executor thread that invokes the async fn to
+/// be executed on the async thread.
+pub(crate) struct FutureSpawner {
+    spawner: NonNull<SpawnerVTable>,
+}
+
+// Safety: It is illegal to construct a FutureSpawner that closes over a !Send type
+unsafe impl Send for FutureSpawner {}
+
+impl FutureSpawner {
+    pub(crate) fn new<T>(spawner: T) -> Self
+    where
+        for<'a> T: (AsyncFnOnce(
+                IoContext<'a, AsyncIoSender>,
+                &'a AsyncResourceLoader<ResourceLoadHandle>,
+            ) -> io::Result<()>)
+            + Send
+            + 'static,
+    {
+        let spawner = SpawnerContainer::<T> {
+            vtable: SpawnerVTable {
+                unwrapper: unwrapper::<T>,
+                dropper: dropper::<T>,
+            },
+            spawner,
+        };
+        let boxed: Box<SpawnerContainer<T>> = Box::new(spawner);
+        let raw = Box::into_raw(boxed);
+        let raw = unsafe { NonNull::new(raw).unwrap_unchecked() };
+
+        FutureSpawner {
+            spawner: raw.cast(),
+        }
+    }
+
+    pub(crate) fn spawn<'a>(
+        self,
+        io: IoContext<'a, AsyncIoSender>,
+        loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
+    ) -> Pin<Box<TaskFuture<'a>>> {
+        let unwrapper = unsafe { self.spawner.as_ref().unwrapper };
+        let spawner = self.spawner;
+        std::mem::forget(self);
+        unsafe { unwrapper(io, loader, spawner) }
+    }
+}
+
+impl Drop for FutureSpawner {
+    fn drop(&mut self) {
+        unsafe {
+            let dropper = { self.spawner.as_ref().dropper };
+            dropper(self.spawner);
+        }
+    }
+}
+
+#[repr(C)]
+struct SpawnerContainer<T: Send + 'static> {
+    vtable: SpawnerVTable,
+    spawner: T,
+}
+
+#[repr(C)]
+struct SpawnerVTable {
+    unwrapper: UnwrapperFn,
+    dropper: unsafe fn(NonNull<SpawnerVTable>),
+}
+
+type UnwrapperFn = for<'a> unsafe fn(
+    IoContext<'a, AsyncIoSender>,
+    &'a AsyncResourceLoader<ResourceLoadHandle>,
+    NonNull<SpawnerVTable>,
+) -> Pin<Box<TaskFuture<'a>>>;
+
+unsafe fn unwrapper<'aa, T>(
+    ctx: IoContext<'aa, AsyncIoSender>,
+    loader: &'aa AsyncResourceLoader<ResourceLoadHandle>,
+    f: NonNull<SpawnerVTable>,
+) -> Pin<Box<TaskFuture<'aa>>>
+where
+    for<'a> T: (AsyncFnOnce(
+            IoContext<'a, AsyncIoSender>,
+            &'a AsyncResourceLoader<ResourceLoadHandle>,
+        ) -> io::Result<()>)
+        + Send
+        + 'static,
+{
+    let f: Box<SpawnerContainer<T>> =
+        unsafe { Box::from_raw(f.cast::<SpawnerContainer<T>>().as_ptr()) };
+    Box::pin((f.spawner)(ctx, loader))
+}
+
+unsafe fn dropper<'aa, T>(f: NonNull<SpawnerVTable>)
+where
+    T: Send + 'static,
+{
+    let _drop: Box<SpawnerContainer<T>> =
+        unsafe { Box::from_raw(f.cast::<SpawnerContainer<T>>().as_ptr()) };
+}
