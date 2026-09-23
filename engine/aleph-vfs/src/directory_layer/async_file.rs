@@ -27,13 +27,14 @@
 // SOFTWARE.
 //
 
+use std::io;
 use std::path::Path;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
 use aleph_io_queue::IoQueue;
-use aleph_io_queue::channel::IoMessage;
-use crossbeam::channel::{SendError, Sender};
+use aleph_io_queue::channel::IoWaker;
+use crossbeam::channel::SendError;
 
 use crate::file::IAsyncVFile;
 use crate::path::VPath;
@@ -49,30 +50,22 @@ impl IAsyncVFile for AsyncVFile {
         &self,
         buf: NonNull<[u8]>,
         offset: u64,
-        sender: Sender<IoMessage>,
-        opaque: u64,
+        waker: Arc<IoWaker<io::Result<usize>>>,
     ) -> Result<(), SendError<()>> {
-        unsafe {
-            self.queue
-                .async_read(self.path.clone(), buf, offset, sender, opaque)
-        }
+        unsafe { self.queue.async_read(self.path.clone(), buf, offset, waker) }
     }
 
     unsafe fn read_exact_at(
         &self,
         buf: NonNull<[u8]>,
         offset: u64,
-        sender: Sender<IoMessage>,
-        opaque: u64,
+        waker: Arc<IoWaker<io::Result<usize>>>,
     ) -> Result<(), SendError<()>> {
-        unsafe {
-            self.queue
-                .async_read(self.path.clone(), buf, offset, sender, opaque)
-        }
+        unsafe { self.queue.async_read(self.path.clone(), buf, offset, waker) }
     }
 
-    fn load(&self, sender: Sender<IoMessage>, opaque: u64) -> Result<(), SendError<()>> {
-        self.queue.async_load(self.path.clone(), sender, opaque)
+    fn load(&self, waker: Arc<IoWaker<io::Result<Vec<u8>>>>) -> Result<(), SendError<()>> {
+        self.queue.async_load(self.path.clone(), waker)
     }
 
     fn path(&self) -> &VPath {

@@ -39,8 +39,7 @@ use std::sync::Arc;
 
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_alloc::{BBox, BHashMap};
-use aleph_io_queue::channel::IoMessage;
-use crossbeam::channel::Sender;
+use aleph_io_queue::channel::IoWaker;
 
 use crate::file::{IAsyncVFile, VFile};
 use crate::path::{Component, Components, VPath};
@@ -246,7 +245,7 @@ impl IRouter for Router {
         }
     }
 
-    fn __open_async(&self, sender: Sender<IoMessage>, path: &VPath, opaque: u64) -> io::Result<()> {
+    fn __open_async(&self, waker: Arc<IoWaker<io::Result<()>>>, path: &VPath) -> io::Result<()> {
         let mut components = path.components();
 
         let layer_name = Self::parse_target_layer(&mut components)?;
@@ -255,7 +254,7 @@ impl IRouter for Router {
         if let Some(layer) = self.layers.get(layer_name) {
             // Take the remaining path in 'components' as the path we send into the layer to find
             // the true asset.
-            layer.async_query_entity_async_io(sender, components.as_path(), opaque)
+            layer.async_query_entity_async_io(waker, components.as_path())
         } else {
             Err(io::Error::new(io::ErrorKind::NotFound, "No such file."))
         }
@@ -292,7 +291,7 @@ pub trait IRouter: Send + Sync + 'static {
     /// The result of the operation will be sent onto the given 'sender'.
     ///
     /// Use  [`IRouterExt::open_async`] instead.
-    fn __open_async(&self, sender: Sender<IoMessage>, path: &VPath, opaque: u64) -> io::Result<()>;
+    fn __open_async(&self, waker: Arc<IoWaker<io::Result<()>>>, path: &VPath) -> io::Result<()>;
 }
 
 /// An extension over [`IRouter`] that providers neater interfaces. We need this layer because we
@@ -328,11 +327,10 @@ pub trait IRouterExt: IRouter + Send + Sync + 'static {
     /// The result of the operation will be sent onto the given 'sender'.
     fn open_async<P: AsRef<VPath>>(
         &self,
-        sender: Sender<IoMessage>,
+        waker: Arc<IoWaker<io::Result<()>>>,
         path: P,
-        opaque: u64,
     ) -> io::Result<()> {
-        self.__open_async(sender, path.as_ref(), opaque)
+        self.__open_async(waker, path.as_ref())
     }
 }
 
@@ -410,9 +408,8 @@ pub trait ILayer: Send + Sync + 'static {
     /// async queue and the result will eventually be sent back via 'sender'.
     fn async_query_entity_async_io(
         &self,
-        sender: Sender<IoMessage>,
+        waker: Arc<IoWaker<io::Result<()>>>,
         path: &VPath,
-        opaque: u64,
     ) -> io::Result<()>;
 }
 

@@ -38,9 +38,8 @@ use aleph_alloc::BBox;
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_gen_arena::HandleType;
 use aleph_io_queue::IoQueue;
-use aleph_io_queue::channel::IoMessage;
+use aleph_io_queue::channel::IoWaker;
 use camino::Utf8PathBuf;
-use crossbeam::channel::Sender;
 
 use crate::directory_layer::async_file::AsyncVFile;
 use crate::directory_layer::sync_file::{POOL, PooledFile, VTABLE};
@@ -246,9 +245,8 @@ impl ILayer for DirectoryLayer {
 
     fn async_query_entity_async_io(
         &self,
-        sender: Sender<IoMessage>,
+        waker: Arc<IoWaker<io::Result<()>>>,
         path: &VPath,
-        opaque: u64,
     ) -> io::Result<()> {
         let io_queue = match self.io_queue.as_ref() {
             Some(io_queue) => io_queue,
@@ -265,7 +263,7 @@ impl ILayer for DirectoryLayer {
             let std_path: Arc<Path> = Arc::from(combined.as_std_path());
 
             // Dispatch a job onto the io queue to open the given file
-            match io_queue.open_async(std_path, sender, opaque) {
+            match io_queue.open_async(std_path, waker) {
                 Ok(_) => Ok(()),
                 Err(_) => Err(io::Error::new(
                     io::ErrorKind::ConnectionAborted,

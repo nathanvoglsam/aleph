@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-use std::cell::Cell;
-use std::num::NonZero;
 use std::pin::Pin;
 use std::task::{Context, Poll, Waker};
 use std::thread::JoinHandle;
@@ -37,7 +35,6 @@ use std::{io, thread};
 
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_gen_arena::{GenArena, RawHandle};
-use aleph_io_queue::channel::IoMessage;
 use aleph_object_system::unsafe_impl_iobject;
 use crossbeam::channel::{Receiver, RecvError, SendError, Sender, unbounded};
 use crossbeam::select;
@@ -118,7 +115,6 @@ impl AsyncLoaderWorker {
     pub fn run(&mut self) {
         let request_recv = &self.request_recv;
         let (response_send, response_recv) = unbounded();
-        let response_slot = Cell::new(None);
 
         {
             let tasks = GenArena::new_in();
@@ -127,7 +123,6 @@ impl AsyncLoaderWorker {
                 &request_recv,
                 &response_recv,
                 &response_send,
-                &response_slot,
                 &self.loader,
             )
         }
@@ -136,9 +131,8 @@ impl AsyncLoaderWorker {
     fn run_inner<'a>(
         mut tasks: Tasks<'a>,
         request_recv: &'a Receiver<FutureSpawner>,
-        response_recv: &'a Receiver<IoMessage>,
-        response_send: &'a Sender<IoMessage>,
-        response_slot: &'a Cell<Option<IoMessage>>,
+        response_recv: &'a Receiver<RawHandle>,
+        response_send: &'a Sender<RawHandle>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
     ) {
         let mut should_close = false;
@@ -153,7 +147,6 @@ impl AsyncLoaderWorker {
                         &mut should_close,
                         &mut tasks,
                         response_send,
-                        &response_slot,
                         loader,
                         msg,
                     );
@@ -165,7 +158,6 @@ impl AsyncLoaderWorker {
                 recv(response_recv) -> msg => {
                     let result = Self::async_message(
                         &mut tasks,
-                        &response_slot,
                         msg,
                     );
                     match result {
@@ -206,13 +198,11 @@ impl AsyncLoaderWorker {
                             &mut should_close,
                             &mut tasks,
                             response_send,
-                            &response_slot,
                             loader,
                             msg,
                         ),
                         recv(response_recv) -> msg => Self::async_message(
                             &mut tasks,
-                            &response_slot,
                             msg,
                         ),
                     };
@@ -237,8 +227,7 @@ impl AsyncLoaderWorker {
     fn worker_message<'a>(
         should_close: &mut bool,
         tasks: &mut Tasks<'a>,
-        response_send: &Sender<IoMessage>,
-        response_slot: &'a Cell<Option<IoMessage>>,
+        response_send: &'a Sender<RawHandle>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
         msg: Result<FutureSpawner, RecvError>,
     ) -> Poll<io::Result<()>> {
@@ -254,8 +243,7 @@ impl AsyncLoaderWorker {
         let task = tasks.alloc_cyclic(move |handle| {
             let io = IoContext {
                 handle,
-                sender: response_send.clone(),
-                response_slot,
+                sender: response_send,
             };
             msg.spawn(io, loader)
         });
@@ -263,12 +251,8 @@ impl AsyncLoaderWorker {
         Self::poll_task(tasks, task)
     }
 
-    fn async_message<'a>(
-        tasks: &mut Tasks<'a>,
-        response_slot: &'a Cell<Option<IoMessage>>,
-        msg: Result<IoMessage, RecvError>,
-    ) -> Poll<io::Result<()>> {
-        let msg = match msg {
+    fn async_message(tasks: &mut Tasks, msg: Result<RawHandle, RecvError>) -> Poll<io::Result<()>> {
+        let task = match msg {
             Ok(v) => v,
             Err(_) => {
                 log::error!("Async IO queue disconnected.");
@@ -276,14 +260,6 @@ impl AsyncLoaderWorker {
             }
         };
 
-        let task = msg.opaque();
-        let task = match NonZero::new(task) {
-            None => return Poll::Ready(Err(io::Error::from(io::ErrorKind::Other))),
-            Some(v) => v,
-        };
-        let task = RawHandle::from_int(task);
-
-        response_slot.set(Some(msg));
         Self::poll_task(tasks, task)
     }
 

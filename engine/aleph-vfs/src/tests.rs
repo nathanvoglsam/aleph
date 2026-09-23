@@ -29,9 +29,11 @@
 
 use std::io;
 use std::io::Read;
+use std::sync::Arc;
 
+use aleph_gen_arena::RawHandle;
 use aleph_io_queue::IoQueue;
-use aleph_io_queue::channel::IoMessage;
+use aleph_io_queue::channel::IoWaker;
 use aleph_io_queue::top_level_handle_cache::TopLevelHandleCache;
 use camino::Utf8PathBuf;
 use crossbeam::channel::unbounded;
@@ -251,18 +253,24 @@ pub fn async_read_test() {
 
     let (sender, receiver) = unbounded();
 
+    let mut waker = IoWaker::new(RawHandle::dangling(), sender);
+
     let file = router.open_for_async("/package_a/file.txt").unwrap();
-    file.load(sender, 21).unwrap();
+    file.load(waker.clone()).unwrap();
 
     let result = receiver.recv().unwrap();
-    match result {
-        IoMessage::LoadSuccess { data, opaque, .. } => {
-            let data = String::from_utf8(data).unwrap();
-            assert_eq!(data, "Hello, World!");
-            assert_eq!(opaque, 21);
+    assert_eq!(result, RawHandle::dangling());
+
+    let result = loop {
+        if let Some(waker) = Arc::get_mut(&mut waker) {
+            break waker.take().unwrap();
         }
-        _ => panic!("Unexpected response"),
-    }
+    };
+
+    let data = result.unwrap();
+
+    let data = String::from_utf8(data).unwrap();
+    assert_eq!(data, "Hello, World!");
 }
 
 #[test]
@@ -283,30 +291,43 @@ pub fn async_open_test() {
 
     assert_eq!(string, "Hello, World!");
 
-    let (sender, receiver) = unbounded::<IoMessage>();
+    let (sender, receiver) = unbounded();
+
+    let mut waker = IoWaker::new(RawHandle::dangling(), sender.clone());
 
     router
-        .open_async(sender.clone(), "/package_a/file.txt", 21)
+        .open_async(waker.clone(), "/package_a/file.txt")
         .unwrap();
 
     let result = receiver.recv().unwrap();
-    match result {
-        IoMessage::OpenSuccess { opaque, .. } => assert_eq!(opaque, 21),
-        _ => panic!("Unexpected response"),
+    assert_eq!(result, RawHandle::dangling());
+
+    let result = loop {
+        if let Some(waker) = Arc::get_mut(&mut waker) {
+            break waker.take().unwrap();
+        }
     };
+
+    let _ = result.unwrap();
+
     let file = router
         .open_for_async_non_blocking("/package_a/file.txt")
         .unwrap();
 
-    file.load(sender, 22).unwrap();
+    let mut waker = IoWaker::new(RawHandle::dangling(), sender.clone());
+    file.load(waker.clone()).unwrap();
 
     let result = receiver.recv().unwrap();
-    match result {
-        IoMessage::LoadSuccess { data, opaque, .. } => {
-            let data = String::from_utf8(data).unwrap();
-            assert_eq!(data, "Hello, World!");
-            assert_eq!(opaque, 22);
+    assert_eq!(result, RawHandle::dangling());
+
+    let result = loop {
+        if let Some(waker) = Arc::get_mut(&mut waker) {
+            break waker.take().unwrap();
         }
-        _ => panic!("Unexpected response"),
-    }
+    };
+
+    let data = result.unwrap();
+
+    let data = String::from_utf8(data).unwrap();
+    assert_eq!(data, "Hello, World!");
 }

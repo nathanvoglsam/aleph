@@ -44,7 +44,7 @@ use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use crossbeam::channel::{Receiver, SendError, Sender, unbounded};
 
-use crate::channel::IoMessage;
+use crate::channel::IoWaker;
 use crate::local_handle_cache::LocalHandleCache;
 use crate::top_level_handle_cache::TopLevelHandleCache;
 
@@ -135,16 +135,11 @@ impl IoQueue {
     pub fn open_async(
         &self,
         file: Arc<Path>,
-        sender: Sender<IoMessage>,
-        opaque: u64,
+        sender: Arc<IoWaker<io::Result<()>>>,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
-            let result = channel.send(AsyncRequest::OpenFileAsync {
-                file,
-                sender,
-                opaque,
-            });
+            let result = channel.send(AsyncRequest::OpenFileAsync { file, sender });
             match result {
                 Ok(_) => Ok(()),
                 Err(_) => Err(SendError(())),
@@ -168,8 +163,7 @@ impl IoQueue {
         file: Arc<Path>,
         dst: NonNull<[u8]>,
         offset: u64,
-        sender: Sender<IoMessage>,
-        opaque: u64,
+        sender: Arc<IoWaker<io::Result<usize>>>,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
@@ -178,7 +172,6 @@ impl IoQueue {
                 buf: dst,
                 offset,
                 sender,
-                opaque,
             });
 
             match result {
@@ -209,8 +202,7 @@ impl IoQueue {
         file: Arc<Path>,
         dst: NonNull<[u8]>,
         offset: u64,
-        sender: Sender<IoMessage>,
-        opaque: u64,
+        sender: Arc<IoWaker<io::Result<usize>>>,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
@@ -219,7 +211,6 @@ impl IoQueue {
                 buf: dst,
                 offset,
                 sender,
-                opaque,
             });
 
             match result {
@@ -234,16 +225,11 @@ impl IoQueue {
     pub fn async_load(
         &self,
         file: Arc<Path>,
-        sender: Sender<IoMessage>,
-        opaque: u64,
+        sender: Arc<IoWaker<io::Result<Vec<u8>>>>,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
-            let result = channel.send(AsyncRequest::LoadFile {
-                file,
-                sender,
-                opaque,
-            });
+            let result = channel.send(AsyncRequest::LoadFile { file, sender });
 
             match result {
                 Ok(_) => Ok(()),
@@ -285,39 +271,33 @@ impl IoQueueWorker {
     fn run(&mut self) {
         while let Ok(msg) = AsyncIo::with(|| self.recv.recv()) {
             match msg {
-                AsyncRequest::OpenFileAsync {
-                    file,
-                    sender,
-                    opaque,
-                } => {
+                AsyncRequest::OpenFileAsync { file, sender } => {
                     let _handle_set = match self.handle_cache.get_or_open(&file) {
                         Ok(v) => v,
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send(IoMessage::OpenFail { opaque, err });
+                            let _ = sender.resolve(Err(err));
+                            let _ = sender.wake();
                             continue;
                         }
                     };
-                    let _ = sender.send(IoMessage::OpenSuccess { opaque });
+                    let _ = sender.resolve(Ok(()));
+                    let _ = sender.wake();
                 }
                 AsyncRequest::ReadData {
                     file,
                     mut buf,
                     offset,
                     sender,
-                    opaque,
                 } => {
                     let handle_set = match self.handle_cache.get_or_open(&file) {
                         Ok(v) => v,
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send(IoMessage::ReadFail {
-                                opaque,
-                                offset,
-                                err,
-                            });
+                            let _ = sender.resolve(Err(err));
+                            let _ = sender.wake();
                             continue;
                         }
                     };
@@ -342,40 +322,30 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send(IoMessage::ReadFail {
-                                opaque,
-                                offset,
-                                err,
-                            });
+                            let _ = sender.resolve(Err(err));
+                            let _ = sender.wake();
                             continue;
                         }
                     };
 
                     // We don't care if the receiver hung up or not as there's nothing we can do
                     // about it
-                    let _ = sender.send(IoMessage::ReadSuccess {
-                        opaque,
-                        offset,
-                        bytes_transferred,
-                    });
+                    let _ = sender.resolve(Ok(bytes_transferred));
+                    let _ = sender.wake();
                 }
                 AsyncRequest::ReadDataExact {
                     file,
                     mut buf,
                     offset,
                     sender,
-                    opaque,
                 } => {
                     let handle_set = match self.handle_cache.get_or_open(&file) {
                         Ok(v) => v,
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send(IoMessage::ReadFail {
-                                opaque,
-                                offset,
-                                err,
-                            });
+                            let _ = sender.resolve(Err(err));
+                            let _ = sender.wake();
                             continue;
                         }
                     };
@@ -421,34 +391,25 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send(IoMessage::ReadFail {
-                                opaque,
-                                offset,
-                                err,
-                            });
+                            let _ = sender.resolve(Err(err));
+                            let _ = sender.wake();
                             continue;
                         }
                     };
 
                     // We don't care if the receiver hung up or not as there's nothing we can do
                     // about it
-                    let _ = sender.send(IoMessage::ReadSuccess {
-                        opaque,
-                        offset,
-                        bytes_transferred,
-                    });
+                    let _ = sender.resolve(Ok(bytes_transferred));
+                    let _ = sender.wake();
                 }
-                AsyncRequest::LoadFile {
-                    file,
-                    sender,
-                    opaque,
-                } => {
+                AsyncRequest::LoadFile { file, sender } => {
                     let handle_set = match self.handle_cache.get_or_open(&file) {
                         Ok(v) => v,
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send(IoMessage::LoadFail { opaque, err });
+                            let _ = sender.resolve(Err(err));
+                            let _ = sender.wake();
                             continue;
                         }
                     };
@@ -463,14 +424,16 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send(IoMessage::LoadFail { opaque, err });
+                            let _ = sender.resolve(Err(err));
+                            let _ = sender.wake();
                             continue;
                         }
                     };
 
                     // We don't care if the receiver hung up or not as there's nothing we can do
                     // about it
-                    let _ = sender.send(IoMessage::LoadSuccess { opaque, data: buf });
+                    let _ = sender.resolve(Ok(buf));
+                    let _ = sender.wake();
                 }
             }
         }
@@ -483,10 +446,7 @@ enum AsyncRequest {
         file: Arc<Path>,
 
         /// The channel on which to send result messages to
-        sender: Sender<IoMessage>,
-
-        /// Opaque
-        opaque: u64,
+        sender: Arc<IoWaker<io::Result<()>>>,
     },
     ReadData {
         /// The path to the file to read
@@ -499,10 +459,7 @@ enum AsyncRequest {
         offset: u64,
 
         /// The channel on which to send result messages to
-        sender: Sender<IoMessage>,
-
-        /// Opaque
-        opaque: u64,
+        sender: Arc<IoWaker<io::Result<usize>>>,
     },
     ReadDataExact {
         /// The path to the file to read
@@ -515,20 +472,14 @@ enum AsyncRequest {
         offset: u64,
 
         /// The channel on which to send result messages to
-        sender: Sender<IoMessage>,
-
-        /// Opaque
-        opaque: u64,
+        sender: Arc<IoWaker<io::Result<usize>>>,
     },
     LoadFile {
         /// The path to the file to read
         file: Arc<Path>,
 
         /// The channel on which to send result messages to
-        sender: Sender<IoMessage>,
-
-        /// Opaque
-        opaque: u64,
+        sender: Arc<IoWaker<io::Result<Vec<u8>>>>,
     },
 }
 

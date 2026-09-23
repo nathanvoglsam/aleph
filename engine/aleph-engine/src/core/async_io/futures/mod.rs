@@ -27,13 +27,12 @@
 // SOFTWARE.
 //
 
-use std::cell::Cell;
 use std::io;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use aleph_io_queue::channel::IoMessage;
+use aleph_io_queue::channel::IoWaker;
 use aleph_vfs::file::IAsyncVFile;
 use aleph_vfs::path::VPath;
 use aleph_vfs::{IRouter, IRouterExt};
@@ -41,29 +40,27 @@ use aleph_vfs::{IRouter, IRouterExt};
 /// Basic future that simply polls the executor's internal slot to receive an [`IoMessage`].
 ///
 /// This will not work outside the executor it was designed to run in.
-pub struct FileRead<'a> {
-    pub(crate) response_slot: &'a Cell<Option<IoMessage>>,
+pub struct FileRead {
+    pub(crate) waker: Arc<IoWaker<io::Result<usize>>>,
 }
 
-impl<'a> Future for FileRead<'a> {
+impl Future for FileRead {
     type Output = io::Result<usize>;
 
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        match self.response_slot.take() {
-            Some(msg) => match msg {
-                IoMessage::ReadSuccess {
-                    bytes_transferred, ..
-                } => Poll::Ready(Ok(bytes_transferred)),
-                IoMessage::ReadFail { err, .. } => Poll::Ready(Err(err)),
-                IoMessage::LoadSuccess { .. }
-                | IoMessage::LoadFail { .. }
-                | IoMessage::OpenSuccess { .. }
-                | IoMessage::OpenFail { .. } => {
-                    log::error!("Unexpected message type encountered in Future::poll");
-                    Poll::Ready(Err(io::Error::from(io::ErrorKind::Other)))
-                }
-            },
-            None => Poll::Pending,
+    fn poll(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if let Some(waker) = Arc::get_mut(&mut self.waker) {
+            let result = match waker.take() {
+                Some(v) => v,
+                None => Err(io::Error::from(io::ErrorKind::Other)),
+            };
+            Poll::Ready(result)
+        } else {
+            // We should re-queue the task if we fail to get the waker with get_mut. There's a small
+            // timing overlap where it's possible for the task to be polled but the worker thread
+            // hasn't dropped the waker handle yet. We just need to wait for it to be dropped so
+            // we just enqueue the task to be polled again at the end of the queue.
+            let _ = self.waker.wake();
+            Poll::Pending
         }
     }
 }
@@ -71,27 +68,27 @@ impl<'a> Future for FileRead<'a> {
 /// Basic future that simply polls the executor's internal slot to receive an [`IoMessage`].
 ///
 /// This will not work outside the executor it was designed to run in.
-pub struct FileLoad<'a> {
-    pub(crate) response_slot: &'a Cell<Option<IoMessage>>,
+pub struct FileLoad {
+    pub(crate) waker: Arc<IoWaker<io::Result<Vec<u8>>>>,
 }
 
-impl<'a> Future for FileLoad<'a> {
+impl Future for FileLoad {
     type Output = io::Result<Vec<u8>>;
 
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        match self.response_slot.take() {
-            Some(msg) => match msg {
-                IoMessage::LoadSuccess { data, .. } => Poll::Ready(Ok(data)),
-                IoMessage::LoadFail { err, .. } => Poll::Ready(Err(err)),
-                IoMessage::ReadSuccess { .. }
-                | IoMessage::ReadFail { .. }
-                | IoMessage::OpenSuccess { .. }
-                | IoMessage::OpenFail { .. } => {
-                    log::error!("Unexpected message type encountered in Future::poll");
-                    Poll::Ready(Err(io::Error::from(io::ErrorKind::Other)))
-                }
-            },
-            None => Poll::Pending,
+    fn poll(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if let Some(waker) = Arc::get_mut(&mut self.waker) {
+            let result = match waker.take() {
+                Some(v) => v,
+                None => Err(io::Error::from(io::ErrorKind::Other)),
+            };
+            Poll::Ready(result)
+        } else {
+            // We should re-queue the task if we fail to get the waker with get_mut. There's a small
+            // timing overlap where it's possible for the task to be polled but the worker thread
+            // hasn't dropped the waker handle yet. We just need to wait for it to be dropped so
+            // we just enqueue the task to be polled again at the end of the queue.
+            let _ = self.waker.wake();
+            Poll::Pending
         }
     }
 }
@@ -102,29 +99,31 @@ impl<'a> Future for FileLoad<'a> {
 pub struct FileOpen<'a> {
     pub(crate) path: &'a VPath,
     pub(crate) vfs: &'a dyn IRouter,
-    pub(crate) response_slot: &'a Cell<Option<IoMessage>>,
+    pub(crate) waker: Arc<IoWaker<io::Result<()>>>,
 }
 
 impl<'a> Future for FileOpen<'a> {
     type Output = io::Result<Arc<dyn IAsyncVFile>>;
 
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        match self.response_slot.take() {
-            Some(msg) => match msg {
-                IoMessage::OpenSuccess { .. } => {
-                    let file = self.vfs.open_for_async_non_blocking(self.path);
-                    Poll::Ready(file)
-                }
-                IoMessage::OpenFail { err, .. } => Poll::Ready(Err(err)),
-                IoMessage::ReadSuccess { .. }
-                | IoMessage::ReadFail { .. }
-                | IoMessage::LoadSuccess { .. }
-                | IoMessage::LoadFail { .. } => {
-                    log::error!("Unexpected message type encountered in Future::poll");
-                    Poll::Ready(Err(io::Error::from(io::ErrorKind::Other)))
-                }
-            },
-            None => Poll::Pending,
+    fn poll(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if let Some(waker) = Arc::get_mut(&mut self.waker) {
+            let result = match waker.take() {
+                Some(v) => v,
+                None => return Poll::Ready(Err(io::Error::from(io::ErrorKind::Other))),
+            };
+            match result {
+                Ok(_) => {}
+                Err(e) => return Poll::Ready(Err(e)),
+            }
+            let file = self.vfs.open_for_async_non_blocking(self.path);
+            Poll::Ready(file)
+        } else {
+            // We should re-queue the task if we fail to get the waker with get_mut. There's a small
+            // timing overlap where it's possible for the task to be polled but the worker thread
+            // hasn't dropped the waker handle yet. We just need to wait for it to be dropped so
+            // we just enqueue the task to be polled again at the end of the queue.
+            let _ = self.waker.wake();
+            Poll::Pending
         }
     }
 }
