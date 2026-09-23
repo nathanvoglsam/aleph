@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-pub mod async_io;
 pub mod directory_layer;
 pub mod file;
 pub mod path;
@@ -40,8 +39,8 @@ use std::sync::Arc;
 
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_alloc::{BBox, BHashMap};
-use aleph_io_queue::channel::OpenChannel;
-use smallbox::{SmallBox, smallbox};
+use aleph_io_queue::channel::IoMessage;
+use crossbeam::channel::Sender;
 
 use crate::file::{IAsyncVFile, VFile};
 use crate::path::{Component, Components, VPath};
@@ -232,12 +231,22 @@ impl IRouter for Router {
         }
     }
 
-    fn __open_async(
-        &self,
-        sender: SmallBox<dyn OpenChannel<Arc<dyn IAsyncVFile>>, [u128; 1]>,
-        path: &VPath,
-        opaque: u64,
-    ) -> io::Result<()> {
+    fn __open_for_async_non_blocking(&self, path: &VPath) -> io::Result<Arc<dyn IAsyncVFile>> {
+        let mut components = path.components();
+
+        let layer_name = Self::parse_target_layer(&mut components)?;
+
+        // Try and find the layer mounted at the given name
+        if let Some(layer) = self.layers.get(layer_name) {
+            // Take the remaining path in 'components' as the path we send into the layer to find
+            // the true asset.
+            layer.sync_query_entity_async_io(components.as_path())
+        } else {
+            Err(io::Error::new(io::ErrorKind::NotFound, "No such file."))
+        }
+    }
+
+    fn __open_async(&self, sender: Sender<IoMessage>, path: &VPath, opaque: u64) -> io::Result<()> {
         let mut components = path.components();
 
         let layer_name = Self::parse_target_layer(&mut components)?;
@@ -270,17 +279,20 @@ pub trait IRouter: Send + Sync + 'static {
 
     /// Attempts to open a [`IAsyncVFile`] by searching for a file at the given path.
     ///
+    /// This is a __synchronous__ API, but will fail if opening the file would require blocking
+    /// the calling thread on IO operations.
+    ///
+    /// Use  [`IRouterExt::open_for_async_non_blocking`] instead.
+    fn __open_for_async_non_blocking(&self, path: &VPath) -> io::Result<Arc<dyn IAsyncVFile>>;
+
+    /// Attempts to open a [`IAsyncVFile`] by searching for a file at the given path.
+    ///
     /// This is an __asynchronous__ API, and will not block on any IO operations on the calling
     /// thread. A request will be dispatched onto an asynchronous queue to open the file handle.
     /// The result of the operation will be sent onto the given 'sender'.
     ///
     /// Use  [`IRouterExt::open_async`] instead.
-    fn __open_async(
-        &self,
-        sender: SmallBox<dyn OpenChannel<Arc<dyn IAsyncVFile>>, [u128; 1]>,
-        path: &VPath,
-        opaque: u64,
-    ) -> io::Result<()>;
+    fn __open_async(&self, sender: Sender<IoMessage>, path: &VPath, opaque: u64) -> io::Result<()>;
 }
 
 /// An extension over [`IRouter`] that providers neater interfaces. We need this layer because we
@@ -300,16 +312,26 @@ pub trait IRouterExt: IRouter + Send + Sync + 'static {
 
     /// Attempts to open a [`IAsyncVFile`] by searching for a file at the given path.
     ///
+    /// This is a __synchronous__ API, but will fail if opening the file would require blocking
+    /// the calling thread on IO operations.
+    fn open_for_async_non_blocking<P: AsRef<VPath>>(
+        &self,
+        path: P,
+    ) -> io::Result<Arc<dyn IAsyncVFile>> {
+        self.__open_for_async_non_blocking(path.as_ref())
+    }
+
+    /// Attempts to open a [`IAsyncVFile`] by searching for a file at the given path.
+    ///
     /// This is an __asynchronous__ API, and will not block on any IO operations on the calling
     /// thread. A request will be dispatched onto an asynchronous queue to open the file handle.
     /// The result of the operation will be sent onto the given 'sender'.
-    fn open_async<P: AsRef<VPath>, T: OpenChannel<Arc<dyn IAsyncVFile>>>(
+    fn open_async<P: AsRef<VPath>>(
         &self,
-        sender: T,
+        sender: Sender<IoMessage>,
         path: P,
         opaque: u64,
     ) -> io::Result<()> {
-        let sender: SmallBox<dyn OpenChannel<Arc<dyn IAsyncVFile>>, _> = smallbox!(sender);
         self.__open_async(sender, path.as_ref(), opaque)
     }
 }
@@ -368,11 +390,27 @@ pub trait ILayer: Send + Sync + 'static {
     /// If 'path' is relative then it will be assumed to be relative to the root of this layer. If
     /// 'path' is absolute then the 'root' will be defined as the root of this layer.
     ///
+    /// This will perform a synchronous file open operation and immediately return an object that
+    /// async io can be performed on. This, however, will fail if a blocking IO operation is
+    /// required.
+    fn sync_query_entity_async_io_non_blocking(
+        &self,
+        path: &VPath,
+    ) -> io::Result<Arc<dyn IAsyncVFile>>;
+
+    /// Query for an entity at the given 'path'.
+    ///
+    /// 'path' must be a local path scoped to just this _layer_. The mount point should not be
+    /// included.
+    ///
+    /// If 'path' is relative then it will be assumed to be relative to the root of this layer. If
+    /// 'path' is absolute then the 'root' will be defined as the root of this layer.
+    ///
     /// This will not block the calling thread. The file open operation will be dispatched to an
     /// async queue and the result will eventually be sent back via 'sender'.
     fn async_query_entity_async_io(
         &self,
-        sender: SmallBox<dyn OpenChannel<Arc<dyn IAsyncVFile>>, [u128; 1]>,
+        sender: Sender<IoMessage>,
         path: &VPath,
         opaque: u64,
     ) -> io::Result<()>;

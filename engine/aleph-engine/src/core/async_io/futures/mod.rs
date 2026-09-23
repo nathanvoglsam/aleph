@@ -33,14 +33,16 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use aleph_vfs::async_io::AsyncIoMessage;
+use aleph_io_queue::channel::IoMessage;
 use aleph_vfs::file::IAsyncVFile;
+use aleph_vfs::path::VPath;
+use aleph_vfs::{IRouter, IRouterExt};
 
-/// Basic future that simply polls the executor's internal slot to receive an [`AsyncIoMessage`].
+/// Basic future that simply polls the executor's internal slot to receive an [`IoMessage`].
 ///
 /// This will not work outside the executor it was designed to run in.
 pub struct FileRead<'a> {
-    pub(crate) response_slot: &'a Cell<Option<AsyncIoMessage>>,
+    pub(crate) response_slot: &'a Cell<Option<IoMessage>>,
 }
 
 impl<'a> Future for FileRead<'a> {
@@ -49,14 +51,14 @@ impl<'a> Future for FileRead<'a> {
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
         match self.response_slot.take() {
             Some(msg) => match msg {
-                AsyncIoMessage::ReadSuccess {
+                IoMessage::ReadSuccess {
                     bytes_transferred, ..
                 } => Poll::Ready(Ok(bytes_transferred)),
-                AsyncIoMessage::ReadFail { err, .. } => Poll::Ready(Err(err)),
-                AsyncIoMessage::LoadSuccess { .. }
-                | AsyncIoMessage::LoadFail { .. }
-                | AsyncIoMessage::OpenSuccess { .. }
-                | AsyncIoMessage::OpenFail { .. } => {
+                IoMessage::ReadFail { err, .. } => Poll::Ready(Err(err)),
+                IoMessage::LoadSuccess { .. }
+                | IoMessage::LoadFail { .. }
+                | IoMessage::OpenSuccess { .. }
+                | IoMessage::OpenFail { .. } => {
                     log::error!("Unexpected message type encountered in Future::poll");
                     Poll::Ready(Err(io::Error::from(io::ErrorKind::Other)))
                 }
@@ -66,11 +68,11 @@ impl<'a> Future for FileRead<'a> {
     }
 }
 
-/// Basic future that simply polls the executor's internal slot to receive an [`AsyncIoMessage`].
+/// Basic future that simply polls the executor's internal slot to receive an [`IoMessage`].
 ///
 /// This will not work outside the executor it was designed to run in.
 pub struct FileLoad<'a> {
-    pub(crate) response_slot: &'a Cell<Option<AsyncIoMessage>>,
+    pub(crate) response_slot: &'a Cell<Option<IoMessage>>,
 }
 
 impl<'a> Future for FileLoad<'a> {
@@ -79,12 +81,12 @@ impl<'a> Future for FileLoad<'a> {
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
         match self.response_slot.take() {
             Some(msg) => match msg {
-                AsyncIoMessage::LoadSuccess { data, .. } => Poll::Ready(Ok(data)),
-                AsyncIoMessage::LoadFail { err, .. } => Poll::Ready(Err(err)),
-                AsyncIoMessage::ReadSuccess { .. }
-                | AsyncIoMessage::ReadFail { .. }
-                | AsyncIoMessage::OpenSuccess { .. }
-                | AsyncIoMessage::OpenFail { .. } => {
+                IoMessage::LoadSuccess { data, .. } => Poll::Ready(Ok(data)),
+                IoMessage::LoadFail { err, .. } => Poll::Ready(Err(err)),
+                IoMessage::ReadSuccess { .. }
+                | IoMessage::ReadFail { .. }
+                | IoMessage::OpenSuccess { .. }
+                | IoMessage::OpenFail { .. } => {
                     log::error!("Unexpected message type encountered in Future::poll");
                     Poll::Ready(Err(io::Error::from(io::ErrorKind::Other)))
                 }
@@ -98,7 +100,9 @@ impl<'a> Future for FileLoad<'a> {
 ///
 /// This will not work outside the executor it was designed to run in.
 pub struct FileOpen<'a> {
-    pub(crate) response_slot: &'a Cell<Option<AsyncIoMessage>>,
+    pub(crate) path: &'a VPath,
+    pub(crate) vfs: &'a dyn IRouter,
+    pub(crate) response_slot: &'a Cell<Option<IoMessage>>,
 }
 
 impl<'a> Future for FileOpen<'a> {
@@ -107,12 +111,15 @@ impl<'a> Future for FileOpen<'a> {
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
         match self.response_slot.take() {
             Some(msg) => match msg {
-                AsyncIoMessage::OpenSuccess { file, .. } => Poll::Ready(Ok(file)),
-                AsyncIoMessage::OpenFail { err, .. } => Poll::Ready(Err(err)),
-                AsyncIoMessage::ReadSuccess { .. }
-                | AsyncIoMessage::ReadFail { .. }
-                | AsyncIoMessage::LoadSuccess { .. }
-                | AsyncIoMessage::LoadFail { .. } => {
+                IoMessage::OpenSuccess { .. } => {
+                    let file = self.vfs.open_for_async_non_blocking(self.path);
+                    Poll::Ready(file)
+                }
+                IoMessage::OpenFail { err, .. } => Poll::Ready(Err(err)),
+                IoMessage::ReadSuccess { .. }
+                | IoMessage::ReadFail { .. }
+                | IoMessage::LoadSuccess { .. }
+                | IoMessage::LoadFail { .. } => {
                     log::error!("Unexpected message type encountered in Future::poll");
                     Poll::Ready(Err(io::Error::from(io::ErrorKind::Other)))
                 }

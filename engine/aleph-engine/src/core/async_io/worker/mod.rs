@@ -37,8 +37,8 @@ use std::{io, thread};
 
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_gen_arena::{GenArena, RawHandle};
+use aleph_io_queue::channel::IoMessage;
 use aleph_object_system::unsafe_impl_iobject;
-use aleph_vfs::async_io::{AsyncIoMessage, AsyncIoSender};
 use crossbeam::channel::{Receiver, RecvError, SendError, Sender, unbounded};
 use crossbeam::select;
 use mg::async_resource_loader::loader_notify::LoaderNotify;
@@ -61,7 +61,7 @@ impl AsyncLoaderQueue {
     pub fn spawn<T>(&self, spawner: T) -> Result<(), SendError<()>>
     where
         for<'a> T: (AsyncFnOnce(
-                IoContext<'a, AsyncIoSender>,
+                IoContext<'a>,
                 &'a AsyncResourceLoader<ResourceLoadHandle>,
             ) -> io::Result<()>)
             + Send
@@ -136,9 +136,9 @@ impl AsyncLoaderWorker {
     fn run_inner<'a>(
         mut tasks: Tasks<'a>,
         request_recv: &'a Receiver<FutureSpawner>,
-        response_recv: &'a Receiver<AsyncIoMessage>,
-        response_send: &'a Sender<AsyncIoMessage>,
-        response_slot: &'a Cell<Option<AsyncIoMessage>>,
+        response_recv: &'a Receiver<IoMessage>,
+        response_send: &'a Sender<IoMessage>,
+        response_slot: &'a Cell<Option<IoMessage>>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
     ) {
         let mut should_close = false;
@@ -237,8 +237,8 @@ impl AsyncLoaderWorker {
     fn worker_message<'a>(
         should_close: &mut bool,
         tasks: &mut Tasks<'a>,
-        response_send: &Sender<AsyncIoMessage>,
-        response_slot: &'a Cell<Option<AsyncIoMessage>>,
+        response_send: &Sender<IoMessage>,
+        response_slot: &'a Cell<Option<IoMessage>>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
         msg: Result<FutureSpawner, RecvError>,
     ) -> Poll<io::Result<()>> {
@@ -254,7 +254,7 @@ impl AsyncLoaderWorker {
         let task = tasks.alloc_cyclic(move |handle| {
             let io = IoContext {
                 handle,
-                sender: AsyncIoSender(response_send.clone()),
+                sender: response_send.clone(),
                 response_slot,
             };
             msg.spawn(io, loader)
@@ -265,8 +265,8 @@ impl AsyncLoaderWorker {
 
     fn async_message<'a>(
         tasks: &mut Tasks<'a>,
-        response_slot: &'a Cell<Option<AsyncIoMessage>>,
-        msg: Result<AsyncIoMessage, RecvError>,
+        response_slot: &'a Cell<Option<IoMessage>>,
+        msg: Result<IoMessage, RecvError>,
     ) -> Poll<io::Result<()>> {
         let msg = match msg {
             Ok(v) => v,

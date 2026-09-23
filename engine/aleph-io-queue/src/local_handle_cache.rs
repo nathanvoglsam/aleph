@@ -70,6 +70,26 @@ impl LocalHandleCache {
         self.top_level.num_threads()
     }
 
+    /// Fetch an existing entry for the given 'path'.
+    pub fn get(&self, path: impl AsRef<Path>) -> Result<Arc<[File]>, io::Error> {
+        self.__get(path.as_ref())
+    }
+
+    fn __get(&self, path: &Path) -> Result<Arc<[File]>, io::Error> {
+        let mut cache = self.cache.borrow_mut();
+
+        if let Some(existing) = cache.get(path) {
+            return Ok(existing.clone());
+        }
+
+        let existing = self.top_level.get(path)?;
+
+        let path_buf = AsyncIo::with(|| path.to_path_buf());
+        cache.insert(path_buf, existing.clone());
+
+        Ok(existing)
+    }
+
     /// Fetch an existing entry, or create a new one if it's missing, for the given 'path'.
     ///
     /// The first time this is called the cache will open `threads` file handles for the file. This

@@ -28,44 +28,67 @@
 //
 
 use std::io;
-use std::ptr::NonNull;
 
-/// Abstraction over some channel (i.e. a queue or mpmc channel) for sending the results of an
-/// asynchronous operation to a listener. This is how the async io system notifies results of async
-/// operations.
-pub trait OpenChannel<P>: Send + Sync + 'static {
-    fn send_success(&self, opaque: u64, file: P) -> Result<(), ChannelError>;
-    fn send_fail(&self, opaque: u64, file: P, err: io::Error) -> Result<(), ChannelError>;
-}
-
-/// Abstraction over some channel (i.e. a queue or mpmc channel) for sending the results of an
-/// asynchronous operation to a listener. This is how the async io system notifies results of async
-/// operations.
-pub trait ReadChannel<P>: Send + Sync + 'static {
-    fn send_success(
-        &self,
-        opaque: u64,
-        file: P,
-        buf: NonNull<[u8]>,
+/// Message format that the IO queue will respond with.
+pub enum IoMessage {
+    ReadSuccess {
+        /// Offset in the file that the data was read from.
         offset: u64,
+
+        /// The total number of bytes that were successfully transferred. This may not equal the
+        /// number of bytes _requested_.
         bytes_transferred: usize,
-    ) -> Result<(), ChannelError>;
-    fn send_fail(
-        &self,
+
+        /// An opaque tag that can be used to associate the message with a particular request.
         opaque: u64,
-        file: P,
-        buf: NonNull<[u8]>,
+    },
+    ReadFail {
+        /// Offset in the file that the data was read from.
         offset: u64,
+
+        /// The specific IO error that was thrown that caused the request to fail.
         err: io::Error,
-    ) -> Result<(), ChannelError>;
+
+        /// An opaque tag that can be used to associate the message with a particular request.
+        opaque: u64,
+    },
+    LoadSuccess {
+        /// Buffer that contains the complete contents of the file.
+        data: Vec<u8>,
+
+        /// An opaque tag that can be used to associate the message with a particular request.
+        opaque: u64,
+    },
+    LoadFail {
+        /// The specific IO error that was thrown that caused the request to fail.
+        err: io::Error,
+
+        /// An opaque tag that can be used to associate the message with a particular request.
+        opaque: u64,
+    },
+    OpenSuccess {
+        /// An opaque tag that can be used to associate the message with a particular request.
+        opaque: u64,
+    },
+    OpenFail {
+        /// The specific IO error that was thrown that caused the request to fail.
+        err: io::Error,
+
+        /// An opaque tag that can be used to associate the message with a particular request.
+        opaque: u64,
+    },
 }
 
-/// Abstraction over some channel (i.e. a queue or mpmc channel) for sending the results of an
-/// asynchronous operation to a listener. This is how the async io system notifies results of async
-/// operations.
-pub trait LoadChannel<P>: Send + Sync + 'static {
-    fn send_success(&self, opaque: u64, file: P, data: Vec<u8>) -> Result<(), ChannelError>;
-    fn send_fail(&self, opaque: u64, file: P, err: io::Error) -> Result<(), ChannelError>;
+impl IoMessage {
+    /// Get the opaque tag from whichever message variant `self` contains.
+    pub const fn opaque(&self) -> u64 {
+        match self {
+            IoMessage::ReadSuccess { opaque, .. } => *opaque,
+            IoMessage::ReadFail { opaque, .. } => *opaque,
+            IoMessage::LoadSuccess { opaque, .. } => *opaque,
+            IoMessage::LoadFail { opaque, .. } => *opaque,
+            IoMessage::OpenSuccess { opaque, .. } => *opaque,
+            IoMessage::OpenFail { opaque, .. } => *opaque,
+        }
+    }
 }
-
-pub struct ChannelError;

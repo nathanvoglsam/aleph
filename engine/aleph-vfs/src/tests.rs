@@ -31,13 +31,12 @@ use std::io;
 use std::io::Read;
 
 use aleph_io_queue::IoQueue;
+use aleph_io_queue::channel::IoMessage;
 use aleph_io_queue::top_level_handle_cache::TopLevelHandleCache;
 use camino::Utf8PathBuf;
 use crossbeam::channel::unbounded;
 
-use crate::async_io::{AsyncIoMessage, AsyncIoSender};
 use crate::directory_layer::DirectoryLayer;
-use crate::file::IAsyncVFileExt;
 use crate::{IRouterExt, LayerDesc, Router};
 
 #[test]
@@ -251,14 +250,13 @@ pub fn async_read_test() {
     assert_eq!(string, "Hello, World!");
 
     let (sender, receiver) = unbounded();
-    let sender = AsyncIoSender(sender);
 
     let file = router.open_for_async("/package_a/file.txt").unwrap();
     file.load(sender, 21).unwrap();
 
     let result = receiver.recv().unwrap();
     match result {
-        AsyncIoMessage::LoadSuccess { data, opaque, .. } => {
+        IoMessage::LoadSuccess { data, opaque, .. } => {
             let data = String::from_utf8(data).unwrap();
             assert_eq!(data, "Hello, World!");
             assert_eq!(opaque, 21);
@@ -285,27 +283,26 @@ pub fn async_open_test() {
 
     assert_eq!(string, "Hello, World!");
 
-    let (sender, receiver) = unbounded::<AsyncIoMessage>();
-    let sender = AsyncIoSender(sender);
+    let (sender, receiver) = unbounded::<IoMessage>();
 
     router
         .open_async(sender.clone(), "/package_a/file.txt", 21)
         .unwrap();
 
     let result = receiver.recv().unwrap();
-    let file = match result {
-        AsyncIoMessage::OpenSuccess { file, opaque, .. } => {
-            assert_eq!(opaque, 21);
-            file
-        }
+    match result {
+        IoMessage::OpenSuccess { opaque, .. } => assert_eq!(opaque, 21),
         _ => panic!("Unexpected response"),
     };
+    let file = router
+        .open_for_async_non_blocking("/package_a/file.txt")
+        .unwrap();
 
     file.load(sender, 22).unwrap();
 
     let result = receiver.recv().unwrap();
     match result {
-        AsyncIoMessage::LoadSuccess { data, opaque, .. } => {
+        IoMessage::LoadSuccess { data, opaque, .. } => {
             let data = String::from_utf8(data).unwrap();
             assert_eq!(data, "Hello, World!");
             assert_eq!(opaque, 22);

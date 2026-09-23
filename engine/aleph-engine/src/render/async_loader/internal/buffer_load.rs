@@ -32,7 +32,6 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 
 use aleph_vfs::IRouter;
-use aleph_vfs::async_io::AsyncIoSender;
 use aleph_vfs::path::VPathBuf;
 use mg::async_resource_loader::{AsyncResourceLoader, FlushError};
 
@@ -57,7 +56,7 @@ pub struct BufferLoadPayload {
 
 pub async fn task(
     vfs: Arc<dyn IRouter>,
-    io: IoContext<'_, AsyncIoSender>,
+    io: IoContext<'_>,
     loader: &AsyncResourceLoader<ResourceLoadHandle>,
     msg: BufferLoadPayload,
 ) -> io::Result<()> {

@@ -38,11 +38,11 @@ use aleph_alloc::BBox;
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_gen_arena::HandleType;
 use aleph_io_queue::IoQueue;
-use aleph_io_queue::channel::OpenChannel;
+use aleph_io_queue::channel::IoMessage;
 use camino::Utf8PathBuf;
-use smallbox::SmallBox;
+use crossbeam::channel::Sender;
 
-use crate::directory_layer::async_file::{AsyncVFile, RemapOpenSender};
+use crate::directory_layer::async_file::AsyncVFile;
 use crate::directory_layer::sync_file::{POOL, PooledFile, VTABLE};
 use crate::file::{IAsyncVFile, VFile};
 use crate::path::{Component, VPath};
@@ -207,9 +207,46 @@ impl ILayer for DirectoryLayer {
         Ok(file)
     }
 
+    fn sync_query_entity_async_io_non_blocking(
+        &self,
+        path: &VPath,
+    ) -> io::Result<Arc<dyn IAsyncVFile>> {
+        let io_queue = match self.io_queue.as_ref() {
+            Some(io_queue) => io_queue,
+            None => {
+                return Err(io::Error::new(
+                    io::ErrorKind::Unsupported,
+                    "Can't open async io for a directory layer with no async io queue.",
+                ));
+            }
+        };
+        let file = Vfs::with(|| -> io::Result<_> {
+            let combined = self.sanitize_and_translate_path(path)?;
+
+            let path: Arc<VPath> = {
+                let arc: Arc<str> = Arc::from(path.to_str());
+                unsafe { Arc::from_raw(Arc::into_raw(arc) as *const VPath) }
+            };
+
+            // Prime the handle cache, or error out if we failed to open the file.
+            io_queue.open_non_blocking(combined.as_std_path())?;
+
+            let out = AsyncVFile {
+                queue: io_queue.clone(),
+                virtual_path: path,
+                path: Arc::from(combined.into_std_path_buf()),
+            };
+            let out = Arc::new(out);
+
+            Ok(out)
+        })?;
+
+        Ok(file)
+    }
+
     fn async_query_entity_async_io(
         &self,
-        sender: SmallBox<dyn OpenChannel<Arc<dyn IAsyncVFile>>, [u128; 1]>,
+        sender: Sender<IoMessage>,
         path: &VPath,
         opaque: u64,
     ) -> io::Result<()> {
@@ -227,20 +264,8 @@ impl ILayer for DirectoryLayer {
 
             let std_path: Arc<Path> = Arc::from(combined.as_std_path());
 
-            let virtual_path: Arc<VPath> = {
-                let arc: Arc<str> = Arc::from(path.to_str());
-                unsafe { Arc::from_raw(Arc::into_raw(arc) as *const VPath) }
-            };
-            let file = AsyncVFile {
-                queue: io_queue.clone(),
-                virtual_path,
-                path: Arc::from(combined.into_std_path_buf()),
-            };
-            let file = Arc::new(file);
-            let remap_sender = RemapOpenSender { file, sender };
-
             // Dispatch a job onto the io queue to open the given file
-            match io_queue.open_async(std_path, remap_sender, opaque) {
+            match io_queue.open_async(std_path, sender, opaque) {
                 Ok(_) => Ok(()),
                 Err(_) => Err(io::Error::new(
                     io::ErrorKind::ConnectionAborted,

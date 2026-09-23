@@ -43,9 +43,8 @@ use std::thread::JoinHandle;
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use crossbeam::channel::{Receiver, SendError, Sender, unbounded};
-use smallbox::{SmallBox, smallbox};
 
-use crate::channel::{LoadChannel, OpenChannel, ReadChannel};
+use crate::channel::IoMessage;
 use crate::local_handle_cache::LocalHandleCache;
 use crate::top_level_handle_cache::TopLevelHandleCache;
 
@@ -118,21 +117,29 @@ impl IoQueue {
         Ok(())
     }
 
+    /// Opens the given 'file' for use within the async io system.
+    ///
+    /// This will prime the top level handle cache for the given file, and return if the file failed
+    /// to open.
+    pub fn open_non_blocking(&self, file: &Path) -> Result<(), io::Error> {
+        self.top_level_handle_cache.get(file)?;
+        Ok(())
+    }
+
     /// Opens the given 'file' for use within the async io system asynchronously.
     ///
     /// This is a sibling to [`IoQueue::open`] and largely does the same thing. This defers the
     /// open operation onto the worker threads. Opening files for the first time can be expensive
     /// so callers that can't block should instead use this. The results are sent asynchronously
     /// to the caller over the given sender.
-    pub fn open_async<T: OpenChannel<Arc<Path>>>(
+    pub fn open_async(
         &self,
         file: Arc<Path>,
-        sender: T,
+        sender: Sender<IoMessage>,
         opaque: u64,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
-            let sender: SmallBox<dyn OpenChannel<Arc<Path>>, _> = smallbox!(sender);
             let result = channel.send(AsyncRequest::OpenFileAsync {
                 file,
                 sender,
@@ -156,17 +163,16 @@ impl IoQueue {
     /// The async queue takes temporary ownership of `buf` while the request in flight. It is the
     /// caller's responsibility to respect the transferred ownership until a message is returned
     /// on the response queue that ends the lifetime of the dynamic borrow.
-    pub unsafe fn async_read<T: ReadChannel<Arc<Path>>>(
+    pub unsafe fn async_read(
         &self,
         file: Arc<Path>,
         dst: NonNull<[u8]>,
         offset: u64,
-        sender: T,
+        sender: Sender<IoMessage>,
         opaque: u64,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
-            let sender: SmallBox<dyn ReadChannel<Arc<Path>>, _> = smallbox!(sender);
             let result = channel.send(AsyncRequest::ReadData {
                 file,
                 buf: dst,
@@ -198,17 +204,16 @@ impl IoQueue {
     /// The async queue takes temporary ownership of `buf` while the request in flight. It is the
     /// caller's responsibility to respect the transferred ownership until a message is returned
     /// on the response queue that ends the lifetime of the dynamic borrow.
-    pub unsafe fn async_read_exact<T: ReadChannel<Arc<Path>>>(
+    pub unsafe fn async_read_exact(
         &self,
         file: Arc<Path>,
         dst: NonNull<[u8]>,
         offset: u64,
-        sender: T,
+        sender: Sender<IoMessage>,
         opaque: u64,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
-            let sender: SmallBox<dyn ReadChannel<Arc<Path>>, _> = smallbox!(sender);
             let result = channel.send(AsyncRequest::ReadDataExact {
                 file,
                 buf: dst,
@@ -226,15 +231,14 @@ impl IoQueue {
 
     /// Enqueue an async _load_ operation. This will attempt to load the entire file into a buffer
     /// and then pass that buffer back via the given `sender`.
-    pub fn async_load<T: LoadChannel<Arc<Path>>>(
+    pub fn async_load(
         &self,
         file: Arc<Path>,
-        sender: T,
+        sender: Sender<IoMessage>,
         opaque: u64,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
-            let sender: SmallBox<dyn LoadChannel<Arc<Path>>, _> = smallbox!(sender);
             let result = channel.send(AsyncRequest::LoadFile {
                 file,
                 sender,
@@ -291,11 +295,11 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send_fail(opaque, file, err);
+                            let _ = sender.send(IoMessage::OpenFail { opaque, err });
                             continue;
                         }
                     };
-                    let _ = sender.send_success(opaque, file);
+                    let _ = sender.send(IoMessage::OpenSuccess { opaque });
                 }
                 AsyncRequest::ReadData {
                     file,
@@ -309,7 +313,11 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send_fail(opaque, file, buf, offset, err);
+                            let _ = sender.send(IoMessage::ReadFail {
+                                opaque,
+                                offset,
+                                err,
+                            });
                             continue;
                         }
                     };
@@ -334,14 +342,22 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send_fail(opaque, file, buf, offset, err);
+                            let _ = sender.send(IoMessage::ReadFail {
+                                opaque,
+                                offset,
+                                err,
+                            });
                             continue;
                         }
                     };
 
                     // We don't care if the receiver hung up or not as there's nothing we can do
                     // about it
-                    let _ = sender.send_success(opaque, file, buf, offset, bytes_transferred);
+                    let _ = sender.send(IoMessage::ReadSuccess {
+                        opaque,
+                        offset,
+                        bytes_transferred,
+                    });
                 }
                 AsyncRequest::ReadDataExact {
                     file,
@@ -355,7 +371,11 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send_fail(opaque, file, buf, offset, err);
+                            let _ = sender.send(IoMessage::ReadFail {
+                                opaque,
+                                offset,
+                                err,
+                            });
                             continue;
                         }
                     };
@@ -401,14 +421,22 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send_fail(opaque, file, buf, offset, err);
+                            let _ = sender.send(IoMessage::ReadFail {
+                                opaque,
+                                offset,
+                                err,
+                            });
                             continue;
                         }
                     };
 
                     // We don't care if the receiver hung up or not as there's nothing we can do
                     // about it
-                    let _ = sender.send_success(opaque, file, buf, offset, bytes_transferred);
+                    let _ = sender.send(IoMessage::ReadSuccess {
+                        opaque,
+                        offset,
+                        bytes_transferred,
+                    });
                 }
                 AsyncRequest::LoadFile {
                     file,
@@ -420,7 +448,7 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send_fail(opaque, file, err);
+                            let _ = sender.send(IoMessage::LoadFail { opaque, err });
                             continue;
                         }
                     };
@@ -435,14 +463,14 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.send_fail(opaque, file, err);
+                            let _ = sender.send(IoMessage::LoadFail { opaque, err });
                             continue;
                         }
                     };
 
                     // We don't care if the receiver hung up or not as there's nothing we can do
                     // about it
-                    let _ = sender.send_success(opaque, file, buf);
+                    let _ = sender.send(IoMessage::LoadSuccess { opaque, data: buf });
                 }
             }
         }
@@ -455,7 +483,7 @@ enum AsyncRequest {
         file: Arc<Path>,
 
         /// The channel on which to send result messages to
-        sender: SmallBox<dyn OpenChannel<Arc<Path>>, [u128; 2]>,
+        sender: Sender<IoMessage>,
 
         /// Opaque
         opaque: u64,
@@ -471,7 +499,7 @@ enum AsyncRequest {
         offset: u64,
 
         /// The channel on which to send result messages to
-        sender: SmallBox<dyn ReadChannel<Arc<Path>>, [u128; 2]>,
+        sender: Sender<IoMessage>,
 
         /// Opaque
         opaque: u64,
@@ -487,7 +515,7 @@ enum AsyncRequest {
         offset: u64,
 
         /// The channel on which to send result messages to
-        sender: SmallBox<dyn ReadChannel<Arc<Path>>, [u128; 2]>,
+        sender: Sender<IoMessage>,
 
         /// Opaque
         opaque: u64,
@@ -497,7 +525,7 @@ enum AsyncRequest {
         file: Arc<Path>,
 
         /// The channel on which to send result messages to
-        sender: SmallBox<dyn LoadChannel<Arc<Path>>, [u128; 2]>,
+        sender: Sender<IoMessage>,
 
         /// Opaque
         opaque: u64,

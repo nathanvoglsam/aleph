@@ -34,11 +34,11 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 
 use aleph_gen_arena::{HandleType, RawHandle};
-use aleph_io_queue::channel::{LoadChannel, OpenChannel, ReadChannel};
-use aleph_vfs::async_io::AsyncIoMessage;
-use aleph_vfs::file::{IAsyncVFile, IAsyncVFileExt};
+use aleph_io_queue::channel::IoMessage;
+use aleph_vfs::file::IAsyncVFile;
 use aleph_vfs::path::VPath;
 use aleph_vfs::{IRouter, IRouterExt};
+use crossbeam::channel::Sender;
 
 use crate::core::async_io::futures::{FileLoad, FileOpen, FileRead};
 
@@ -46,34 +46,16 @@ use crate::core::async_io::futures::{FileLoad, FileOpen, FileRead};
 ///
 /// Provides utilities so file IO can be performed asynchronously in a way the executor is able to
 /// wake and poll the correct future with our completion based async io system.
-pub struct IoContext<'a, T> {
+pub struct IoContext<'a> {
     pub(crate) handle: RawHandle,
-    pub(crate) sender: T,
-    pub(crate) response_slot: &'a Cell<Option<AsyncIoMessage>>,
+    pub(crate) sender: Sender<IoMessage>,
+    pub(crate) response_slot: &'a Cell<Option<IoMessage>>,
 }
 
-impl<'a, T> UnwindSafe for IoContext<'a, T> where
-    T: ReadChannel<Arc<VPath>>
-        + LoadChannel<Arc<VPath>>
-        + OpenChannel<Arc<dyn IAsyncVFile>>
-        + Clone
-{
-}
-impl<'a, T> RefUnwindSafe for IoContext<'a, T> where
-    T: ReadChannel<Arc<VPath>>
-        + LoadChannel<Arc<VPath>>
-        + OpenChannel<Arc<dyn IAsyncVFile>>
-        + Clone
-{
-}
+impl<'a> UnwindSafe for IoContext<'a> {}
+impl<'a> RefUnwindSafe for IoContext<'a> {}
 
-impl<'a, T> IoContext<'a, T>
-where
-    T: ReadChannel<Arc<VPath>>
-        + LoadChannel<Arc<VPath>>
-        + OpenChannel<Arc<dyn IAsyncVFile>>
-        + Clone,
-{
+impl<'a> IoContext<'a> {
     /// Wrapper over [`IAsyncVFile::read_at`] that will correctly route the completion responses
     /// to the executor the future is running in.
     pub async unsafe fn read_file_at(
@@ -162,6 +144,8 @@ where
         vfs: &dyn IRouter,
         path: impl AsRef<VPath>,
     ) -> io::Result<Arc<dyn IAsyncVFile>> {
+        let path = path.as_ref();
+
         let result = vfs.open_async(
             self.sender.clone(),
             path,
@@ -170,6 +154,8 @@ where
 
         let future = match result {
             Ok(_) => FileOpen {
+                path: path.as_ref(),
+                vfs,
                 response_slot: self.response_slot,
             },
             Err(_) => {

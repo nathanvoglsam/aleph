@@ -75,6 +75,25 @@ impl TopLevelHandleCache {
         self.threads
     }
 
+    /// Fetch an existing entry for the given 'path'.
+    pub fn get(&self, path: impl AsRef<Path>) -> Result<Arc<[File]>, io::Error> {
+        self.__get(path.as_ref())
+    }
+
+    fn __get(&self, path: &Path) -> Result<Arc<[File]>, io::Error> {
+        let cache = self.cache.lock().map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::BrokenPipe,
+                "The top level cache mutex was poisoned.",
+            )
+        })?;
+        if let Some(existing) = cache.get(path) {
+            Ok(existing.clone())
+        } else {
+            Err(io::Error::from(io::ErrorKind::WouldBlock))
+        }
+    }
+
     /// Fetch an existing entry, or create a new one if it's missing, for the given 'path'.
     ///
     /// The first time this is called the cache will open `threads` file handles for the file. This

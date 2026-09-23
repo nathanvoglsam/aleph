@@ -31,7 +31,6 @@ use std::io;
 use std::pin::Pin;
 use std::ptr::NonNull;
 
-use aleph_vfs::async_io::AsyncIoSender;
 use mg::async_resource_loader::AsyncResourceLoader;
 
 use crate::core::async_io::context::IoContext;
@@ -53,7 +52,7 @@ impl FutureSpawner {
     pub(crate) fn new<T>(spawner: T) -> Self
     where
         for<'a> T: (AsyncFnOnce(
-                IoContext<'a, AsyncIoSender>,
+                IoContext<'a>,
                 &'a AsyncResourceLoader<ResourceLoadHandle>,
             ) -> io::Result<()>)
             + Send
@@ -77,7 +76,7 @@ impl FutureSpawner {
 
     pub(crate) fn spawn<'a>(
         self,
-        io: IoContext<'a, AsyncIoSender>,
+        io: IoContext<'a>,
         loader: &'a AsyncResourceLoader<ResourceLoadHandle>,
     ) -> Pin<Box<TaskFuture<'a>>> {
         let unwrapper = unsafe { self.spawner.as_ref().unwrapper };
@@ -109,21 +108,18 @@ struct SpawnerVTable {
 }
 
 type UnwrapperFn = for<'a> unsafe fn(
-    IoContext<'a, AsyncIoSender>,
+    IoContext<'a>,
     &'a AsyncResourceLoader<ResourceLoadHandle>,
     NonNull<SpawnerVTable>,
 ) -> Pin<Box<TaskFuture<'a>>>;
 
 unsafe fn unwrapper<'aa, T>(
-    ctx: IoContext<'aa, AsyncIoSender>,
+    ctx: IoContext<'aa>,
     loader: &'aa AsyncResourceLoader<ResourceLoadHandle>,
     f: NonNull<SpawnerVTable>,
 ) -> Pin<Box<TaskFuture<'aa>>>
 where
-    for<'a> T: (AsyncFnOnce(
-            IoContext<'a, AsyncIoSender>,
-            &'a AsyncResourceLoader<ResourceLoadHandle>,
-        ) -> io::Result<()>)
+    for<'a> T: (AsyncFnOnce(IoContext<'a>, &'a AsyncResourceLoader<ResourceLoadHandle>) -> io::Result<()>)
         + Send
         + 'static,
 {

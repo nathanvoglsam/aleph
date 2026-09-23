@@ -31,11 +31,9 @@ use std::io;
 use std::marker::PhantomData;
 use std::num::NonZero;
 use std::ptr::NonNull;
-use std::sync::Arc;
 
-use aleph_io_queue::channel::{LoadChannel, ReadChannel};
-use crossbeam::channel::SendError;
-use smallbox::{SmallBox, smallbox};
+use aleph_io_queue::channel::IoMessage;
+use crossbeam::channel::{SendError, Sender};
 
 use crate::path::VPath;
 
@@ -159,83 +157,25 @@ impl<'vfs> io::Seek for VFileReader<'vfs> {
 }
 
 pub trait IAsyncVFile: Send + Sync + 'static {
-    unsafe fn __read_at(
+    unsafe fn read_at(
         &self,
         buf: NonNull<[u8]>,
         offset: u64,
-        sender: SmallBox<dyn ReadChannel<Arc<VPath>>, [u128; 1]>,
+        sender: Sender<IoMessage>,
         opaque: u64,
     ) -> Result<(), SendError<()>>;
 
-    unsafe fn __read_exact_at(
+    unsafe fn read_exact_at(
         &self,
         buf: NonNull<[u8]>,
         offset: u64,
-        sender: SmallBox<dyn ReadChannel<Arc<VPath>>, [u128; 1]>,
+        sender: Sender<IoMessage>,
         opaque: u64,
     ) -> Result<(), SendError<()>>;
 
-    fn __load(
-        &self,
-        sender: SmallBox<dyn LoadChannel<Arc<VPath>>, [u128; 1]>,
-        opaque: u64,
-    ) -> Result<(), SendError<()>>;
+    fn load(&self, sender: Sender<IoMessage>, opaque: u64) -> Result<(), SendError<()>>;
 
     fn path(&self) -> &VPath;
-}
-
-pub trait IAsyncVFileExt {
-    unsafe fn read_at<T: ReadChannel<Arc<VPath>>>(
-        &self,
-        buf: NonNull<[u8]>,
-        offset: u64,
-        sender: T,
-        opaque: u64,
-    ) -> Result<(), SendError<()>>;
-
-    unsafe fn read_exact_at<T: ReadChannel<Arc<VPath>>>(
-        &self,
-        buf: NonNull<[u8]>,
-        offset: u64,
-        sender: T,
-        opaque: u64,
-    ) -> Result<(), SendError<()>>;
-
-    fn load<T: LoadChannel<Arc<VPath>>>(&self, sender: T, opaque: u64)
-    -> Result<(), SendError<()>>;
-}
-
-impl<TT: IAsyncVFile + ?Sized> IAsyncVFileExt for TT {
-    unsafe fn read_at<T: ReadChannel<Arc<VPath>>>(
-        &self,
-        buf: NonNull<[u8]>,
-        offset: u64,
-        sender: T,
-        opaque: u64,
-    ) -> Result<(), SendError<()>> {
-        let sender: SmallBox<dyn ReadChannel<Arc<VPath>>, _> = smallbox!(sender);
-        unsafe { self.__read_at(buf, offset, sender, opaque) }
-    }
-
-    unsafe fn read_exact_at<T: ReadChannel<Arc<VPath>>>(
-        &self,
-        buf: NonNull<[u8]>,
-        offset: u64,
-        sender: T,
-        opaque: u64,
-    ) -> Result<(), SendError<()>> {
-        let sender: SmallBox<dyn ReadChannel<Arc<VPath>>, _> = smallbox!(sender);
-        unsafe { self.__read_exact_at(buf, offset, sender, opaque) }
-    }
-
-    fn load<T: LoadChannel<Arc<VPath>>>(
-        &self,
-        sender: T,
-        opaque: u64,
-    ) -> Result<(), SendError<()>> {
-        let sender: SmallBox<dyn LoadChannel<Arc<VPath>>, _> = smallbox!(sender);
-        self.__load(sender, opaque)
-    }
 }
 
 pub(crate) struct VFileVtable {
