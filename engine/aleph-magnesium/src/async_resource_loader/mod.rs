@@ -28,7 +28,6 @@
 //
 
 pub mod buffer_upload_range;
-pub mod loader_notify;
 pub mod texture_upload_range;
 
 use std::cell::{Cell, RefCell};
@@ -47,16 +46,25 @@ use crate::internal::async_resource_loader::buffer::BufferLoadState;
 use crate::internal::async_resource_loader::queued_copy_manager::{
     QueuedCopyManager, SubmittedCopy,
 };
-use crate::internal::async_resource_loader::renderer_channel::{
-    LoaderSender, LoaderToRendererMessage,
-};
+use crate::internal::async_resource_loader::renderer_channel::LoaderSender;
 use crate::internal::async_resource_loader::request_states::RequestStates;
 use crate::internal::async_resource_loader::submission_manager::SubmissionManager;
 use crate::internal::async_resource_loader::texture::TextureLoadState;
 use crate::internal::async_resource_loader::upload_memory_manager::UploadMemoryManager;
 use crate::internal::buffer::make_standard_buffer_desc;
 use crate::internal::texture::make_standard_texture_desc;
+use crate::resource::buffer::BufferHandle;
+use crate::resource::texture::TextureHandle;
 use crate::resource::texture::simple::SimpleTextureDesc;
+
+/// Result type alias that covers the common case for loader result messages.
+pub type LoaderResult<T, C, E = ()> = (Result<T, E>, C);
+
+/// Alias over [`LoaderResult`] for buffer loading cases.
+pub type BufferLoadResult<C> = LoaderResult<BufferHandle, C>;
+
+/// Alias over [`LoaderResult`] for buffer loading cases.
+pub type TextureLoadResult<C> = LoaderResult<TextureHandle, C>;
 
 pub struct BufferLoad;
 make_handle_id!(BufferLoad);
@@ -102,7 +110,7 @@ pub struct AsyncResourceLoader<C: Send + 'static> {
     submission_manager: SubmissionManager,
 
     /// Channel to pipe output upload messages into.
-    loader_sender: LoaderSender<C>, // TODO: this should probably be a queue
+    loader_sender: LoaderSender<C>,
 }
 
 impl<C: Send + 'static> Drop for AsyncResourceLoader<C> {
@@ -145,17 +153,13 @@ impl<C: Send + 'static> Drop for AsyncResourceLoader<C> {
         // Notify any outstanding request listeners that the requests were canceled. We don't care
         // if anyone is listening, but send the messages in case they are.
         for (_, r) in self.request_states.get_mut().buffers.drain() {
-            let _ = self
-                .loader_sender
-                .try_send(LoaderToRendererMessage::Canceled { cookie: r.cookie });
+            let _ = r.sender.send((Err(()), r.cookie));
         }
 
         // Notify any outstanding request listeners that the requests were canceled. We don't care
         // if anyone is listening, but send the messages in case they are.
         for (_, r) in self.request_states.get_mut().textures.drain() {
-            let _ = self
-                .loader_sender
-                .try_send(LoaderToRendererMessage::Canceled { cookie: r.cookie });
+            let _ = r.sender.send((Err(()), r.cookie));
         }
     }
 }
@@ -163,6 +167,7 @@ impl<C: Send + 'static> Drop for AsyncResourceLoader<C> {
 impl<C: Send + 'static> AsyncResourceLoader<C> {
     pub fn begin_buffer_load(
         &self,
+        sender: kanal::Sender<BufferLoadResult<C>>,
         size: u64,
         cookie: C,
     ) -> Result<BufferLoadHandle, rhi::BufferCreateError> {
@@ -170,11 +175,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         let buffer = match self.device.create_buffer(&rhi_desc) {
             Ok(v) => v,
             Err(err) => {
-                // 'send' only fails if the listener hangs up. If they hang up it doesn't matter
-                // if we succeed, there's nobody to receive the message anyway.
-                let _ = self
-                    .loader_sender
-                    .send(LoaderToRendererMessage::Failed { cookie });
+                let _ = sender.send((Err(()), cookie));
                 return Err(err);
             }
         };
@@ -184,6 +185,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             bytes_submitted: 0,
             bytes_needed: size,
             cookie,
+            sender,
         };
         let handle = self.request_states.borrow_mut().buffers.alloc(load);
         Ok(handle)
@@ -191,6 +193,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
 
     pub fn begin_texture_load<T: SimpleTextureDesc>(
         &self,
+        sender: kanal::Sender<TextureLoadResult<C>>,
         desc: &T,
         cookie: C,
     ) -> Result<TextureLoadHandle, CreateTextureRequestError> {
@@ -199,9 +202,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             None => {
                 // 'send' only fails if the listener hangs up. If they hang up it doesn't matter
                 // if we succeed, there's nobody to receive the message anyway.
-                let _ = self
-                    .loader_sender
-                    .send(LoaderToRendererMessage::Failed { cookie });
+                let _ = sender.send((Err(()), cookie));
                 return Err(CreateTextureRequestError::BadTextureDimensions);
             }
         };
@@ -210,9 +211,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             Err(err) => {
                 // 'send' only fails if the listener hangs up. If they hang up it doesn't matter
                 // if we succeed, there's nobody to receive the message anyway.
-                let _ = self
-                    .loader_sender
-                    .send(LoaderToRendererMessage::Failed { cookie });
+                let _ = sender.send((Err(()), cookie));
                 return Err(CreateTextureRequestError::TextureCreateError(err));
             }
         };
@@ -221,6 +220,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             layout: desc.as_simple_layout(),
             levels: BVec::new_in(system()), // TODO: this
             cookie,
+            sender,
         };
         let handle = self.request_states.borrow_mut().textures.alloc(load);
         Ok(handle)
@@ -236,9 +236,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
 
         if let Some(req) = states.buffers.free(handle) {
-            let _ = self
-                .loader_sender
-                .send(LoaderToRendererMessage::Failed { cookie: req.cookie });
+            let _ = req.sender.send((Err(()), req.cookie));
         }
     }
 
@@ -252,9 +250,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
 
         if let Some(req) = states.textures.free(handle) {
-            let _ = self
-                .loader_sender
-                .send(LoaderToRendererMessage::Failed { cookie: req.cookie });
+            let _ = req.sender.send((Err(()), req.cookie));
         }
     }
 

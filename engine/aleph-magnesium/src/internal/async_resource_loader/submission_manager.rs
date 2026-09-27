@@ -87,6 +87,7 @@ impl Submission {
                             let msg = LoaderToRendererMessage::BufferComplete {
                                 cookie: r.cookie,
                                 resource: r.buffer,
+                                sender: r.sender,
                             };
 
                             if loader_sender.send(msg).is_err() {
@@ -106,6 +107,7 @@ impl Submission {
                             let msg = LoaderToRendererMessage::TextureComplete {
                                 cookie: r.cookie,
                                 resource: r.texture,
+                                sender: r.sender,
                             };
                             if loader_sender.send(msg).is_err() {
                                 maybe_failed = Err(RetireError::RendererDisconnected);

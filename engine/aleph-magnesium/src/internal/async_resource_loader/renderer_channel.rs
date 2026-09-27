@@ -32,7 +32,7 @@ use std::sync::Arc;
 use crossbeam::channel::{Receiver, Sender, TryRecvError};
 use thiserror::Error;
 
-use crate::async_resource_loader::loader_notify::LoaderMessage;
+use crate::async_resource_loader::{BufferLoadResult, TextureLoadResult};
 use crate::internal::buffer::{BufferObject, BufferObjectStore};
 use crate::internal::renderer::last_use_tracker::{LastBufferUse, LastTextureUse, LastUseTracker};
 use crate::internal::texture::{TextureObject, TextureObjectStore};
@@ -51,6 +51,9 @@ pub enum LoaderToRendererMessage<C: Send + 'static> {
 
         /// The fully initialized resource to be made available on the renderer's main queue.
         resource: rhi::BufferHandle,
+
+        /// Channel that will be notified
+        sender: kanal::Sender<BufferLoadResult<C>>,
     },
 
     /// A texture upload was successfully completed in full. Provides the resource to make available
@@ -62,23 +65,9 @@ pub enum LoaderToRendererMessage<C: Send + 'static> {
 
         /// The fully initialized resource to be made available on the renderer's main queue.
         resource: rhi::TextureHandle,
-    },
 
-    /// A resource upload has been completed successfully, and the resource is now accessible via
-    /// the given handle.
-    Failed {
-        /// Cookie that should be dispatched to the downstream listener to notify them of the
-        /// canceled request.
-        cookie: C,
-    },
-
-    /// A resource upload was canceled, either explicitly or implicitly (e.g. the loader was
-    /// dropped). Provides the request cookie so the caller who spawned the request can be notified
-    /// the request is canceled.
-    Canceled {
-        /// Cookie that should be dispatched to the downstream listener to notify them of the
-        /// canceled request.
-        cookie: C,
+        /// Channel that will be notified
+        sender: kanal::Sender<TextureLoadResult<C>>,
     },
 }
 
@@ -106,10 +95,6 @@ pub struct GenericLoaderMessageDispatcher<C: Send + 'static> {
 
     /// Receives messages from a resource loader.
     pub renderer_receiver: LoaderReceiver<C>,
-
-    /// Sends messages to any outside listeners that need to know once resources they asked for are
-    /// made available.
-    pub renderer_sender: Sender<LoaderMessage<C>>,
 }
 
 impl<C: Send + 'static> LoaderMessageDispatcher for GenericLoaderMessageDispatcher<C> {
@@ -120,8 +105,12 @@ impl<C: Send + 'static> LoaderMessageDispatcher for GenericLoaderMessageDispatch
         tpool: &mut TextureObjectStore,
     ) -> Result<(), LoaderDispatcherError> {
         loop {
-            let send_result = match self.renderer_receiver.try_recv() {
-                Ok(LoaderToRendererMessage::BufferComplete { cookie, resource }) => {
+            match self.renderer_receiver.try_recv() {
+                Ok(LoaderToRendererMessage::BufferComplete {
+                    cookie,
+                    resource,
+                    sender,
+                }) => {
                     let object = BufferObject {
                         object: Some(resource),
                     };
@@ -139,12 +128,20 @@ impl<C: Send + 'static> LoaderMessageDispatcher for GenericLoaderMessageDispatch
                         },
                     );
 
-                    self.renderer_sender.send(LoaderMessage::BufferComplete {
-                        cookie,
-                        resource: handle,
-                    })
+                    let msg = (Ok(handle), cookie);
+                    match sender.send(msg) {
+                        Ok(_) => {}
+                        Err(_) => {
+                            bpool.pool.free(handle);
+                            last_uses.buffers.remove(&handle);
+                        }
+                    }
                 }
-                Ok(LoaderToRendererMessage::TextureComplete { cookie, resource }) => {
+                Ok(LoaderToRendererMessage::TextureComplete {
+                    cookie,
+                    resource,
+                    sender,
+                }) => {
                     let rhi_desc = self.device.get_texture_desc(&resource);
                     let subresource_all = rhi::TextureSubResourceSet::all(&rhi_desc);
                     let format = rhi_desc.format;
@@ -170,17 +167,15 @@ impl<C: Send + 'static> LoaderMessageDispatcher for GenericLoaderMessageDispatch
                         },
                     );
 
-                    self.renderer_sender.send(LoaderMessage::TextureComplete {
-                        cookie,
-                        resource: handle,
-                    })
+                    let msg = (Ok(handle), cookie);
+                    match sender.send(msg) {
+                        Ok(_) => {}
+                        Err(_) => {
+                            tpool.pool.free(handle);
+                            last_uses.textures.remove(&handle);
+                        }
+                    }
                 }
-                Ok(LoaderToRendererMessage::Failed { cookie }) => {
-                    self.renderer_sender.send(LoaderMessage::Failed { cookie })
-                }
-                Ok(LoaderToRendererMessage::Canceled { cookie }) => self
-                    .renderer_sender
-                    .send(LoaderMessage::Canceled { cookie }),
                 Err(TryRecvError::Empty) => {
                     // Messages are flushed, return with success
                     return Ok(());
@@ -191,35 +186,6 @@ impl<C: Send + 'static> LoaderMessageDispatcher for GenericLoaderMessageDispatch
                     return Err(LoaderDispatcherError::LoaderDisconnected);
                 }
             };
-            match send_result {
-                Ok(_) => {
-                    // Complete success, loop again and try pop another message to process.
-                }
-                Err(err) => {
-                    // If we failed to send the message then we should destroy the resource we just
-                    // created and clear it from the last use tracker. We have to cancel the
-                    // resource because there's nobody to give the handle to. If we left the
-                    // resource in place then we would leak it, nobody would have the handle to
-                    // free the resource with.
-                    match err.0 {
-                        LoaderMessage::BufferComplete { resource, .. } => {
-                            bpool.pool.free(resource);
-                            last_uses.buffers.remove(&resource);
-                        }
-                        LoaderMessage::TextureComplete { resource, .. } => {
-                            tpool.pool.free(resource);
-                            last_uses.textures.remove(&resource);
-                        }
-                        LoaderMessage::Failed { .. } => {}
-                        LoaderMessage::Canceled { .. } => {}
-                    }
-
-                    // If the listener disconnected we should notify the renderer. The loader should
-                    // be destroyed because it's impossible to use any resources it loads because
-                    // the handles will never be made available outside the renderer internals.
-                    return Err(LoaderDispatcherError::ListenerDisconnected);
-                }
-            }
         }
     }
 }
@@ -228,7 +194,4 @@ impl<C: Send + 'static> LoaderMessageDispatcher for GenericLoaderMessageDispatch
 pub enum LoaderDispatcherError {
     #[error("The loader has disconnected from the channel.")]
     LoaderDisconnected,
-
-    #[error("The 'notify' listener has disconnected from the channel.")]
-    ListenerDisconnected,
 }

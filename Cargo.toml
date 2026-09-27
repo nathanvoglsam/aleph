@@ -148,6 +148,7 @@ quote = { version = "1", default-features = false }
 crossbeam = "0.8"
 once_cell = "1"
 parking_lot = "0.12"
+kanal = "0.1"
 
 ## Error Handling
 anyhow = "1"

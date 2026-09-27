@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use crate::async_resource_loader::BufferLoadResult;
+
 pub struct BufferLoadState<C> {
     /// The buffer object we're uploading into on the GPU.
     pub buffer: rhi::BufferHandle,
@@ -43,6 +45,10 @@ pub struct BufferLoadState<C> {
     /// Caller provided cookie that will be sent alongside messages on the loader's notification
     /// channel to identify the associated request.
     pub cookie: C,
+
+    /// Channel that should be used to publish the results of the loader operation back to the
+    /// listener.
+    pub sender: kanal::Sender<BufferLoadResult<C>>,
 }
 
 impl<C> BufferLoadState<C> {

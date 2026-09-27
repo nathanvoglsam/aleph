@@ -62,6 +62,7 @@ aleph-rhi-api = { workspace = true }
 aleph-shader-db = { workspace = true }
 aleph-vk-format = { workspace = true }
 
+kanal = { workspace = true }
 log = { workspace = true }
 crossbeam = { workspace = true }
 bytemuck = { workspace = true }

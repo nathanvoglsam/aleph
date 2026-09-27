@@ -31,6 +31,7 @@ use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 use rhi::TextureDimension;
 
+use crate::async_resource_loader::TextureLoadResult;
 use crate::async_resource_loader::texture_upload_range::WantedTextureRows;
 use crate::internal::async_resource_loader::MgAsyncLdrSystem;
 use crate::internal::async_resource_loader::upload_memory_manager::UploadMemoryManager;
@@ -52,6 +53,10 @@ pub struct TextureLoadState<C> {
     /// Caller provided cookie that will be sent alongside messages on the loader's notification
     /// channel to identify the associated request.
     pub cookie: C,
+
+    /// Channel that should be used to publish the results of the loader operation back to the
+    /// listener.
+    pub sender: kanal::Sender<TextureLoadResult<C>>,
 }
 
 impl<C> TextureLoadState<C> {

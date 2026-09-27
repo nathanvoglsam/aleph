@@ -50,7 +50,6 @@ use parking_lot::Mutex;
 use smallbox::SmallBox;
 use smallbox::space::S8;
 
-use crate::async_resource_loader::loader_notify::LoaderNotify;
 use crate::async_resource_loader::{AsyncResourceLoader, AsyncResourceLoaderConfig};
 use crate::internal::MgSystem;
 use crate::internal::async_resource_loader::renderer_channel::{
@@ -163,7 +162,7 @@ impl Renderer {
     pub fn create_async_resource_loader<C: Send + 'static>(
         &mut self,
         config: AsyncResourceLoaderConfig,
-    ) -> Option<(AsyncResourceLoader<C>, LoaderNotify<C>)> {
+    ) -> Option<AsyncResourceLoader<C>> {
         let device = self.device.clone();
         let queue = device.get_queue(rhi::QueueType::Transfer)?;
         let fence = device.create_fence(0).ok()?;
@@ -175,25 +174,14 @@ impl Renderer {
         //
         // The renderer's job is to consume these messages, allocate resource handles for the new
         // buffers/textures, and then to publish new messages onto the 'notify' channel with the
-        // new handles. It must also pass cancelation messages along.
+        // new handles. It must also pass cancellation messages along.
         //
         // The reason we must dispatch the messages inside the renderer, rather than somewhere else
         // earlier in the frame to make the resource available sooner, is because we need exclusive
         // access to the resource pools to allocate the handles. Ideally we'd like to dispatch
         // before we call 'draw_frame', but resolving ownership makes this very difficult. We accept
         // the extra latency for now.
-        //
-        // TODO: should the loader push cancel messages directly to the notify channel instead?
         let (loader_sender, renderer_receiver) = crossbeam::channel::unbounded();
-
-        // Construct the channel that connects any outside listeners to the renderer.
-        //
-        // This is the channel over which the renderer will publish messages that will export the
-        // complete buffer/texture handles to the outside world.
-        //
-        // The renderer's job is to consume messages from the loader, process and make resources
-        // available via resource handles, and then export those handles to the connected listeners.
-        let (renderer_sender, notify_receiver) = crossbeam::channel::unbounded();
 
         // Add a type erased dispatcher that handles receiving and processing the messages from the
         // loader we just made.
@@ -208,19 +196,14 @@ impl Renderer {
         let generic_dispatcher = GenericLoaderMessageDispatcher {
             device: device.clone(),
             renderer_receiver,
-            renderer_sender,
         };
         let dispatcher = BBox::new_in(generic_dispatcher, system());
         self.async_loader_dispatchers
             .push(aleph_alloc::unsize_box!(dispatcher));
 
-        let notify = LoaderNotify {
-            receiver: notify_receiver,
-        };
-
         let loader = AsyncResourceLoader::<C>::new(device, queue, fence, loader_sender, config)?;
 
-        Some((loader, notify))
+        Some(loader)
     }
 
     pub fn create_material_instance(
@@ -334,8 +317,7 @@ impl Renderer {
                         // Successfully dispatched all our messages?
                         i += 1;
                     }
-                    Err(LoaderDispatcherError::LoaderDisconnected)
-                    | Err(LoaderDispatcherError::ListenerDisconnected) => {
+                    Err(LoaderDispatcherError::LoaderDisconnected) => {
                         // If the loader or listener is disconnected we drop the dispatcher which
                         // will close all the channels. This notifies the other party that there's
                         // nobody on the other end of the channel. The end result should be that
