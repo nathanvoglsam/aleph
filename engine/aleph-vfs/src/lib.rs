@@ -245,7 +245,7 @@ impl IRouter for Router {
         }
     }
 
-    fn __open_async(&self, waker: Arc<IoWaker<io::Result<()>>>, path: &VPath) -> io::Result<()> {
+    fn __open_async(&self, waker: IoWaker<io::Result<()>>, path: &VPath) -> io::Result<()> {
         let mut components = path.components();
 
         let layer_name = Self::parse_target_layer(&mut components)?;
@@ -291,7 +291,7 @@ pub trait IRouter: Send + Sync + 'static {
     /// The result of the operation will be sent onto the given 'sender'.
     ///
     /// Use  [`IRouterExt::open_async`] instead.
-    fn __open_async(&self, waker: Arc<IoWaker<io::Result<()>>>, path: &VPath) -> io::Result<()>;
+    fn __open_async(&self, waker: IoWaker<io::Result<()>>, path: &VPath) -> io::Result<()>;
 }
 
 /// An extension over [`IRouter`] that providers neater interfaces. We need this layer because we
@@ -327,7 +327,7 @@ pub trait IRouterExt: IRouter + Send + Sync + 'static {
     /// The result of the operation will be sent onto the given 'sender'.
     fn open_async<P: AsRef<VPath>>(
         &self,
-        waker: Arc<IoWaker<io::Result<()>>>,
+        waker: IoWaker<io::Result<()>>,
         path: P,
     ) -> io::Result<()> {
         self.__open_async(waker, path.as_ref())
@@ -408,7 +408,7 @@ pub trait ILayer: Send + Sync + 'static {
     /// async queue and the result will eventually be sent back via 'sender'.
     fn async_query_entity_async_io(
         &self,
-        waker: Arc<IoWaker<io::Result<()>>>,
+        waker: IoWaker<io::Result<()>>,
         path: &VPath,
     ) -> io::Result<()>;
 }

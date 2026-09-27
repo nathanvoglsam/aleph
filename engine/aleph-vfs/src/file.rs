@@ -31,7 +31,6 @@ use std::io;
 use std::marker::PhantomData;
 use std::num::NonZero;
 use std::ptr::NonNull;
-use std::sync::Arc;
 
 use aleph_io_queue::channel::IoWaker;
 use crossbeam::channel::SendError;
@@ -162,17 +161,17 @@ pub trait IAsyncVFile: Send + Sync + 'static {
         &self,
         buf: NonNull<[u8]>,
         offset: u64,
-        waker: Arc<IoWaker<io::Result<usize>>>,
+        waker: IoWaker<io::Result<usize>>,
     ) -> Result<(), SendError<()>>;
 
     unsafe fn read_exact_at(
         &self,
         buf: NonNull<[u8]>,
         offset: u64,
-        waker: Arc<IoWaker<io::Result<usize>>>,
+        waker: IoWaker<io::Result<usize>>,
     ) -> Result<(), SendError<()>>;
 
-    fn load(&self, waker: Arc<IoWaker<io::Result<Vec<u8>>>>) -> Result<(), SendError<()>>;
+    fn load(&self, waker: IoWaker<io::Result<Vec<u8>>>) -> Result<(), SendError<()>>;
 
     fn path(&self) -> &VPath;
 }

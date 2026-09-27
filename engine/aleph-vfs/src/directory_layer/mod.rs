@@ -245,7 +245,7 @@ impl ILayer for DirectoryLayer {
 
     fn async_query_entity_async_io(
         &self,
-        waker: Arc<IoWaker<io::Result<()>>>,
+        waker: IoWaker<io::Result<()>>,
         path: &VPath,
     ) -> io::Result<()> {
         let io_queue = match self.io_queue.as_ref() {

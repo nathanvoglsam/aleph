@@ -29,14 +29,13 @@
 
 use std::io;
 use std::io::Read;
-use std::sync::Arc;
+use std::task::Waker;
 
-use aleph_gen_arena::RawHandle;
 use aleph_io_queue::IoQueue;
 use aleph_io_queue::channel::IoWaker;
 use aleph_io_queue::top_level_handle_cache::TopLevelHandleCache;
 use camino::Utf8PathBuf;
-use crossbeam::channel::unbounded;
+use crossbeam::channel::{Receiver, bounded};
 
 use crate::directory_layer::DirectoryLayer;
 use crate::{IRouterExt, LayerDesc, Router};
@@ -251,23 +250,11 @@ pub fn async_read_test() {
 
     assert_eq!(string, "Hello, World!");
 
-    let (sender, receiver) = unbounded();
-
-    let mut waker = IoWaker::new(RawHandle::dangling(), sender);
-
+    let (receiver, waker) = TestWaker::new();
     let file = router.open_for_async("/package_a/file.txt").unwrap();
-    file.load(waker.clone()).unwrap();
+    file.load(waker).unwrap();
 
-    let result = receiver.recv().unwrap();
-    assert_eq!(result, RawHandle::dangling());
-
-    let result = loop {
-        if let Some(waker) = Arc::get_mut(&mut waker) {
-            break waker.take().unwrap();
-        }
-    };
-
-    let data = result.unwrap();
+    let data = receiver.recv().unwrap();
 
     let data = String::from_utf8(data).unwrap();
     assert_eq!(data, "Hello, World!");
@@ -291,43 +278,36 @@ pub fn async_open_test() {
 
     assert_eq!(string, "Hello, World!");
 
-    let (sender, receiver) = unbounded();
+    let (receiver, waker) = TestWaker::new();
+    router.open_async(waker, "/package_a/file.txt").unwrap();
 
-    let mut waker = IoWaker::new(RawHandle::dangling(), sender.clone());
-
-    router
-        .open_async(waker.clone(), "/package_a/file.txt")
-        .unwrap();
-
-    let result = receiver.recv().unwrap();
-    assert_eq!(result, RawHandle::dangling());
-
-    let result = loop {
-        if let Some(waker) = Arc::get_mut(&mut waker) {
-            break waker.take().unwrap();
-        }
-    };
-
-    let _ = result.unwrap();
+    let _ = receiver.recv().unwrap();
 
     let file = router
         .open_for_async_non_blocking("/package_a/file.txt")
         .unwrap();
 
-    let mut waker = IoWaker::new(RawHandle::dangling(), sender.clone());
-    file.load(waker.clone()).unwrap();
+    let (receiver, waker) = TestWaker::new();
+    file.load(waker).unwrap();
 
-    let result = receiver.recv().unwrap();
-    assert_eq!(result, RawHandle::dangling());
-
-    let result = loop {
-        if let Some(waker) = Arc::get_mut(&mut waker) {
-            break waker.take().unwrap();
-        }
-    };
-
-    let data = result.unwrap();
+    let data = receiver.recv().unwrap();
 
     let data = String::from_utf8(data).unwrap();
     assert_eq!(data, "Hello, World!");
+}
+
+struct TestWaker<T> {
+    receiver: Receiver<T>,
+}
+
+impl<T> TestWaker<T> {
+    fn new() -> (Self, IoWaker<T>) {
+        let (sender, receiver) = bounded(1);
+        let io_waker = IoWaker::new(Waker::noop().clone(), sender);
+        (Self { receiver }, io_waker)
+    }
+
+    fn recv(&self) -> T {
+        self.receiver.recv().unwrap()
+    }
 }

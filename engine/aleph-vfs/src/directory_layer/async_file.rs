@@ -50,7 +50,7 @@ impl IAsyncVFile for AsyncVFile {
         &self,
         buf: NonNull<[u8]>,
         offset: u64,
-        waker: Arc<IoWaker<io::Result<usize>>>,
+        waker: IoWaker<io::Result<usize>>,
     ) -> Result<(), SendError<()>> {
         unsafe { self.queue.async_read(self.path.clone(), buf, offset, waker) }
     }
@@ -59,12 +59,12 @@ impl IAsyncVFile for AsyncVFile {
         &self,
         buf: NonNull<[u8]>,
         offset: u64,
-        waker: Arc<IoWaker<io::Result<usize>>>,
+        waker: IoWaker<io::Result<usize>>,
     ) -> Result<(), SendError<()>> {
         unsafe { self.queue.async_read(self.path.clone(), buf, offset, waker) }
     }
 
-    fn load(&self, waker: Arc<IoWaker<io::Result<Vec<u8>>>>) -> Result<(), SendError<()>> {
+    fn load(&self, waker: IoWaker<io::Result<Vec<u8>>>) -> Result<(), SendError<()>> {
         self.queue.async_load(self.path.clone(), waker)
     }
 
