@@ -102,15 +102,10 @@ pub unsafe fn emit_alloc(ptr: *mut u8, size: usize) {
     let ptr = ptr as *const u8 as *const std::os::raw::c_void;
     if CALLSTACK_DEPTH_MEM != 0 {
         unsafe {
-            tracy_client::sys::___tracy_emit_memory_alloc_callstack(
-                ptr,
-                size,
-                CALLSTACK_DEPTH_MEM,
-                1,
-            )
+            tracy_client::sys::___tracy_emit_memory_alloc_callstack(ptr, size, CALLSTACK_DEPTH_MEM)
         }
     } else {
-        unsafe { tracy_client::sys::___tracy_emit_memory_alloc(ptr, size, 1) }
+        unsafe { tracy_client::sys::___tracy_emit_memory_alloc(ptr, size) }
     }
 }
 
@@ -120,11 +115,9 @@ pub unsafe fn emit_free(ptr: *mut u8) {
 
     let ptr = ptr as *const u8 as *const std::os::raw::c_void;
     if CALLSTACK_DEPTH_MEM != 0 {
-        unsafe {
-            tracy_client::sys::___tracy_emit_memory_free_callstack(ptr, CALLSTACK_DEPTH_MEM, 1)
-        }
+        unsafe { tracy_client::sys::___tracy_emit_memory_free_callstack(ptr, CALLSTACK_DEPTH_MEM) }
     } else {
-        unsafe { tracy_client::sys::___tracy_emit_memory_free(ptr, 1) }
+        unsafe { tracy_client::sys::___tracy_emit_memory_free(ptr) }
     }
 }
 
@@ -139,12 +132,11 @@ pub unsafe fn emit_alloc_n(ptr: *mut u8, size: usize, name: &'static std::ffi::C
                 ptr,
                 size,
                 CALLSTACK_DEPTH_MEM,
-                1,
                 name.as_ptr(),
             )
         }
     } else {
-        unsafe { tracy_client::sys::___tracy_emit_memory_alloc_named(ptr, size, 1, name.as_ptr()) }
+        unsafe { tracy_client::sys::___tracy_emit_memory_alloc_named(ptr, size, name.as_ptr()) }
     }
 }
 
@@ -158,12 +150,11 @@ pub unsafe fn emit_free_n(ptr: *mut u8, name: &'static std::ffi::CStr) {
             tracy_client::sys::___tracy_emit_memory_free_callstack_named(
                 ptr,
                 CALLSTACK_DEPTH_MEM,
-                1,
                 name.as_ptr(),
             )
         }
     } else {
-        unsafe { tracy_client::sys::___tracy_emit_memory_free_named(ptr, 1, name.as_ptr()) }
+        unsafe { tracy_client::sys::___tracy_emit_memory_free_named(ptr, name.as_ptr()) }
     }
 }
 
