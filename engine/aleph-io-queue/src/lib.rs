@@ -135,7 +135,7 @@ impl IoQueue {
     pub fn open_async(
         &self,
         file: Arc<Path>,
-        sender: Arc<IoWaker<io::Result<()>>>,
+        sender: IoWaker<io::Result<()>>,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
@@ -163,7 +163,7 @@ impl IoQueue {
         file: Arc<Path>,
         dst: NonNull<[u8]>,
         offset: u64,
-        sender: Arc<IoWaker<io::Result<usize>>>,
+        sender: IoWaker<io::Result<usize>>,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
@@ -202,7 +202,7 @@ impl IoQueue {
         file: Arc<Path>,
         dst: NonNull<[u8]>,
         offset: u64,
-        sender: Arc<IoWaker<io::Result<usize>>>,
+        sender: IoWaker<io::Result<usize>>,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
@@ -225,7 +225,7 @@ impl IoQueue {
     pub fn async_load(
         &self,
         file: Arc<Path>,
-        sender: Arc<IoWaker<io::Result<Vec<u8>>>>,
+        sender: IoWaker<io::Result<Vec<u8>>>,
     ) -> Result<(), SendError<()>> {
         AsyncIo::with(|| {
             let channel = self.sender.as_ref().unwrap();
@@ -277,13 +277,11 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.resolve(Err(err));
-                            let _ = sender.wake();
+                            let _ = sender.wake(Err(err));
                             continue;
                         }
                     };
-                    let _ = sender.resolve(Ok(()));
-                    let _ = sender.wake();
+                    let _ = sender.wake(Ok(()));
                 }
                 AsyncRequest::ReadData {
                     file,
@@ -296,8 +294,7 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.resolve(Err(err));
-                            let _ = sender.wake();
+                            let _ = sender.wake(Err(err));
                             continue;
                         }
                     };
@@ -322,16 +319,14 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.resolve(Err(err));
-                            let _ = sender.wake();
+                            let _ = sender.wake(Err(err));
                             continue;
                         }
                     };
 
                     // We don't care if the receiver hung up or not as there's nothing we can do
                     // about it
-                    let _ = sender.resolve(Ok(bytes_transferred));
-                    let _ = sender.wake();
+                    let _ = sender.wake(Ok(bytes_transferred));
                 }
                 AsyncRequest::ReadDataExact {
                     file,
@@ -344,8 +339,7 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.resolve(Err(err));
-                            let _ = sender.wake();
+                            let _ = sender.wake(Err(err));
                             continue;
                         }
                     };
@@ -391,16 +385,14 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.resolve(Err(err));
-                            let _ = sender.wake();
+                            let _ = sender.wake(Err(err));
                             continue;
                         }
                     };
 
                     // We don't care if the receiver hung up or not as there's nothing we can do
                     // about it
-                    let _ = sender.resolve(Ok(bytes_transferred));
-                    let _ = sender.wake();
+                    let _ = sender.wake(Ok(bytes_transferred));
                 }
                 AsyncRequest::LoadFile { file, sender } => {
                     let handle_set = match self.handle_cache.get_or_open(&file) {
@@ -408,8 +400,7 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.resolve(Err(err));
-                            let _ = sender.wake();
+                            let _ = sender.wake(Err(err));
                             continue;
                         }
                     };
@@ -424,16 +415,14 @@ impl IoQueueWorker {
                         Err(err) => {
                             // We don't care if the receiver hung up or not as there's nothing we
                             // can do about it
-                            let _ = sender.resolve(Err(err));
-                            let _ = sender.wake();
+                            let _ = sender.wake(Err(err));
                             continue;
                         }
                     };
 
                     // We don't care if the receiver hung up or not as there's nothing we can do
                     // about it
-                    let _ = sender.resolve(Ok(buf));
-                    let _ = sender.wake();
+                    let _ = sender.wake(Ok(buf));
                 }
             }
         }
@@ -446,7 +435,7 @@ enum AsyncRequest {
         file: Arc<Path>,
 
         /// The channel on which to send result messages to
-        sender: Arc<IoWaker<io::Result<()>>>,
+        sender: IoWaker<io::Result<()>>,
     },
     ReadData {
         /// The path to the file to read
@@ -459,7 +448,7 @@ enum AsyncRequest {
         offset: u64,
 
         /// The channel on which to send result messages to
-        sender: Arc<IoWaker<io::Result<usize>>>,
+        sender: IoWaker<io::Result<usize>>,
     },
     ReadDataExact {
         /// The path to the file to read
@@ -472,14 +461,14 @@ enum AsyncRequest {
         offset: u64,
 
         /// The channel on which to send result messages to
-        sender: Arc<IoWaker<io::Result<usize>>>,
+        sender: IoWaker<io::Result<usize>>,
     },
     LoadFile {
         /// The path to the file to read
         file: Arc<Path>,
 
         /// The channel on which to send result messages to
-        sender: Arc<IoWaker<io::Result<Vec<u8>>>>,
+        sender: IoWaker<io::Result<Vec<u8>>>,
     },
 }
 
