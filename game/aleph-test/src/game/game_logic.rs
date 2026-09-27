@@ -33,15 +33,7 @@ use aleph_engine::api::components::{Camera, StaticMesh, Transform, TransformHist
 use aleph_engine::api::label::make_label;
 use aleph_engine::api::make_plugin_description_for_crate;
 use aleph_engine::api::math::{DVec3, Rotor3, Vec3};
-use aleph_engine::api::mg::material::binding::MaterialBinding;
-use aleph_engine::api::mg::material::{StandardMaterial, StandardMaterialLayout};
-use aleph_engine::api::mg::material_instance::MaterialInstanceDesc;
-use aleph_engine::api::mg::renderer::immediate_resource_builder::ImmediateResourceBuilder;
-use aleph_engine::api::mg::renderer::{BufferOptions, Renderer, SimpleTextureOptions};
-use aleph_engine::api::mg::resource::texture::TextureHandle;
-use aleph_engine::api::mg::resource::texture::simple::SimpleTextureLayout;
-use aleph_engine::api::mg::resource_loader::mip_upload::MipUploadDesc;
-use aleph_engine::api::mg::resource_loader::upload_buffer::{IUploadBuffer, UploadBuffer};
+use aleph_engine::api::mg::renderer::Renderer;
 use aleph_engine::api::platform::{AFrameTimer, AGamepads};
 use aleph_engine::api::plugin::{
     CoreRefs, IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription,
@@ -50,6 +42,7 @@ use aleph_engine::api::schedule::{CoreStage, WorldResource};
 use aleph_engine::api::scheduler::ResMut;
 use aleph_engine::engine::Engine;
 use aleph_engine::render::PluginRender;
+use aleph_engine::render::default_resources::DefaultResources;
 
 use crate::game::config::Config;
 use crate::game::cube_mesh::upload_cube_buffers;
@@ -132,67 +125,10 @@ impl IPlugin for PluginGameLogic {
             },
         ));
 
+        let default_resources = resources.get_ref::<DefaultResources>().unwrap().clone();
         let renderer = resources.get_mut::<Renderer>().unwrap();
 
-        let standard_material = StandardMaterial::new();
-
-        // let async_texture_loader = AsyncTextureLoader::new(renderer.device().upgrade());
-
-        // let mut arena = BumpThingy::new(renderer.device());
-
-        // let mut thinkers = Vec::new();
-        // for scene in config.scenes.iter() {
-        //     load_scene(
-        //         world,
-        //         renderer,
-        //         &mut arena,
-        //         &mut thinkers,
-        //         &standard_material,
-        //         &async_texture_loader,
-        //         Path::new(&scene),
-        //     );
-        // }
-
         let (idx, vtx) = upload_cube_buffers(renderer);
-
-        let white_tex =
-            create_1x1_colour_texture(&mut renderer.immediate_resource_builder(), 0xFFFFFFFF);
-        let black_tex =
-            create_1x1_colour_texture(&mut renderer.immediate_resource_builder(), 0x00000000);
-        let norm_tex =
-            create_1x1_colour_texture(&mut renderer.immediate_resource_builder(), 0xFFFF8080);
-        let colour = [0.5, 1.0, 0.5, 1.0];
-        let metal = 0.0;
-        let roughness = 0.5;
-        let layout = StandardMaterialLayout {
-            colour,
-            metal_roughness: [metal, roughness, 0.0, 0.0],
-            _padding1: [0; 128],
-            _padding2: [0; 96],
-        };
-
-        // Create material data buffer
-        let mut upload = UploadBuffer::new_owned(renderer.device(), 256).unwrap();
-        upload
-            .bytes_mut()
-            .copy_from_slice(bytemuck::bytes_of(&layout));
-        let buffer = renderer
-            .create_buffer_immediate(256, Some(upload.into_smallbox()), &BufferOptions::default())
-            .unwrap();
-
-        let inst_bindings = [
-            MaterialBinding::Buffer(Some(buffer)),
-            MaterialBinding::Texture(Some(white_tex)),
-            MaterialBinding::Texture(Some(white_tex)),
-            MaterialBinding::Texture(Some(norm_tex)),
-        ];
-        let inst_desc = MaterialInstanceDesc {
-            double_sided: false,
-            bindings: &inst_bindings,
-        };
-        let material_instance = renderer
-            .create_material_instance(&standard_material, &inst_desc)
-            .unwrap();
 
         let transform = Transform {
             position: DVec3::zero(),
@@ -207,51 +143,19 @@ impl IPlugin for PluginGameLogic {
             StaticMesh {
                 vtx,
                 idx,
-                material_instance,
+                material_instance: default_resources.default_material,
             },
         ));
-
-        // resources.insert(async_texture_loader);
 
         let mut free_camera = FreeCamera::new(frame_timer.clone(), gamepads.get_accessor(), camera);
         let throbber_logic = ThrobberLogic::new(frame_timer.clone(), throbber);
         schedule.add_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::logic"),
-            move |(mut world, mut renderer): (ResMut<WorldResource>, ResMut<Renderer>)| {
+            move |mut world: ResMut<WorldResource>| {
                 free_camera.tick(&mut world.0);
                 throbber_logic.tick(&mut world.0);
-                // loader.think(&mut renderer);
-                // thinkers.retain_mut(|t| match t.poll_and_resolve(&mut renderer) {
-                //     PollResult::Success => false,
-                //     PollResult::Waiting => true,
-                //     PollResult::Fail => {
-                //         log::error!("Thinker Failed!");
-                //         false
-                //     }
-                // });
             },
         );
     }
-}
-
-pub fn create_1x1_colour_texture(
-    resource_builder: &mut ImmediateResourceBuilder,
-    payload: u32,
-) -> TextureHandle {
-    let mut desc = SimpleTextureLayout::new();
-    // desc.usage(rhi::ResourceUsageFlags::SHADER_RESOURCE);
-    desc.with_format(rhi::Format::Rgba8Unorm);
-    desc.image_2d(1, 1);
-
-    let mut data = MipUploadDesc::new_owned(resource_builder.device, &desc, 0, 0, 1).unwrap();
-
-    let dst = &mut data.buffer.bytes_mut()[0..4];
-    dst.copy_from_slice(bytemuck::bytes_of(&payload));
-
-    let handle = resource_builder
-        .create_simple_texture_immediate(&desc, data, &SimpleTextureOptions::default())
-        .unwrap();
-
-    handle
 }

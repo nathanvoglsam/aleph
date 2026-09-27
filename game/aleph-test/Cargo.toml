@@ -50,34 +50,12 @@ aleph-alloc = { workspace = true, features = [] }
 aleph-engine = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-egui = { workspace = true }
-aleph-device-allocators = { workspace = true }
 aleph-profile = { workspace = true, features = [] }
-aleph-ktx = { workspace = true }
-aleph-mikktspace = { workspace = true }
-aleph-target = { workspace = true, features = [] }
 
 serde = { workspace = true }
 serde_json = { workspace = true }
 bytemuck = { workspace = true }
-rayon = { workspace = true }
 log = { workspace = true }
-crossbeam = { workspace = true }
-
-[dependencies.gltf] ## Heavy
-version = "1"
-features = [
-    "KHR_lights_punctual",
-    "KHR_materials_emissive_strength",
-    "KHR_materials_ior",
-    "KHR_materials_pbrSpecularGlossiness",
-    "KHR_materials_specular",
-    "KHR_materials_transmission",
-    "KHR_materials_unlit",
-    "KHR_materials_variants",
-    "KHR_materials_volume",
-    "KHR_texture_transform"
-]
-
 
 [target.'cfg(windows)'.dependencies]
 aleph-dx12-agility-sdk = { workspace = true }
