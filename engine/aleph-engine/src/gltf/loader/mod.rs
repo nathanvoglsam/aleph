@@ -27,4 +27,36 @@
 // SOFTWARE.
 //
 
-pub mod async_loader_requests;
+use std::sync::Arc;
+
+use aleph_object_system::unsafe_impl_iobject;
+use aleph_vfs::IRouter;
+use aleph_vfs::path::VPath;
+use crossbeam::channel::SendError;
+use mg::material_instance::MaterialInstanceHandle;
+
+use crate::core::async_io::worker::AsyncLoaderQueue;
+use crate::gltf::internal::GltfLoadPayload;
+use crate::render::async_loader::systems::async_load_resolver::AsyncLoadResolverQueue;
+
+pub struct GltfLoader {
+    pub loader_queue: AsyncLoaderQueue,
+    pub dest: AsyncLoadResolverQueue,
+    pub vfs: Arc<dyn IRouter>,
+    pub default_material: MaterialInstanceHandle,
+}
+
+unsafe_impl_iobject!(GltfLoader, "01a0e23b-9013-7572-822f-8abf61cb6c77");
+
+impl GltfLoader {
+    pub fn load(&self, path: Arc<VPath>) -> Result<(), SendError<()>> {
+        let vfs = self.vfs.clone();
+        let payload = GltfLoadPayload {
+            path,
+            dest: self.dest.clone(),
+            default_material: self.default_material,
+        };
+        self.loader_queue
+            .spawn(async move |io| crate::gltf::internal::task(vfs, io, payload).await)
+    }
+}

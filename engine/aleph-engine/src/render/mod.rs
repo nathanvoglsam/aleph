@@ -30,6 +30,7 @@
 pub mod async_loader;
 mod config;
 mod core;
+pub mod default_resources;
 mod egui;
 mod shaders;
 
@@ -51,8 +52,10 @@ use api::rhi::ARhiProvider;
 use mg::renderer::builder::ApplicationSurface;
 
 use crate::core::async_io::worker::{AsyncLoaderQueue, AsyncLoaderWorker};
-use crate::render::async_loader::resources::async_loader_requests::AsyncLoaderRequests;
-use crate::render::async_loader::systems::async_load_resolver::AsyncLoadResolverSystem;
+use crate::gltf::loader::GltfLoader;
+use crate::render::async_loader::systems::async_load_resolver::{
+    AsyncLoadResolverQueue, AsyncLoadResolverSystem,
+};
 use crate::render::config::Config;
 use crate::render::core::resources::render_scene::RenderSceneResource;
 use crate::render::core::systems::capture_previous_transforms::CapturePreviousTransformsSystem;
@@ -60,10 +63,12 @@ use crate::render::core::systems::publish_egui_scene::PublishEguiSceneSystem;
 use crate::render::core::systems::publish_render_scene::PublishRenderSceneSystem;
 use crate::render::core::systems::render::RenderSystem;
 use crate::render::core::systems::surface_sender::SurfaceSenderSystem;
+use crate::render::default_resources::DefaultResources;
 use crate::render::egui::render_plane::EguiRenderPlane;
 
 pub struct PluginRender {
     device: Option<Arc<dyn rhi::IDevice>>,
+    loader_queue: Option<AsyncLoaderQueue>,
     loader_thread: Option<JoinHandle<()>>,
 }
 
@@ -71,6 +76,7 @@ impl PluginRender {
     pub fn new() -> Self {
         Self {
             device: None,
+            loader_queue: None,
             loader_thread: None,
         }
     }
@@ -146,23 +152,33 @@ impl IPlugin for PluginRender {
         renderer.render_ahead_frames(config.render_ahead_frames as usize);
         let mut renderer = renderer.build().unwrap();
 
-        let (loader_thread, loader_queue, loader_notify) =
-            AsyncLoaderWorker::spawn_with(&mut renderer).unwrap();
+        // Construct our default resource objects. This creates some basic 1x1 solid colour textures
+        // and default dummy materials that can be used as fall backs.
+        let default_resources = DefaultResources::new(&mut renderer);
+        registry.core().resources.insert(default_resources.clone());
+
+        // Build our async io worker thread and queue
+        let (loader_thread, loader_queue) = AsyncLoaderWorker::spawn_with(&mut renderer).unwrap();
+        self.loader_queue = Some(loader_queue.clone());
         self.loader_thread = Some(loader_thread);
 
         registry.core().resources.insert(renderer);
+
+        let loader_resolve_queue = AsyncLoadResolverQueue::default();
+
+        let gltf_loader = GltfLoader {
+            loader_queue: loader_queue.clone(),
+            dest: loader_resolve_queue.clone(),
+            vfs: router.clone(),
+            default_material: default_resources.default_material,
+        };
+        registry.core().resources.insert(gltf_loader);
 
         // Construct and register the __render__ scene resource. This is distinct from the
         // simulation scene.
         registry.core().resources.insert(RenderSceneResource {
             scene: World::new(),
         });
-
-        // State maintained for async load requests
-        registry.core().resources.insert(AsyncLoaderRequests::new(
-            loader_queue.clone(),
-            router.clone(),
-        ));
 
         // System to take the send events about the rendering surface into the renderer over the
         // channel that we gave it.
@@ -182,7 +198,7 @@ impl IPlugin for PluginRender {
         // System that responds to messages from the async resource loader and applies them to the
         // scene.
         {
-            let system = AsyncLoadResolverSystem::new(loader_notify);
+            let system = AsyncLoadResolverSystem::new(loader_resolve_queue);
             system.register(&mut registry.core().schedule);
         }
 
@@ -219,9 +235,13 @@ impl IPlugin for PluginRender {
     }
 
     fn on_shutdown(&mut self) {
-        if let Some(loader) = self.loader_thread.take() {
-            loader.join().unwrap();
+        if let Some(queue) = self.loader_queue.take() {
+            queue.quit();
+            if let Some(loader) = self.loader_thread.take() {
+                loader.join().unwrap();
+            }
         }
+
         if let Some(device) = self.device.take() {
             log::debug!(
                 "IDevice::strong_count = '{}' at 'on_shutdown'",

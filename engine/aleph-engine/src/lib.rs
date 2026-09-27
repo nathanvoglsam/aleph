@@ -44,5 +44,6 @@ pub extern crate aleph_target as target;
 
 pub mod core;
 pub mod engine;
+pub mod gltf;
 pub mod plugin_registry;
 pub mod render;

@@ -27,7 +27,11 @@
 // SOFTWARE.
 //
 
+use std::io;
+
 pub mod context;
-pub mod futures;
-pub mod task;
+pub(crate) mod internal;
 pub mod worker;
+
+/// Interface of our tasks futures (once boxed, hence the `dyn`).
+pub type TaskFuture<'a> = dyn Future<Output = io::Result<()>> + 'a;

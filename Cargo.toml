@@ -139,6 +139,8 @@ serde_json = "1"
 toml = "1"
 rkyv = "0.8" ## Heavy
 image = {version = "0.25", default-features = false, features = ["default-formats"] }
+base64 = "0.13"
+urlencoding = "2"
 
 ## Proc Macro
 syn = { version = "3", features = ["full"] }

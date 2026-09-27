@@ -29,38 +29,25 @@
 
 use std::io;
 use std::ptr::NonNull;
-use std::sync::Arc;
 
 use aleph_vfs::IRouter;
 use aleph_vfs::path::VPathBuf;
-use mg::async_resource_loader::{AsyncResourceLoader, FlushError};
+use mg::async_resource_loader::FlushError;
+use mg::resource::buffer::BufferHandle;
 
 use crate::core::async_io::context::IoContext;
 use crate::render::async_loader::internal::utils::try_allocate_buffer_range_for;
-use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
 
-pub struct BufferLoadPayload {
-    /// Cookie tag to correlate messages with the initial request.
-    pub cookie: ResourceLoadHandle,
-
-    /// The vfs path of the file to open and read from.
-    pub path: VPathBuf,
-
-    /// Offset into the file to start reading data from.
-    pub offset: u64,
-
-    /// The size of the buffer to create, and the number of bytes to read from the file at the
-    /// given offset.
-    pub size: u64,
-}
-
-pub async fn task(
-    vfs: Arc<dyn IRouter>,
-    io: IoContext<'_>,
-    loader: &AsyncResourceLoader<ResourceLoadHandle>,
-    msg: BufferLoadPayload,
-) -> io::Result<()> {
-    let handle = match loader.begin_buffer_load(msg.size, msg.cookie) {
+pub async fn load_buffer_from_file(
+    vfs: &dyn IRouter,
+    io: &IoContext<'_>,
+    path: VPathBuf,
+    offset: u64,
+    size: u64,
+) -> io::Result<BufferHandle> {
+    let (sender, receiver) = kanal::bounded_async(1);
+    let loader = io.loader();
+    let handle = match loader.begin_buffer_load(sender.to_sync(), size, 0) {
         Ok(v) => v,
         Err(e) => {
             // If we failed to create the GPU resource then we should remove
@@ -74,8 +61,8 @@ pub async fn task(
         }
     };
 
-    let path = msg.path.as_path();
-    let file = match io.open_file(vfs.as_ref(), path).await {
+    let path = path.as_path();
+    let file = match io.open_file(vfs, path).await {
         Ok(v) => v,
         Err(e) => {
             log::error!("Failed to open file '{path}' with error '{e:?}'.");
@@ -84,10 +71,10 @@ pub async fn task(
         }
     };
 
-    let mut file_offset = msg.offset;
+    let mut file_offset = offset;
     loop {
         let range = match try_allocate_buffer_range_for(loader, handle) {
-            Ok(None) => return Ok(()),
+            Ok(None) => break,
             Ok(Some(r)) => r,
             Err(e) => {
                 log::error!("Error: {e:?}");
@@ -106,10 +93,7 @@ pub async fn task(
             // we also structure our executor and error conditions in a way where any failure or
             // panic that could lead to the buffer being freed from underneath the in-flight
             // request is promoted to an abort before it can cause UB.
-            let result = unsafe {
-                io.read_file_at(file.as_ref(), range.as_ptr(), file_offset)
-                    .await
-            };
+            let result = unsafe { io.read_file_at(file.as_ref(), buffer, file_offset).await };
             match result {
                 Ok(bytes_transferred) => {
                     file_offset = file_offset + bytes_transferred as u64;
@@ -156,7 +140,97 @@ pub async fn task(
             },
         }
     }
+
+    match receiver.recv().await {
+        Ok(v) => match v.0 {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                log::error!("Failed to create GPU resource with error '{e:?}'.");
+                Err(io::Error::from(io::ErrorKind::Other))
+            }
+        },
+        Err(e) => {
+            log::error!("The load request was lost '{e:?}'.");
+            Err(io::Error::from(io::ErrorKind::Other))
+        }
+    }
 }
+
+pub async fn load_buffer_from_data(io: &IoContext<'_>, data: &[u8]) -> io::Result<BufferHandle> {
+    let (sender, receiver) = kanal::bounded_async(1);
+    let loader = io.loader();
+    let handle = match loader.begin_buffer_load(sender.to_sync(), data.len() as u64, 0) {
+        Ok(v) => v,
+        Err(e) => {
+            // If we failed to create the GPU resource then we should remove
+            // the upload from the working set and try and process another
+            // upload instead.
+            //
+            // The magnesium loader handles notifying the renderer. We just
+            // log a message.
+            log::error!("Failed to create GPU resource with error '{e:?}'.");
+            return Err(io::Error::from(io::ErrorKind::Other));
+        }
+    };
+
+    let mut src = data;
+    loop {
+        let mut range = match try_allocate_buffer_range_for(loader, handle) {
+            Ok(None) => break,
+            Ok(Some(r)) => r,
+            Err(e) => {
+                log::error!("Error: {e:?}");
+                loader.fail_buffer_load(handle);
+                return Err(e);
+            }
+        };
+
+        let buffer = range.as_slice_mut();
+        let (read, rest) = src.split_at(buffer.len());
+        buffer.copy_from_slice(read);
+        src = rest;
+
+        match range.submit() {
+            Ok(_) => {}
+            Err(e) => match e {
+                FlushError::CommandRecordingFailure => {
+                    log::error!("Error: {e:?}");
+                    loader.fail_buffer_load(handle);
+                    return Err(io::Error::from(io::ErrorKind::Other));
+                }
+                FlushError::DeviceLost => {
+                    log::error!("Error: {e:?}");
+                    loader.fail_buffer_load(handle);
+                    return Err(io::Error::from(io::ErrorKind::Other));
+                }
+                FlushError::WaitFailure => {
+                    log::error!("Error: {e:?}");
+                    abort_unwind(|| panic!("Error: {e:?}"))
+                }
+                FlushError::RendererDisconnected => {
+                    log::error!("Error: {e:?}");
+                    loader.fail_buffer_load(handle);
+                    return Err(io::Error::from(io::ErrorKind::ConnectionAborted));
+                }
+            },
+        }
+    }
+
+    match receiver.recv().await {
+        Ok(v) => match v.0 {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                log::error!("Failed to create GPU resource with error '{e:?}'.");
+                Err(io::Error::from(io::ErrorKind::Other))
+            }
+        },
+        Err(e) => {
+            log::error!("The load request was lost '{e:?}'.");
+            Err(io::Error::from(io::ErrorKind::Other))
+        }
+    }
+}
+
 extern "C" fn abort_unwind<F: FnOnce() -> R, R>(f: F) -> R {
     f()
 }

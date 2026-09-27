@@ -48,7 +48,6 @@ impl PublishRenderSceneSystem {
             self.run(world, render_scene);
         };
         let system = system.system().runs_before(RenderSystem::LABEL);
-
         schedule.add_system_to_stage(CoreStage::Render.into(), Self::LABEL, system);
     }
 

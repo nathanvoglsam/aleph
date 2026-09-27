@@ -34,8 +34,6 @@ use mg::async_resource_loader::{
     AllocateRangeError, AsyncResourceLoader, BufferLoadHandle, RetireError,
 };
 
-use crate::render::async_loader::resources::async_loader_requests::ResourceLoadHandle;
-
 /// Utility wrapper over [`AsyncResourceLoader::allocate_range_for_buffer_load`] that handles
 /// wait and retry logic for allocating upload ranges.
 ///
@@ -45,10 +43,10 @@ use crate::render::async_loader::resources::async_loader_requests::ResourceLoadH
 /// which may make more memory available to the uploader. If we fail for a second time with
 /// 'NotEnoughUploadMemory' then we fail as retiring any in-flight commands should have freed
 /// up enough memory for any one request.
-pub fn try_allocate_buffer_range_for(
-    loader: &AsyncResourceLoader<ResourceLoadHandle>,
+pub fn try_allocate_buffer_range_for<C: Send + 'static>(
+    loader: &AsyncResourceLoader<C>,
     handle: BufferLoadHandle,
-) -> io::Result<Option<BufferUploadRange<'_, ResourceLoadHandle>>> {
+) -> io::Result<Option<BufferUploadRange<'_, C>>> {
     let mut attempt = 0;
     'alloc: loop {
         match loader.allocate_range_for_buffer_load(handle, u64::MAX) {

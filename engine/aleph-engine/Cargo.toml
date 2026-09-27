@@ -75,7 +75,11 @@ aleph-nstr = { workspace = true }
 aleph-magnesium = { workspace = true }
 aleph-gen-arena = { workspace = true }
 aleph-vfs = { workspace = true }
+aleph-ktx = { workspace = true }
+aleph-mikktspace = { workspace = true }
 
+kanal = { workspace = true }
+bytemuck = { workspace = true }
 camino = { workspace = true }
 crossbeam = { workspace = true }
 log = { workspace = true }
@@ -89,7 +93,23 @@ raw-window-handle = { workspace = true }
 smallbox = { workspace = true }
 env_logger = { workspace = true }
 rkyv = { workspace = true }
-thiserror = { workspace = true }
+base64 = { workspace = true }
+urlencoding = { workspace = true }
+
+[dependencies.gltf] ## Heavy
+version = "1"
+features = [
+    "KHR_lights_punctual",
+    "KHR_materials_emissive_strength",
+    "KHR_materials_ior",
+    "KHR_materials_pbrSpecularGlossiness",
+    "KHR_materials_specular",
+    "KHR_materials_transmission",
+    "KHR_materials_unlit",
+    "KHR_materials_variants",
+    "KHR_materials_volume",
+    "KHR_texture_transform"
+]
 
 [build-dependencies]
 aleph-compile = { workspace = true }
