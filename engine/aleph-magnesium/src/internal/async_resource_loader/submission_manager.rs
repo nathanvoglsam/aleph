@@ -91,6 +91,9 @@ impl Submission {
                             };
 
                             if loader_sender.send(msg).is_err() {
+                                log::trace!(
+                                    "Failed to notify renderer of successful buffer upload"
+                                );
                                 maybe_failed = Err(RetireError::RendererDisconnected);
                             }
                         }
@@ -110,6 +113,9 @@ impl Submission {
                                 sender: r.sender,
                             };
                             if loader_sender.send(msg).is_err() {
+                                log::trace!(
+                                    "Failed to notify renderer of successful texture upload"
+                                );
                                 maybe_failed = Err(RetireError::RendererDisconnected);
                             }
                         }

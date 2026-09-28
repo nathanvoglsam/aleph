@@ -64,7 +64,7 @@ impl IoQueue {
                 let recv = receiver.clone();
                 let top_level_handle_cache = top_level_handle_cache.clone();
                 let thread = std::thread::Builder::new()
-                    .name(format!("async-file-io-queue-{}", thread_id))
+                    .name(format!("io-queue-{}", thread_id))
                     .spawn(move || {
                         let mut worker = IoQueueWorker {
                             thread_id,
@@ -275,13 +275,15 @@ impl IoQueueWorker {
                     let _handle_set = match self.handle_cache.get_or_open(&file) {
                         Ok(v) => v,
                         Err(err) => {
-                            // We don't care if the receiver hung up or not as there's nothing we
-                            // can do about it
-                            let _ = sender.wake(Err(err));
+                            if let Err(r) = sender.wake(Err(err)) {
+                                log::trace!("Failed to notify listener of async result {:?}", r);
+                            }
                             continue;
                         }
                     };
-                    let _ = sender.wake(Ok(()));
+                    if let Err(r) = sender.wake(Ok(())) {
+                        log::trace!("Failed to notify listener of async result {:?}", r);
+                    }
                 }
                 AsyncRequest::ReadData {
                     file,
@@ -292,9 +294,9 @@ impl IoQueueWorker {
                     let handle_set = match self.handle_cache.get_or_open(&file) {
                         Ok(v) => v,
                         Err(err) => {
-                            // We don't care if the receiver hung up or not as there's nothing we
-                            // can do about it
-                            let _ = sender.wake(Err(err));
+                            if let Err(r) = sender.wake(Err(err)) {
+                                log::trace!("Failed to notify listener of async result {:?}", r);
+                            }
                             continue;
                         }
                     };
@@ -317,16 +319,16 @@ impl IoQueueWorker {
                     let bytes_transferred = match result {
                         Ok(v) => v,
                         Err(err) => {
-                            // We don't care if the receiver hung up or not as there's nothing we
-                            // can do about it
-                            let _ = sender.wake(Err(err));
+                            if let Err(r) = sender.wake(Err(err)) {
+                                log::trace!("Failed to notify listener of async result {:?}", r);
+                            }
                             continue;
                         }
                     };
 
-                    // We don't care if the receiver hung up or not as there's nothing we can do
-                    // about it
-                    let _ = sender.wake(Ok(bytes_transferred));
+                    if let Err(r) = sender.wake(Ok(bytes_transferred)) {
+                        log::trace!("Failed to notify listener of async result {:?}", r);
+                    }
                 }
                 AsyncRequest::ReadDataExact {
                     file,
@@ -337,9 +339,9 @@ impl IoQueueWorker {
                     let handle_set = match self.handle_cache.get_or_open(&file) {
                         Ok(v) => v,
                         Err(err) => {
-                            // We don't care if the receiver hung up or not as there's nothing we
-                            // can do about it
-                            let _ = sender.wake(Err(err));
+                            if let Err(r) = sender.wake(Err(err)) {
+                                log::trace!("Failed to notify listener of async result {:?}", r);
+                            }
                             continue;
                         }
                     };
@@ -383,24 +385,24 @@ impl IoQueueWorker {
                     let bytes_transferred = match result {
                         Ok(_) => buf.len(),
                         Err(err) => {
-                            // We don't care if the receiver hung up or not as there's nothing we
-                            // can do about it
-                            let _ = sender.wake(Err(err));
+                            if let Err(r) = sender.wake(Err(err)) {
+                                log::trace!("Failed to notify listener of async result {:?}", r);
+                            }
                             continue;
                         }
                     };
 
-                    // We don't care if the receiver hung up or not as there's nothing we can do
-                    // about it
-                    let _ = sender.wake(Ok(bytes_transferred));
+                    if let Err(r) = sender.wake(Ok(bytes_transferred)) {
+                        log::trace!("Failed to notify listener of async result {:?}", r);
+                    }
                 }
                 AsyncRequest::LoadFile { file, sender } => {
                     let handle_set = match self.handle_cache.get_or_open(&file) {
                         Ok(v) => v,
                         Err(err) => {
-                            // We don't care if the receiver hung up or not as there's nothing we
-                            // can do about it
-                            let _ = sender.wake(Err(err));
+                            if let Err(r) = sender.wake(Err(err)) {
+                                log::trace!("Failed to notify listener of async result {:?}", r);
+                            }
                             continue;
                         }
                     };
@@ -413,16 +415,16 @@ impl IoQueueWorker {
                     match result {
                         Ok(_) => {}
                         Err(err) => {
-                            // We don't care if the receiver hung up or not as there's nothing we
-                            // can do about it
-                            let _ = sender.wake(Err(err));
+                            if let Err(r) = sender.wake(Err(err)) {
+                                log::trace!("Failed to notify listener of async result {:?}", r);
+                            }
                             continue;
                         }
                     };
 
-                    // We don't care if the receiver hung up or not as there's nothing we can do
-                    // about it
-                    let _ = sender.wake(Ok(buf));
+                    if let Err(r) = sender.wake(Ok(buf)) {
+                        log::trace!("Failed to notify listener of async result {:?}", r);
+                    }
                 }
             }
         }

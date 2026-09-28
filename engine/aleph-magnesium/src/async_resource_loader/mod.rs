@@ -153,13 +153,17 @@ impl<C: Send + 'static> Drop for AsyncResourceLoader<C> {
         // Notify any outstanding request listeners that the requests were canceled. We don't care
         // if anyone is listening, but send the messages in case they are.
         for (_, r) in self.request_states.get_mut().buffers.drain() {
-            let _ = r.sender.send((Err(()), r.cookie));
+            if let Err(_) = r.sender.send((Err(()), r.cookie)) {
+                log::trace!("Failed to notify buffer load request of failure");
+            }
         }
 
         // Notify any outstanding request listeners that the requests were canceled. We don't care
         // if anyone is listening, but send the messages in case they are.
         for (_, r) in self.request_states.get_mut().textures.drain() {
-            let _ = r.sender.send((Err(()), r.cookie));
+            if let Err(_) = r.sender.send((Err(()), r.cookie)) {
+                log::trace!("Failed to notify texture load request of failure");
+            }
         }
     }
 }
@@ -175,7 +179,9 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         let buffer = match self.device.create_buffer(&rhi_desc) {
             Ok(v) => v,
             Err(err) => {
-                let _ = sender.send((Err(()), cookie));
+                if let Err(_) = sender.send((Err(()), cookie)) {
+                    log::trace!("Failed to notify buffer load request of failure");
+                }
                 return Err(err);
             }
         };
@@ -202,7 +208,9 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             None => {
                 // 'send' only fails if the listener hangs up. If they hang up it doesn't matter
                 // if we succeed, there's nobody to receive the message anyway.
-                let _ = sender.send((Err(()), cookie));
+                if let Err(_) = sender.send((Err(()), cookie)) {
+                    log::trace!("Failed to notify texture load request of failure");
+                }
                 return Err(CreateTextureRequestError::BadTextureDimensions);
             }
         };
@@ -211,7 +219,9 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             Err(err) => {
                 // 'send' only fails if the listener hangs up. If they hang up it doesn't matter
                 // if we succeed, there's nobody to receive the message anyway.
-                let _ = sender.send((Err(()), cookie));
+                if let Err(_) = sender.send((Err(()), cookie)) {
+                    log::trace!("Failed to notify texture load request of failure");
+                }
                 return Err(CreateTextureRequestError::TextureCreateError(err));
             }
         };
@@ -236,7 +246,9 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
 
         if let Some(req) = states.buffers.free(handle) {
-            let _ = req.sender.send((Err(()), req.cookie));
+            if let Err(_) = req.sender.send((Err(()), req.cookie)) {
+                log::trace!("Failed to notify buffer load request of failure");
+            }
         }
     }
 
@@ -250,7 +262,9 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
 
         if let Some(req) = states.textures.free(handle) {
-            let _ = req.sender.send((Err(()), req.cookie));
+            if let Err(_) = req.sender.send((Err(()), req.cookie)) {
+                log::trace!("Failed to notify texture load request of failure");
+            }
         }
     }
 

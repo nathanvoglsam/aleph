@@ -132,6 +132,7 @@ impl<C: Send + 'static> LoaderMessageDispatcher for GenericLoaderMessageDispatch
                     match sender.send(msg) {
                         Ok(_) => {}
                         Err(_) => {
+                            log::trace!("Failed to notify buffer load request of success");
                             bpool.pool.free(handle);
                             last_uses.buffers.remove(&handle);
                         }
@@ -171,6 +172,7 @@ impl<C: Send + 'static> LoaderMessageDispatcher for GenericLoaderMessageDispatch
                     match sender.send(msg) {
                         Ok(_) => {}
                         Err(_) => {
+                            log::trace!("Failed to notify texture load request of success");
                             tpool.pool.free(handle);
                             last_uses.textures.remove(&handle);
                         }

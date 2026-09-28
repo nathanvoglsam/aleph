@@ -175,10 +175,9 @@ impl AsyncLoaderWorker {
                                 msg,
                             );
                             if let Poll::Ready(v) = v {
-                                let _ = v.inspect_err(|error| {
-                                    log::error!("Async IO task failed with error: '{error:?}'")
-                                });
-
+                                if let Err(e) = v {
+                                    log::error!("Async IO task failed with error: '{e:?}'")
+                                }
                             }
                             continue 'main;
                         }
@@ -194,9 +193,9 @@ impl AsyncLoaderWorker {
                     );
 
                     if let Poll::Ready(v) = v {
-                        let _ = v.inspect_err(|error| {
-                            log::error!("Async IO task failed with error: '{error:?}'")
-                        });
+                        if let Err(e) = v {
+                            log::error!("Async IO task failed with error: '{e:?}'")
+                        }
                     }
 
                     continue 'main;
@@ -247,9 +246,9 @@ impl AsyncLoaderWorker {
                                 msg,
                             );
                             if let Poll::Ready(v) = v {
-                                let _ = v.inspect_err(|error| {
-                                    log::error!("Async IO task failed with error: '{error:?}'")
-                                });
+                                if let Err(e) = v {
+                                    log::error!("Async IO task failed with error: '{e:?}'")
+                                }
                             }
                             continue 'main;
                         }
@@ -265,9 +264,9 @@ impl AsyncLoaderWorker {
                     );
 
                     if let Poll::Ready(v) = v {
-                        let _ = v.inspect_err(|error| {
-                            log::error!("Async IO task failed with error: '{error:?}'")
-                        });
+                        if let Err(e) = v {
+                            log::error!("Async IO task failed with error: '{e:?}'")
+                        }
                     }
 
                     continue 'main;
@@ -302,9 +301,9 @@ impl AsyncLoaderWorker {
                     );
 
                     if let Poll::Ready(v) = v {
-                        let _ = v.inspect_err(|error| {
-                            log::error!("Async IO task failed with error: '{error:?}'")
-                        });
+                        if let Err(e) = v {
+                            log::error!("Async IO task failed with error: '{e:?}'")
+                        }
                     }
 
                     continue 'main;
@@ -347,9 +346,9 @@ impl AsyncLoaderWorker {
                     );
 
                     if let Poll::Ready(v) = v {
-                        let _ = v.inspect_err(|error| {
-                            log::error!("Async IO task failed with error: '{error:?}'")
-                        });
+                        if let Err(e) = v {
+                            log::error!("Async IO task failed with error: '{e:?}'")
+                        }
                     }
 
                     continue 'main;
