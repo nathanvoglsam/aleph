@@ -48,6 +48,7 @@ use crate::internal::async_resource_loader::queued_copy_manager::{
 };
 use crate::internal::async_resource_loader::renderer_channel::LoaderSender;
 use crate::internal::async_resource_loader::request_states::RequestStates;
+use crate::internal::async_resource_loader::stats::Stats;
 use crate::internal::async_resource_loader::submission_manager::SubmissionManager;
 use crate::internal::async_resource_loader::texture::TextureLoadState;
 use crate::internal::async_resource_loader::upload_memory_manager::UploadMemoryManager;
@@ -111,6 +112,9 @@ pub struct AsyncResourceLoader<C: Send + 'static> {
 
     /// Channel to pipe output upload messages into.
     loader_sender: LoaderSender<C>,
+
+    /// Internal utility for tracking stats using the profiler.
+    stats: Stats,
 }
 
 impl<C: Send + 'static> Drop for AsyncResourceLoader<C> {
@@ -157,6 +161,7 @@ impl<C: Send + 'static> Drop for AsyncResourceLoader<C> {
                 log::trace!("Failed to notify buffer load request of failure");
             }
         }
+        self.stats.update_buffers_live(0);
 
         // Notify any outstanding request listeners that the requests were canceled. We don't care
         // if anyone is listening, but send the messages in case they are.
@@ -165,6 +170,9 @@ impl<C: Send + 'static> Drop for AsyncResourceLoader<C> {
                 log::trace!("Failed to notify texture load request of failure");
             }
         }
+        self.stats.update_textures_live(0);
+
+        self.stats.update_queued_bytes(0);
     }
 }
 
@@ -193,7 +201,14 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             cookie,
             sender,
         };
-        let handle = self.request_states.borrow_mut().buffers.alloc(load);
+
+        let handle;
+        {
+            let mut states = self.request_states.borrow_mut();
+            handle = states.buffers.alloc(load);
+            self.stats.update_buffers_live(states.buffers.len());
+        }
+
         Ok(handle)
     }
 
@@ -232,7 +247,14 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             cookie,
             sender,
         };
-        let handle = self.request_states.borrow_mut().textures.alloc(load);
+
+        let handle;
+        {
+            let mut states = self.request_states.borrow_mut();
+            handle = states.textures.alloc(load);
+            self.stats.update_textures_live(states.textures.len());
+        }
+
         Ok(handle)
     }
 
@@ -246,6 +268,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
 
         if let Some(req) = states.buffers.free(handle) {
+            self.stats.update_buffers_live(states.buffers.len());
             if let Err(_) = req.sender.send((Err(()), req.cookie)) {
                 log::trace!("Failed to notify buffer load request of failure");
             }
@@ -262,12 +285,14 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
 
         if let Some(req) = states.textures.free(handle) {
+            self.stats.update_textures_live(states.textures.len());
             if let Err(_) = req.sender.send((Err(()), req.cookie)) {
                 log::trace!("Failed to notify texture load request of failure");
             }
         }
     }
 
+    #[aleph_profile::function]
     pub fn allocate_range_for_buffer_load(
         &self,
         handle: BufferLoadHandle,
@@ -349,6 +374,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         Ok(out)
     }
 
+    #[aleph_profile::function]
     pub fn allocate_range_for_texture_load(
         &self,
         handle: TextureLoadHandle,
@@ -457,6 +483,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
     }
 
+    #[aleph_profile::function]
     pub fn retire_completed_submissions(&self) -> Result<(), RetireError> {
         let mut request_states = self.request_states.borrow_mut();
         let mut live = self.submission_manager.live.borrow_mut();
@@ -513,6 +540,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             i += 1;
         }
 
+        self.stats.update_live_submissions(live.len());
+
         // 'device lost' errors take precedence
         if is_device_lost {
             Err(RetireError::DeviceLost)
@@ -521,6 +550,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
     }
 
+    #[aleph_profile::function]
     pub fn wait_all_submissions(&self) -> Result<(), RetireError> {
         let mut live = self.submission_manager.live.borrow_mut();
 
@@ -572,6 +602,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             }
         }
 
+        self.stats.update_live_submissions(live.len());
+
         // 'device lost' takes precedence over any error the retire operation may have thrown.
         if is_device_lost {
             Err(RetireError::DeviceLost)
@@ -580,6 +612,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
     }
 
+    #[aleph_profile::function]
     pub fn flush_submitted_uploads(&self) -> Result<(), FlushError> {
         if !self.queue_manager.queue.borrow().is_empty() {
             self.maybe_record_and_dispatch_commands()?;
@@ -615,6 +648,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         let mut submission = self.submission_manager.new_submission();
 
         unsafe {
+            aleph_profile::scope_named!("recording_copy_commands");
             let mut encoder = list
                 .begin_transfer()
                 .inspect_err(|err| log::error!("ICommandList 'begin_transfer' error: '{}'", err))
@@ -793,6 +827,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
 
         unsafe {
+            aleph_profile::scope_named!("queue_submit");
             // Submit the encoded copy commands to the transfer queue
             let result = self
                 .queue
@@ -826,12 +861,15 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             // Clear the 'queued_bytes' tracker now that we've flushed the queue of pending upload
             // work.
             self.queue_manager.queued_bytes.set(0);
+            self.stats.update_queued_bytes(0);
 
             // And then add our submission metadata to our manager.
             //
             // We only issue the submissions after we've cleared all our failure points for the same
             // reason. Any failure in this function should leave the loader in a valid state.
             self.submission_manager.submit(submission);
+            self.stats
+                .update_live_submissions(self.submission_manager.live.borrow().len());
         }
 
         Ok(())
@@ -857,6 +895,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
 
         let submission_manager = SubmissionManager::new();
 
+        let stats = Stats::new();
+
         Some(Self {
             config,
             device,
@@ -868,6 +908,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             queue_manager,
             submission_manager,
             loader_sender,
+            stats,
         })
     }
 }

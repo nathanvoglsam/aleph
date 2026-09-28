@@ -31,6 +31,7 @@ pub mod buffer;
 pub mod queued_copy_manager;
 pub mod renderer_channel;
 pub mod request_states;
+pub mod stats;
 pub mod submission_manager;
 pub mod texture;
 pub mod upload_memory_manager;

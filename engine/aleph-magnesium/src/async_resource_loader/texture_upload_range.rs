@@ -136,6 +136,10 @@ impl<'a, C: Send + 'static> TextureUploadRange<'a, C> {
                 loader
                     .queue_manager
                     .submit_texture_upload_range(self, load.is_complete());
+
+                loader
+                    .stats
+                    .update_queued_bytes(loader.queue_manager.queued_bytes.get());
             }
         }
 

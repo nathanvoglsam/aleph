@@ -160,6 +160,10 @@ impl<'a, C: Send + 'static> BufferUploadRange<'a, C> {
                 loader
                     .queue_manager
                     .submit_buffer_upload_range(self, load.is_complete());
+
+                loader
+                    .stats
+                    .update_queued_bytes(loader.queue_manager.queued_bytes.get());
             }
         }
 
