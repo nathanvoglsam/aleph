@@ -67,7 +67,7 @@ impl IoQueue {
                     .name(format!("io-queue-{}", thread_id))
                     .spawn(move || {
                         aleph_profile::scope_named!("io_queue_run");
-                        let mut worker = IoQueueWorker {
+                        let worker = IoQueueWorker {
                             thread_id,
                             recv,
                             handle_cache: LocalHandleCache::new(top_level_handle_cache),
