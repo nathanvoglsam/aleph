@@ -34,5 +34,5 @@ declare interface Configs {
 }
 
 Configs["aleph-test"] = {
-    scenes: ["game/aleph-test/assets/IntelSponza/NewSponza_Main_Blender_glTF.gltf"]
+    scenes: ["aleph-test/IntelSponza/NewSponza_Main_Blender_glTF.gltf"]
 };

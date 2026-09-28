@@ -41,6 +41,7 @@ use aleph_engine::api::plugin::{
 use aleph_engine::api::schedule::{CoreStage, WorldResource};
 use aleph_engine::api::scheduler::ResMut;
 use aleph_engine::engine::Engine;
+use aleph_engine::gltf::loader::GltfLoader;
 use aleph_engine::render::PluginRender;
 use aleph_engine::render::default_resources::DefaultResources;
 
@@ -73,7 +74,10 @@ impl IPlugin for PluginGameLogic {
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
         registrar.requires::<AGamepads>(InitOrder::After);
         registrar.requires::<AFrameTimer>(InitOrder::After);
+
         registrar.uses::<AEguiContextProvider>(InitOrder::After);
+
+        registrar.requires::<GltfLoader>(InitOrder::After);
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
@@ -86,6 +90,7 @@ impl IPlugin for PluginGameLogic {
             .map(|v| v.get());
         let frame_timer = registry.get_interface::<AFrameTimer>().unwrap().get();
         let gamepads = registry.get_interface::<AGamepads>().unwrap().get();
+        let gltf_loader = registry.get_interface::<GltfLoader>().unwrap().clone();
 
         let CoreRefs {
             resources,
@@ -157,5 +162,9 @@ impl IPlugin for PluginGameLogic {
                 throbber_logic.tick(&mut world.0);
             },
         );
+
+        for scene in config.scenes.iter() {
+            gltf_loader.load(scene.as_str()).unwrap();
+        }
     }
 }
