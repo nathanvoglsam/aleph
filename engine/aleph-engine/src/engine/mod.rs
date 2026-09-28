@@ -68,15 +68,28 @@ impl EngineBuilder {
         }
 
         rayon::ThreadPoolBuilder::new()
-            .thread_name(|v| format!("Rayon Worker {v}"))
-            .start_handler(|i| {
-                // Initialize COM with MTA
-                #[cfg(target_os = "windows")]
-                unsafe {
-                    use aleph_windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx};
-                    CoInitializeEx(None, COINIT_MULTITHREADED).unwrap();
+            .spawn_handler(|thread| {
+                let mut b = std::thread::Builder::new();
+                b = b.name(format!("Rayon Worker {}", thread.index()));
+                if let Some(stack_size) = thread.stack_size() {
+                    b = b.stack_size(stack_size);
                 }
-                name_for_pool_thread_i(i);
+                b.spawn(|| {
+                    // Initialize COM with MTA
+                    #[cfg(target_os = "windows")]
+                    unsafe {
+                        use aleph_windows::Win32::System::Com::{
+                            COINIT_MULTITHREADED, CoInitializeEx,
+                        };
+                        CoInitializeEx(None, COINIT_MULTITHREADED).unwrap();
+                    }
+                    
+                    name_for_pool_thread_i(thread.index());
+
+                    aleph_profile::scope_named!("rayon_run");
+                    thread.run()
+                })?;
+                Ok(())
             })
             .build_global()
             .unwrap();

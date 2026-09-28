@@ -315,6 +315,7 @@ fn spawn_mesh_uploader(
 ) {
     let async_queue = io.async_queue();
     rayon::spawn(move || {
+        aleph_profile::scope_named!("gltf::scene_mesh_uploader");
         use rayon::prelude::*;
 
         let document = &imported.0;
@@ -325,6 +326,7 @@ fn spawn_mesh_uploader(
             .into_par_iter()
             .enumerate()
             .for_each(|(mesh_index, mesh)| {
+                aleph_profile::scope_named!("gltf::mesh_upload");
                 let mut prims = Vec::with_capacity(mesh.primitives().len());
                 for prim in mesh.primitives() {
                     let indices = prim.indices().unwrap();

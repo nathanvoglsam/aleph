@@ -66,6 +66,7 @@ impl IoQueue {
                 let thread = std::thread::Builder::new()
                     .name(format!("io-queue-{}", thread_id))
                     .spawn(move || {
+                        aleph_profile::scope_named!("io_queue_run");
                         let mut worker = IoQueueWorker {
                             thread_id,
                             recv,
@@ -268,10 +269,12 @@ struct IoQueueWorker {
 }
 
 impl IoQueueWorker {
-    fn run(&mut self) {
+    fn run(self) {
+        aleph_profile::scope_named!("IoQueueWorker::run");
         while let Ok(msg) = AsyncIo::with(|| self.recv.recv()) {
             match msg {
                 AsyncRequest::OpenFileAsync { file, sender } => {
+                    aleph_profile::scope_named!("IoQueueWorker::OpenFileAsync");
                     let _handle_set = match self.handle_cache.get_or_open(&file) {
                         Ok(v) => v,
                         Err(err) => {
@@ -291,6 +294,7 @@ impl IoQueueWorker {
                     offset,
                     sender,
                 } => {
+                    aleph_profile::scope_named!("IoQueueWorker::ReadData");
                     let handle_set = match self.handle_cache.get_or_open(&file) {
                         Ok(v) => v,
                         Err(err) => {
@@ -336,6 +340,7 @@ impl IoQueueWorker {
                     offset,
                     sender,
                 } => {
+                    aleph_profile::scope_named!("IoQueueWorker::ReadDataExact");
                     let handle_set = match self.handle_cache.get_or_open(&file) {
                         Ok(v) => v,
                         Err(err) => {
@@ -397,6 +402,7 @@ impl IoQueueWorker {
                     }
                 }
                 AsyncRequest::LoadFile { file, sender } => {
+                    aleph_profile::scope_named!("IoQueueWorker::LoadFile");
                     let handle_set = match self.handle_cache.get_or_open(&file) {
                         Ok(v) => v,
                         Err(err) => {

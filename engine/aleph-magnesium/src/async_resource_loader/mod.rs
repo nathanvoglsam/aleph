@@ -292,12 +292,12 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
     }
 
-    #[aleph_profile::function]
     pub fn allocate_range_for_buffer_load(
         &self,
         handle: BufferLoadHandle,
         num_bytes: u64,
     ) -> Result<BufferUploadRange<'_, C>, AllocateRangeError> {
+        aleph_profile::scope_named!("AsyncResourceLoader::allocate_range_for_buffer_load");
         assert_ne!(num_bytes, 0);
 
         // Clamp 'num_bytes' to the configured 'max_upload_range_size'. Then align the size to a
@@ -374,13 +374,13 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         Ok(out)
     }
 
-    #[aleph_profile::function]
     pub fn allocate_range_for_texture_load(
         &self,
         handle: TextureLoadHandle,
         pitch_align: u32,
         num_bytes: u64,
     ) -> Result<TextureUploadRange<'_, C>, AllocateRangeError> {
+        aleph_profile::scope_named!("AsyncResourceLoader::allocate_range_for_texture_load");
         assert_ne!(num_bytes, 0);
 
         // Clamp 'num_bytes' to the configured 'max_upload_range_size'.
@@ -483,8 +483,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
     }
 
-    #[aleph_profile::function]
     pub fn retire_completed_submissions(&self) -> Result<(), RetireError> {
+        aleph_profile::scope_named!("AsyncResourceLoader::retire_completed_submissions");
         let mut request_states = self.request_states.borrow_mut();
         let mut live = self.submission_manager.live.borrow_mut();
 
@@ -500,8 +500,11 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             }
 
             // Poll the fence's completion status to determine if the submission is complete.
-
-            let logical_value = match self.device.get_fence_signaled_value(&self.fence) {
+            let result = {
+                aleph_profile::scope_named!("get_fence_signaled_value");
+                self.device.get_fence_signaled_value(&self.fence)
+            };
+            let logical_value = match result {
                 // Successful poll adopts the polled value
                 Ok(value) => value,
 
@@ -550,8 +553,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
     }
 
-    #[aleph_profile::function]
     pub fn wait_all_submissions(&self) -> Result<(), RetireError> {
+        aleph_profile::scope_named!("AsyncResourceLoader::wait_all_submissions");
         let mut live = self.submission_manager.live.borrow_mut();
 
         // If there's nothing in flight then we can just immediately exit
@@ -612,8 +615,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
     }
 
-    #[aleph_profile::function]
     pub fn flush_submitted_uploads(&self) -> Result<(), FlushError> {
+        aleph_profile::scope_named!("AsyncResourceLoader::flush_submitted_uploads");
         if !self.queue_manager.queue.borrow().is_empty() {
             self.maybe_record_and_dispatch_commands()?;
         }

@@ -38,6 +38,8 @@ use aleph_gen_arena::{GenArena, RawHandle};
 use aleph_object_system::unsafe_impl_iobject;
 use crossbeam::channel::{Receiver, RecvError, SendError, Sender, unbounded};
 use crossbeam::select;
+use aleph_profile::tracy_client;
+use aleph_profile::tracy_client::{PlotConfiguration, PlotFormat, PlotLineStyle};
 use mg::async_resource_loader::{AsyncResourceLoader, FlushError};
 
 use crate::core::alloc::{Engine, EngineSystem};
@@ -130,6 +132,14 @@ impl AsyncLoaderWorker {
     }
 
     fn run(self) {
+        aleph_profile::scope_named!("AsyncLoaderWorker::run");
+
+        let plot = PlotConfiguration::default()
+            .format(PlotFormat::Number)
+            .line_style(PlotLineStyle::Stepped);
+        tracy_client::Client::start().plot_config(tracy_client::plot_name!("AsyncLoaderWorker::live_tasks"), plot);
+        tracy_client::plot!("AsyncLoaderWorker::live_tasks", 0.0);
+
         let request_send = &self.request_send;
         let request_recv = &self.request_recv;
         let (response_send, response_recv) = unbounded();
@@ -145,6 +155,8 @@ impl AsyncLoaderWorker {
                 &self.loader,
             )
         }
+
+        tracy_client::plot!("AsyncLoaderWorker::live_tasks", 0.0);
     }
 
     fn run_inner<'a>(
@@ -364,6 +376,7 @@ impl AsyncLoaderWorker {
         loader: &'a AsyncResourceLoader<u64>,
         msg: FutureSpawner,
     ) -> Poll<io::Result<()>> {
+        aleph_profile::scope_named!("AsyncLoaderWorker::worker_message");
         let task = tasks.alloc_cyclic(move |handle| {
             let io = IoContext {
                 this: request_send,
@@ -375,10 +388,13 @@ impl AsyncLoaderWorker {
             }
         });
 
+        tracy_client::plot!("AsyncLoaderWorker::live_tasks", tasks.len() as f64);
+
         Self::poll_task(tasks, task)
     }
 
     fn async_message(tasks: &mut Tasks, msg: Result<RawHandle, RecvError>) -> Poll<io::Result<()>> {
+        aleph_profile::scope_named!("AsyncLoaderWorker::async_message");
         let task = match msg {
             Ok(v) => v,
             Err(_) => {
@@ -391,6 +407,7 @@ impl AsyncLoaderWorker {
     }
 
     fn poll_task(tasks: &mut Tasks, handle: RawHandle) -> Poll<io::Result<()>> {
+        aleph_profile::scope_named!("AsyncLoaderWorker::poll_task");
         let task = match tasks.get_mut(handle) {
             None => {
                 log::error!("Tried to poll a task with an invalid or out of date handle.");
@@ -415,6 +432,7 @@ impl AsyncLoaderWorker {
         match &result {
             Poll::Ready(_) => {
                 tasks.free(handle);
+                tracy_client::plot!("AsyncLoaderWorker::live_tasks", tasks.len() as f64);
             }
             Poll::Pending => {}
         }
