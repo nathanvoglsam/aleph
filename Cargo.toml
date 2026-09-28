@@ -160,7 +160,7 @@ thiserror = "2"
 ash = { version = "0.38", default-features = false, features = ["debug"] }
 sdl3 = { version = "0.18", features = ["raw-window-handle"] }
 sdl3-sys = { version = "^0.6", features = ["no-link"] }
-tracy-client = "0.19"
+tracy-client = { version = "0.19", default-features = false, features = ["system-tracing", "context-switch-tracing", "sampling", "code-transfer", "broadcast", "callstack-inlines", "crash-handler", "wait-stacks"] }
 
 ## Common Platform
 libc = "0.2"

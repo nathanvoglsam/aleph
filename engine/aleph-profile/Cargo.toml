@@ -11,7 +11,7 @@ categories = ["development-tools::profiling"]
 edition.workspace = true
 
 [dependencies]
-tracy-client = { workspace = true, optional = true }
+tracy-client = { workspace = true }
 aleph-superluminal-sys = { workspace = true, optional = true }
 aleph-profile-procmacros = { workspace = true, optional = true }
 aleph-pix = { workspace = true, optional = true }
@@ -23,7 +23,7 @@ profile-with-superluminal = [
     "aleph-profile-procmacros?/profile-with-superluminal",
 ]
 profile-with-tracy = [
-    "tracy-client",
+    "tracy-client/enable",
     "aleph-profile-procmacros?/profile-with-tracy",
 ]
 profile-with-pix = [
