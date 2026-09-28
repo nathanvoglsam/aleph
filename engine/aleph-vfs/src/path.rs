@@ -29,6 +29,7 @@
 
 use std::borrow::{Borrow, Cow};
 use std::ops::Deref;
+use std::sync::Arc;
 
 pub const SEPARATOR: char = '/';
 pub const SEPARATOR_STR: &'static str = "/";
@@ -187,6 +188,19 @@ impl<'a> From<&'a VPath> for VPathBuf {
 impl<'a> From<&'a str> for VPathBuf {
     fn from(value: &'a str) -> Self {
         VPathBuf(String::from(value))
+    }
+}
+
+impl From<VPathBuf> for Arc<VPath> {
+    fn from(value: VPathBuf) -> Self {
+        Arc::from(value.as_ref())
+    }
+}
+
+impl From<VPathBuf> for Box<VPath> {
+    fn from(value: VPathBuf) -> Self {
+        let string = value.0.into_boxed_str();
+        unsafe { Box::from_raw(Box::into_raw(string) as *mut VPath) }
     }
 }
 
@@ -564,6 +578,20 @@ impl core::fmt::Display for VPath {
 }
 
 // == CONVERSION TRAITS == //
+
+impl From<&VPath> for Arc<VPath> {
+    fn from(value: &VPath) -> Self {
+        let string = Arc::<str>::from(value.as_ref());
+        unsafe { Arc::from_raw(Arc::into_raw(string) as *const VPath) }
+    }
+}
+
+impl From<&VPath> for Box<VPath> {
+    fn from(value: &VPath) -> Self {
+        let string = Box::<str>::from(value.as_ref());
+        unsafe { Box::from_raw(Box::into_raw(string) as *mut VPath) }
+    }
+}
 
 // == DEREF TRAITS == //
 

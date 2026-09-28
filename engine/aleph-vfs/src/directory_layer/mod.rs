@@ -185,17 +185,11 @@ impl ILayer for DirectoryLayer {
         let file = Vfs::with(|| -> io::Result<_> {
             let combined = self.sanitize_and_translate_path(path)?;
 
-            let path: Arc<VPath> = {
-                let arc: Arc<str> = Arc::from(path.to_str());
-                unsafe { Arc::from_raw(Arc::into_raw(arc) as *const VPath) }
-            };
-
             // Prime the handle cache, or error out if we failed to open the file.
             io_queue.open(combined.as_std_path())?;
 
             let out = AsyncVFile {
                 queue: io_queue.clone(),
-                virtual_path: path,
                 path: Arc::from(combined.into_std_path_buf()),
             };
             let out = Arc::new(out);
@@ -222,17 +216,11 @@ impl ILayer for DirectoryLayer {
         let file = Vfs::with(|| -> io::Result<_> {
             let combined = self.sanitize_and_translate_path(path)?;
 
-            let path: Arc<VPath> = {
-                let arc: Arc<str> = Arc::from(path.to_str());
-                unsafe { Arc::from_raw(Arc::into_raw(arc) as *const VPath) }
-            };
-
             // Prime the handle cache, or error out if we failed to open the file.
             io_queue.open_non_blocking(combined.as_std_path())?;
 
             let out = AsyncVFile {
                 queue: io_queue.clone(),
-                virtual_path: path,
                 path: Arc::from(combined.into_std_path_buf()),
             };
             let out = Arc::new(out);

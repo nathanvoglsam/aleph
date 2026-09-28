@@ -74,17 +74,9 @@ impl<'a> IoContext<'a> {
         buf: NonNull<[u8]>,
         offset: u64,
     ) -> io::Result<usize> {
-        IoTask::new(|waker| {
-            let result = unsafe { file.read_at(buf, offset, waker) };
-            match result {
-                Ok(_) => Ok(()),
-                Err(_) => {
-                    log::error!("The async file worker has disconnected.");
-                    Err(io::Error::from(io::ErrorKind::ConnectionAborted))
-                }
-            }
-        })
-        .await
+        let task =
+            IoTask::new(|waker| unsafe { file.read_at(buf, offset, waker).map_err(map_send_err) });
+        task.await
     }
 
     /// Wrapper over [`IAsyncVFile::read_exact_at`] that will correctly route the completion
@@ -95,33 +87,17 @@ impl<'a> IoContext<'a> {
         buf: NonNull<[u8]>,
         offset: u64,
     ) -> io::Result<usize> {
-        IoTask::new(|waker| {
-            let result = unsafe { file.read_exact_at(buf, offset, waker) };
-            match result {
-                Ok(_) => Ok(()),
-                Err(_) => {
-                    log::error!("The async file worker has disconnected.");
-                    Err(io::Error::from(io::ErrorKind::ConnectionAborted))
-                }
-            }
-        })
-        .await
+        let task = IoTask::new(|waker| unsafe {
+            file.read_exact_at(buf, offset, waker).map_err(map_send_err)
+        });
+        task.await
     }
 
     /// Wrapper over [`IAsyncVFile::load_file`] that will correctly route the completion responses
     /// to the executor the future is running in.
     pub async fn load_file(&self, file: &dyn IAsyncVFile) -> io::Result<Vec<u8>> {
-        IoTask::new(|waker| {
-            let result = file.load(waker);
-            match result {
-                Ok(_) => Ok(()),
-                Err(_) => {
-                    log::error!("The async file worker has disconnected.");
-                    Err(io::Error::from(io::ErrorKind::ConnectionAborted))
-                }
-            }
-        })
-        .await
+        let task = IoTask::new(|waker| file.load(waker).map_err(map_send_err));
+        task.await
     }
 
     /// Wrapper over [`IRouter::open_file`] that will correctly route the completion responses
@@ -132,17 +108,8 @@ impl<'a> IoContext<'a> {
         path: impl AsRef<VPath>,
     ) -> io::Result<Arc<dyn IAsyncVFile>> {
         let path = path.as_ref();
-        IoTask::new(|waker| {
-            let result = vfs.open_async(waker, path);
-            match result {
-                Ok(_) => Ok(()),
-                Err(_) => {
-                    log::error!("The async file worker has disconnected.");
-                    Err(io::Error::from(io::ErrorKind::ConnectionAborted))
-                }
-            }
-        })
-        .await?;
+        let task = IoTask::new(|waker| vfs.open_async(waker, path));
+        task.await?;
         vfs.open_for_async_non_blocking(path)
     }
 
@@ -150,4 +117,9 @@ impl<'a> IoContext<'a> {
     pub fn loader(&self) -> &AsyncResourceLoader<u64> {
         self.loader
     }
+}
+
+fn map_send_err<T>(_: SendError<T>) -> io::Error {
+    log::error!("The async file worker has disconnected.");
+    io::Error::from(io::ErrorKind::ConnectionAborted)
 }

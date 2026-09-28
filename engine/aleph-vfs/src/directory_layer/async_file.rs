@@ -37,11 +37,9 @@ use aleph_io_queue::channel::IoWaker;
 use crossbeam::channel::SendError;
 
 use crate::file::IAsyncVFile;
-use crate::path::VPath;
 
 pub struct AsyncVFile {
     pub queue: Arc<IoQueue>,
-    pub virtual_path: Arc<VPath>,
     pub path: Arc<Path>,
 }
 
@@ -66,9 +64,5 @@ impl IAsyncVFile for AsyncVFile {
 
     fn load(&self, waker: IoWaker<io::Result<Vec<u8>>>) -> Result<(), SendError<()>> {
         self.queue.async_load(self.path.clone(), waker)
-    }
-
-    fn path(&self) -> &VPath {
-        self.virtual_path.as_ref()
     }
 }

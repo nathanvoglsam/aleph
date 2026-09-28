@@ -35,8 +35,6 @@ use std::ptr::NonNull;
 use aleph_io_queue::channel::IoWaker;
 use crossbeam::channel::SendError;
 
-use crate::path::VPath;
-
 /// Analogue of [`std::fs::File`]. Represents a 'handle' to an open file within a virtual file
 /// system.
 ///
@@ -172,8 +170,6 @@ pub trait IAsyncVFile: Send + Sync + 'static {
     ) -> Result<(), SendError<()>>;
 
     fn load(&self, waker: IoWaker<io::Result<Vec<u8>>>) -> Result<(), SendError<()>>;
-
-    fn path(&self) -> &VPath;
 }
 
 pub(crate) struct VFileVtable {

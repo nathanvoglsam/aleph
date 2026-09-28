@@ -39,6 +39,7 @@ use crate::core::async_io::worker::AsyncLoaderQueue;
 use crate::gltf::internal::GltfLoadPayload;
 use crate::render::async_loader::systems::async_load_resolver::AsyncLoadResolverQueue;
 
+#[derive(Clone)]
 pub struct GltfLoader {
     pub loader_queue: AsyncLoaderQueue,
     pub dest: AsyncLoadResolverQueue,
@@ -49,10 +50,11 @@ pub struct GltfLoader {
 unsafe_impl_iobject!(GltfLoader, "01a0e23b-9013-7572-822f-8abf61cb6c77");
 
 impl GltfLoader {
-    pub fn load(&self, path: Arc<VPath>) -> Result<(), SendError<()>> {
+    pub fn load<P: AsRef<VPath>>(&self, path: P) -> Result<(), SendError<()>> {
+        let path = path.as_ref();
         let vfs = self.vfs.clone();
         let payload = GltfLoadPayload {
-            path,
+            path: Box::from(path),
             dest: self.dest.clone(),
             default_material: self.default_material,
         };

@@ -45,7 +45,7 @@ use crate::render::async_loader::systems::async_load_resolver::AsyncLoadResolver
 
 pub struct GltfLoadPayload {
     /// The vfs path of the file to open and read from.
-    pub path: Arc<VPath>,
+    pub path: Box<VPath>,
 
     /// The destination the loaded GLTF file should be pushed on to.
     pub dest: AsyncLoadResolverQueue,
@@ -70,7 +70,7 @@ pub async fn task<'a>(
     let imported = result?;
     let imported = Arc::new(imported);
 
-    process_document(vfs.as_ref(), &io, imported, msg).await;
+    process_document(vfs.as_ref(), &io, imported, msg).await?;
 
     Ok(())
 }
@@ -213,7 +213,7 @@ async fn process_document(
     io: &IoContext<'_>,
     imported: Arc<(gltf::Document, Vec<gltf::buffer::Data>)>,
     msg: GltfLoadPayload,
-) {
+) -> io::Result<()> {
     let document = &imported.0;
 
     let (sender, receiver) = kanal::bounded_async(document.meshes().len());
@@ -226,7 +226,9 @@ async fn process_document(
     }
 
     for _ in 0..mesh_table.len() {
-        let (mesh_i, prims) = receiver.recv().await.unwrap();
+        let result = receiver.recv().await;
+        let (mesh_i, prims) =
+            result.map_err(|_| io::Error::from(io::ErrorKind::ConnectionAborted))?;
         mesh_table[mesh_i] = prims;
     }
 
@@ -302,6 +304,8 @@ async fn process_document(
             let _ = world.bulk_insert((transforms, static_meshes));
         });
     });
+
+    Ok(())
 }
 
 fn spawn_mesh_uploader(
