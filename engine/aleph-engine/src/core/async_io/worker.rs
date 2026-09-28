@@ -36,11 +36,11 @@ use std::{io, thread};
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_gen_arena::{GenArena, RawHandle};
 use aleph_object_system::unsafe_impl_iobject;
-use crossbeam::channel::{Receiver, RecvError, SendError, Sender, unbounded};
-use crossbeam::select;
 use aleph_profile::tracy_client;
 use aleph_profile::tracy_client::{PlotConfiguration, PlotFormat, PlotLineStyle};
-use mg::async_resource_loader::{AsyncResourceLoader, FlushError};
+use crossbeam::channel::{Receiver, RecvError, SendError, Sender, never, unbounded};
+use crossbeam::select;
+use mg::async_resource_loader::{AsyncResourceLoader, FlushError, RetireError};
 
 use crate::core::alloc::{Engine, EngineSystem};
 use crate::core::async_io::TaskFuture;
@@ -137,7 +137,10 @@ impl AsyncLoaderWorker {
         let plot = PlotConfiguration::default()
             .format(PlotFormat::Number)
             .line_style(PlotLineStyle::Stepped);
-        tracy_client::Client::start().plot_config(tracy_client::plot_name!("AsyncLoaderWorker::live_tasks"), plot);
+        tracy_client::Client::start().plot_config(
+            tracy_client::plot_name!("AsyncLoaderWorker::live_tasks"),
+            plot,
+        );
         tracy_client::plot!("AsyncLoaderWorker::live_tasks", 0.0);
 
         let request_send = &self.request_send;
@@ -167,138 +170,11 @@ impl AsyncLoaderWorker {
         response_send: &'a Sender<RawHandle>,
         loader: &'a AsyncResourceLoader<u64>,
     ) {
+        let mut request_recv = Some(request_recv);
         'main: loop {
-            // Initial blocking wait with a timeout. We use a short timeout for the first wait, and
-            // if we don't get any requests within that timeout we flush the resource loader before
-            // moving into a deep sleep.
-            select! {
-                recv(request_recv) -> msg => {
-                    let msg = msg.unwrap_or_else(|_| {
-                        abort_unwind(|| unreachable!())
-                    });
-
-                    match msg {
-                        WorkerMessage::Spawn(msg) => {
-                            let v = Self::worker_message(
-                                &mut tasks,
-                                request_send,
-                                response_send,
-                                loader,
-                                msg,
-                            );
-                            if let Poll::Ready(v) = v {
-                                if let Err(e) = v {
-                                    log::error!("Async IO task failed with error: '{e:?}'")
-                                }
-                            }
-                            continue 'main;
-                        }
-                        WorkerMessage::Quit => {
-                            break 'main;
-                        }
-                    }
-                },
-                recv(response_recv) -> msg => {
-                    let v = Self::async_message(
-                        &mut tasks,
-                        msg,
-                    );
-
-                    if let Poll::Ready(v) = v {
-                        if let Err(e) = v {
-                            log::error!("Async IO task failed with error: '{e:?}'")
-                        }
-                    }
-
-                    continue 'main;
-                },
-                default(Duration::from_millis(8)) => {},
-            }
-
-            // If we've gone to sleep for an extended time it's likely that we've retired
-            // all our work. It's possible that there are submitted uploads that aren't
-            // flushed, and unless we do this here manually nothing will flush them until
-            // we get more requests.
-            //
-            // So we wake up after an extended (for a game) wait and flush manually before
-            // going into a deeper sleep.
-            match loader.flush_submitted_uploads() {
-                Ok(_) => {}
-                Err(e @ FlushError::DeviceLost) => {
-                    log::error!("Error: {e:?}");
-                    continue 'main;
-                }
-                Err(e @ FlushError::RendererDisconnected) => {
-                    log::error!("Error: {e:?}");
-                    continue 'main;
-                }
-                Err(e @ FlushError::CommandRecordingFailure) => {
-                    log::error!("Error: {e:?}");
-                    continue 'main;
-                }
-                Err(e @ FlushError::WaitFailure) => {
-                    log::error!("Error: {e:?}");
-                    abort_unwind(|| panic!("Error: {e:?}"))
-                }
-            };
-
-            select! {
-                recv(request_recv) -> msg => {
-                    let msg = msg.unwrap_or_else(|_| {
-                        abort_unwind(|| unreachable!())
-                    });
-
-                    match msg {
-                        WorkerMessage::Spawn(msg) => {
-                            let v = Self::worker_message(
-                                &mut tasks,
-                                request_send,
-                                response_send,
-                                loader,
-                                msg,
-                            );
-                            if let Poll::Ready(v) = v {
-                                if let Err(e) = v {
-                                    log::error!("Async IO task failed with error: '{e:?}'")
-                                }
-                            }
-                            continue 'main;
-                        }
-                        WorkerMessage::Quit => {
-                            break 'main;
-                        }
-                    }
-                },
-                recv(response_recv) -> msg => {
-                    let v = Self::async_message(
-                        &mut tasks,
-                        msg,
-                    );
-
-                    if let Poll::Ready(v) = v {
-                        if let Err(e) = v {
-                            log::error!("Async IO task failed with error: '{e:?}'")
-                        }
-                    }
-
-                    continue 'main;
-                },
-            }
-        }
-
-        Self::run_inner_quit(&mut tasks, response_recv, loader);
-    }
-
-    fn run_inner_quit<'a>(
-        tasks: &mut Tasks<'a>,
-        response_recv: &'a Receiver<RawHandle>,
-        loader: &'a AsyncResourceLoader<u64>,
-    ) {
-        'main: loop {
-            // This is an alternate event loop that only blocks for waker messages. This path is
-            // intended as part of a clean shutdown of the io worker. This will attempt to complete
-            // all outstanding tasks before exiting. New tasks will not be spawned.
-            if tasks.is_empty() {
+            // If we have finished all tasks, and we are no longer listening for new tasks then we
+            // can exit.
+            if tasks.is_empty() && request_recv.is_none() {
                 break 'main;
             }
 
@@ -306,9 +182,35 @@ impl AsyncLoaderWorker {
             // if we don't get any requests within that timeout we flush the resource loader before
             // moving into a deep sleep.
             select! {
+                recv(request_recv.unwrap_or(&never())) -> msg => {
+                    let msg = msg.unwrap_or_else(|_| {
+                        abort_unwind(|| unreachable!())
+                    });
+
+                    match msg {
+                        WorkerMessage::Spawn(msg) => {
+                            let v = Self::worker_message(
+                                &mut tasks,
+                                request_send,
+                                response_send,
+                                loader,
+                                msg,
+                            );
+                            if let Poll::Ready(v) = v {
+                                if let Err(e) = v {
+                                    log::error!("Async IO task failed with error: '{e:?}'")
+                                }
+                            }
+                        }
+                        WorkerMessage::Quit => {
+                            request_recv = None;
+                        }
+                    }
+                    continue 'main;
+                },
                 recv(response_recv) -> msg => {
                     let v = Self::async_message(
-                        tasks,
+                        &mut tasks,
                         msg,
                     );
 
@@ -323,37 +225,83 @@ impl AsyncLoaderWorker {
                 default(Duration::from_millis(8)) => {},
             }
 
-            // If we've gone to sleep for an extended time it's likely that we've retired
-            // all our work. It's possible that there are submitted uploads that aren't
-            // flushed, and unless we do this here manually nothing will flush them until
-            // we get more requests.
-            //
-            // So we wake up after an extended (for a game) wait and flush manually before
-            // going into a deeper sleep.
-            match loader.flush_submitted_uploads() {
-                Ok(_) => {}
-                Err(e @ FlushError::DeviceLost) => {
-                    log::error!("Error: {e:?}");
-                    continue 'main;
+            {
+                aleph_profile::scope_named!("AsyncLoaderWorker::pre_sleep_flush");
+                // If we've gone to sleep for an extended time it's likely that we've retired
+                // all our work. It's possible that there are submitted uploads that aren't
+                // flushed, and unless we do this here manually nothing will flush them until
+                // we get more requests.
+                //
+                // So we wake up after an extended (for a game) wait and flush manually before
+                // going into a deeper sleep.
+                match loader.flush_submitted_uploads() {
+                    Ok(_) => {}
+                    Err(e @ FlushError::DeviceLost) => {
+                        log::error!("Error: {e:?}");
+                        continue 'main;
+                    }
+                    Err(e @ FlushError::RendererDisconnected) => {
+                        log::error!("Error: {e:?}");
+                        continue 'main;
+                    }
+                    Err(e @ FlushError::CommandRecordingFailure) => {
+                        log::error!("Error: {e:?}");
+                        continue 'main;
+                    }
+                    Err(e @ FlushError::WaitFailure) => {
+                        log::error!("Error: {e:?}");
+                        abort_unwind(|| panic!("Error: {e:?}"))
+                    }
+                };
+
+                match loader.wait_all_submissions() {
+                    Ok(_) => {}
+                    Err(e @ RetireError::DeviceLost) => {
+                        log::error!("Error: {e:?}");
+                        continue 'main;
+                    }
+                    Err(e @ RetireError::RendererDisconnected) => {
+                        log::error!("Error: {e:?}");
+                        continue 'main;
+                    }
+                    Err(e @ RetireError::WaitFailure) => {
+                        log::error!("Error: {e:?}");
+                        abort_unwind(|| panic!("Error: {e:?}"))
+                    }
                 }
-                Err(e @ FlushError::RendererDisconnected) => {
-                    log::error!("Error: {e:?}");
-                    continue 'main;
-                }
-                Err(e @ FlushError::CommandRecordingFailure) => {
-                    log::error!("Error: {e:?}");
-                    continue 'main;
-                }
-                Err(e @ FlushError::WaitFailure) => {
-                    log::error!("Error: {e:?}");
-                    abort_unwind(|| panic!("Error: {e:?}"))
-                }
-            };
+            }
 
             select! {
+                recv(request_recv.unwrap_or(&never())) -> msg => {
+                    let msg = msg.unwrap_or_else(|_| {
+                        abort_unwind(|| unreachable!())
+                    });
+
+                    match msg {
+                        WorkerMessage::Spawn(msg) => {
+                            let v = Self::worker_message(
+                                &mut tasks,
+                                request_send,
+                                response_send,
+                                loader,
+                                msg,
+                            );
+                            if let Poll::Ready(v) = v {
+                                if let Err(e) = v {
+                                    log::error!("Async IO task failed with error: '{e:?}'")
+                                }
+                            }
+
+                        }
+                        WorkerMessage::Quit => {
+                            request_recv = None;
+                        }
+                    }
+                    continue 'main;
+                },
                 recv(response_recv) -> msg => {
                     let v = Self::async_message(
-                        tasks,
+                        &mut tasks,
                         msg,
                     );
 

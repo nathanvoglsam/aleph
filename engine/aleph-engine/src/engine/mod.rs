@@ -83,7 +83,7 @@ impl EngineBuilder {
                         };
                         CoInitializeEx(None, COINIT_MULTITHREADED).unwrap();
                     }
-                    
+
                     name_for_pool_thread_i(thread.index());
 
                     aleph_profile::scope_named!("rayon_run");
