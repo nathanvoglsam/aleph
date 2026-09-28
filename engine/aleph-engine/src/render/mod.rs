@@ -95,6 +95,7 @@ impl IPlugin for PluginRender {
         registrar.uses::<AEguiRenderData>(InitOrder::After);
 
         registrar.provides::<AsyncLoaderQueue>(Provides::Always);
+        registrar.provides::<GltfLoader>(Provides::Always);
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
@@ -172,7 +173,6 @@ impl IPlugin for PluginRender {
             vfs: router.clone(),
             default_material: default_resources.default_material,
         };
-        registry.core().resources.insert(gltf_loader);
 
         // Construct and register the __render__ scene resource. This is distinct from the
         // simulation scene.
@@ -221,6 +221,7 @@ impl IPlugin for PluginRender {
         }
 
         registry.provide(loader_queue);
+        registry.provide(gltf_loader);
     }
 
     fn on_exit(&mut self) {

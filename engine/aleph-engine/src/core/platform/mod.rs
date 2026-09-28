@@ -45,6 +45,8 @@ use std::sync::Arc;
 
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::{Instrumented, system};
+use aleph_io_queue::IoQueue;
+use aleph_io_queue::top_level_handle_cache::TopLevelHandleCache;
 use aleph_vfs::directory_layer::DirectoryLayer;
 use aleph_vfs::{LayerDesc, Router};
 use api::label::make_label;
@@ -192,18 +194,37 @@ impl IPlugin for CorePlatform {
         sdl_o.gamepad = Some(sdl_gamepad);
         self.sdl.set(Some(sdl_o));
 
+        let io_queue = IoQueue::new(TopLevelHandleCache::new(2));
+
         let mut layers: BVec<_, EngineSystem> = BVec::new_in(system());
 
         // TODO: right now for the shaders we either mount the CWD or .aleph if we find it
         if Path::new(".aleph/shaders").exists() {
+            let layer = DirectoryLayer::new_with_io_queue(
+                Utf8PathBuf::from(".aleph/shaders"),
+                io_queue.clone(),
+            );
             layers.push(LayerDesc {
                 mount_name: "__shader",
-                layer: DirectoryLayer::new(Utf8PathBuf::from(".aleph/shaders")),
+                layer,
             });
         } else {
+            let layer =
+                DirectoryLayer::new_with_io_queue(Utf8PathBuf::from("./"), io_queue.clone());
             layers.push(LayerDesc {
                 mount_name: "__shader",
-                layer: DirectoryLayer::new(Utf8PathBuf::from("./")),
+                layer,
+            });
+        }
+
+        {
+            let layer = DirectoryLayer::new_with_io_queue(
+                Utf8PathBuf::from("/mnt/NVME_02/Code/aleph-test-assets/assets"),
+                io_queue.clone(),
+            );
+            layers.push(LayerDesc {
+                mount_name: "aleph-test",
+                layer,
             });
         }
 
