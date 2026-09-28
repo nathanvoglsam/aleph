@@ -462,6 +462,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
 
     pub fn maybe_flush(&self) -> Result<(), FlushError> {
         if self.queue_manager.queued_bytes.get() >= self.config.flush_threshold as u64 {
+            aleph_profile::scope_named!("AsyncResourceLoader::threshold_flush");
             // If we've queued over a certain threshold of bytes to be uploaded then we issue a
             // non-blocking upload flush on the loader. This will flush all the queued copy ranges
             // from the internal queue and fire off commands to the GPU to start the uploads to the
