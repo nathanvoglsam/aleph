@@ -21,6 +21,7 @@ cmake -G "Ninja" `
     -DCMAKE_BUILD_TYPE="Release" `
     -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE `
     -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 `
+    -DCOMPILER_SUPPORTS_Werror=FALSE `
     $ThirdPartyDirectory
 
 cmake --build ./ --config Release --parallel
