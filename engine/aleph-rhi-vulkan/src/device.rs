@@ -879,104 +879,105 @@ impl IDevice for Device {
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
         abort_on_unwind(|| {
             DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+                let bump = bump_cell.scope();
 
-            // First we try and grab a command list from the free list. This way we reuse an old
-            // list before we try and make a new one. This can save a lot of performance even if the
-            // free list is a bit slow.
-            //
-            // Some drivers will lazily allocate pages for the command list on first use. If we're
-            // only using fresh allocators then we hit that (very) slow path every time. To avoid
-            // this we front creating new command pools with a free list so we recycle old ones
-            // first.
-            if let Some(list) = self.command_list_pool.get_for_queue_type(desc.queue_type) {
-                set_name(
-                    self.debug_loader.as_ref(),
-                    bump.allocator(),
-                    list.pool,
-                    desc.name,
-                );
-                set_name(
-                    self.debug_loader.as_ref(),
-                    bump.allocator(),
-                    list.buffer,
-                    desc.name,
-                );
-
-                // It is assumed that only command lists that are safe to reuse are placed into the
-                // free list.
+                // First we try and grab a command list from the free list. This way we reuse an old
+                // list before we try and make a new one. This can save a lot of performance even if the
+                // free list is a bit slow.
                 //
-                // Typically, this will be done in 'garbage_collect'.
+                // Some drivers will lazily allocate pages for the command list on first use. If we're
+                // only using fresh allocators then we hit that (very) slow path every time. To avoid
+                // this we front creating new command pools with a free list so we recycle old ones
+                // first.
+                if let Some(list) = self.command_list_pool.get_for_queue_type(desc.queue_type) {
+                    set_name(
+                        self.debug_loader.as_ref(),
+                        bump.allocator(),
+                        list.pool,
+                        desc.name,
+                    );
+                    set_name(
+                        self.debug_loader.as_ref(),
+                        bump.allocator(),
+                        list.buffer,
+                        desc.name,
+                    );
+
+                    // It is assumed that only command lists that are safe to reuse are placed into the
+                    // free list.
+                    //
+                    // Typically, this will be done in 'garbage_collect'.
+                    let out: Box<dyn ICommandList> = Box::new(CommandList {
+                        _device: self._this.upgrade().unwrap(),
+                        pool: list.pool,
+                        buffer: list.buffer,
+                        list_type: list.list_type,
+                        state: ListState::Empty,
+                    });
+                    return Ok(out);
+                }
+
+                log::warn!(
+                    "'command_list_pool' empty '{}'. Creating a new object.",
+                    desc.queue_type
+                );
+
+                let family_index = match desc.queue_type {
+                    QueueType::General => self.general_queue.as_ref().unwrap().info.family_index,
+                    QueueType::Compute => self.compute_queue.as_ref().unwrap().info.family_index,
+                    QueueType::Transfer => self.transfer_queue.as_ref().unwrap().info.family_index,
+                };
+
+                let create_info = vk::CommandPoolCreateInfo::default()
+                    .flags(vk::CommandPoolCreateFlags::TRANSIENT)
+                    .queue_family_index(family_index);
+                let command_pool = unsafe {
+                    self.device
+                        .create_command_pool(&create_info, GLOBAL)
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| CommandListCreateError::Platform)?
+                };
+
+                let allocate_info = vk::CommandBufferAllocateInfo::default()
+                    .command_pool(command_pool)
+                    .level(vk::CommandBufferLevel::PRIMARY)
+                    .command_buffer_count(1);
+                let command_buffer = unsafe {
+                    let mut buffer = MaybeUninit::uninit();
+                    let result = (self.device.fp_v1_0().allocate_command_buffers)(
+                        self.device.handle(),
+                        &allocate_info,
+                        buffer.as_mut_ptr(),
+                    );
+                    result
+                        .assume_init_on_success(buffer)
+                        .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
+                        .map_err(|_| CommandListCreateError::Platform)?
+                };
+
+                set_name(
+                    self.debug_loader.as_ref(),
+                    bump.allocator(),
+                    command_pool,
+                    desc.name,
+                );
+                set_name(
+                    self.debug_loader.as_ref(),
+                    bump.allocator(),
+                    command_buffer,
+                    desc.name,
+                );
+
                 let out: Box<dyn ICommandList> = Box::new(CommandList {
                     _device: self._this.upgrade().unwrap(),
-                    pool: list.pool,
-                    buffer: list.buffer,
-                    list_type: list.list_type,
+                    pool: command_pool,
+                    buffer: command_buffer,
+                    list_type: desc.queue_type,
                     state: ListState::Empty,
                 });
-                return Ok(out);
-            }
 
-            log::warn!(
-                "CommandList free-object-pool empty. Taking slow-path for creating a new object!"
-            );
-
-            let family_index = match desc.queue_type {
-                QueueType::General => self.general_queue.as_ref().unwrap().info.family_index,
-                QueueType::Compute => self.compute_queue.as_ref().unwrap().info.family_index,
-                QueueType::Transfer => self.transfer_queue.as_ref().unwrap().info.family_index,
-            };
-
-            let create_info = vk::CommandPoolCreateInfo::default()
-                .flags(vk::CommandPoolCreateFlags::TRANSIENT)
-                .queue_family_index(family_index);
-            let command_pool = unsafe {
-                self.device
-                    .create_command_pool(&create_info, GLOBAL)
-                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| CommandListCreateError::Platform)?
-            };
-
-            let allocate_info = vk::CommandBufferAllocateInfo::default()
-                .command_pool(command_pool)
-                .level(vk::CommandBufferLevel::PRIMARY)
-                .command_buffer_count(1);
-            let command_buffer = unsafe {
-                let mut buffer = MaybeUninit::uninit();
-                let result = (self.device.fp_v1_0().allocate_command_buffers)(
-                    self.device.handle(),
-                    &allocate_info,
-                    buffer.as_mut_ptr(),
-                );
-                result
-                    .assume_init_on_success(buffer)
-                    .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
-                    .map_err(|_| CommandListCreateError::Platform)?
-            };
-
-            set_name(
-                self.debug_loader.as_ref(),
-                bump.allocator(),
-                command_pool,
-                desc.name,
-            );
-            set_name(
-                self.debug_loader.as_ref(),
-                bump.allocator(),
-                command_buffer,
-                desc.name,
-            );
-
-            let out: Box<dyn ICommandList> = Box::new(CommandList {
-                _device: self._this.upgrade().unwrap(),
-                pool: command_pool,
-                buffer: command_buffer,
-                list_type: desc.queue_type,
-                state: ListState::Empty,
-            });
-
-            Ok(out)
-        })
+                Ok(out)
+            })
         })
     }
 

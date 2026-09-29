@@ -130,6 +130,11 @@ impl CommandList {
             return Ok(out);
         }
 
+        log::warn!(
+            "'command_list_pool' empty '{}'. Creating a new object.",
+            desc.queue_type
+        );
+
         let descriptor = MTL4CommandAllocatorDescriptor::new();
         let allocator = device
             .device

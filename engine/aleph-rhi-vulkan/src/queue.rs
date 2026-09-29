@@ -250,7 +250,10 @@ impl IQueue for Queue {
                         // growing the pool.
                         if let Err(dropped) = pool_target.push(list) {
                             unsafe {
-                                log::warn!("CommandList free-object-pool overflowing!");
+                                log::warn!(
+                                    "'command_list_pool' overflowing '{}'.",
+                                    self.queue_type
+                                );
                                 dropped.collect(&device);
                             }
                         }

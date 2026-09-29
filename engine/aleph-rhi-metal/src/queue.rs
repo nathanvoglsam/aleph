@@ -392,7 +392,7 @@ impl Queue {
                     // If we fill the list we just start destroying command lists rather than
                     // growing the pool.
                     if pool_target.push(list).is_err() {
-                        log::warn!("CommandList free-object-pool overflowing!");
+                        log::warn!("'command_list_pool' overflowing '{}'.", self.queue_type);
                     }
                 }
             }

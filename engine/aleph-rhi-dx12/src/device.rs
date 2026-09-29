@@ -692,7 +692,8 @@ impl IDevice for Device {
             }
 
             log::warn!(
-                "CommandList free-object-pool empty. Taking slow-path for creating a new object!"
+                "'command_list_pool' empty '{}'. Creating a new object.",
+                desc.queue_type
             );
 
             let platform_list_type = queue_type_to_dx12(desc.queue_type);
