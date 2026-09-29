@@ -32,7 +32,7 @@ use std::ptr::NonNull;
 
 use aleph_vfs::IRouter;
 use aleph_vfs::path::VPathBuf;
-use mg::async_resource_loader::FlushError;
+use mg::async_resource_loader::{BufferLoadResult, FlushError};
 use mg::resource::buffer::BufferHandle;
 
 use crate::core::async_io::context::IoContext;
@@ -158,8 +158,32 @@ pub async fn load_buffer_from_file(
 
 pub async fn load_buffer_from_data(io: &IoContext<'_>, data: &[u8]) -> io::Result<BufferHandle> {
     let (sender, receiver) = kanal::bounded_async(1);
+
+    issue_load_buffer_from_data(io, sender.to_sync(), 0, data)?;
+
+    match receiver.recv().await {
+        Ok(v) => match v.0 {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                log::error!("Failed to create GPU resource with error '{e:?}'.");
+                Err(io::Error::from(io::ErrorKind::Other))
+            }
+        },
+        Err(e) => {
+            log::error!("The load request was lost '{e:?}'.");
+            Err(io::Error::from(io::ErrorKind::Other))
+        }
+    }
+}
+
+pub fn issue_load_buffer_from_data(
+    io: &IoContext<'_>,
+    sender: kanal::Sender<BufferLoadResult<u64>>,
+    cookie: u64,
+    data: &[u8],
+) -> io::Result<()> {
     let loader = io.loader();
-    let handle = match loader.begin_buffer_load(sender.to_sync(), data.len() as u64, 0) {
+    let handle = match loader.begin_buffer_load(sender, data.len() as u64, cookie) {
         Ok(v) => v,
         Err(e) => {
             // If we failed to create the GPU resource then we should remove
@@ -216,19 +240,7 @@ pub async fn load_buffer_from_data(io: &IoContext<'_>, data: &[u8]) -> io::Resul
         }
     }
 
-    match receiver.recv().await {
-        Ok(v) => match v.0 {
-            Ok(v) => Ok(v),
-            Err(e) => {
-                log::error!("Failed to create GPU resource with error '{e:?}'.");
-                Err(io::Error::from(io::ErrorKind::Other))
-            }
-        },
-        Err(e) => {
-            log::error!("The load request was lost '{e:?}'.");
-            Err(io::Error::from(io::ErrorKind::Other))
-        }
-    }
+    Ok(())
 }
 
 extern "C" fn abort_unwind<F: FnOnce() -> R, R>(f: F) -> R {

@@ -31,6 +31,7 @@ use std::borrow::Cow;
 use std::io;
 use std::sync::Arc;
 
+use aleph_gen_arena::HandleType;
 use aleph_math::{Mat4, Rotor3, ToDouble, Vec3, Vec4};
 use aleph_vfs::IRouter;
 use aleph_vfs::path::VPath;
@@ -40,7 +41,7 @@ use mg::material_instance::MaterialInstanceHandle;
 use mg::resource::buffer::BufferHandle;
 
 use crate::core::async_io::context::IoContext;
-use crate::render::async_loader::internal::buffer_load::load_buffer_from_data;
+use crate::render::async_loader::internal::buffer_load::issue_load_buffer_from_data;
 use crate::render::async_loader::systems::async_load_resolver::AsyncLoadResolverQueue;
 
 pub struct GltfLoadPayload {
@@ -341,15 +342,21 @@ fn spawn_mesh_uploader(
                     let mut v_data = Vec::with_capacity(vertex_size);
                     v_data.resize(vertex_size, 0);
 
-                    load_index_buffer_data(&mut i_data, buffers, &indices);
-                    load_vertex_buffer_data(
-                        &mut v_data,
-                        buffers,
-                        &prim,
-                        &i_data,
-                        vertex_count,
-                        stride,
-                    );
+                    {
+                        aleph_profile::scope_named!("gltf::load_index_buffer_data");
+                        load_index_buffer_data(&mut i_data, buffers, &indices);
+                    }
+                    {
+                        aleph_profile::scope_named!("gltf::load_vertex_buffer_data");
+                        load_vertex_buffer_data(
+                            &mut v_data,
+                            buffers,
+                            &prim,
+                            &i_data,
+                            vertex_count,
+                            stride,
+                        );
+                    }
 
                     prims.push((i_data, v_data));
                 }
@@ -357,12 +364,62 @@ fn spawn_mesh_uploader(
                 let sender = sender.clone();
                 let _ = async_queue.spawn(async move |io| {
                     let mut prim_buffers = Vec::with_capacity(prims.len());
-                    for (i_data, v_data) in prims {
+                    prim_buffers.resize(
+                        prims.len(),
+                        (BufferHandle::dangling(), BufferHandle::dangling()),
+                    );
+
+                    let (i_sender, i_receiver) = kanal::bounded_async(prims.len());
+                    let (v_sender, v_receiver) = kanal::bounded_async(prims.len());
+
+                    for (i, (i_data, _)) in prims.iter().enumerate() {
                         let i_data = bytemuck::cast_slice::<_, u8>(i_data.as_slice());
-                        let i_buffer = load_buffer_from_data(&io, i_data).await?;
-                        let v_buffer = load_buffer_from_data(&io, &v_data).await?;
-                        prim_buffers.push((i_buffer, v_buffer));
+                        issue_load_buffer_from_data(&io, i_sender.clone_sync(), i as u64, i_data)?;
                     }
+
+                    for (i, (_, v_data)) in prims.iter().enumerate() {
+                        issue_load_buffer_from_data(&io, v_sender.clone_sync(), i as u64, v_data)?;
+                    }
+
+                    drop(i_sender);
+                    drop(v_sender);
+
+                    for _ in 0..i_receiver.capacity() {
+                        let v = match i_receiver.recv().await {
+                            Ok(v) => v,
+                            Err(e) => {
+                                log::error!("The load request was lost '{e:?}'.");
+                                return Err(io::Error::from(io::ErrorKind::Other));
+                            }
+                        };
+                        let handle = match v.0 {
+                            Ok(v) => Ok(v),
+                            Err(e) => {
+                                log::error!("Failed to create GPU resource with error '{e:?}'.");
+                                Err(io::Error::from(io::ErrorKind::Other))
+                            }
+                        };
+                        prim_buffers[v.1 as usize].0 = handle?;
+                    }
+
+                    for _ in 0..v_receiver.capacity() {
+                        let v = match v_receiver.recv().await {
+                            Ok(v) => v,
+                            Err(e) => {
+                                log::error!("The load request was lost '{e:?}'.");
+                                return Err(io::Error::from(io::ErrorKind::Other));
+                            }
+                        };
+                        let handle = match v.0 {
+                            Ok(v) => Ok(v),
+                            Err(e) => {
+                                log::error!("Failed to create GPU resource with error '{e:?}'.");
+                                Err(io::Error::from(io::ErrorKind::Other))
+                            }
+                        };
+                        prim_buffers[v.1 as usize].1 = handle?;
+                    }
+
                     let _ = sender.send((mesh_index, prim_buffers)).await;
                     Ok(())
                 });
@@ -561,6 +618,7 @@ fn load_vertex_buffer_data(
     }
 
     if has_texcoord && has_normals && !has_tangents {
+        aleph_profile::scope_named!("gltf::mikktspace");
         fn get_attr<'a, 'b>(
             buffers: &'b [gltf::buffer::Data],
             prim: &'a gltf::Primitive<'a>,
