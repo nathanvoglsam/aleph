@@ -33,6 +33,6 @@ if (Configs.rhi !== undefined) {
     Configs.rhi.debug = true;
 }
 if (Configs["aleph-test"] !== undefined) {
-    Configs["aleph-test"].scenes = ["aleph-test/IntelSponza/NewSponza_Main_Blender_glTF.gltf", "aleph-test/IntelSponzaCurtains/NewSponza_Curtains_glTF.gltf"];
-    //Configs["aleph-test"].scenes = ["aleph-test/flying_world/FlyingWorld-BattleOfTheTrashGod.gltf"];
+    Configs["aleph-test"].scenes = ["aleph-test/IntelSponza/NewSponza_Main_Blender_glTF.gltf", "aleph-test/IntelSponzaCurtains/NewSponza_Curtains_glTF.gltf", "aleph-test/flying_world/FlyingWorld-BattleOfTheTrashGod.gltf"];
+    // Configs["aleph-test"].scenes = ["aleph-test/flying_world/FlyingWorld-BattleOfTheTrashGod.gltf"];
 }
