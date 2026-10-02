@@ -38,7 +38,6 @@ use aleph_object_system::uuid::Uuid;
 use aleph_typed_table::TypedTable;
 use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
-use rayon::prelude::*;
 
 use crate::ScheduleArgs;
 use crate::system::{IntoSystem, System};
