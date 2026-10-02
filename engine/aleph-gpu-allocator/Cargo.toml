@@ -45,4 +45,5 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-alloc = { workspace = true }
+aleph-profile = { workspace = true }
 parking_lot = { workspace = true }

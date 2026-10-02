@@ -34,7 +34,9 @@ mod gpu_allocator;
 mod gpu_layout;
 
 pub use gpu_allocation::GpuAllocation;
-pub use gpu_allocator::{AllocatorConfig, GpuAllocator, MemoryBlock, MemoryPool, PoolConfig};
+pub use gpu_allocator::{
+    AllocatorConfig, AllocatorStatsSummary, GpuAllocator, MemoryBlock, MemoryPool, PoolConfig,
+};
 pub use gpu_layout::GpuLayout;
 
 /// Supported set of allocation memory locations. Used when making device allocations to determine

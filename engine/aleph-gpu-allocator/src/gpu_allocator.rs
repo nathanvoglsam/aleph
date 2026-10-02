@@ -195,19 +195,19 @@ impl<T: IApiBridge> GpuAllocator<T> {
 pub struct AllocatorStatsSummary {
     /// Tracks the total number of live allocations that have been created from the allocator. This
     /// is a total of both dedicated and sub-allocated allocations.
-    num_allocations: usize,
+    pub num_allocations: usize,
 
     /// Tracks the total number of live _dedicated_ allocations that have been created in the
     /// allocator. This totals only dedicated allocations.
-    num_dedicated_allocations: usize,
+    pub num_dedicated_allocations: usize,
 
     /// Tracks the total number of bytes used by allocations across all blocks in all pools. This
     /// does not track fragmentation, and is simply a total of memory consumed by all live
     /// allocations.
-    used_bytes: u64,
+    pub used_bytes: u64,
 
     /// Tracks the number of bytes reserved for all live blocks allocated in all pools.
-    reserved_bytes: u64,
+    pub reserved_bytes: u64,
 }
 
 impl AllocatorStatsSummary {
@@ -734,21 +734,21 @@ struct InternalPoolStats {
 
 impl InternalPoolStats {
     fn add_tracked_allocation(&self) {
-        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+        if !aleph_profile::is_enabled() {
             return;
         }
         self.num_allocations.fetch_add(1, Ordering::Relaxed);
     }
 
     fn sub_tracked_allocation(&self) {
-        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+        if !aleph_profile::is_enabled() {
             return;
         }
         self.num_allocations.fetch_sub(1, Ordering::Relaxed);
     }
 
     fn add_tracked_dedicated_allocation(&self) {
-        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+        if !aleph_profile::is_enabled() {
             return;
         }
         self.num_dedicated_allocations
@@ -756,7 +756,7 @@ impl InternalPoolStats {
     }
 
     fn sub_tracked_dedicated_allocation(&self) {
-        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+        if !aleph_profile::is_enabled() {
             return;
         }
         self.num_dedicated_allocations
@@ -764,28 +764,28 @@ impl InternalPoolStats {
     }
 
     fn track_layout_allocation(&self, layout: &GpuLayout) {
-        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+        if !aleph_profile::is_enabled() {
             return;
         }
         self.used_bytes.fetch_add(layout.size(), Ordering::Relaxed);
     }
 
     fn track_layout_deallocation(&self, layout: &GpuLayout) {
-        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+        if !aleph_profile::is_enabled() {
             return;
         }
         self.used_bytes.fetch_sub(layout.size(), Ordering::Relaxed);
     }
 
     fn track_block_allocation(&self, size: u64) {
-        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+        if !aleph_profile::is_enabled() {
             return;
         }
         self.reserved_bytes.fetch_add(size, Ordering::Relaxed);
     }
 
     fn track_block_deallocation(&self, size: u64) {
-        if !aleph_alloc::instrumentation::is_instrumentation_enabled() {
+        if !aleph_profile::is_enabled() {
             return;
         }
         self.reserved_bytes.fetch_sub(size, Ordering::Relaxed);
