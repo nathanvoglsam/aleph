@@ -146,3 +146,13 @@ macro_rules! scope_named {
         $crate::scope!(concat!(module_path!(), "::", $name), $data)
     };
 }
+
+pub const ENABLED: bool = cfg!(any(
+    feature = "profile-with-superluminal",
+    feature = "profile-with-tracy",
+    feature = "profile-with-pix"
+));
+
+pub const fn is_enabled() -> bool {
+    ENABLED
+}

@@ -46,3 +46,5 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies]
 aleph-alloc = { workspace = true }
 aleph-rhi-api = { workspace = true }
+aleph-profile = { workspace = true }
+aleph-gpu-allocator = { workspace = true }

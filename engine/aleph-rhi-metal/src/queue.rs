@@ -330,6 +330,11 @@ impl Queue {
     pub fn garbage_collect_internal(&self) -> Result<(), QueueGarbageCollectError> {
         let device = self._device.upgrade().unwrap();
 
+        if let Some(allocator) = device.allocator.as_ref() {
+            let stats = allocator.get_stats_summary();
+            aleph_rhi_impl_utils::allocator_stats::update_plots(&stats);
+        }
+
         // Grab the index of the most recently completed command list on this queue and update
         // the queue's value
         //

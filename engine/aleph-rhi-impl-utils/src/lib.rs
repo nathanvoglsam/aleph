@@ -37,6 +37,7 @@ use std::sync::Arc;
 use aleph_alloc::instrumentation::Instrumented;
 use aleph_rhi_api::*;
 
+pub mod allocator_stats;
 pub mod bump_cell;
 pub mod conv;
 pub mod manually_drop;

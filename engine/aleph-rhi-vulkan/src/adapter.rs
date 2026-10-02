@@ -406,6 +406,9 @@ impl Adapter {
 
                 device
             });
+
+            aleph_rhi_impl_utils::allocator_stats::setup_plots();
+
             Ok(device)
         })
     }
