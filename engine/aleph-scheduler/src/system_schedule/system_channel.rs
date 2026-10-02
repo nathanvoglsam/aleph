@@ -188,7 +188,7 @@ impl<A: ScheduleArgs, C: GenericSystemCell<A> + Send + Sync> SystemChannel<A, C>
                 systems[system_index]
                     .edges
                     .successors
-                    .par_iter()
+                    .iter()
                     .copied()
                     .for_each(|successor| {
                         let successor: usize = successor;
@@ -211,12 +211,9 @@ impl<A: ScheduleArgs, C: GenericSystemCell<A> + Send + Sync> SystemChannel<A, C>
         let systems = std::mem::take(&mut self.systems);
 
         // Kick off parallel tasks for each of the root systems
-        self.root_systems
-            .par_iter()
-            .copied()
-            .for_each(|system_index| {
-                exec_task(args, &systems, &done, &payloads, resources, system_index);
-            });
+        self.root_systems.iter().copied().for_each(|system_index| {
+            exec_task(args, &systems, &done, &payloads, resources, system_index);
+        });
 
         self.systems = systems;
 
