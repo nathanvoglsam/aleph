@@ -58,7 +58,7 @@ impl UploadMemoryManager {
             })
             .ok()?;
 
-        let allocator = AsyncResourceLoader::with(|| OffsetAllocator::new(size, 512));
+        let allocator = AsyncResourceLoader::with(|| OffsetAllocator::new(size, 8192 * 2));
         let allocator = RefCell::new(allocator);
 
         let base_addr = MakeSend(device.map_buffer(&buffer).ok()?);
