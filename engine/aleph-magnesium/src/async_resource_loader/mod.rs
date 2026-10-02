@@ -161,7 +161,7 @@ impl<C: Send + 'static> Drop for AsyncResourceLoader<C> {
                 log::trace!("Failed to notify buffer load request of failure");
             }
         }
-        self.stats.update_buffers_live(0);
+        self.stats.update_buffers_open(0);
 
         // Notify any outstanding request listeners that the requests were canceled. We don't care
         // if anyone is listening, but send the messages in case they are.
@@ -170,7 +170,7 @@ impl<C: Send + 'static> Drop for AsyncResourceLoader<C> {
                 log::trace!("Failed to notify texture load request of failure");
             }
         }
-        self.stats.update_textures_live(0);
+        self.stats.update_textures_open(0);
 
         self.stats.update_queued_bytes(0);
     }
@@ -206,7 +206,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         {
             let mut states = self.request_states.borrow_mut();
             handle = states.buffers.alloc(load);
-            self.stats.update_buffers_live(states.buffers.len());
+            self.stats.update_buffers_open(states.buffers.len());
         }
 
         Ok(handle)
@@ -252,7 +252,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         {
             let mut states = self.request_states.borrow_mut();
             handle = states.textures.alloc(load);
-            self.stats.update_textures_live(states.textures.len());
+            self.stats.update_textures_open(states.textures.len());
         }
 
         Ok(handle)
@@ -268,7 +268,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
 
         if let Some(req) = states.buffers.free(handle) {
-            self.stats.update_buffers_live(states.buffers.len());
+            self.stats.update_buffers_open(states.buffers.len());
             if let Err(_) = req.sender.send((Err(()), req.cookie)) {
                 log::trace!("Failed to notify buffer load request of failure");
             }
@@ -285,7 +285,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
 
         if let Some(req) = states.textures.free(handle) {
-            self.stats.update_textures_live(states.textures.len());
+            self.stats.update_textures_open(states.textures.len());
             if let Err(_) = req.sender.send((Err(()), req.cookie)) {
                 log::trace!("Failed to notify texture load request of failure");
             }
@@ -524,7 +524,12 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
 
             if logical_value >= live[i].signal_value {
                 // We use swap_remove and skip incrementing the index to remove while iterating.
-                let result = live.swap_remove(i).retire(
+                let submission = live.swap_remove(i);
+
+                self.stats.update_live_submissions(live.len());
+
+                let result = submission.retire(
+                    &self.stats,
                     &mut request_states,
                     &self.upload_memory_manager,
                     &self.loader_sender,
@@ -543,8 +548,6 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             // element to process if we removed one.
             i += 1;
         }
-
-        self.stats.update_live_submissions(live.len());
 
         // 'device lost' errors take precedence
         if is_device_lost {
@@ -593,6 +596,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         let mut request_states = self.request_states.borrow_mut();
         for submission in live.drain(..) {
             let result = submission.retire(
+                &self.stats,
                 &mut request_states,
                 &self.upload_memory_manager,
                 &self.loader_sender,
@@ -607,6 +611,9 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
 
         self.stats.update_live_submissions(live.len());
+        self.stats.update_buffers_open(request_states.buffers.len());
+        self.stats
+            .update_textures_open(request_states.textures.len());
 
         // 'device lost' takes precedence over any error the retire operation may have thrown.
         if is_device_lost {
@@ -864,8 +871,11 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
 
             // Clear the 'queued_bytes' tracker now that we've flushed the queue of pending upload
             // work.
-            self.queue_manager.queued_bytes.set(0);
-            self.stats.update_queued_bytes(0);
+            submission.bytes = self.queue_manager.queued_bytes.take();
+
+            self.stats
+                .update_queued_bytes(self.queue_manager.queued_bytes.get());
+            self.stats.add_submitted_bytes(submission.bytes);
 
             // And then add our submission metadata to our manager.
             //

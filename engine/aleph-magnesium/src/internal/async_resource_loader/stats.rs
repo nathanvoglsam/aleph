@@ -27,12 +27,47 @@
 // SOFTWARE.
 //
 
+use std::cell::Cell;
+
 use aleph_profile::tracy_client;
 
-pub struct Stats {}
+pub struct Stats {
+    submitted_bytes: Cell<u64>,
+    uploaded_bytes: Cell<u64>,
+    buffers_completed: Cell<usize>,
+    textures_completed: Cell<usize>,
+}
 
 impl Stats {
     pub fn new() -> Self {
+        let name = tracy_client::plot_name!("AsyncResourceLoader::submitted_bytes");
+        let plot = tracy_client::PlotConfiguration::default()
+            .format(tracy_client::PlotFormat::Memory)
+            .line_style(tracy_client::PlotLineStyle::Stepped);
+        tracy_client::Client::start().plot_config(name, plot);
+        tracy_client::Client::start().plot(name, 0.0);
+
+        let name = tracy_client::plot_name!("AsyncResourceLoader::uploaded_bytes");
+        let plot = tracy_client::PlotConfiguration::default()
+            .format(tracy_client::PlotFormat::Memory)
+            .line_style(tracy_client::PlotLineStyle::Stepped);
+        tracy_client::Client::start().plot_config(name, plot);
+        tracy_client::Client::start().plot(name, 0.0);
+
+        let name = tracy_client::plot_name!("AsyncResourceLoader::buffers_completed");
+        let plot = tracy_client::PlotConfiguration::default()
+            .format(tracy_client::PlotFormat::Number)
+            .line_style(tracy_client::PlotLineStyle::Stepped);
+        tracy_client::Client::start().plot_config(name, plot);
+        tracy_client::Client::start().plot(name, 0.0);
+
+        let name = tracy_client::plot_name!("AsyncResourceLoader::textures_completed");
+        let plot = tracy_client::PlotConfiguration::default()
+            .format(tracy_client::PlotFormat::Number)
+            .line_style(tracy_client::PlotLineStyle::Stepped);
+        tracy_client::Client::start().plot_config(name, plot);
+        tracy_client::Client::start().plot(name, 0.0);
+
         let name = tracy_client::plot_name!("AsyncResourceLoader::queued_bytes");
         let plot = tracy_client::PlotConfiguration::default()
             .format(tracy_client::PlotFormat::Memory)
@@ -40,14 +75,14 @@ impl Stats {
         tracy_client::Client::start().plot_config(name, plot);
         tracy_client::Client::start().plot(name, 0.0);
 
-        let name = tracy_client::plot_name!("AsyncResourceLoader::buffers_live");
+        let name = tracy_client::plot_name!("AsyncResourceLoader::buffers_open");
         let plot = tracy_client::PlotConfiguration::default()
             .format(tracy_client::PlotFormat::Number)
             .line_style(tracy_client::PlotLineStyle::Stepped);
         tracy_client::Client::start().plot_config(name, plot);
         tracy_client::Client::start().plot(name, 0.0);
 
-        let name = tracy_client::plot_name!("AsyncResourceLoader::textures_live");
+        let name = tracy_client::plot_name!("AsyncResourceLoader::textures_open");
         let plot = tracy_client::PlotConfiguration::default()
             .format(tracy_client::PlotFormat::Number)
             .line_style(tracy_client::PlotLineStyle::Stepped);
@@ -61,19 +96,56 @@ impl Stats {
         tracy_client::Client::start().plot_config(name, plot);
         tracy_client::Client::start().plot(name, 0.0);
 
-        Self {}
+        Self {
+            submitted_bytes: Cell::new(0),
+            uploaded_bytes: Cell::new(0),
+            buffers_completed: Cell::new(0),
+            textures_completed: Cell::new(0),
+        }
+    }
+
+    pub fn add_submitted_bytes(&self, v: u64) {
+        self.submitted_bytes.update(|bytes| bytes.saturating_add(v));
+        tracy_client::plot!(
+            "AsyncResourceLoader::submitted_bytes",
+            self.submitted_bytes.get() as f64
+        )
+    }
+
+    pub fn add_uploaded_bytes(&self, v: u64) {
+        self.uploaded_bytes.update(|bytes| bytes.saturating_add(v));
+        tracy_client::plot!(
+            "AsyncResourceLoader::uploaded_bytes",
+            self.uploaded_bytes.get() as f64
+        )
+    }
+
+    pub fn add_buffers_completed(&self, v: usize) {
+        self.buffers_completed.update(|n| n.saturating_add(v));
+        tracy_client::plot!(
+            "AsyncResourceLoader::buffers_completed",
+            self.buffers_completed.get() as f64
+        )
+    }
+
+    pub fn add_textures_completed(&self, v: usize) {
+        self.textures_completed.update(|n| n.saturating_add(v));
+        tracy_client::plot!(
+            "AsyncResourceLoader::textures_completed",
+            self.textures_completed.get() as f64
+        )
     }
 
     pub fn update_queued_bytes(&self, v: u64) {
         tracy_client::plot!("AsyncResourceLoader::queued_bytes", v as f64)
     }
 
-    pub fn update_buffers_live(&self, v: usize) {
-        tracy_client::plot!("AsyncResourceLoader::buffers_live", v as f64)
+    pub fn update_buffers_open(&self, v: usize) {
+        tracy_client::plot!("AsyncResourceLoader::buffers_open", v as f64)
     }
 
-    pub fn update_textures_live(&self, v: usize) {
-        tracy_client::plot!("AsyncResourceLoader::textures_live", v as f64)
+    pub fn update_textures_open(&self, v: usize) {
+        tracy_client::plot!("AsyncResourceLoader::textures_open", v as f64)
     }
 
     pub fn update_live_submissions(&self, v: usize) {

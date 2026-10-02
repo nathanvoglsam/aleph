@@ -39,6 +39,7 @@ use crate::internal::async_resource_loader::renderer_channel::{
     LoaderSender, LoaderToRendererMessage,
 };
 use crate::internal::async_resource_loader::request_states::RequestStates;
+use crate::internal::async_resource_loader::stats::Stats;
 use crate::internal::async_resource_loader::upload_memory_manager::UploadMemoryManager;
 
 pub struct Submission {
@@ -59,11 +60,15 @@ pub struct Submission {
     /// submission is retired on the copy queue. As soon as these are observed to be retired they
     /// should be dispatched to the render thread to be made available to the renderer.
     pub completed_uploads: BVec<CompletedResource, MgAsyncLdrSystem>,
+
+    /// The number of bytes uploaded across all commands recorded in this submission.
+    pub bytes: u64,
 }
 
 impl Submission {
     pub fn retire<C: Send + 'static>(
         mut self,
+        stats: &Stats,
         request_states: &mut RequestStates<C>,
         upload_memory_manager: &UploadMemoryManager,
         loader_sender: &LoaderSender<C>,
@@ -71,6 +76,8 @@ impl Submission {
         // Dispatch all the completed uploads to the renderer now that we have observed that
         // their final copies are complete.
 
+        let mut completed_buffers = 0usize;
+        let mut completed_textures = 0usize;
         let mut maybe_failed = Ok(());
         for completed in self.completed_uploads.drain(..) {
             // Instead of immediately returning if the renderer has disconnected (discovered when we
@@ -84,6 +91,8 @@ impl Submission {
                     let request = request_states.buffers.free(r);
                     match request {
                         Some(r) => {
+                            completed_buffers += 1;
+
                             let msg = LoaderToRendererMessage::BufferComplete {
                                 cookie: r.cookie,
                                 resource: r.buffer,
@@ -107,6 +116,8 @@ impl Submission {
                     let request = request_states.textures.free(r);
                     match request {
                         Some(r) => {
+                            completed_textures += 1;
+
                             let msg = LoaderToRendererMessage::TextureComplete {
                                 cookie: r.cookie,
                                 resource: r.texture,
@@ -133,6 +144,12 @@ impl Submission {
         for allocation in self.retired_allocations.drain(..) {
             upload_memory_manager.free_upload_range(allocation);
         }
+
+        stats.add_uploaded_bytes(self.bytes);
+        stats.update_buffers_open(request_states.buffers.len());
+        stats.update_textures_open(request_states.textures.len());
+        stats.add_buffers_completed(completed_buffers);
+        stats.add_textures_completed(completed_textures);
 
         // Drop our stashed handles that were keeping the in-use resources alive. If they
         // were canceled then this will be where they are destroyed, if they were _not_
@@ -166,6 +183,7 @@ impl SubmissionManager {
             retired_allocations: BVec::new_in(system()),
             live_resources: BVec::new_in(system()),
             completed_uploads: BVec::new_in(system()),
+            bytes: 0,
         }
     }
 
