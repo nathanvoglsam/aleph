@@ -72,7 +72,7 @@ macro_rules! register_thread {
     ($name:expr) => {
         $crate::tracy_client::Client::running()
             .expect("register_thread! without a running tracy_client::Client")
-            .set_thread_name($name);
+            .set_thread_name($name)
     };
 }
 
@@ -81,18 +81,18 @@ macro_rules! finish_frame {
     () => {
         $crate::tracy_client::Client::running()
             .expect("finish_frame! without a running tracy_client::Client")
-            .frame_mark();
+            .frame_mark()
     };
 }
 
 #[inline]
 pub fn message(message: &str) {
-    tracy_client::Client::start().message(message, CALLSTACK_DEPTH_MSG);
+    tracy_client::Client::start().message(message, CALLSTACK_DEPTH_MSG)
 }
 
 #[inline]
 pub fn color_message(message: &str, rgba: u32) {
-    tracy_client::Client::start().color_message(message, rgba, CALLSTACK_DEPTH_MSG);
+    tracy_client::Client::start().color_message(message, rgba, CALLSTACK_DEPTH_MSG)
 }
 
 #[inline]
