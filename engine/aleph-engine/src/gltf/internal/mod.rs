@@ -363,68 +363,77 @@ fn spawn_mesh_uploader(
 
                 let sender = sender.clone();
                 let _ = async_queue.spawn(async move |io| {
-                    let mut prim_buffers = Vec::with_capacity(prims.len());
-                    prim_buffers.resize(
-                        prims.len(),
-                        (BufferHandle::dangling(), BufferHandle::dangling()),
-                    );
-
-                    let (i_sender, i_receiver) = kanal::bounded_async(prims.len());
-                    let (v_sender, v_receiver) = kanal::bounded_async(prims.len());
-
-                    for (i, (i_data, _)) in prims.iter().enumerate() {
-                        let i_data = bytemuck::cast_slice::<_, u8>(i_data.as_slice());
-                        issue_load_buffer_from_data(&io, i_sender.clone_sync(), i as u64, i_data)?;
-                    }
-
-                    for (i, (_, v_data)) in prims.iter().enumerate() {
-                        issue_load_buffer_from_data(&io, v_sender.clone_sync(), i as u64, v_data)?;
-                    }
-
-                    drop(i_sender);
-                    drop(v_sender);
-
-                    for _ in 0..i_receiver.capacity() {
-                        let v = match i_receiver.recv().await {
-                            Ok(v) => v,
-                            Err(e) => {
-                                log::error!("The load request was lost '{e:?}'.");
-                                return Err(io::Error::from(io::ErrorKind::Other));
-                            }
-                        };
-                        let handle = match v.0 {
-                            Ok(v) => Ok(v),
-                            Err(e) => {
-                                log::error!("Failed to create GPU resource with error '{e:?}'.");
-                                Err(io::Error::from(io::ErrorKind::Other))
-                            }
-                        };
-                        prim_buffers[v.1 as usize].0 = handle?;
-                    }
-
-                    for _ in 0..v_receiver.capacity() {
-                        let v = match v_receiver.recv().await {
-                            Ok(v) => v,
-                            Err(e) => {
-                                log::error!("The load request was lost '{e:?}'.");
-                                return Err(io::Error::from(io::ErrorKind::Other));
-                            }
-                        };
-                        let handle = match v.0 {
-                            Ok(v) => Ok(v),
-                            Err(e) => {
-                                log::error!("Failed to create GPU resource with error '{e:?}'.");
-                                Err(io::Error::from(io::ErrorKind::Other))
-                            }
-                        };
-                        prim_buffers[v.1 as usize].1 = handle?;
-                    }
-
-                    let _ = sender.send((mesh_index, prim_buffers)).await;
-                    Ok(())
+                    copy_mesh_data_to_gpu(io, mesh_index, prims, sender).await
                 });
             });
     });
+}
+
+async fn copy_mesh_data_to_gpu(
+    io: IoContext<'_>,
+    mesh_index: usize,
+    prims: Vec<(Vec<u32>, Vec<u8>)>,
+    sender: kanal::AsyncSender<(usize, Vec<(BufferHandle, BufferHandle)>)>,
+) -> io::Result<()> {
+    let mut prim_buffers = Vec::with_capacity(prims.len());
+    prim_buffers.resize(
+        prims.len(),
+        (BufferHandle::dangling(), BufferHandle::dangling()),
+    );
+
+    let (i_sender, i_receiver) = kanal::bounded_async(prims.len());
+    let (v_sender, v_receiver) = kanal::bounded_async(prims.len());
+
+    for (i, (i_data, _)) in prims.iter().enumerate() {
+        let i_data = bytemuck::cast_slice::<_, u8>(i_data.as_slice());
+        issue_load_buffer_from_data(&io, i_sender.clone_sync(), i as u64, i_data)?;
+    }
+
+    for (i, (_, v_data)) in prims.iter().enumerate() {
+        issue_load_buffer_from_data(&io, v_sender.clone_sync(), i as u64, v_data)?;
+    }
+
+    drop(i_sender);
+    drop(v_sender);
+
+    for _ in 0..i_receiver.capacity() {
+        let v = match i_receiver.recv().await {
+            Ok(v) => v,
+            Err(e) => {
+                log::error!("The load request was lost '{e:?}'.");
+                return Err(io::Error::from(io::ErrorKind::Other));
+            }
+        };
+        let handle = match v.0 {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                log::error!("Failed to create GPU resource with error '{e:?}'.");
+                Err(io::Error::from(io::ErrorKind::Other))
+            }
+        };
+        prim_buffers[v.1 as usize].0 = handle?;
+    }
+
+    for _ in 0..v_receiver.capacity() {
+        let v = match v_receiver.recv().await {
+            Ok(v) => v,
+            Err(e) => {
+                log::error!("The load request was lost '{e:?}'.");
+                return Err(io::Error::from(io::ErrorKind::Other));
+            }
+        };
+        let handle = match v.0 {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                log::error!("Failed to create GPU resource with error '{e:?}'.");
+                Err(io::Error::from(io::ErrorKind::Other))
+            }
+        };
+        prim_buffers[v.1 as usize].1 = handle?;
+    }
+
+    let _ = sender.send((mesh_index, prim_buffers)).await;
+    Ok(())
 }
 
 fn process_node(

@@ -261,12 +261,6 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
     pub fn fail_buffer_load(&self, handle: BufferLoadHandle) {
         let mut states = self.request_states.borrow_mut();
 
-        if let Some(req) = states.buffers.get_ref(handle) {
-            if req.has_outstanding_range() {
-                panic!();
-            }
-        }
-
         if let Some(req) = states.buffers.free(handle) {
             self.stats.update_buffers_open(states.buffers.len());
             if let Err(_) = req.sender.send((Err(()), req.cookie)) {
@@ -277,12 +271,6 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
 
     pub fn fail_texture_load(&self, handle: TextureLoadHandle) {
         let mut states = self.request_states.borrow_mut();
-
-        if let Some(req) = states.textures.get_ref(handle) {
-            if req.has_outstanding_range() {
-                panic!();
-            }
-        }
 
         if let Some(req) = states.textures.free(handle) {
             self.stats.update_textures_open(states.textures.len());

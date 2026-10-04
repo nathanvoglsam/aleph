@@ -32,6 +32,7 @@ use std::cell::{Cell, RefCell};
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 use aleph_alloc::offset_allocator::Allocation;
+use crossbeam::channel::SendError;
 
 use crate::async_resource_loader::{BufferLoadHandle, RetireError, TextureLoadHandle};
 use crate::internal::async_resource_loader::MgAsyncLdrSystem;
@@ -99,10 +100,8 @@ impl Submission {
                                 sender: r.sender,
                             };
 
-                            if loader_sender.send(msg).is_err() {
-                                log::trace!(
-                                    "Failed to notify renderer of successful buffer upload"
-                                );
+                            if let Err(err) = loader_sender.send(msg) {
+                                Self::notify_task_of_retire_failure(err);
                                 maybe_failed = Err(RetireError::RendererDisconnected);
                             }
                         }
@@ -123,10 +122,9 @@ impl Submission {
                                 resource: r.texture,
                                 sender: r.sender,
                             };
-                            if loader_sender.send(msg).is_err() {
-                                log::trace!(
-                                    "Failed to notify renderer of successful texture upload"
-                                );
+
+                            if let Err(err) = loader_sender.send(msg) {
+                                Self::notify_task_of_retire_failure(err);
                                 maybe_failed = Err(RetireError::RendererDisconnected);
                             }
                         }
@@ -157,6 +155,25 @@ impl Submission {
         self.live_resources.clear();
 
         maybe_failed
+    }
+
+    fn notify_task_of_retire_failure<C: Send + 'static>(
+        err: SendError<LoaderToRendererMessage<C>>,
+    ) {
+        let result = match err.0 {
+            LoaderToRendererMessage::BufferComplete { cookie, sender, .. } => {
+                let err = (Err(()), cookie);
+                sender.send(err)
+            }
+            LoaderToRendererMessage::TextureComplete { cookie, sender, .. } => {
+                let err = (Err(()), cookie);
+                sender.send(err)
+            }
+        };
+        if result.is_err() {
+            log::error!("Failed to notify waiting task of failed upload retirement");
+            abort_unwind(|| panic!("Failed to notify waiting task of failed upload retirement"));
+        }
     }
 }
 
@@ -234,4 +251,8 @@ impl From<TextureLoadHandle> for CompletedResource {
     fn from(value: TextureLoadHandle) -> Self {
         Self::Texture(value)
     }
+}
+
+extern "C" fn abort_unwind<F: FnOnce() -> R, R>(f: F) -> R {
+    f()
 }

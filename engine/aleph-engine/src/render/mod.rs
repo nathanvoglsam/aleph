@@ -237,7 +237,7 @@ impl IPlugin for PluginRender {
 
     fn on_shutdown(&mut self) {
         if let Some(queue) = self.loader_queue.take() {
-            queue.quit();
+            drop(queue);
             if let Some(loader) = self.loader_thread.take() {
                 loader.join().unwrap();
             }

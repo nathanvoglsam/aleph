@@ -49,7 +49,7 @@ use crate::core::async_io::internal::{FutureSpawner, TaskWaker};
 
 /// Sender half of a channel used to communicate and send requests to a [`AsyncLoaderWorker`].
 ///
-/// Tasks can be invoked on the worker thread by enquing them via [`AsyncLoaderQueue::spawn`].
+/// Tasks can be invoked on the worker thread by enqueuing them via [`AsyncLoaderQueue::spawn`].
 #[derive(Clone)]
 #[repr(transparent)]
 pub struct AsyncLoaderQueue {
@@ -71,20 +71,12 @@ impl AsyncLoaderQueue {
             Err(_) => Err(SendError(())),
         }
     }
-
-    /// Request the [`AsyncLoaderWorker`] to exit.
-    ///
-    /// The worker will stop accepting new requests and will attempt to complete all currently
-    /// active tasks before closing. It is expected that once the worker has completed its thread
-    /// will close.
-    pub fn quit(self) {
-        let _ = self.sender.send(WorkerMessage::Quit);
-    }
 }
 
 pub struct AsyncLoaderWorker {
-    request_send: AsyncLoaderQueue,
-    request_recv: Receiver<WorkerMessage>,
+    ext_recv: Receiver<WorkerMessage>,
+    int_send: AsyncLoaderQueue,
+    int_recv: Receiver<WorkerMessage>,
     loader: AsyncResourceLoader<u64>,
 }
 
@@ -111,15 +103,16 @@ impl AsyncLoaderWorker {
     /// Returns a handle to the thread, and a [`AsyncLoaderQueue`] that can be shared or invoked to
     /// enqueue work onto the worker thread.
     pub fn spawn(loader: AsyncResourceLoader<u64>) -> (JoinHandle<()>, AsyncLoaderQueue) {
-        let (request_send, request_recv) = unbounded();
+        let (ext_send, ext_recv) = unbounded();
+        let queue = AsyncLoaderQueue { sender: ext_send };
 
-        let queue = AsyncLoaderQueue {
-            sender: request_send,
-        };
+        let (int_send, int_recv) = unbounded();
+        let int_send = AsyncLoaderQueue { sender: int_send };
 
         let this = Self {
-            request_send: queue.clone(),
-            request_recv,
+            ext_recv,
+            int_send,
+            int_recv,
             loader,
         };
 
@@ -143,38 +136,27 @@ impl AsyncLoaderWorker {
         );
         tracy_client::plot!("AsyncLoaderWorker::live_tasks", 0.0);
 
-        let request_send = &self.request_send;
-        let request_recv = &self.request_recv;
         let (response_send, response_recv) = unbounded();
 
         {
             let tasks = GenArena::new_in();
-            Self::run_inner(
-                tasks,
-                &request_send,
-                &request_recv,
-                &response_recv,
-                &response_send,
-                &self.loader,
-            )
+            self.run_inner(tasks, &response_recv, &response_send);
         }
 
         tracy_client::plot!("AsyncLoaderWorker::live_tasks", 0.0);
     }
 
     fn run_inner<'a>(
+        &'a self,
         mut tasks: Tasks<'a>,
-        request_send: &'a AsyncLoaderQueue,
-        request_recv: &'a Receiver<WorkerMessage>,
         response_recv: &'a Receiver<RawHandle>,
         response_send: &'a Sender<RawHandle>,
-        loader: &'a AsyncResourceLoader<u64>,
     ) {
-        let mut request_recv = Some(request_recv);
+        let mut ext_recv = Some(&self.ext_recv);
         'main: loop {
             // If we have finished all tasks, and we are no longer listening for new tasks then we
             // can exit.
-            if tasks.is_empty() && request_recv.is_none() {
+            if tasks.is_empty() && ext_recv.is_none() {
                 break 'main;
             }
 
@@ -182,18 +164,22 @@ impl AsyncLoaderWorker {
             // if we don't get any requests within that timeout we flush the resource loader before
             // moving into a deep sleep.
             select! {
-                recv(request_recv.unwrap_or(&never())) -> msg => {
-                    let msg = msg.unwrap_or_else(|_| {
-                        abort_unwind(|| unreachable!())
-                    });
+                recv(ext_recv.unwrap_or(&never())) -> msg => {
+                    let msg = match msg {
+                        Ok(msg) => msg,
+                        Err(_) => {
+                            ext_recv = None;
+                            continue 'main;
+                        }
+                    };
 
                     match msg {
                         WorkerMessage::Spawn(msg) => {
                             let v = Self::worker_message(
                                 &mut tasks,
-                                request_send,
+                                &self.int_send,
                                 response_send,
-                                loader,
+                                &self.loader,
                                 msg,
                             );
                             if let Poll::Ready(v) = v {
@@ -202,8 +188,28 @@ impl AsyncLoaderWorker {
                                 }
                             }
                         }
-                        WorkerMessage::Quit => {
-                            request_recv = None;
+                    }
+                    continue 'main;
+                },
+                recv(&self.int_recv) -> msg => {
+                    let msg = msg.unwrap_or_else(|_| {
+                        abort_unwind(|| unreachable!())
+                    });
+
+                    match msg {
+                        WorkerMessage::Spawn(msg) => {
+                            let v = Self::worker_message(
+                                &mut tasks,
+                                &self.int_send,
+                                response_send,
+                                &self.loader,
+                                msg,
+                            );
+                            if let Poll::Ready(v) = v {
+                                if let Err(e) = v {
+                                    log::error!("Async IO task failed with error: '{e:?}'")
+                                }
+                            }
                         }
                     }
                     continue 'main;
@@ -234,7 +240,7 @@ impl AsyncLoaderWorker {
                 //
                 // So we wake up after an extended (for a game) wait and flush manually before
                 // going into a deeper sleep.
-                match loader.flush_submitted_uploads() {
+                match self.loader.flush_submitted_uploads() {
                     Ok(_) => {}
                     Err(e @ FlushError::DeviceLost) => {
                         log::error!("Error: {e:?}");
@@ -254,7 +260,7 @@ impl AsyncLoaderWorker {
                     }
                 };
 
-                match loader.wait_all_submissions() {
+                match self.loader.wait_all_submissions() {
                     Ok(_) => {}
                     Err(e @ RetireError::DeviceLost) => {
                         log::error!("Error: {e:?}");
@@ -272,18 +278,22 @@ impl AsyncLoaderWorker {
             }
 
             select! {
-                recv(request_recv.unwrap_or(&never())) -> msg => {
-                    let msg = msg.unwrap_or_else(|_| {
-                        abort_unwind(|| unreachable!())
-                    });
+                recv(ext_recv.unwrap_or(&never())) -> msg => {
+                    let msg = match msg {
+                        Ok(msg) => msg,
+                        Err(_) => {
+                            ext_recv = None;
+                            continue 'main;
+                        }
+                    };
 
                     match msg {
                         WorkerMessage::Spawn(msg) => {
                             let v = Self::worker_message(
                                 &mut tasks,
-                                request_send,
+                                &self.int_send,
                                 response_send,
-                                loader,
+                                &self.loader,
                                 msg,
                             );
                             if let Poll::Ready(v) = v {
@@ -293,8 +303,28 @@ impl AsyncLoaderWorker {
                             }
 
                         }
-                        WorkerMessage::Quit => {
-                            request_recv = None;
+                    }
+                    continue 'main;
+                },
+                recv(&self.int_recv) -> msg => {
+                    let msg = msg.unwrap_or_else(|_| {
+                        abort_unwind(|| unreachable!())
+                    });
+
+                    match msg {
+                        WorkerMessage::Spawn(msg) => {
+                            let v = Self::worker_message(
+                                &mut tasks,
+                                &self.int_send,
+                                response_send,
+                                &self.loader,
+                                msg,
+                            );
+                            if let Poll::Ready(v) = v {
+                                if let Err(e) = v {
+                                    log::error!("Async IO task failed with error: '{e:?}'")
+                                }
+                            }
                         }
                     }
                     continue 'main;
@@ -319,7 +349,7 @@ impl AsyncLoaderWorker {
 
     fn worker_message<'a>(
         tasks: &mut Tasks<'a>,
-        request_send: &'a AsyncLoaderQueue,
+        int_send: &'a AsyncLoaderQueue,
         response_send: &'a Sender<RawHandle>,
         loader: &'a AsyncResourceLoader<u64>,
         msg: FutureSpawner,
@@ -327,7 +357,7 @@ impl AsyncLoaderWorker {
         aleph_profile::scope_named!("AsyncLoaderWorker::worker_message");
         let task = tasks.alloc_cyclic(move |handle| {
             let io = IoContext {
-                this: request_send,
+                this: int_send,
                 loader,
             };
             Task {
@@ -390,7 +420,6 @@ impl AsyncLoaderWorker {
 
 enum WorkerMessage {
     Spawn(FutureSpawner),
-    Quit,
 }
 
 struct Task<'a> {

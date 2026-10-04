@@ -144,28 +144,8 @@ pub async fn load_buffer_from_file(
     match receiver.recv().await {
         Ok(v) => match v.0 {
             Ok(v) => Ok(v),
-            Err(e) => {
-                log::error!("Failed to create GPU resource with error '{e:?}'.");
-                Err(io::Error::from(io::ErrorKind::Other))
-            }
-        },
-        Err(e) => {
-            log::error!("The load request was lost '{e:?}'.");
-            Err(io::Error::from(io::ErrorKind::Other))
-        }
-    }
-}
-
-pub async fn load_buffer_from_data(io: &IoContext<'_>, data: &[u8]) -> io::Result<BufferHandle> {
-    let (sender, receiver) = kanal::bounded_async(1);
-
-    issue_load_buffer_from_data(io, sender.to_sync(), 0, data)?;
-
-    match receiver.recv().await {
-        Ok(v) => match v.0 {
-            Ok(v) => Ok(v),
-            Err(e) => {
-                log::error!("Failed to create GPU resource with error '{e:?}'.");
+            Err(_) => {
+                log::error!("'load_buffer_from_file' failed to create GPU on renderer thread.");
                 Err(io::Error::from(io::ErrorKind::Other))
             }
         },
@@ -198,14 +178,13 @@ pub fn issue_load_buffer_from_data(
     };
 
     let mut src = data;
-    loop {
+    let result = loop {
         let mut range = match try_allocate_buffer_range_for(loader, handle) {
-            Ok(None) => break,
+            Ok(None) => break Ok(()),
             Ok(Some(r)) => r,
             Err(e) => {
-                log::error!("Error: {e:?}");
-                loader.fail_buffer_load(handle);
-                return Err(e);
+                log::error!("Failed to allocate buffer range: {e:?}");
+                break Err(e);
             }
         };
 
@@ -218,29 +197,26 @@ pub fn issue_load_buffer_from_data(
             Ok(_) => {}
             Err(e) => match e {
                 FlushError::CommandRecordingFailure => {
-                    log::error!("Error: {e:?}");
-                    loader.fail_buffer_load(handle);
-                    return Err(io::Error::from(io::ErrorKind::Other));
+                    log::error!("Range submission error: {e:?}");
+                    break Err(io::Error::from(io::ErrorKind::Other));
                 }
                 FlushError::DeviceLost => {
-                    log::error!("Error: {e:?}");
-                    loader.fail_buffer_load(handle);
-                    return Err(io::Error::from(io::ErrorKind::Other));
+                    log::error!("Range submission error: {e:?}");
+                    break Err(io::Error::from(io::ErrorKind::Other));
                 }
                 FlushError::WaitFailure => {
-                    log::error!("Error: {e:?}");
+                    log::error!("Range submission error: {e:?}");
                     abort_unwind(|| panic!("Error: {e:?}"))
                 }
                 FlushError::RendererDisconnected => {
-                    log::error!("Error: {e:?}");
-                    loader.fail_buffer_load(handle);
-                    return Err(io::Error::from(io::ErrorKind::ConnectionAborted));
+                    log::error!("Range submission error: {e:?}");
+                    break Err(io::Error::from(io::ErrorKind::ConnectionAborted));
                 }
             },
         }
-    }
+    };
 
-    Ok(())
+    result.inspect_err(|_| loader.fail_buffer_load(handle))
 }
 
 extern "C" fn abort_unwind<F: FnOnce() -> R, R>(f: F) -> R {
