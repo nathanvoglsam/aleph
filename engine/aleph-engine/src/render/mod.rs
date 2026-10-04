@@ -244,6 +244,15 @@ impl IPlugin for PluginRender {
         }
 
         if let Some(device) = self.device.take() {
+            // When existing we need to flush all still active GPU work and force a GC cycle to
+            // release all references being held live by the resource tracking system. The resource
+            // tracking system creates cycles in the object graph so if we don't clear them then
+            // we'll leak GPU objects.
+            //
+            // Same as above, but the async queue might've still done some GPU work
+            device.wait_idle().unwrap();
+            device.garbage_collect().unwrap();
+
             log::debug!(
                 "IDevice::strong_count = '{}' at 'on_shutdown'",
                 device.strong_count()

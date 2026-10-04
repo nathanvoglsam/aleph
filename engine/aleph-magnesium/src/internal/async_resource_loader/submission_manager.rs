@@ -171,8 +171,7 @@ impl Submission {
             }
         };
         if result.is_err() {
-            log::error!("Failed to notify waiting task of failed upload retirement");
-            abort_unwind(|| panic!("Failed to notify waiting task of failed upload retirement"));
+            log::warn!("Failed to notify waiting task of failed upload retirement");
         }
     }
 }
@@ -251,8 +250,4 @@ impl From<TextureLoadHandle> for CompletedResource {
     fn from(value: TextureLoadHandle) -> Self {
         Self::Texture(value)
     }
-}
-
-extern "C" fn abort_unwind<F: FnOnce() -> R, R>(f: F) -> R {
-    f()
 }
