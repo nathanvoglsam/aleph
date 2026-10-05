@@ -85,7 +85,7 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     fn debug_publish_statistics(&self) {
-        abort_on_unwind(|| self.debug_publish_statistics())
+        abort_on_unwind(|| self.inner.debug_publish_statistics())
     }
 
     // ========================================================================================== //
