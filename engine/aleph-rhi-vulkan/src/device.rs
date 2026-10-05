@@ -118,6 +118,18 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
+    fn debug_publish_statistics(&self) {
+        abort_on_unwind(|| {
+            if let Some(allocator) = self.allocator.as_ref() {
+                let stats = allocator.get_stats_summary();
+                aleph_rhi_impl_utils::allocator_stats::update_plots(&stats);
+            }
+        });
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
         abort_on_unwind(|| {
             if let Some(queue) = &self.general_queue {

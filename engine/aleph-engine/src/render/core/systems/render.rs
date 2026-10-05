@@ -69,6 +69,7 @@ impl RenderSystem {
         mut render_scene: ResMut<RenderSceneResource>,
     ) {
         self.device.garbage_collect().unwrap();
+        self.device.debug_publish_statistics();
 
         // Find the first camera object in the scene and make that the active camera.
         let mut query = render_scene

@@ -503,6 +503,8 @@ impl Drop for Renderer {
                 panic!("Platform Error: {:#?}", err);
             }
         }
+
+        self.device.debug_publish_statistics();
     }
 }
 

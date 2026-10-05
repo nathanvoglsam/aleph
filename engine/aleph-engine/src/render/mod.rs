@@ -232,6 +232,7 @@ impl IPlugin for PluginRender {
             // we'll leak GPU objects.
             device.wait_idle().unwrap();
             device.garbage_collect().unwrap();
+            device.debug_publish_statistics();
         }
     }
 
@@ -252,6 +253,7 @@ impl IPlugin for PluginRender {
             // Same as above, but the async queue might've still done some GPU work
             device.wait_idle().unwrap();
             device.garbage_collect().unwrap();
+            device.debug_publish_statistics();
 
             log::debug!(
                 "IDevice::strong_count = '{}' at 'on_shutdown'",

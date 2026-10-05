@@ -39,6 +39,12 @@ use crate::*;
 pub trait IDevice: Any + IGetPlatformInterface + Send + Sync {
     arc_trait_utils_decl!(IDevice);
 
+    /// Publishes various rhi statistics to the profiling backend. This can include memory usage
+    /// stats and other counters.
+    ///
+    /// Generally, you should call this one per frame.
+    fn debug_publish_statistics(&self);
+
     /// Triggers a garbage collection cycle across all queues in a single function call. For more
     /// information, see [IQueue::garbage_collect].
     ///

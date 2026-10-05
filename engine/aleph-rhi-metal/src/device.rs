@@ -35,6 +35,7 @@ use std::time::Duration;
 
 use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
@@ -109,6 +110,18 @@ impl IDevice for Device {
 
     fn weak_count(&self) -> usize {
         self.this.weak_count()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn debug_publish_statistics(&self) {
+        abort_on_unwind(|| {
+            if let Some(allocator) = self.allocator.as_ref() {
+                let stats = allocator.get_stats_summary();
+                aleph_rhi_impl_utils::allocator_stats::update_plots(&stats);
+            }
+        });
     }
 
     // ========================================================================================== //

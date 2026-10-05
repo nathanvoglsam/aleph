@@ -537,6 +537,14 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             i += 1;
         }
 
+        match self.queue.garbage_collect() {
+            Ok(_) => {}
+            Err(e) => match e {
+                rhi::QueueGarbageCollectError::DeviceLost => {}
+                rhi::QueueGarbageCollectError::Platform => {}
+            },
+        }
+
         // 'device lost' errors take precedence
         if is_device_lost {
             Err(RetireError::DeviceLost)
