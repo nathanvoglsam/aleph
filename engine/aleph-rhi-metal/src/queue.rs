@@ -28,12 +28,13 @@
 //
 
 use std::any::TypeId;
+use std::collections::VecDeque;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
 
 use aleph_rhi_api::*;
-use crossbeam::queue::SegQueue;
+use aleph_rhi_impl_utils::{Rhi, abort_on_unwind};
 use objc2::rc::{Retained, autoreleasepool};
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::ns_string;
@@ -62,13 +63,10 @@ pub struct Queue {
     /// which submissions are in-flight, used in conjunction with [Queue::last_submitted_index].
     pub(crate) last_completed_index: AtomicU64,
 
-    /// Lock used to serialize submissions to the command queue.
-    pub(crate) submit_lock: Mutex<()>,
-
     /// A ring-buffer that tracks all currently in flight queue submissions. This is used in
     /// conjunction with [IQueue::garbage_collect] to track when resources are no longer in use on
     /// the GPU timeline and are safe to destroy.
-    pub(crate) in_flight: SegQueue<QueueSubmission>,
+    pub(crate) in_flight: Mutex<VecDeque<QueueSubmission>>,
 }
 
 impl IGetPlatformInterface for Queue {
@@ -110,8 +108,7 @@ impl Queue {
             objects: QueueObjects { queue, event },
             last_submitted_index: AtomicU64::new(0),
             last_completed_index: AtomicU64::new(0),
-            submit_lock: Mutex::new(()),
-            in_flight: SegQueue::new(),
+            in_flight: Default::default(),
         });
 
         Some(out)
@@ -120,7 +117,7 @@ impl Queue {
 
 impl IQueue for Queue {
     fn upgrade(&self) -> Arc<dyn IQueue> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -138,143 +135,152 @@ impl IQueue for Queue {
     }
 
     fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
-        // Lock access to the queue to ensure nobody submits while we're running the GC cycle.
-        let _lock = self.submit_lock.lock();
-        autoreleasepool(|_| self.garbage_collect_internal())
+        abort_on_unwind(|| {
+            // Lock access to the queue to ensure nobody submits while we're running the GC cycle.
+            let _lock = self.in_flight.lock();
+            autoreleasepool(|_| self.garbage_collect_internal())
+        })
     }
 
     fn wait_idle(&self) -> Result<(), QueueWaitError> {
-        // Lock access to the queue to ensure nobody submits while we're waiting for all outstanding
-        // work to complete
-        let _lock = self.submit_lock.lock();
-        autoreleasepool(|_| self.wait_idle_internal())
+        abort_on_unwind(|| {
+            // Lock access to the queue to ensure nobody submits while we're waiting for all
+            // outstanding work to complete
+            let _lock = self.in_flight.lock();
+            autoreleasepool(|_| self.wait_idle_internal())
+        })
     }
 
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
-        autoreleasepool(|_| {
-            let _lock = self.submit_lock.lock();
+        abort_on_unwind(|| {
+            autoreleasepool(|_| {
+                let mut in_flight = self.in_flight.lock();
 
-            assert!(
-                !desc.command_lists.is_empty(),
-                "Can't call IQueue::submit with zero command buffers!"
-            );
+                assert!(
+                    !desc.command_lists.is_empty(),
+                    "Can't call IQueue::submit with zero command buffers!"
+                );
 
-            // Flush any changes to the residency sets maintained by our resource allocator.
-            //
-            // This is the best safe point to commit the changes. All new resources will be in these
-            // sets by the time a submit will take place. Any resource that was removed from the
-            // set since last submit can't be used on the GPU because it's unsound to destroy it on
-            // the CPU while in use on the GPU.
-            //
-            // We're also safe from another thread adding/removing resources mid submit.
-            // - New resources can't be used without another call to submit
-            // - Destroyed resources can't be in use in the submission because that would invoke
-            //   user after free bugs. You would have to submit work using that resource without
-            //   waiting for it to complete.
-            let device = self._device.upgrade().unwrap();
-            let allocator = device.allocator.as_ref().unwrap();
-            assert!(
-                allocator.pools().len() <= 14,
-                "Can't register more than 28 residency sets from the allocator"
-            );
-            for pool in allocator.pools() {
-                aleph_profile::scope_named!("MTLResidencySet::commit");
-                pool.info().heap_residency.lock().commit_if_dirty();
-                pool.info().dedicated_residency_set.lock().commit_if_dirty();
-            }
+                // Flush any changes to the residency sets maintained by our resource allocator.
+                //
+                // This is the best safe point to commit the changes. All new resources will be in
+                // these sets by the time a submit will take place. Any resource that was removed
+                // from the set since last submit can't be used on the GPU because it's unsound to
+                // destroy it on the CPU while in use on the GPU.
+                //
+                // We're also safe from another thread adding/removing resources mid submit.
+                // - New resources can't be used without another call to submit
+                // - Destroyed resources can't be in use in the submission because that would invoke
+                //   user after free bugs. You would have to submit work using that resource without
+                //   waiting for it to complete.
+                let device = self._device.upgrade().unwrap();
+                let allocator = device.allocator.as_ref().unwrap();
+                assert!(
+                    allocator.pools().len() <= 14,
+                    "Can't register more than 28 residency sets from the allocator"
+                );
+                for pool in allocator.pools() {
+                    aleph_profile::scope_named!("MTLResidencySet::commit");
+                    pool.info().heap_residency.lock().commit_if_dirty();
+                    pool.info().dedicated_residency_set.lock().commit_if_dirty();
+                }
 
-            let lists: Vec<_> = desc
-                .command_lists
-                .iter()
-                .map(|list| {
-                    let list = list.take().unwrap();
-                    if list.as_ref().type_id() == TypeId::of::<CommandList>() {
-                        let ptr = Box::into_raw(list);
-                        unsafe { Box::from_raw(ptr.cast::<CommandList>()) }
-                    } else {
-                        panic!("Unknown ICommandList implementation")
+                let lists: Vec<_> = desc
+                    .command_lists
+                    .iter()
+                    .map(|list| {
+                        let list = list.take().unwrap();
+                        if list.as_ref().type_id() == TypeId::of::<CommandList>() {
+                            let ptr = Box::into_raw(list);
+                            unsafe { Box::from_raw(ptr.cast::<CommandList>()) }
+                        } else {
+                            panic!("Unknown ICommandList implementation")
+                        }
+                    })
+                    .collect();
+
+                // First we need to have this work wait for the drawable to be safe to use.
+                if let Some(swap_image) = desc.swap_image {
+                    let swap_image = unwrap::swap_image(swap_image);
+                    self.objects
+                        .queue
+                        .waitForDrawable(swap_image.objects.drawable.as_ref());
+                }
+
+                // And then we need to wait on all the fences the caller has requested to wait on
+                // too.
+                if !desc.wait_fences.is_empty() {
+                    let iter = desc
+                        .wait_fences
+                        .iter()
+                        .copied()
+                        .zip(desc.wait_values.iter().copied());
+                    for (fence, value) in iter {
+                        let fence = Fence::get(fence);
+                        self.objects
+                            .queue
+                            .waitForEvent_value(fence.objects.event.as_ref(), value);
                     }
-                })
-                .collect();
+                }
 
-            // First we need to have this work wait for the drawable to be safe to use.
-            if let Some(swap_image) = desc.swap_image {
-                let swap_image = unwrap::swap_image(swap_image);
-                self.objects
-                    .queue
-                    .waitForDrawable(swap_image.objects.drawable.as_ref());
-            }
+                let mut submission_bundle = Vec::new();
+                for list in &lists {
+                    assert_eq!(list.list_type, self.queue_type);
+                    assert_eq!(list.state, ListState::Closed);
 
-            // And then we need to wait on all the fences the caller has requested to wait on too.
-            if !desc.wait_fences.is_empty() {
+                    let handle: &ProtocolObject<dyn MTL4CommandBuffer> = list.objects.list.as_ref();
+                    submission_bundle.push(NonNull::from_ref(handle));
+                }
+                unsafe {
+                    let bundle_ptr = submission_bundle.as_mut_ptr();
+                    let bundle_ptr = NonNull::new(bundle_ptr).unwrap();
+                    self.objects
+                        .queue
+                        .commit_count(bundle_ptr, submission_bundle.len());
+                }
+
+                // And then after we've committed our buffers we should signal all the fences the
+                // caller asked to be signaled.
                 let iter = desc
-                    .wait_fences
+                    .signal_fences
                     .iter()
                     .copied()
-                    .zip(desc.wait_values.iter().copied());
+                    .zip(desc.signal_values.iter().copied());
                 for (fence, value) in iter {
                     let fence = Fence::get(fence);
                     self.objects
                         .queue
-                        .waitForEvent_value(fence.objects.event.as_ref(), value);
+                        .signalEvent_value(fence.objects.event.as_ref(), value);
                 }
-            }
 
-            let mut submission_bundle = Vec::new();
-            for list in &lists {
-                assert_eq!(list.list_type, self.queue_type);
-                assert_eq!(list.state, ListState::Closed);
+                let index = self.record_submission_index_signal();
 
-                let handle: &ProtocolObject<dyn MTL4CommandBuffer> = list.objects.list.as_ref();
-                submission_bundle.push(NonNull::from_ref(handle));
-            }
-            unsafe {
-                let bundle_ptr = submission_bundle.as_mut_ptr();
-                let bundle_ptr = NonNull::new(bundle_ptr).unwrap();
-                self.objects
-                    .queue
-                    .commit_count(bundle_ptr, submission_bundle.len());
-            }
+                Rhi::with(|| in_flight.push_back(QueueSubmission { index, lists }));
 
-            // And then after we've committed our buffers we should signal all the fences the caller
-            // asked to be signaled.
-            let iter = desc
-                .signal_fences
-                .iter()
-                .copied()
-                .zip(desc.signal_values.iter().copied());
-            for (fence, value) in iter {
-                let fence = Fence::get(fence);
-                self.objects
-                    .queue
-                    .signalEvent_value(fence.objects.event.as_ref(), value);
-            }
-
-            let index = self.record_submission_index_signal();
-
-            self.in_flight.push(QueueSubmission { index, lists });
-
-            Ok(())
+                Ok(())
+            })
         })
     }
 
     unsafe fn present(&self, swap_image: Arc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
-        autoreleasepool(|_| {
-            let _lock = self.submit_lock.lock();
+        abort_on_unwind(|| {
+            autoreleasepool(|_| {
+                let _lock = self.in_flight.lock();
 
-            let mut swap_image = unwrap::swap_image_owned(swap_image);
-            let swap_image = Arc::get_mut(&mut swap_image).unwrap();
+                let mut swap_image = unwrap::swap_image_owned(swap_image);
+                let swap_image = Arc::get_mut(&mut swap_image).unwrap();
 
-            // We consume the swap image here. Once we enter this function it is no longer legal to
-            // encode commands for the swap image. All the commands that access the image must also
-            // have been submitted by now. All work referencing the image is on the queue, so we can
-            // tell the queue to signal the drawable here.
-            self.objects
-                .queue
-                .signalDrawable(swap_image.objects.drawable.as_ref());
-            swap_image.objects.drawable.present();
+                // We consume the swap image here. Once we enter this function it is no longer legal
+                // to encode commands for the swap image. All the commands that access the image
+                // must also have been submitted by now. All work referencing the image is on the
+                // queue, so we can tell the queue to signal the drawable here.
+                self.objects
+                    .queue
+                    .signalDrawable(swap_image.objects.drawable.as_ref());
+                swap_image.objects.drawable.present();
 
-            Ok(())
+                Ok(())
+            })
         })
     }
 }
@@ -359,41 +365,54 @@ impl Queue {
         // to see if it is complete based on comparing the list's index with the last completed
         // index. If the list is done we drop it to release any resources that it was keeping
         // alive.
-        let num = self.in_flight.len();
-        for _ in 0..num {
-            let v = self.in_flight.pop().unwrap();
-            if v.index > last_completed {
-                self.in_flight.push(v);
-            } else {
-                // If the submission is complete we recycle the command lists
+        let mut retired = Vec::new();
+        Rhi::with(|| {
+            let mut in_flight = self.in_flight.lock();
+            for _ in 0..in_flight.len() {
+                let submission = abort_on_unwind(|| in_flight.pop_front().unwrap());
+
+                // If this submission is not yet complete, return it to the queue and check the
+                // next entry
+                if submission.index > last_completed {
+                    in_flight.push_back(submission);
+                    continue;
+                }
+
+                // Otherwise push the submission into the 'retired' set so we can process it
+                // outside the critical section.
+                retired.push(submission);
+            }
+        });
+
+        for submission in retired {
+            // If the submission is complete we recycle the command lists
+            //
+            // Grab the pool for the specific queue type. Don't want to get different
+            // classes of command list mixed up!
+            let pool_target = device
+                .command_list_pool
+                .get_pool_for_queue_type(self.queue_type);
+
+            for list in submission.lists.into_iter() {
+                debug_assert_eq!(list.list_type, self.queue_type);
+
+                // Take the pool and buffer out of the CommandList object so they don't
+                // get dropped. We destroy the Box<CommandList> because it also contains
+                // a back reference to device.
                 //
-                // Grab the pool for the specific queue type. Don't want to get different
-                // classes of command list mixed up!
-                let pool_target = device
-                    .command_list_pool
-                    .get_pool_for_queue_type(self.queue_type);
+                // If we store it inside device then we create a reference cycle and leak
+                // Device. Not great...
+                let list = FreeCommandList {
+                    allocator: list.objects.allocator,
+                    list: list.objects.list,
+                    argument_table: list.objects.argument_table,
+                    list_type: list.list_type,
+                };
 
-                for list in v.lists.into_iter() {
-                    debug_assert_eq!(list.list_type, self.queue_type);
-
-                    // Take the pool and buffer out of the CommandList object so they don't
-                    // get dropped. We destroy the Box<CommandList> because it also contains
-                    // a back reference to device.
-                    //
-                    // If we store it inside device then we create a reference cycle and leak
-                    // Device. Not great...
-                    let list = FreeCommandList {
-                        allocator: list.objects.allocator,
-                        list: list.objects.list,
-                        argument_table: list.objects.argument_table,
-                        list_type: list.list_type,
-                    };
-
-                    // If we fill the list we just start destroying command lists rather than
-                    // growing the pool.
-                    if pool_target.push(list).is_err() {
-                        log::warn!("'command_list_pool' overflowing '{}'.", self.queue_type);
-                    }
+                // If we fill the list we just start destroying command lists rather than
+                // growing the pool.
+                if pool_target.push(list).is_err() {
+                    log::warn!("'command_list_pool' overflowing '{}'.", self.queue_type);
                 }
             }
         }
@@ -431,10 +450,6 @@ impl Queue {
             .signalEvent_value(self.objects.event.as_ref(), new_index);
 
         new_index
-    }
-
-    pub fn submit_lock(&self) -> MutexGuard<'_, ()> {
-        self.submit_lock.lock()
     }
 }
 

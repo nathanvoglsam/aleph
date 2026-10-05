@@ -171,6 +171,13 @@ impl IDevice for Device {
 
     fn wait_idle(&self) -> Result<(), QueueWaitError> {
         abort_on_unwind(|| {
+            // We need to take all the queue locks to stop any more submissions while we wait
+            let _lock_ness_monster = (
+                self.general_queue.as_ref().map(|v| v.in_flight.lock()),
+                self.compute_queue.as_ref().map(|v| v.in_flight.lock()),
+                self.transfer_queue.as_ref().map(|v| v.in_flight.lock()),
+            );
+
             if let Some(queue) = &self.general_queue {
                 queue.wait_idle()?;
             }

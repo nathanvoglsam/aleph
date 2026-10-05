@@ -31,6 +31,7 @@ use std::num::NonZeroU64;
 use std::sync::{Arc, Weak};
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::owned_desc::OwnedParameterBlockDesc;
 
 use crate::device::Device;
@@ -46,7 +47,7 @@ pub struct ParameterBlockLayout {
 
 impl IParameterBlockLayout for ParameterBlockLayout {
     fn upgrade(&self) -> Arc<dyn IParameterBlockLayout> {
-        self.this.upgrade().unwrap()
+        abort_on_unwind(|| self.this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -58,7 +59,7 @@ impl IParameterBlockLayout for ParameterBlockLayout {
     }
 
     fn desc(&self) -> &ParameterBlockDesc<'_> {
-        self.desc.get()
+        abort_on_unwind(|| self.desc.get())
     }
 
     fn get_id(&self) -> NonZeroU64 {
@@ -66,8 +67,10 @@ impl IParameterBlockLayout for ParameterBlockLayout {
     }
 
     fn is_compatible(&self, other: &dyn IParameterBlockLayout) -> bool {
-        let other = unwrap::parameter_block_layout(other);
-        self.desc.get().is_compatible(other.desc.get())
+        abort_on_unwind(|| {
+            let other = unwrap::parameter_block_layout(other);
+            self.desc.get().is_compatible(other.desc.get())
+        })
     }
 }
 

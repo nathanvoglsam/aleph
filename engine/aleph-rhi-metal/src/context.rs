@@ -33,6 +33,7 @@ use std::ptr::NonNull;
 use std::sync::{Arc, Weak};
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use objc2::rc::{Retained, autoreleasepool};
 use objc2_metal::*;
 use objc2_quartz_core::CAMetalLayer;
@@ -58,7 +59,7 @@ impl IGetPlatformInterface for Context {
 
 impl IContext for Context {
     fn upgrade(&self) -> Arc<dyn IContext> {
-        self._this.upgrade().unwrap()
+        abort_on_unwind(|| self._this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -70,83 +71,85 @@ impl IContext for Context {
     }
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Arc<dyn IAdapter>> {
-        let adapter = autoreleasepool(|_| {
-            // Metal doesn't have software adapters so the solution here is obvious. We bail.
-            if options.deny_hardware_adapters {
-                return None;
-            }
+        abort_on_unwind(|| {
+            let adapter = autoreleasepool(|_| {
+                // Metal doesn't have software adapters so the solution here is obvious. We bail.
+                if options.deny_hardware_adapters {
+                    return None;
+                }
 
-            let devices = MTLCopyAllDevices();
+                let devices = MTLCopyAllDevices();
 
-            // No devices? No adapter...
-            if devices.is_empty() {
-                return None;
-            }
+                // No devices? No adapter...
+                if devices.is_empty() {
+                    return None;
+                }
 
-            let surface = options.surface.map(unwrap::surface);
+                let surface = options.surface.map(unwrap::surface);
 
-            let mut scores: Vec<_> = (0..devices.len()).map(|i| (i, 0isize)).collect();
-            for (device, (_, score)) in devices.iter().zip(scores.iter_mut()) {
+                let mut scores: Vec<_> = (0..devices.len()).map(|i| (i, 0isize)).collect();
+                for (device, (_, score)) in devices.iter().zip(scores.iter_mut()) {
+                    let name = device.name().to_string();
+                    let architecture = device.architecture().name().to_string();
+                    log::info!("=====================");
+                    log::info!("Considering Device: ");
+                    log::info!("Architecture   : {architecture}");
+                    log::info!("Name           : {name}");
+                    match options.power_class {
+                        AdapterPowerClass::LowPower => {
+                            if device.isLowPower() {
+                                *score += 10_000
+                            }
+                        }
+                        AdapterPowerClass::HighPower => {
+                            if !device.isLowPower() {
+                                *score += 10_000
+                            }
+                        }
+                    }
+
+                    if let Some(surface) = surface {
+                        let preferred = surface.objects.layer.preferredDevice();
+                        if let Some(preferred) = preferred {
+                            if preferred == device {
+                                *score += 5_000
+                            }
+                        }
+                    }
+
+                    // Check for minimum feature support
+                    let common_1 = device.supportsFamily(MTLGPUFamily::Common1);
+                    let common_2 = device.supportsFamily(MTLGPUFamily::Common2);
+                    let common_3 = device.supportsFamily(MTLGPUFamily::Common3);
+                    let metal_3 = device.supportsFamily(MTLGPUFamily::Metal3);
+                    let metal_4 = device.supportsFamily(MTLGPUFamily::Metal4);
+                    let all = common_1 && common_2 && common_3 && metal_3 && metal_4;
+
+                    // We don't want this device if it doesn't support the needed features
+                    if !all {
+                        *score = -1_000_000;
+                    }
+                }
+
+                scores.sort_unstable_by_key(|v| v.1);
+
+                let device_index = scores[0].0;
+                let device = devices.objectAtIndex(device_index);
+                let surface = surface.map(|v| v.this.upgrade().unwrap());
+
                 let name = device.name().to_string();
-                let architecture = device.architecture().name().to_string();
-                log::info!("=====================");
-                log::info!("Considering Device: ");
-                log::info!("Architecture   : {architecture}");
-                log::info!("Name           : {name}");
-                match options.power_class {
-                    AdapterPowerClass::LowPower => {
-                        if device.isLowPower() {
-                            *score += 10_000
-                        }
-                    }
-                    AdapterPowerClass::HighPower => {
-                        if !device.isLowPower() {
-                            *score += 10_000
-                        }
-                    }
-                }
-
-                if let Some(surface) = surface {
-                    let preferred = surface.objects.layer.preferredDevice();
-                    if let Some(preferred) = preferred {
-                        if preferred == device {
-                            *score += 5_000
-                        }
-                    }
-                }
-
-                // Check for minimum feature support
-                let common_1 = device.supportsFamily(MTLGPUFamily::Common1);
-                let common_2 = device.supportsFamily(MTLGPUFamily::Common2);
-                let common_3 = device.supportsFamily(MTLGPUFamily::Common3);
-                let metal_3 = device.supportsFamily(MTLGPUFamily::Metal3);
-                let metal_4 = device.supportsFamily(MTLGPUFamily::Metal4);
-                let all = common_1 && common_2 && common_3 && metal_3 && metal_4;
-
-                // We don't want this device if it doesn't support the needed features
-                if !all {
-                    *score = -1_000_000;
-                }
-            }
-
-            scores.sort_unstable_by_key(|v| v.1);
-
-            let device_index = scores[0].0;
-            let device = devices.objectAtIndex(device_index);
-            let surface = surface.map(|v| v.this.upgrade().unwrap());
-
-            let name = device.name().to_string();
-            let adapter = Arc::new_cyclic(move |v| Adapter {
-                this: v.clone(),
-                context: self._this.upgrade().unwrap(),
-                surface,
-                name,
-                vendor: AdapterVendor::Apple,
-                objects: AdapterObjects { device },
+                let adapter = Arc::new_cyclic(move |v| Adapter {
+                    this: v.clone(),
+                    context: self._this.upgrade().unwrap(),
+                    surface,
+                    name,
+                    vendor: AdapterVendor::Apple,
+                    objects: AdapterObjects { device },
+                });
+                Some(adapter)
             });
-            Some(adapter)
-        });
-        Some(adapter?)
+            Some(adapter?)
+        })
     }
 
     fn create_surface(
@@ -154,24 +157,26 @@ impl IContext for Context {
         _display: &dyn HasDisplayHandle,
         _window: &dyn HasWindowHandle,
     ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
-        unimplemented!("Use IContext::create_surface_for_metal_layer")
+        abort_on_unwind(|| unimplemented!("Use IContext::create_surface_for_metal_layer"))
     }
 
     fn create_surface_for_metal_layer(
         &self,
         layer: NonNull<c_void>,
     ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
-        let surface = autoreleasepool(|_| {
-            let layer = unsafe { Retained::retain(layer.cast::<CAMetalLayer>().as_ptr()) };
-            let layer = layer.unwrap();
+        abort_on_unwind(|| {
+            let surface = autoreleasepool(|_| {
+                let layer = unsafe { Retained::retain(layer.cast::<CAMetalLayer>().as_ptr()) };
+                let layer = layer.unwrap();
 
-            Arc::new_cyclic(move |v| Surface {
-                this: v.clone(),
-                _context: self._this.upgrade().unwrap(),
-                objects: SurfaceObjects { layer },
-            })
-        });
-        Ok(surface)
+                Arc::new_cyclic(move |v| Surface {
+                    this: v.clone(),
+                    _context: self._this.upgrade().unwrap(),
+                    objects: SurfaceObjects { layer },
+                })
+            });
+            Ok(surface)
+        })
     }
 
     fn get_backend_api(&self) -> BackendAPI {

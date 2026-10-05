@@ -36,8 +36,8 @@ use std::sync::Arc;
 use aleph_alloc::instrumentation::system;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::Blink;
 use objc2::rc::{Retained, autoreleasepool};
@@ -84,26 +84,28 @@ impl<'a> IGetPlatformInterface for Encoder<'a> {
 
 impl<'a> ICommandEncoderAbi for Encoder<'a> {
     unsafe fn __bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
-        let encoder = self.active.get_render();
+        abort_on_unwind(|| {
+            let encoder = self.active.get_render();
 
-        let concrete = GraphicsPipeline::get_owned(pipeline);
+            let concrete = GraphicsPipeline::get_owned(pipeline);
 
-        encoder.setRenderPipelineState(&concrete.objects.pipeline);
-        encoder.setDepthStencilState(Some(&concrete.objects.depth_stencil_state));
-        self.bound_graphics_pipeline_state.primitive_type = concrete.info.primitive_type;
+            encoder.setRenderPipelineState(&concrete.objects.pipeline);
+            encoder.setDepthStencilState(Some(&concrete.objects.depth_stencil_state));
+            self.bound_graphics_pipeline_state.primitive_type = concrete.info.primitive_type;
 
-        encoder.setCullMode(concrete.info.cull_mode);
-        encoder.setFrontFacingWinding(concrete.info.front_face);
-        encoder.setTriangleFillMode(concrete.info.polygon_mode);
-        if concrete.info.depth_bias != 0 {
-            encoder.setDepthBias_slopeScale_clamp(
-                concrete.info.depth_bias as f32,
-                concrete.info.depth_bias_slope_factor,
-                concrete.info.depth_bias_clamp,
-            );
-        }
+            encoder.setCullMode(concrete.info.cull_mode);
+            encoder.setFrontFacingWinding(concrete.info.front_face);
+            encoder.setTriangleFillMode(concrete.info.polygon_mode);
+            if concrete.info.depth_bias != 0 {
+                encoder.setDepthBias_slopeScale_clamp(
+                    concrete.info.depth_bias as f32,
+                    concrete.info.depth_bias_slope_factor,
+                    concrete.info.depth_bias_clamp,
+                );
+            }
 
-        self.bound_graphics_pipeline = Some(concrete);
+            self.bound_graphics_pipeline = Some(concrete);
+        })
     }
 
     unsafe fn __bind_vertex_buffers(
@@ -111,21 +113,23 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
     ) {
-        if bindings.is_empty() {
-            return; // Bail if no bindings are provided
-        }
-
-        unsafe {
-            for (i, binding) in bindings.iter().enumerate() {
-                let buffer = Buffer::get(binding.buffer);
-                let addr = buffer.gpu_addr.get() + binding.offset;
-                self._parent
-                    .objects
-                    .argument_table
-                    .setAddress_atIndex(addr, 10 + i + first_binding as usize);
+        abort_on_unwind(|| {
+            if bindings.is_empty() {
+                return; // Bail if no bindings are provided
             }
-        }
-        self.arena.reset();
+
+            unsafe {
+                for (i, binding) in bindings.iter().enumerate() {
+                    let buffer = Buffer::get(binding.buffer);
+                    let addr = buffer.gpu_addr.get() + binding.offset;
+                    self._parent
+                        .objects
+                        .argument_table
+                        .setAddress_atIndex(addr, 10 + i + first_binding as usize);
+                }
+            }
+            self.arena.reset();
+        })
     }
 
     unsafe fn __bind_index_buffer(
@@ -133,210 +137,219 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
     ) {
-        let buffer = Buffer::get(binding.buffer);
-        let addr = buffer.gpu_addr.saturating_add(binding.offset);
-        let binding = BoundIndexBuffer {
-            addr,
-            index_type: conv::index_type_to_mtl(index_type),
-            index_size: conv::index_type_to_size(index_type),
-        };
-        self.bound_index_buffer = Some(binding);
+        abort_on_unwind(|| {
+            let buffer = Buffer::get(binding.buffer);
+            let addr = buffer.gpu_addr.saturating_add(binding.offset);
+            let binding = BoundIndexBuffer {
+                addr,
+                index_type: conv::index_type_to_mtl(index_type),
+                index_size: conv::index_type_to_size(index_type),
+            };
+            self.bound_index_buffer = Some(binding);
+        })
     }
 
     unsafe fn __set_viewports(&mut self, viewports: &[Viewport]) {
-        if viewports.is_empty() {
-            return; // If we don't provide any viewports we just bail
-        }
-
-        let encoder = self.active.get_render();
-
-        if viewports.len() == 1 {
-            let viewport = conv::viewport_to_mtl(&viewports[0]);
-            encoder.setViewport(viewport);
-        } else {
-            unsafe {
-                let mut mtl_viewports =
-                    BVec::with_capacity_in(viewports.len(), self.arena.allocator());
-                mtl_viewports.extend(viewports.iter().map(conv::viewport_to_mtl));
-
-                let ptr = NonNull::new_unchecked(mtl_viewports.as_mut_ptr());
-                encoder.setViewports_count(ptr, mtl_viewports.len());
+        abort_on_unwind(|| {
+            if viewports.is_empty() {
+                return; // If we don't provide any viewports we just bail
             }
-            self.arena.reset();
-        }
+
+            let encoder = self.active.get_render();
+
+            if viewports.len() == 1 {
+                let viewport = conv::viewport_to_mtl(&viewports[0]);
+                encoder.setViewport(viewport);
+            } else {
+                unsafe {
+                    let mut mtl_viewports =
+                        BVec::with_capacity_in(viewports.len(), self.arena.allocator());
+                    mtl_viewports.extend(viewports.iter().map(conv::viewport_to_mtl));
+
+                    let ptr = NonNull::new_unchecked(mtl_viewports.as_mut_ptr());
+                    encoder.setViewports_count(ptr, mtl_viewports.len());
+                }
+                self.arena.reset();
+            }
+        })
     }
 
     unsafe fn __set_scissor_rects(&mut self, rects: &[Rect]) {
-        if rects.is_empty() {
-            return; // If we don't provide any scissor rects we just bail
-        }
-
-        let encoder = self.active.get_render();
-
-        if rects.len() == 1 {
-            let rect = conv::rect_to_mtl_scissor_rect(&rects[0]);
-            encoder.setScissorRect(rect);
-        } else {
-            unsafe {
-                let mut mtl_rects = BVec::with_capacity_in(rects.len(), self.arena.allocator());
-                mtl_rects.extend(rects.iter().map(conv::rect_to_mtl_scissor_rect));
-
-                let ptr = NonNull::new_unchecked(mtl_rects.as_mut_ptr());
-                encoder.setScissorRects_count(ptr, mtl_rects.len());
+        abort_on_unwind(|| {
+            if rects.is_empty() {
+                return; // If we don't provide any scissor rects we just bail
             }
-            self.arena.reset();
-        }
+
+            let encoder = self.active.get_render();
+
+            if rects.len() == 1 {
+                let rect = conv::rect_to_mtl_scissor_rect(&rects[0]);
+                encoder.setScissorRect(rect);
+            } else {
+                unsafe {
+                    let mut mtl_rects = BVec::with_capacity_in(rects.len(), self.arena.allocator());
+                    mtl_rects.extend(rects.iter().map(conv::rect_to_mtl_scissor_rect));
+
+                    let ptr = NonNull::new_unchecked(mtl_rects.as_mut_ptr());
+                    encoder.setScissorRects_count(ptr, mtl_rects.len());
+                }
+                self.arena.reset();
+            }
+        })
     }
 
     unsafe fn __set_push_constant_block(&mut self, data: &[u8]) {
-        // TODO: push constants currently not working for compute
+        abort_on_unwind(|| {
+            // TODO: push constants currently not working for compute
 
-        // This command can't work without a bound pipeline, we need the pipeline layout so we can
-        // know where in the root signature to write the data
-        let pipeline = self.bound_graphics_pipeline.as_deref().unwrap();
+            // This command can't work without a bound pipeline, we need the pipeline layout so we
+            // can know where in the root signature to write the data
+            let pipeline = self.bound_graphics_pipeline.as_deref().unwrap();
 
-        let state = &mut self.bound_graphics_pipeline_state;
+            let state = &mut self.bound_graphics_pipeline_state;
 
-        // Lookup the parameter index on the currently bound pipeline (pipeline layout) based on
-        // the constant block index
-        let block = pipeline
-            ._binding_signature
-            .push_constant_block
-            .as_ref()
-            .unwrap();
+            // Lookup the parameter index on the currently bound pipeline (pipeline layout) based on
+            // the constant block index
+            let block = pipeline
+                ._binding_signature
+                .push_constant_block
+                .as_ref()
+                .unwrap();
 
-        state.push_constant_block[..data.len()].copy_from_slice(data);
-        let block_bytes = &state.push_constant_block[0..block.size.get() as usize];
+            state.push_constant_block[..data.len()].copy_from_slice(data);
+            let block_bytes = &state.push_constant_block[0..block.size.get() as usize];
 
-        let (cpu_addr, gpu_addr) = self
-            ._parent
-            .push_constant_allocator
-            .allocate(&self._device, block_bytes.len());
+            let (cpu_addr, gpu_addr) = self
+                ._parent
+                .push_constant_allocator
+                .allocate(&self._device, block_bytes.len());
 
-        unsafe {
-            cpu_addr.copy_from(NonNull::from(block_bytes).cast::<u8>(), block_bytes.len());
-        }
+            unsafe {
+                cpu_addr.copy_from(NonNull::from(block_bytes).cast::<u8>(), block_bytes.len());
+            }
 
-        unsafe {
-            const PUSH_CONSTANT_INDEX: usize = 9;
-            self._parent
-                .objects
-                .argument_table
-                .setAddress_atIndex(gpu_addr.get(), PUSH_CONSTANT_INDEX);
-        }
+            unsafe {
+                const PUSH_CONSTANT_INDEX: usize = 9;
+                self._parent
+                    .objects
+                    .argument_table
+                    .setAddress_atIndex(gpu_addr.get(), PUSH_CONSTANT_INDEX);
+            }
+        })
     }
 
     unsafe fn __begin_rendering(&mut self, info: &BeginRenderingInfo) {
-        autoreleasepool(|_| {
-            let mtl_desc = MTL4RenderPassDescriptor::new();
+        abort_on_unwind(|| {
+            autoreleasepool(|_| {
+                let mtl_desc = MTL4RenderPassDescriptor::new();
 
-            let mtl_color_attachments = mtl_desc.colorAttachments();
-            for (i, color_attachment) in info.color_attachments.iter().enumerate() {
-                let mtl_attachment = unsafe { mtl_color_attachments.objectAtIndexedSubscript(i) };
+                let mtl_color_attachments = mtl_desc.colorAttachments();
+                for (i, color_attachment) in info.color_attachments.iter().enumerate() {
+                    let mtl_attachment =
+                        unsafe { mtl_color_attachments.objectAtIndexedSubscript(i) };
 
-                let view = color_attachment.image_view;
-                let view = unsafe { view.into_raw::<ImageViewObject>().as_ref() };
-                let texture = view.texture.as_ref();
-                mtl_attachment.setTexture(Some(texture));
-                mtl_attachment.setLevel(0);
-                mtl_attachment.setSlice(0);
-
-                match &color_attachment.load_op {
-                    AttachmentLoadOp::Load => {
-                        mtl_attachment.setLoadAction(MTLLoadAction::Load);
-                    }
-                    AttachmentLoadOp::Clear(clear_color) => {
-                        mtl_attachment.setLoadAction(MTLLoadAction::Clear);
-
-                        let [r, g, b, a] = clear_color.to_float();
-                        let clear_color = MTLClearColor {
-                            red: r as f64,
-                            green: g as f64,
-                            blue: b as f64,
-                            alpha: a as f64,
-                        };
-                        mtl_attachment.setClearColor(clear_color);
-                    }
-                    AttachmentLoadOp::DontCare => {
-                        mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
-                    }
-                }
-
-                let store_op = conv::attachment_store_op_to_mtl(color_attachment.store_op);
-                mtl_attachment.setStoreAction(store_op);
-            }
-
-            if let Some(attachment) = info.depth_stencil_attachment {
-                let view = attachment.image_view;
-                let view = unsafe { view.into_raw::<ImageViewObject>().as_ref() };
-                let texture = view.texture.as_ref();
-
-                if let Some(ops) = &attachment.depth {
-                    let mtl_attachment = MTLRenderPassDepthAttachmentDescriptor::new();
+                    let view = color_attachment.image_view;
+                    let view = unsafe { view.into_raw::<ImageViewObject>().as_ref() };
+                    let texture = view.texture.as_ref();
                     mtl_attachment.setTexture(Some(texture));
                     mtl_attachment.setLevel(0);
                     mtl_attachment.setSlice(0);
 
-                    match &ops.load_op {
+                    match &color_attachment.load_op {
                         AttachmentLoadOp::Load => {
                             mtl_attachment.setLoadAction(MTLLoadAction::Load);
                         }
-                        AttachmentLoadOp::Clear(v) => {
+                        AttachmentLoadOp::Clear(clear_color) => {
                             mtl_attachment.setLoadAction(MTLLoadAction::Clear);
-                            mtl_attachment.setClearDepth(*v as f64);
+
+                            let [r, g, b, a] = clear_color.to_float();
+                            let clear_color = MTLClearColor {
+                                red: r as f64,
+                                green: g as f64,
+                                blue: b as f64,
+                                alpha: a as f64,
+                            };
+                            mtl_attachment.setClearColor(clear_color);
                         }
                         AttachmentLoadOp::DontCare => {
                             mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
                         }
                     }
 
-                    let store_op = conv::attachment_store_op_to_mtl(ops.store_op);
+                    let store_op = conv::attachment_store_op_to_mtl(color_attachment.store_op);
                     mtl_attachment.setStoreAction(store_op);
-                    mtl_desc.setDepthAttachment(Some(&mtl_attachment));
                 }
 
-                if let Some(ops) = &attachment.stencil {
-                    let mtl_attachment = MTLRenderPassStencilAttachmentDescriptor::new();
+                if let Some(attachment) = info.depth_stencil_attachment {
+                    let view = attachment.image_view;
+                    let view = unsafe { view.into_raw::<ImageViewObject>().as_ref() };
+                    let texture = view.texture.as_ref();
 
-                    // We use the same attachment here intentionally
-                    mtl_attachment.setTexture(Some(texture));
-                    mtl_attachment.setLevel(0);
-                    mtl_attachment.setSlice(0);
+                    if let Some(ops) = &attachment.depth {
+                        let mtl_attachment = MTLRenderPassDepthAttachmentDescriptor::new();
+                        mtl_attachment.setTexture(Some(texture));
+                        mtl_attachment.setLevel(0);
+                        mtl_attachment.setSlice(0);
 
-                    match &ops.load_op {
-                        AttachmentLoadOp::Load => {
-                            mtl_attachment.setLoadAction(MTLLoadAction::Load);
+                        match &ops.load_op {
+                            AttachmentLoadOp::Load => {
+                                mtl_attachment.setLoadAction(MTLLoadAction::Load);
+                            }
+                            AttachmentLoadOp::Clear(v) => {
+                                mtl_attachment.setLoadAction(MTLLoadAction::Clear);
+                                mtl_attachment.setClearDepth(*v as f64);
+                            }
+                            AttachmentLoadOp::DontCare => {
+                                mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
+                            }
                         }
-                        AttachmentLoadOp::Clear(v) => {
-                            mtl_attachment.setLoadAction(MTLLoadAction::Clear);
-                            mtl_attachment.setClearStencil(*v as u32);
-                        }
-                        AttachmentLoadOp::DontCare => {
-                            mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
-                        }
+
+                        let store_op = conv::attachment_store_op_to_mtl(ops.store_op);
+                        mtl_attachment.setStoreAction(store_op);
+                        mtl_desc.setDepthAttachment(Some(&mtl_attachment));
                     }
 
-                    let store_op = conv::attachment_store_op_to_mtl(ops.store_op);
-                    mtl_attachment.setStoreAction(store_op);
-                    mtl_desc.setStencilAttachment(Some(&mtl_attachment));
+                    if let Some(ops) = &attachment.stencil {
+                        let mtl_attachment = MTLRenderPassStencilAttachmentDescriptor::new();
+
+                        // We use the same attachment here intentionally
+                        mtl_attachment.setTexture(Some(texture));
+                        mtl_attachment.setLevel(0);
+                        mtl_attachment.setSlice(0);
+
+                        match &ops.load_op {
+                            AttachmentLoadOp::Load => {
+                                mtl_attachment.setLoadAction(MTLLoadAction::Load);
+                            }
+                            AttachmentLoadOp::Clear(v) => {
+                                mtl_attachment.setLoadAction(MTLLoadAction::Clear);
+                                mtl_attachment.setClearStencil(*v as u32);
+                            }
+                            AttachmentLoadOp::DontCare => {
+                                mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
+                            }
+                        }
+
+                        let store_op = conv::attachment_store_op_to_mtl(ops.store_op);
+                        mtl_attachment.setStoreAction(store_op);
+                        mtl_desc.setStencilAttachment(Some(&mtl_attachment));
+                    }
                 }
-            }
 
-            mtl_desc.setRenderTargetWidth(info.extent.width as usize);
-            mtl_desc.setRenderTargetHeight(info.extent.height as usize);
+                mtl_desc.setRenderTargetWidth(info.extent.width as usize);
+                mtl_desc.setRenderTargetHeight(info.extent.height as usize);
 
-            self.active.set_render(
-                &self.objects.list,
-                &self._parent.objects.argument_table,
-                &mtl_desc,
-            );
+                self.active.set_render(
+                    &self.objects.list,
+                    &self._parent.objects.argument_table,
+                    &mtl_desc,
+                );
+            })
         })
     }
 
     unsafe fn __end_rendering(&mut self) {
-        // autoreleasepool(|_| {
-        //     self.active.end_render();
-        // })
+        // abort_on_unwind(|| autoreleasepool(|_| self.active.end_render()))
     }
 
     unsafe fn __draw(
@@ -346,29 +359,31 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         first_vertex: u32,
         first_instance: u32,
     ) {
-        let encoder = self.active.get_render();
+        abort_on_unwind(|| {
+            let encoder = self.active.get_render();
 
-        let pipeline = self.bound_graphics_pipeline.as_deref().unwrap();
+            let pipeline = self.bound_graphics_pipeline.as_deref().unwrap();
 
-        unsafe {
-            self.bound_graphics_pipeline_state.maybe_flush_params(
-                &self._device,
-                &mut self._parent.push_constant_allocator,
-                &self._parent.objects.argument_table,
-                &pipeline._binding_signature,
-            );
-        }
+            unsafe {
+                self.bound_graphics_pipeline_state.maybe_flush_params(
+                    &self._device,
+                    &mut self._parent.push_constant_allocator,
+                    &self._parent.objects.argument_table,
+                    &pipeline._binding_signature,
+                );
+            }
 
-        let primitive_type = self.bound_graphics_pipeline_state.primitive_type;
-        unsafe {
-            encoder.drawPrimitives_vertexStart_vertexCount_instanceCount_baseInstance(
-                primitive_type,
-                first_vertex as usize,
-                vertex_count as usize,
-                instance_count as usize,
-                first_instance as usize,
-            );
-        }
+            let primitive_type = self.bound_graphics_pipeline_state.primitive_type;
+            unsafe {
+                encoder.drawPrimitives_vertexStart_vertexCount_instanceCount_baseInstance(
+                    primitive_type,
+                    first_vertex as usize,
+                    vertex_count as usize,
+                    instance_count as usize,
+                    first_instance as usize,
+                );
+            }
+        })
     }
 
     unsafe fn __draw_indexed(
@@ -379,50 +394,54 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         first_instance: u32,
         vertex_offset: i32,
     ) {
-        let encoder = self.active.get_render();
+        abort_on_unwind(|| {
+            let encoder = self.active.get_render();
 
-        let pipeline = self.bound_graphics_pipeline.as_deref().unwrap();
+            let pipeline = self.bound_graphics_pipeline.as_deref().unwrap();
 
-        unsafe {
-            self.bound_graphics_pipeline_state.maybe_flush_params(
-                &self._device,
-                &mut self._parent.push_constant_allocator,
-                &self._parent.objects.argument_table,
-                &pipeline._binding_signature,
-            );
-        }
+            unsafe {
+                self.bound_graphics_pipeline_state.maybe_flush_params(
+                    &self._device,
+                    &mut self._parent.push_constant_allocator,
+                    &self._parent.objects.argument_table,
+                    &pipeline._binding_signature,
+                );
+            }
 
-        let primitive_type = self.bound_graphics_pipeline_state.primitive_type;
-        let index_buffer = self.bound_index_buffer.as_ref().unwrap();
+            let primitive_type = self.bound_graphics_pipeline_state.primitive_type;
+            let index_buffer = self.bound_index_buffer.as_ref().unwrap();
 
-        let draw_index_offset = first_index as u64 * index_buffer.index_size as u64;
-        let addr = index_buffer.addr.get() + draw_index_offset;
-        let len = index_count as usize * index_buffer.index_size;
+            let draw_index_offset = first_index as u64 * index_buffer.index_size as u64;
+            let addr = index_buffer.addr.get() + draw_index_offset;
+            let len = index_count as usize * index_buffer.index_size;
 
-        unsafe {
-            encoder.drawIndexedPrimitives_indexCount_indexType_indexBuffer_indexBufferLength_instanceCount_baseVertex_baseInstance(
-                primitive_type,
-                index_count as usize,
-                index_buffer.index_type,
-                addr,
-                len,
-                instance_count as usize,
-                vertex_offset as isize,
-                first_instance as usize,
-            );
-        }
+            unsafe {
+                encoder.drawIndexedPrimitives_indexCount_indexType_indexBuffer_indexBufferLength_instanceCount_baseVertex_baseInstance(
+                    primitive_type,
+                    index_count as usize,
+                    index_buffer.index_type,
+                    addr,
+                    len,
+                    instance_count as usize,
+                    vertex_offset as isize,
+                    first_instance as usize,
+                );
+            }
+        })
     }
 
     unsafe fn __bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
-        let encoder = self
-            .active
-            .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
+        abort_on_unwind(|| {
+            let encoder = self
+                .active
+                .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
 
-        let concrete = ComputePipeline::get_owned(pipeline);
+            let concrete = ComputePipeline::get_owned(pipeline);
 
-        encoder.setComputePipelineState(&concrete.objects.pipeline);
+            encoder.setComputePipelineState(&concrete.objects.pipeline);
 
-        self.bound_compute_pipeline = Some(concrete);
+            self.bound_compute_pipeline = Some(concrete);
+        })
     }
 
     unsafe fn __bind_parameter_blocks(
@@ -432,34 +451,15 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         first_block: u32,
         blocks: &[ParameterBlockHandle],
     ) {
-        let binding_signature = unwrap::binding_signature(binding_signature);
-        match bind_point {
-            PipelineBindPoint::Compute => {
-                for (i, block) in blocks.iter().enumerate() {
-                    let i = first_block as usize + i;
+        abort_on_unwind(|| {
+            let binding_signature = unwrap::binding_signature(binding_signature);
+            match bind_point {
+                PipelineBindPoint::Compute => {
+                    for (i, block) in blocks.iter().enumerate() {
+                        let i = first_block as usize + i;
 
-                    let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
+                        let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
 
-                    unsafe {
-                        self._parent
-                            .objects
-                            .argument_table
-                            .setAddress_atIndex(block.gpu_addr.unwrap_unchecked().get(), i);
-                    }
-                }
-            }
-            PipelineBindPoint::Graphics => {
-                for (i, block) in blocks.iter().enumerate() {
-                    let i = first_block as usize + i;
-
-                    let block_layout = &binding_signature._parameter_block_layouts[i];
-                    let block_layout_desc = block_layout.desc.get();
-
-                    let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
-
-                    let visibility =
-                        conv::descriptor_visibility_to_mtl(block_layout_desc.visibility);
-                    if !visibility.is_empty() {
                         unsafe {
                             self._parent
                                 .objects
@@ -468,8 +468,29 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
                         }
                     }
                 }
+                PipelineBindPoint::Graphics => {
+                    for (i, block) in blocks.iter().enumerate() {
+                        let i = first_block as usize + i;
+
+                        let block_layout = &binding_signature._parameter_block_layouts[i];
+                        let block_layout_desc = block_layout.desc.get();
+
+                        let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
+
+                        let visibility =
+                            conv::descriptor_visibility_to_mtl(block_layout_desc.visibility);
+                        if !visibility.is_empty() {
+                            unsafe {
+                                self._parent
+                                    .objects
+                                    .argument_table
+                                    .setAddress_atIndex(block.gpu_addr.unwrap_unchecked().get(), i);
+                            }
+                        }
+                    }
+                }
             }
-        }
+        })
     }
 
     unsafe fn __push_parameters(
@@ -480,75 +501,79 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         base: u32,
         writes: &[ParameterWrite],
     ) {
-        let binding_signature = unwrap::binding_signature(binding_signature);
-        let layout = &binding_signature._parameter_block_layouts[block as usize];
+        abort_on_unwind(|| {
+            let binding_signature = unwrap::binding_signature(binding_signature);
+            let layout = &binding_signature._parameter_block_layouts[block as usize];
 
-        let push_params = match bind_point {
-            PipelineBindPoint::Compute => &mut self.bound_compute_pipeline_state.push_params,
-            PipelineBindPoint::Graphics => &mut self.bound_graphics_pipeline_state.push_params,
-        };
-        let push_params = &mut push_params[block as usize];
+            let push_params = match bind_point {
+                PipelineBindPoint::Compute => &mut self.bound_compute_pipeline_state.push_params,
+                PipelineBindPoint::Graphics => &mut self.bound_graphics_pipeline_state.push_params,
+            };
+            let push_params = &mut push_params[block as usize];
 
-        // Ensure the arrays are of the minimum required size
-        push_params.resize(layout.compiled.num_arguments, 0);
+            // Ensure the arrays are of the minimum required size
+            push_params.resize(layout.compiled.num_arguments, 0);
 
-        let visitor =
-            ParameterBlockLayoutVisitor::new(layout.desc.get(), base as u64, writes).unwrap();
-        for write_group in visitor {
-            for (i, write) in write_group.writes.iter().enumerate() {
-                let i = i + write_group.index as usize;
-                match write {
-                    ParameterWrite::Sampler(v) => {
-                        let sampler = Sampler::get(v.sampler);
-                        let id = sampler.objects.sampler.gpuResourceID();
-                        let id = id.to_raw();
-                        push_params[i] = id;
+            let visitor =
+                ParameterBlockLayoutVisitor::new(layout.desc.get(), base as u64, writes).unwrap();
+            for write_group in visitor {
+                for (i, write) in write_group.writes.iter().enumerate() {
+                    let i = i + write_group.index as usize;
+                    match write {
+                        ParameterWrite::Sampler(v) => {
+                            let sampler = Sampler::get(v.sampler);
+                            let id = sampler.objects.sampler.gpuResourceID();
+                            let id = id.to_raw();
+                            push_params[i] = id;
+                        }
+                        ParameterWrite::Buffer(v) => {
+                            let src = Buffer::get(v.buffer);
+                            let addr = src.gpu_addr.get() + v.offset;
+                            push_params[i] = addr;
+                        }
+                        ParameterWrite::Texture(_) => unreachable!(),
+                        ParameterWrite::TextureBuffer(_) => unreachable!(),
                     }
-                    ParameterWrite::Buffer(v) => {
-                        let src = Buffer::get(v.buffer);
-                        let addr = src.gpu_addr.get() + v.offset;
-                        push_params[i] = addr;
-                    }
-                    ParameterWrite::Texture(_) => unreachable!(),
-                    ParameterWrite::TextureBuffer(_) => unreachable!(),
                 }
             }
-        }
 
-        match bind_point {
-            PipelineBindPoint::Compute => {
-                self.bound_compute_pipeline_state.push_params_dirty = true
+            match bind_point {
+                PipelineBindPoint::Compute => {
+                    self.bound_compute_pipeline_state.push_params_dirty = true
+                }
+                PipelineBindPoint::Graphics => {
+                    self.bound_graphics_pipeline_state.push_params_dirty = true
+                }
             }
-            PipelineBindPoint::Graphics => {
-                self.bound_graphics_pipeline_state.push_params_dirty = true
-            }
-        }
+        })
     }
 
     unsafe fn __dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
-        let encoder = self
-            .active
-            .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
+        abort_on_unwind(|| {
+            let encoder = self
+                .active
+                .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
 
-        let pipeline = self.bound_compute_pipeline.as_deref().unwrap();
+            let pipeline = self.bound_compute_pipeline.as_deref().unwrap();
 
-        unsafe {
-            self.bound_graphics_pipeline_state.maybe_flush_params(
-                &self._device,
-                &mut self._parent.push_constant_allocator,
-                &self._parent.objects.argument_table,
-                &pipeline._binding_signature,
+            unsafe {
+                self.bound_graphics_pipeline_state.maybe_flush_params(
+                    &self._device,
+                    &mut self._parent.push_constant_allocator,
+                    &self._parent.objects.argument_table,
+                    &pipeline._binding_signature,
+                );
+            }
+
+            encoder.dispatchThreadgroups_threadsPerThreadgroup(
+                MTLSize {
+                    width: group_count_x as usize,
+                    height: group_count_y as usize,
+                    depth: group_count_z as usize,
+                },
+                pipeline.workgroup_size,
             );
-        }
-
-        encoder.dispatchThreadgroups_threadsPerThreadgroup(
-            MTLSize {
-                width: group_count_x as usize,
-                height: group_count_y as usize,
-                depth: group_count_z as usize,
-            },
-            pipeline.workgroup_size,
-        );
+        })
     }
 
     unsafe fn __resource_barrier(
@@ -557,80 +582,84 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         buffer_barriers: &[BufferBarrier],
         texture_barriers: &[TextureBarrier],
     ) {
-        // TODO: we may be able to elide cache flushes?
+        abort_on_unwind(|| {
+            // TODO: we may be able to elide cache flushes?
 
-        // Metal cares not for your buffers and textures, not even your access masks it seems. They
-        // just want the stages. It's also super helpful because I use before/after for my scopes,
-        // and so does Metal. However, Metal's before/after mean the opposite to mine. Awesome.
-        let mut src = MTLStages::empty();
-        let mut dst = MTLStages::empty();
-        for barrier in global_barriers {
-            src |= conv::barrier_sync_to_mtl(barrier.before_sync);
-            dst |= conv::barrier_sync_to_mtl(barrier.after_sync);
-        }
-        for barrier in buffer_barriers {
-            src |= conv::barrier_sync_to_mtl(barrier.before_sync);
-            dst |= conv::barrier_sync_to_mtl(barrier.after_sync);
-        }
-        for barrier in texture_barriers {
-            src |= conv::barrier_sync_to_mtl(barrier.before_sync);
-            dst |= conv::barrier_sync_to_mtl(barrier.after_sync);
-        }
-
-        // If either half of the barrier is empty then we just skip it because an empty edge has
-        // no meaning to Metal.
-        //
-        // If one half is empty then it doesn't matter what the other half is, because the command
-        // doesn't actually sync with anything (on Metal).
-        if src.is_empty() || dst.is_empty() {
-            return;
-        }
-
-        match &self.active.inner {
-            ActiveEncoderInner::Graphics(_) => {
-                // barriers can't be issued inside render passes within our api. however we would
-                // like to issue producer barriers wherever possible. to that end, we don't eagerly
-                // end the render __encoder__ when a caller ends the rhi render pass.
-                //
-                // this means we can actually still be inside a render encoder when a resource
-                // barrier command comes in.
-                //
-                // we just add the relevant stages to the dirty sets and flush them as a producer
-                // barrier when ending the render encoder.
-                //
-                // we don't issue an intra-pass barrier because our rhi doesn't allow barriers
-                // within render passes. you can't have intra-pass sync under aleph-rhi.
-                self.active.dirty_src |= src;
-                self.active.dirty_dst |= dst;
+            // Metal cares not for your buffers and textures, not even your access masks it seems.
+            // They just want the stages. It's also super helpful because I use before/after for my
+            // scopes, and so does Metal. However, Metal's before/after mean the opposite to mine.
+            // Awesome.
+            let mut src = MTLStages::empty();
+            let mut dst = MTLStages::empty();
+            for barrier in global_barriers {
+                src |= conv::barrier_sync_to_mtl(barrier.before_sync);
+                dst |= conv::barrier_sync_to_mtl(barrier.after_sync);
             }
-            ActiveEncoderInner::Compute(v) => {
-                let src_compute = src & COMPUTE_STAGES;
-                let dst_compute = dst & COMPUTE_STAGES;
+            for barrier in buffer_barriers {
+                src |= conv::barrier_sync_to_mtl(barrier.before_sync);
+                dst |= conv::barrier_sync_to_mtl(barrier.after_sync);
+            }
+            for barrier in texture_barriers {
+                src |= conv::barrier_sync_to_mtl(barrier.before_sync);
+                dst |= conv::barrier_sync_to_mtl(barrier.after_sync);
+            }
 
-                // immediately issue an intra-pass barrier if the dst mask intersects with any
-                // stages for a compute encoder. this will ensure we correctly synchronize with
-                // possible previous work earlier in the encoder.
-                if !dst_compute.is_empty() {
-                    v.barrierAfterEncoderStages_beforeEncoderStages_visibilityOptions(
-                        src_compute,
-                        dst_compute,
-                        MTL4VisibilityOptions::Device,
-                    );
+            // If either half of the barrier is empty then we just skip it because an empty edge has
+            // no meaning to Metal.
+            //
+            // If one half is empty then it doesn't matter what the other half is, because the
+            // command doesn't actually sync with anything (on Metal).
+            if src.is_empty() || dst.is_empty() {
+                return;
+            }
+
+            match &self.active.inner {
+                ActiveEncoderInner::Graphics(_) => {
+                    // barriers can't be issued inside render passes within our api. however we
+                    // would like to issue producer barriers wherever possible. to that end, we
+                    // don't eagerly end the render __encoder__ when a caller ends the rhi render
+                    // pass.
+                    //
+                    // this means we can actually still be inside a render encoder when a resource
+                    // barrier command comes in.
+                    //
+                    // we just add the relevant stages to the dirty sets and flush them as a
+                    // producer barrier when ending the render encoder.
+                    //
+                    // we don't issue an intra-pass barrier because our rhi doesn't allow barriers
+                    // within render passes. you can't have intra-pass sync under aleph-rhi.
+                    self.active.dirty_src |= src;
+                    self.active.dirty_dst |= dst;
                 }
+                ActiveEncoderInner::Compute(v) => {
+                    let src_compute = src & COMPUTE_STAGES;
+                    let dst_compute = dst & COMPUTE_STAGES;
 
-                self.active.dirty_src |= src;
-                self.active.dirty_dst |= dst;
+                    // immediately issue an intra-pass barrier if the dst mask intersects with any
+                    // stages for a compute encoder. this will ensure we correctly synchronize with
+                    // possible previous work earlier in the encoder.
+                    if !dst_compute.is_empty() {
+                        v.barrierAfterEncoderStages_beforeEncoderStages_visibilityOptions(
+                            src_compute,
+                            dst_compute,
+                            MTL4VisibilityOptions::Device,
+                        );
+                    }
+
+                    self.active.dirty_src |= src;
+                    self.active.dirty_dst |= dst;
+                }
+                ActiveEncoderInner::None => {
+                    // there's no active encoder, so we can't eagerly issue a barrier.
+                    //
+                    // instead we just mark the stages as dirty. when we begin a new encoder
+                    // we will issue a consumer barrier that will synchronize these stages before
+                    // issuing any more commands.
+                    self.active.dirty_src |= src;
+                    self.active.dirty_dst |= dst;
+                }
             }
-            ActiveEncoderInner::None => {
-                // there's no active encoder, so we can't eagerly issue a barrier.
-                //
-                // instead we just mark the stages as dirty. when we begin a new encoder
-                // we will issue a consumer barrier that will synchronize these stages before
-                // issuing any more commands.
-                self.active.dirty_src |= src;
-                self.active.dirty_dst |= dst;
-            }
-        }
+        })
     }
 
     unsafe fn __copy_buffer_regions(
@@ -639,24 +668,26 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         dst: &BufferHandle,
         regions: &[BufferCopyRegion],
     ) {
-        let src = Buffer::get(src);
-        let dst = Buffer::get(dst);
+        abort_on_unwind(|| {
+            let src = Buffer::get(src);
+            let dst = Buffer::get(dst);
 
-        let encoder = self
-            .active
-            .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
+            let encoder = self
+                .active
+                .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
 
-        for region in regions {
-            unsafe {
-                encoder.copyFromBuffer_sourceOffset_toBuffer_destinationOffset_size(
-                    &src.objects.buffer,
-                    region.src_offset as usize,
-                    &dst.objects.buffer,
-                    region.dst_offset as usize,
-                    region.size as usize,
-                );
+            for region in regions {
+                unsafe {
+                    encoder.copyFromBuffer_sourceOffset_toBuffer_destinationOffset_size(
+                        &src.objects.buffer,
+                        region.src_offset as usize,
+                        &dst.objects.buffer,
+                        region.dst_offset as usize,
+                        region.size as usize,
+                    );
+                }
             }
-        }
+        })
     }
 
     unsafe fn __copy_buffer_to_texture(
@@ -665,40 +696,42 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         dst: &TextureHandle,
         regions: &[BufferToTextureCopyRegion],
     ) {
-        let src = Buffer::get(src);
-        let dst = Texture::get(dst);
+        abort_on_unwind(|| {
+            let src = Buffer::get(src);
+            let dst = Texture::get(dst);
 
-        let encoder = self
-            .active
-            .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
+            let encoder = self
+                .active
+                .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
 
-        for region in regions {
-            unsafe {
-                let bytes_per_element = dst.desc().format.bytes_per_element() as usize;
-                let source_bytes_per_row = region.src.row_pitch as usize * bytes_per_element;
-                let source_bytes_per_image = match dst.desc.get().dimension {
-                    TextureDimension::Texture1D | TextureDimension::Texture2D => 0,
-                    TextureDimension::Texture3D => {
-                        // Only 3D textures should have this != 0.
-                        source_bytes_per_row * region.dst.extent.height as usize
-                    }
-                };
-                let destination_origin = conv::u_offset_to_mtl_origin(&region.dst.origin);
-                let source_size = conv::extent_to_mtl_size(&region.dst.extent);
-                encoder.copyFromBuffer_sourceOffset_sourceBytesPerRow_sourceBytesPerImage_sourceSize_toTexture_destinationSlice_destinationLevel_destinationOrigin_options(
-                    &src.objects.buffer,
-                    region.src.offset as usize,
-                    source_bytes_per_row,
-                    source_bytes_per_image,
-                    source_size,
-                    &dst.objects.texture,
-                    region.dst.array_layer as usize,
-                    region.dst.mip_level as usize,
-                    destination_origin,
-                    MTLBlitOption::None
-                );
+            for region in regions {
+                unsafe {
+                    let bytes_per_element = dst.desc().format.bytes_per_element() as usize;
+                    let source_bytes_per_row = region.src.row_pitch as usize * bytes_per_element;
+                    let source_bytes_per_image = match dst.desc.get().dimension {
+                        TextureDimension::Texture1D | TextureDimension::Texture2D => 0,
+                        TextureDimension::Texture3D => {
+                            // Only 3D textures should have this != 0.
+                            source_bytes_per_row * region.dst.extent.height as usize
+                        }
+                    };
+                    let destination_origin = conv::u_offset_to_mtl_origin(&region.dst.origin);
+                    let source_size = conv::extent_to_mtl_size(&region.dst.extent);
+                    encoder.copyFromBuffer_sourceOffset_sourceBytesPerRow_sourceBytesPerImage_sourceSize_toTexture_destinationSlice_destinationLevel_destinationOrigin_options(
+                        &src.objects.buffer,
+                        region.src.offset as usize,
+                        source_bytes_per_row,
+                        source_bytes_per_image,
+                        source_size,
+                        &dst.objects.texture,
+                        region.dst.array_layer as usize,
+                        region.dst.mip_level as usize,
+                        destination_origin,
+                        MTLBlitOption::None
+                    );
+                }
             }
-        }
+        })
     }
 
     unsafe fn __copy_texture_regions(
@@ -707,35 +740,37 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         dst: &TextureHandle,
         regions: &[TextureToTextureCopyInfo],
     ) {
-        let src = Texture::get(src);
-        let dst = Texture::get(dst);
+        abort_on_unwind(|| {
+            let src = Texture::get(src);
+            let dst = Texture::get(dst);
 
-        let encoder = self
-            .active
-            .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
+            let encoder = self
+                .active
+                .begin_compute(&self.objects.list, &self._parent.objects.argument_table);
 
-        for region in regions {
-            unsafe {
-                let source_origin = conv::u_offset_to_mtl_origin(&region.src.offset);
-                let destination_origin = conv::u_offset_to_mtl_origin(&region.dst.offset);
-                let source_size = conv::extent_to_mtl_size(&region.extent);
-                encoder.copyFromTexture_sourceSlice_sourceLevel_sourceOrigin_sourceSize_toTexture_destinationSlice_destinationLevel_destinationOrigin(
-                    &src.objects.texture,
-                    region.src.array_layer as usize,
-                    region.src.mip_level as usize,
-                    source_origin,
-                    source_size,
-                    &dst.objects.texture,
-                    region.dst.array_layer as usize,
-                    region.dst.mip_level as usize,
-                    destination_origin,
-                );
+            for region in regions {
+                unsafe {
+                    let source_origin = conv::u_offset_to_mtl_origin(&region.src.offset);
+                    let destination_origin = conv::u_offset_to_mtl_origin(&region.dst.offset);
+                    let source_size = conv::extent_to_mtl_size(&region.extent);
+                    encoder.copyFromTexture_sourceSlice_sourceLevel_sourceOrigin_sourceSize_toTexture_destinationSlice_destinationLevel_destinationOrigin(
+                        &src.objects.texture,
+                        region.src.array_layer as usize,
+                        region.src.mip_level as usize,
+                        source_origin,
+                        source_size,
+                        &dst.objects.texture,
+                        region.dst.array_layer as usize,
+                        region.dst.mip_level as usize,
+                        destination_origin,
+                    );
+                }
             }
-        }
+        })
     }
 
     unsafe fn __close(&mut self) -> Result<(), CommandListCloseError> {
-        match self._parent.state {
+        abort_on_unwind(|| match self._parent.state {
             ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
             ListState::Open => {
                 self.active.end_all(&self._parent.objects.list);
@@ -744,25 +779,27 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
                 Ok(())
             }
             ListState::Closed => Err(CommandListCloseError::AlreadyClosed),
-        }
+        })
     }
 
     unsafe fn __set_marker(&mut self, _color: Color, _message: &aleph_nstr::NStr) {
-        // TODO: this
+        abort_on_unwind(|| {
+            // TODO: this
+        })
     }
 
     unsafe fn __begin_event(&mut self, _color: Color, message: &aleph_nstr::NStr) {
-        autoreleasepool(|_| {
-            self.objects
-                .list
-                .pushDebugGroup(&NSString::from_str(message.to_str()))
+        abort_on_unwind(|| {
+            autoreleasepool(|_| {
+                self.objects
+                    .list
+                    .pushDebugGroup(&NSString::from_str(message.to_str()))
+            })
         })
     }
 
     unsafe fn __end_event(&mut self) {
-        autoreleasepool(|_| {
-            self.objects.list.popDebugGroup();
-        })
+        abort_on_unwind(|| autoreleasepool(|_| self.objects.list.popDebugGroup()))
     }
 }
 

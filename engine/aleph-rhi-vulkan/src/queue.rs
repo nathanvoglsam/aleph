@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
 
@@ -36,7 +37,6 @@ use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind, try_clone_value_into_slot};
 use ash::vk::{self, Handle};
-use crossbeam::queue::SegQueue;
 use parking_lot::Mutex;
 
 use crate::command_list::{CommandList, ListState};
@@ -58,9 +58,6 @@ pub struct Queue {
     /// work around.
     pub(crate) info: QueueInfo,
 
-    /// Lock used to serialize submissions to the command queue.
-    pub(crate) submit_lock: Mutex<()>,
-
     /// A timeline semaphore that is used for tracking what submissions are in-flight on a GPU
     /// queue. This is used for [Queue::garbage_collect] to determine which submissions are complete
     /// without blocking on the GPU work.
@@ -79,7 +76,7 @@ pub struct Queue {
     /// A ring-buffer that tracks all currently in flight queue submissions. This is used in
     /// conjunction with [IQueue::garbage_collect] to track when resources are no longer in use on
     /// the GPU timeline and are safe to destroy.
-    pub(crate) in_flight: SegQueue<QueueSubmission>,
+    pub(crate) in_flight: Mutex<VecDeque<QueueSubmission>>,
 }
 
 impl IGetPlatformInterface for Queue {
@@ -110,11 +107,10 @@ impl Queue {
                 queue_type,
                 handle,
                 info,
-                submit_lock: Mutex::new(()),
                 semaphore,
                 last_submitted_index: Default::default(),
                 last_completed_index: Default::default(),
-                in_flight: SegQueue::new(),
+                in_flight: Default::default(),
             })
         })
     }
@@ -206,56 +202,67 @@ impl IQueue for Queue {
             // to see if it is complete based on comparing the list's index with the last completed
             // index. If the list is done we drop it to release any resources that it was keeping
             // alive.
-            let num = self.in_flight.len();
-            for _ in 0..num {
-                // Check if the
-                let v = Rhi::with(|| self.in_flight.pop().unwrap());
-                if v.index > last_completed {
-                    Rhi::with(|| self.in_flight.push(v));
-                } else {
-                    // Now that we know the submission is complete we can return the swap semaphore
-                    // (if there is one) to the semaphore pool
-                    if !v.swap_ready_semaphore.is_null() {
-                        let device = self._device.upgrade().unwrap();
-                        device.swap_semaphore_pool.push(v.swap_ready_semaphore);
+            let mut retired = Vec::new();
+            Rhi::with(|| {
+                let mut in_flight = self.in_flight.lock();
+                for _ in 0..in_flight.len() {
+                    let submission = abort_on_unwind(|| in_flight.pop_front().unwrap());
+
+                    // If this submission is not yet complete, return it to the queue and check the
+                    // next entry
+                    if submission.index > last_completed {
+                        in_flight.push_back(submission);
+                        continue;
                     }
 
-                    if let Some(pool) = v.swap_work_semaphore_pool.as_deref() {
-                        assert!(!v.swap_work_semaphore.is_null());
-                        pool.push(v.swap_work_semaphore);
-                    }
+                    // Otherwise push the submission into the 'retired' set so we can process it
+                    // outside the critical section.
+                    retired.push(submission);
+                }
+            });
 
-                    // Grab the pool for the specific queue type. Don't want to get different
-                    // classes of command list mixed up!
-                    let pool_target = device
-                        .command_list_pool
-                        .get_pool_for_queue_type(self.queue_type);
+            for submission in retired {
+                // Now that we know the submission is complete we can return the swap semaphore
+                // (if there is one) to the semaphore pool
+                if !submission.swap_ready_semaphore.is_null() {
+                    let device = self._device.upgrade().unwrap();
+                    device
+                        .swap_semaphore_pool
+                        .push(submission.swap_ready_semaphore);
+                }
 
-                    for mut list in v.lists.into_iter() {
-                        debug_assert_eq!(list.list_type, self.queue_type);
+                if let Some(pool) = submission.swap_work_semaphore_pool.as_deref() {
+                    assert!(!submission.swap_work_semaphore.is_null());
+                    pool.push(submission.swap_work_semaphore);
+                }
 
-                        // Take the pool and buffer out of the CommandList object so they don't
-                        // get dropped. We destroy the Box<CommandList> because it also contains
-                        // a back reference to device.
-                        //
-                        // If we store it inside device then we create a reference cycle and we'll
-                        // leak Device. Not great...
-                        let list = FreeCommandList {
-                            pool: std::mem::take(&mut list.pool),
-                            buffer: std::mem::take(&mut list.buffer),
-                            list_type: list.list_type,
-                        };
+                // Grab the pool for the specific queue type. Don't want to get different
+                // classes of command list mixed up!
+                let pool_target = device
+                    .command_list_pool
+                    .get_pool_for_queue_type(self.queue_type);
 
-                        // If we fill the list we just start destroying command lists rather than
-                        // growing the pool.
-                        if let Err(dropped) = pool_target.push(list) {
-                            unsafe {
-                                log::warn!(
-                                    "'command_list_pool' overflowing '{}'.",
-                                    self.queue_type
-                                );
-                                dropped.collect(&device);
-                            }
+                for mut list in submission.lists.into_iter() {
+                    debug_assert_eq!(list.list_type, self.queue_type);
+
+                    // Take the pool and buffer out of the CommandList object so they don't
+                    // get dropped. We destroy the Box<CommandList> because it also contains
+                    // a back reference to device.
+                    //
+                    // If we store it inside device then we create a reference cycle and we'll
+                    // leak Device. Not great...
+                    let list = FreeCommandList {
+                        pool: std::mem::take(&mut list.pool),
+                        buffer: std::mem::take(&mut list.buffer),
+                        list_type: list.list_type,
+                    };
+
+                    // If we fill the list we just start destroying command lists rather than
+                    // growing the pool.
+                    if let Err(dropped) = pool_target.push(list) {
+                        unsafe {
+                            log::warn!("'command_list_pool' overflowing '{}'.", self.queue_type);
+                            dropped.collect(&device);
                         }
                     }
                 }
@@ -270,7 +277,7 @@ impl IQueue for Queue {
             let device = self._device.upgrade().unwrap();
 
             unsafe {
-                let _lock = self.submit_lock.lock();
+                let _lock = self.in_flight.lock();
                 device
                     .device
                     .queue_wait_idle(self.handle)
@@ -291,7 +298,7 @@ impl IQueue for Queue {
             let info = manager.submit_info(&mut timeline_info);
 
             unsafe {
-                let _lock = self.submit_lock.lock();
+                let mut in_flight = self.in_flight.lock();
                 let result = device
                     .device
                     .queue_submit(self.handle, &[info], vk::Fence::null());
@@ -305,11 +312,9 @@ impl IQueue for Queue {
                         }
                     };
                 }
-            }
 
-            Rhi::with(|| {
-                self.in_flight.push(submission);
-            });
+                Rhi::with(|| in_flight.push_back(submission));
+            }
 
             Ok(())
         })
@@ -353,7 +358,7 @@ impl IQueue for Queue {
                     .image_indices(&image_indices);
 
                 {
-                    let _lock = self.submit_lock.lock();
+                    let _lock = self.in_flight.lock();
                     loader.queue_present(self.handle, &info)
                 }
             };

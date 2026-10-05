@@ -34,7 +34,7 @@ use aleph_alloc::BVec;
 use aleph_rhi_api::{
     BindingSignatureCreateError, BindingSignatureDesc, IBindingSignature, PushConstantBlock,
 };
-use aleph_rhi_impl_utils::RhiSystem;
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
 
 use crate::device::Device;
 use crate::internal::unwrap;
@@ -50,7 +50,7 @@ pub struct BindingSignature {
 
 impl IBindingSignature for BindingSignature {
     fn upgrade(&self) -> Arc<dyn IBindingSignature> {
-        self.this.upgrade().unwrap()
+        abort_on_unwind(|| self.this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {

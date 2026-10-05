@@ -150,11 +150,11 @@ impl IDevice for Device {
 
     fn wait_idle(&self) -> Result<(), QueueWaitError> {
         abort_on_unwind(|| {
-            // We need to take all of the queue locks to meet vulkan sync requirements.
+            // We need to take all the queue locks to meet vulkan sync requirements.
             let _lock_ness_monster = (
-                self.general_queue.as_ref().map(|v| v.submit_lock.lock()),
-                self.compute_queue.as_ref().map(|v| v.submit_lock.lock()),
-                self.transfer_queue.as_ref().map(|v| v.submit_lock.lock()),
+                self.general_queue.as_ref().map(|v| v.in_flight.lock()),
+                self.compute_queue.as_ref().map(|v| v.in_flight.lock()),
+                self.transfer_queue.as_ref().map(|v| v.in_flight.lock()),
             );
 
             unsafe {

@@ -36,7 +36,7 @@ use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_alloc::offset_allocator::OffsetAllocator;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_pool::{IBlockFactory, ParameterBlockPool};
-use aleph_rhi_impl_utils::{Rhi, RhiSystem};
+use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind};
 use blink_alloc::BlinkAlloc;
 
 use crate::device::Device;
@@ -62,16 +62,18 @@ impl IDescriptorArena for DescriptorArenaLinear {
         &self,
         layout: &dyn IParameterBlockLayout,
     ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
-        let layout = unwrap::parameter_block_layout(layout);
+        abort_on_unwind(|| {
+            let layout = unwrap::parameter_block_layout(layout);
 
-        let mut blocks: [MaybeUninit<_>; 1] = [MaybeUninit::uninit(); 1];
-        self.pool
-            .allocate_blocks((&self.memory_block, layout), &mut blocks)?;
+            let mut blocks: [MaybeUninit<_>; 1] = [MaybeUninit::uninit(); 1];
+            self.pool
+                .allocate_blocks((&self.memory_block, layout), &mut blocks)?;
 
-        unsafe {
-            let block = blocks[0].assume_init();
-            Ok(block)
-        }
+            unsafe {
+                let block = blocks[0].assume_init();
+                Ok(block)
+            }
+        })
     }
 
     fn allocate_blocks(
@@ -79,25 +81,29 @@ impl IDescriptorArena for DescriptorArenaLinear {
         layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
     ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
-        let layout = unwrap::parameter_block_layout(layout);
+        abort_on_unwind(|| {
+            let layout = unwrap::parameter_block_layout(layout);
 
-        let mut blocks = Box::new_uninit_slice(num_blocks);
-        self.pool
-            .allocate_blocks((&self.memory_block, layout), &mut blocks)?;
+            let mut blocks = Box::new_uninit_slice(num_blocks);
+            self.pool
+                .allocate_blocks((&self.memory_block, layout), &mut blocks)?;
 
-        let blocks = Box::leak(blocks);
-        let blocks = NonNull::from(blocks);
-        let blocks =
-            NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
-        unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
+            let blocks = Box::leak(blocks);
+            let blocks = NonNull::from(blocks);
+            let blocks =
+                NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
+            unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
+        })
     }
 
     unsafe fn free(&self, _blocks: &[ParameterBlockHandle]) {
-        unreachable!("It is illegal to call 'free' on a 'linear' descriptor arena");
+        abort_on_unwind(|| {
+            unreachable!("It is illegal to call 'free' on a 'linear' descriptor arena")
+        })
     }
 
     unsafe fn reset(&self) {
-        unsafe { self.pool.reset_pool() }
+        abort_on_unwind(|| unsafe { self.pool.reset_pool() })
     }
 }
 
@@ -221,16 +227,18 @@ impl IDescriptorArena for DescriptorArenaHeap {
         &self,
         layout: &dyn IParameterBlockLayout,
     ) -> Result<ParameterBlockHandle, DescriptorAllocateError> {
-        let layout = unwrap::parameter_block_layout(layout);
+        abort_on_unwind(|| {
+            let layout = unwrap::parameter_block_layout(layout);
 
-        let mut blocks: [MaybeUninit<_>; 1] = [MaybeUninit::uninit(); 1];
-        self.pool
-            .allocate_blocks((&self.memory_block, layout), &mut blocks)?;
+            let mut blocks: [MaybeUninit<_>; 1] = [MaybeUninit::uninit(); 1];
+            self.pool
+                .allocate_blocks((&self.memory_block, layout), &mut blocks)?;
 
-        unsafe {
-            let block = blocks[0].assume_init();
-            Ok(block)
-        }
+            unsafe {
+                let block = blocks[0].assume_init();
+                Ok(block)
+            }
+        })
     }
 
     fn allocate_blocks(
@@ -238,27 +246,27 @@ impl IDescriptorArena for DescriptorArenaHeap {
         layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
     ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
-        let layout = unwrap::parameter_block_layout(layout);
+        abort_on_unwind(|| {
+            let layout = unwrap::parameter_block_layout(layout);
 
-        let mut blocks = Box::new_uninit_slice(num_blocks);
-        self.pool
-            .allocate_blocks((&self.memory_block, layout), &mut blocks)?;
+            let mut blocks = Box::new_uninit_slice(num_blocks);
+            self.pool
+                .allocate_blocks((&self.memory_block, layout), &mut blocks)?;
 
-        let blocks = Box::leak(blocks);
-        let blocks = NonNull::from(blocks);
-        let blocks =
-            NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
-        unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
+            let blocks = Box::leak(blocks);
+            let blocks = NonNull::from(blocks);
+            let blocks =
+                NonNull::slice_from_raw_parts(blocks.cast::<ParameterBlockHandle>(), blocks.len());
+            unsafe { Ok(Box::from_raw(blocks.as_ptr())) }
+        })
     }
 
     unsafe fn free(&self, blocks: &[ParameterBlockHandle]) {
-        self.pool.free_blocks(blocks);
+        abort_on_unwind(|| self.pool.free_blocks(blocks))
     }
 
     unsafe fn reset(&self) {
-        unsafe {
-            self.pool.reset_pool();
-        }
+        abort_on_unwind(|| unsafe { self.pool.reset_pool() })
     }
 }
 

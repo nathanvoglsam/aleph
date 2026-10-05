@@ -33,6 +33,7 @@ use std::sync::{Arc, Weak};
 
 use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use objc2::rc::{Retained, autoreleasepool};
 use objc2::runtime::ProtocolObject;
@@ -61,7 +62,7 @@ impl IGetPlatformInterface for Adapter {
 
 impl IAdapter for Adapter {
     fn upgrade(&self) -> Arc<dyn IAdapter> {
-        self.this.upgrade().unwrap()
+        abort_on_unwind(|| self.this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -80,47 +81,49 @@ impl IAdapter for Adapter {
     }
 
     fn request_device(&self) -> Result<Arc<dyn IDevice>, RequestDeviceError> {
-        let device = autoreleasepool(|_| {
-            if let Some(surface) = self.surface.as_ref() {
-                surface.objects.layer.setDevice(Some(&self.objects.device));
+        abort_on_unwind(|| {
+            let device = autoreleasepool(|_| {
+                if let Some(surface) = self.surface.as_ref() {
+                    surface.objects.layer.setDevice(Some(&self.objects.device));
 
-                let preferred = surface.objects.layer.preferredDevice();
-                if let Some(preferred) = preferred {
-                    if preferred != self.objects.device {
-                        log::warn!("Selected Device is not Preferred by CAMetalLayer");
+                    let preferred = surface.objects.layer.preferredDevice();
+                    if let Some(preferred) = preferred {
+                        if preferred != self.objects.device {
+                            log::warn!("Selected Device is not Preferred by CAMetalLayer");
+                        }
                     }
                 }
-            }
 
-            let out: Arc<dyn IDevice> = Arc::new_cyclic(move |v| {
-                let mut device = Device {
-                    this: v.clone(),
-                    _adapter: self.this.upgrade().unwrap(),
-                    context: self.context.clone(),
-                    device: self.objects.device.clone(),
-                    listener: MTLSharedEventListener::new(),
-                    allocator: None,
-                    general_queue: None,
-                    compute_queue: None,
-                    transfer_queue: None,
-                    command_list_pool: CommandListPool::new(),
-                    image_view_pools: ShardedImageViewPool::new(self.objects.device.clone()),
-                    object_counter: ObjectCounter::new(),
-                };
+                let out: Arc<dyn IDevice> = Arc::new_cyclic(move |v| {
+                    let mut device = Device {
+                        this: v.clone(),
+                        _adapter: self.this.upgrade().unwrap(),
+                        context: self.context.clone(),
+                        device: self.objects.device.clone(),
+                        listener: MTLSharedEventListener::new(),
+                        allocator: None,
+                        general_queue: None,
+                        compute_queue: None,
+                        transfer_queue: None,
+                        command_list_pool: CommandListPool::new(),
+                        image_view_pools: ShardedImageViewPool::new(self.objects.device.clone()),
+                        object_counter: ObjectCounter::new(),
+                    };
 
-                let allocator = ManuallyDrop::new(GpuAllocator::new(&device));
-                device.allocator = Some(allocator);
+                    let allocator = ManuallyDrop::new(GpuAllocator::new(&device));
+                    device.allocator = Some(allocator);
 
-                Self::build_queue_objects(&mut device);
+                    Self::build_queue_objects(&mut device);
 
-                device
+                    device
+                });
+
+                aleph_rhi_impl_utils::allocator_stats::setup_plots();
+
+                Ok(out)
             });
-
-            aleph_rhi_impl_utils::allocator_stats::setup_plots();
-
-            Ok(out)
-        });
-        device
+            device
+        })
     }
 }
 

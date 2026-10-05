@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::collections::VecDeque;
 use std::ptr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
@@ -36,7 +37,6 @@ use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind, try_clone_value_into_slot};
-use crossbeam::queue::SegQueue;
 use parking_lot::Mutex;
 use windows::Win32::Foundation::HANDLE;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -55,9 +55,6 @@ pub struct Queue {
     pub(crate) queue_type: QueueType,
     pub(crate) handle: ID3D12CommandQueue,
 
-    /// Lock used to serialize submissions to the command queue.
-    pub(crate) submit_lock: Mutex<()>,
-
     /// A special fence used specifically for tracking the work that is in-flight on this queue.
     /// This is signaled and waited using submission indices.
     pub(crate) fence: ID3D12Fence,
@@ -75,7 +72,7 @@ pub struct Queue {
     /// A ring-buffer that tracks all currently in flight queue submissions. This is used in
     /// conjunction with [IQueue::garbage_collect] to track when resources are no longer in use on
     /// the GPU timeline and are safe to destroy.
-    pub(crate) in_flight: SegQueue<QueueSubmission>,
+    pub(crate) in_flight: Mutex<VecDeque<QueueSubmission>>,
 }
 
 impl IGetPlatformInterface for Queue {
@@ -98,11 +95,10 @@ impl Queue {
                     device: device.this.clone(),
                     queue_type,
                     handle,
-                    submit_lock: Mutex::new(()),
                     fence: device.device.CreateFence(1, D3D12_FENCE_FLAG_NONE).unwrap(),
                     last_submitted_index: AtomicU64::new(1),
                     last_completed_index: AtomicU64::new(1),
-                    in_flight: SegQueue::new(),
+                    in_flight: Default::default(),
                 })
             })
         }
@@ -195,42 +191,53 @@ impl IQueue for Queue {
             // to see if it is complete based on comparing the list's index with the last completed
             // index. If the list is done we drop it to release any resources that it was keeping
             // alive.
-            let num = self.in_flight.len();
-            for _ in 0..num {
-                // Check if the
-                let v = self.in_flight.pop().unwrap();
-                if v.index > last_completed {
-                    self.in_flight.push(v);
-                } else {
-                    // If the submission is complete we recycle the command lists
+            let mut retired = Vec::new();
+            Rhi::with(|| {
+                let mut in_flight = self.in_flight.lock();
+                for _ in 0..in_flight.len() {
+                    let submission = abort_on_unwind(|| in_flight.pop_front().unwrap());
+
+                    // If this submission is not yet complete, return it to the queue and check the
+                    // next entry
+                    if submission.index > last_completed {
+                        in_flight.push_back(submission);
+                        continue;
+                    }
+
+                    // Otherwise push the submission into the 'retired' set so we can process it
+                    // outside the critical section.
+                    retired.push(submission);
+                }
+            });
+            for submission in retired {
+                // If the submission is complete we recycle the command lists
+                //
+                // Grab the pool for the specific queue type. Don't want to get different
+                // classes of command list mixed up!
+                let pool_target = device
+                    .command_list_pool
+                    .get_pool_for_queue_type(self.queue_type);
+
+                for list in submission.lists.into_iter() {
+                    debug_assert_eq!(list.list_type, self.queue_type);
+
+                    // Take the pool and buffer out of the CommandList object so they don't
+                    // get dropped. We destroy the Box<CommandList> because it also contains
+                    // a back reference to device.
                     //
-                    // Grab the pool for the specific queue type. Don't want to get different
-                    // classes of command list mixed up!
-                    let pool_target = device
-                        .command_list_pool
-                        .get_pool_for_queue_type(self.queue_type);
+                    // If we store it inside device then we create a reference cycle and leak
+                    // Device. Not great...
+                    let list = FreeCommandList {
+                        allocator: list.allocator,
+                        list: list.list,
+                        descriptor_heaps: list.descriptor_heaps,
+                        list_type: list.list_type,
+                    };
 
-                    for list in v.lists.into_iter() {
-                        debug_assert_eq!(list.list_type, self.queue_type);
-
-                        // Take the pool and buffer out of the CommandList object so they don't
-                        // get dropped. We destroy the Box<CommandList> because it also contains
-                        // a back reference to device.
-                        //
-                        // If we store it inside device then we create a reference cycle and leak
-                        // Device. Not great...
-                        let list = FreeCommandList {
-                            allocator: list.allocator,
-                            list: list.list,
-                            descriptor_heaps: list.descriptor_heaps,
-                            list_type: list.list_type,
-                        };
-
-                        // If we fill the list we just start destroying command lists rather than
-                        // growing the pool.
-                        if pool_target.push(list).is_err() {
-                            log::warn!("'command_list_pool' overflowing '{}'.", self.queue_type);
-                        }
+                    // If we fill the list we just start destroying command lists rather than
+                    // growing the pool.
+                    if pool_target.push(list).is_err() {
+                        log::warn!("'command_list_pool' overflowing '{}'.", self.queue_type);
                     }
                 }
             }
@@ -292,7 +299,7 @@ impl IQueue for Queue {
             // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
             // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
             // either.
-            let _lock = self.submit_lock.lock();
+            let mut in_flight = self.in_flight.lock();
 
             assert_eq!(desc.wait_fences.len(), desc.wait_values.len());
             assert_eq!(desc.signal_fences.len(), desc.signal_values.len());
@@ -363,7 +370,7 @@ impl IQueue for Queue {
                 .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
                 .map_err(|_| QueueSubmitError::Platform)?;
 
-            self.in_flight.push(QueueSubmission { index, lists });
+            Rhi::with(|| in_flight.push_back(QueueSubmission { index, lists }));
 
             Ok(())
         })
@@ -387,7 +394,7 @@ impl IQueue for Queue {
             // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
             // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
             // either.
-            let _lock = self.submit_lock.lock();
+            let _lock = self.in_flight.lock();
 
             let (flags, sync_interval) = match swap_state.config.present_mode {
                 PresentationMode::Immediate => (DXGI_PRESENT_ALLOW_TEARING, 0),

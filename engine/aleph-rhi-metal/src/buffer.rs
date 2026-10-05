@@ -33,6 +33,7 @@ use std::sync::Arc;
 use aleph_gpu_allocator::{AllocationDesc, GpuAllocation, MemoryLocation};
 use aleph_object_system::{ArcObject, Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
@@ -148,13 +149,13 @@ impl Buffer {
 
 impl Drop for Buffer {
     fn drop(&mut self) {
-        unsafe {
+        abort_on_unwind(|| unsafe {
             self._device
                 .allocator
                 .as_ref()
                 .unwrap_unchecked()
                 .free_allocation(self._device.as_ref(), self.allocation.take().unwrap());
-        }
+        })
     }
 }
 

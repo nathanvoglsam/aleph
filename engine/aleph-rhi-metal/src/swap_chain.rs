@@ -32,8 +32,8 @@ use std::sync::{Arc, Weak};
 
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
+use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
 use blink_alloc::{Blink, BlinkAlloc};
 use objc2::rc::{Retained, autoreleasepool};
 use objc2_core_foundation::CGSize;
@@ -64,7 +64,7 @@ impl IGetPlatformInterface for SwapChain {
 
 impl ISwapChain for SwapChain {
     fn upgrade(&self) -> Arc<dyn ISwapChain> {
-        self.this.upgrade().unwrap()
+        abort_on_unwind(|| self.this.upgrade().unwrap())
     }
 
     fn strong_count(&self) -> usize {
@@ -80,102 +80,108 @@ impl ISwapChain for SwapChain {
     }
 
     fn get_config(&self) -> SwapChainConfiguration {
-        self.inner.lock().config.clone()
+        abort_on_unwind(|| self.inner.lock().config.clone())
     }
 
     fn rebuild(
         &self,
         new_size: Option<Extent2D>,
     ) -> Result<SwapChainConfiguration, SwapChainRebuildError> {
-        autoreleasepool(|_| {
-            let new_size = if let Some(new_size) = new_size {
-                CGSize {
-                    width: new_size.width as f64,
-                    height: new_size.height as f64,
-                }
-            } else {
-                self.natural_drawable_size()
-            };
-
-            let out_config = {
-                let mut state = self.inner.lock();
-
-                let display_sync = match state.config.present_mode {
-                    PresentationMode::Immediate => false,
-                    PresentationMode::Mailbox => true,
-                    PresentationMode::Fifo => true,
+        abort_on_unwind(|| {
+            autoreleasepool(|_| {
+                let new_size = if let Some(new_size) = new_size {
+                    CGSize {
+                        width: new_size.width as f64,
+                        height: new_size.height as f64,
+                    }
+                } else {
+                    self.natural_drawable_size()
                 };
-                log::debug!(
-                    "Setting CAMetalLayer 'displaySyncEnabled' to {}",
-                    display_sync
-                );
-                self.objects.layer.setDisplaySyncEnabled(display_sync);
 
-                log::debug!(
-                    "Setting CAMetalLayer 'drawableSize' to ({}, {})",
-                    new_size.width,
-                    new_size.height
-                );
-                self.objects.layer.setDrawableSize(new_size);
+                let out_config = {
+                    let mut state = self.inner.lock();
 
-                state.config.width = new_size.width as u32;
-                state.config.height = new_size.height as u32;
+                    let display_sync = match state.config.present_mode {
+                        PresentationMode::Immediate => false,
+                        PresentationMode::Mailbox => true,
+                        PresentationMode::Fifo => true,
+                    };
+                    log::debug!(
+                        "Setting CAMetalLayer 'displaySyncEnabled' to {}",
+                        display_sync
+                    );
+                    self.objects.layer.setDisplaySyncEnabled(display_sync);
 
-                state.config.clone()
-            };
+                    log::debug!(
+                        "Setting CAMetalLayer 'drawableSize' to ({}, {})",
+                        new_size.width,
+                        new_size.height
+                    );
+                    self.objects.layer.setDrawableSize(new_size);
 
-            // TODO: how do we invalidate the texture objects?
+                    state.config.width = new_size.width as u32;
+                    state.config.height = new_size.height as u32;
 
-            Ok(out_config)
+                    state.config.clone()
+                };
+
+                // TODO: how do we invalidate the texture objects?
+
+                Ok(out_config)
+            })
         })
     }
 
     unsafe fn acquire_next_image(&self) -> Result<AcquiredImage, ImageAcquireError> {
-        autoreleasepool(|_| {
-            let inner = self.inner.lock();
+        abort_on_unwind(|| {
+            autoreleasepool(|_| {
+                let inner = self.inner.lock();
 
-            let drawable = self.objects.layer.nextDrawable().unwrap();
+                let drawable = self.objects.layer.nextDrawable().unwrap();
 
-            let texture = drawable.texture();
+                let texture = drawable.texture();
 
-            if self.device.context.debug {
-                texture.setLabel(Some(ns_string!("Swap Image")));
-            }
+                if self.device.context.debug {
+                    texture.setLabel(Some(ns_string!("Swap Image")));
+                }
 
-            let texture = Texture {
-                _device: self.device.clone(),
-                id: self.device.object_counter.next_texture(),
-                views: Default::default(),
-                objects: TextureObjects { texture },
-                allocation: None,
-                rtvs: Default::default(),
-                dsvs: Default::default(),
-                image_views: Mutex::new(Blink::new_in(BlinkAlloc::new_in(RhiSystem::default()))),
-                desc: OwnedTextureDesc::new(TextureDesc {
-                    width: inner.config.width,
-                    height: inner.config.height,
-                    depth: 1,
-                    format: inner.config.format,
-                    dimension: TextureDimension::Texture2D,
-                    clear_value: None,
-                    array_size: 1,
-                    mip_levels: 1,
-                    sample_count: 1,
-                    sample_quality: 0,
-                    usage: ResourceUsageFlags::RENDER_TARGET,
-                    name: Some("Metal Internal SwapChain Image"),
-                }),
-            };
-            let texture = Object::new_arc_opaque(texture);
-            let texture = unsafe { TextureHandle::new(texture) };
+                let texture = Texture {
+                    _device: self.device.clone(),
+                    id: self.device.object_counter.next_texture(),
+                    views: Default::default(),
+                    objects: TextureObjects { texture },
+                    allocation: None,
+                    rtvs: Default::default(),
+                    dsvs: Default::default(),
+                    image_views: Mutex::new(Blink::new_in(
+                        BlinkAlloc::new_in(RhiSystem::default()),
+                    )),
+                    desc: OwnedTextureDesc::new(TextureDesc {
+                        width: inner.config.width,
+                        height: inner.config.height,
+                        depth: 1,
+                        format: inner.config.format,
+                        dimension: TextureDimension::Texture2D,
+                        clear_value: None,
+                        array_size: 1,
+                        mip_levels: 1,
+                        sample_count: 1,
+                        sample_quality: 0,
+                        usage: ResourceUsageFlags::RENDER_TARGET,
+                        name: Some("Metal Internal SwapChain Image"),
+                    }),
+                };
+                let texture = Object::new_arc_opaque(texture);
+                let texture = unsafe { TextureHandle::new(texture) };
 
-            let swap_image = Arc::new(SwapImage {
-                _swap_chain: self.this.upgrade().unwrap(),
-                objects: SwapImageObjects { drawable },
-                texture,
-            });
+                let swap_image = Arc::new(SwapImage {
+                    _swap_chain: self.this.upgrade().unwrap(),
+                    objects: SwapImageObjects { drawable },
+                    texture,
+                });
 
-            Ok(AcquiredImage::Ok(swap_image))
+                Ok(AcquiredImage::Ok(swap_image))
+            })
         })
     }
 }

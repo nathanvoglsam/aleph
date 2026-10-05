@@ -31,6 +31,7 @@ use std::any::TypeId;
 use std::sync::Arc;
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use blink_alloc::Blink;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
@@ -57,27 +58,31 @@ impl IGetPlatformInterface for CommandList {
 
 impl ICommandList for CommandList {
     fn begin_general(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        if matches!(self.list_type, QueueType::General) {
-            self.begin()
-        } else {
-            Err(CommandListBeginError::InvalidEncoderType(
-                QueueType::General,
-            ))
-        }
+        abort_on_unwind(|| {
+            if matches!(self.list_type, QueueType::General) {
+                self.begin()
+            } else {
+                Err(CommandListBeginError::InvalidEncoderType(
+                    QueueType::General,
+                ))
+            }
+        })
     }
 
     fn begin_compute(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        if matches!(self.list_type, QueueType::Compute | QueueType::General) {
-            self.begin()
-        } else {
-            Err(CommandListBeginError::InvalidEncoderType(
-                QueueType::Compute,
-            ))
-        }
+        abort_on_unwind(|| {
+            if matches!(self.list_type, QueueType::Compute | QueueType::General) {
+                self.begin()
+            } else {
+                Err(CommandListBeginError::InvalidEncoderType(
+                    QueueType::Compute,
+                ))
+            }
+        })
     }
 
     fn begin_transfer(&mut self) -> Result<CommandEncoder<'_>, CommandListBeginError> {
-        self.begin()
+        abort_on_unwind(|| self.begin())
     }
 }
 

@@ -95,7 +95,7 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn upgrade(&self) -> Arc<dyn IDevice> {
-        self.this.upgrade().unwrap()
+        abort_on_unwind(|| self.this.upgrade().unwrap())
     }
 
     // ========================================================================================== //
@@ -128,20 +128,22 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
-        let _lock1 = self.general_queue.as_ref().map(|v| v.submit_lock());
-        let _lock2 = self.compute_queue.as_ref().map(|v| v.submit_lock());
-        let _lock3 = self.transfer_queue.as_ref().map(|v| v.submit_lock());
-        autoreleasepool(|_| {
-            if let Some(queue) = &self.general_queue {
-                queue.garbage_collect_internal()?;
-            }
-            if let Some(queue) = &self.compute_queue {
-                queue.garbage_collect_internal()?;
-            }
-            if let Some(queue) = &self.transfer_queue {
-                queue.garbage_collect_internal()?;
-            }
-            Ok(())
+        abort_on_unwind(|| {
+            let _lock1 = self.general_queue.as_ref().map(|v| v.in_flight.lock());
+            let _lock2 = self.compute_queue.as_ref().map(|v| v.in_flight.lock());
+            let _lock3 = self.transfer_queue.as_ref().map(|v| v.in_flight.lock());
+            autoreleasepool(|_| {
+                if let Some(queue) = &self.general_queue {
+                    queue.garbage_collect_internal()?;
+                }
+                if let Some(queue) = &self.compute_queue {
+                    queue.garbage_collect_internal()?;
+                }
+                if let Some(queue) = &self.transfer_queue {
+                    queue.garbage_collect_internal()?;
+                }
+                Ok(())
+            })
         })
     }
 
@@ -149,20 +151,22 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn wait_idle(&self) -> Result<(), QueueWaitError> {
-        let _lock1 = self.general_queue.as_ref().map(|v| v.submit_lock());
-        let _lock2 = self.compute_queue.as_ref().map(|v| v.submit_lock());
-        let _lock3 = self.transfer_queue.as_ref().map(|v| v.submit_lock());
-        autoreleasepool(|_| {
-            if let Some(queue) = &self.general_queue {
-                queue.wait_idle_internal()?;
-            }
-            if let Some(queue) = &self.compute_queue {
-                queue.wait_idle_internal()?;
-            }
-            if let Some(queue) = &self.transfer_queue {
-                queue.wait_idle_internal()?;
-            }
-            Ok(())
+        abort_on_unwind(|| {
+            let _lock1 = self.general_queue.as_ref().map(|v| v.in_flight.lock());
+            let _lock2 = self.compute_queue.as_ref().map(|v| v.in_flight.lock());
+            let _lock3 = self.transfer_queue.as_ref().map(|v| v.in_flight.lock());
+            autoreleasepool(|_| {
+                if let Some(queue) = &self.general_queue {
+                    queue.wait_idle_internal()?;
+                }
+                if let Some(queue) = &self.compute_queue {
+                    queue.wait_idle_internal()?;
+                }
+                if let Some(queue) = &self.transfer_queue {
+                    queue.wait_idle_internal()?;
+                }
+                Ok(())
+            })
         })
     }
 
@@ -173,7 +177,7 @@ impl IDevice for Device {
         &self,
         desc: &ParameterBlockDesc,
     ) -> Result<Arc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
-        ParameterBlockLayout::create(self, desc)
+        abort_on_unwind(|| ParameterBlockLayout::create(self, desc))
     }
 
     // ========================================================================================== //
@@ -183,7 +187,7 @@ impl IDevice for Device {
         &self,
         desc: &BindingSignatureDesc,
     ) -> Result<Arc<dyn IBindingSignature>, BindingSignatureCreateError> {
-        BindingSignature::create(self, desc)
+        abort_on_unwind(|| BindingSignature::create(self, desc))
     }
 
     // ========================================================================================== //
@@ -194,7 +198,7 @@ impl IDevice for Device {
         &self,
         desc: &GraphicsPipelineDesc,
     ) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
-        autoreleasepool(|_| GraphicsPipeline::create(self, desc))
+        abort_on_unwind(|| autoreleasepool(|_| GraphicsPipeline::create(self, desc)))
     }
 
     // ========================================================================================== //
@@ -205,7 +209,7 @@ impl IDevice for Device {
         &self,
         desc: &ComputePipelineDesc,
     ) -> Result<ComputePipelineHandle, PipelineCreateError> {
-        autoreleasepool(|_| ComputePipeline::create(self, desc))
+        abort_on_unwind(|| autoreleasepool(|_| ComputePipeline::create(self, desc)))
     }
 
     // ========================================================================================== //
@@ -215,7 +219,7 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        autoreleasepool(|_| DescriptorPool::create(self, desc))
+        abort_on_unwind(|| autoreleasepool(|_| DescriptorPool::create(self, desc)))
     }
 
     // ========================================================================================== //
@@ -225,9 +229,11 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorArenaDesc,
     ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
-        autoreleasepool(|_| match desc.arena_type {
-            DescriptorArenaType::Linear => DescriptorArenaLinear::create(self, desc),
-            DescriptorArenaType::Heap => DescriptorArenaHeap::create(self, desc),
+        abort_on_unwind(|| {
+            autoreleasepool(|_| match desc.arena_type {
+                DescriptorArenaType::Linear => DescriptorArenaLinear::create(self, desc),
+                DescriptorArenaType::Heap => DescriptorArenaHeap::create(self, desc),
+            })
         })
     }
 
@@ -235,21 +241,21 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError> {
-        autoreleasepool(|_| Buffer::create(self, desc))
+        abort_on_unwind(|| autoreleasepool(|_| Buffer::create(self, desc)))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError> {
-        autoreleasepool(|_| Texture::create(self, desc))
+        abort_on_unwind(|| autoreleasepool(|_| Texture::create(self, desc)))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_sampler(&self, desc: &SamplerDesc) -> Result<SamplerHandle, SamplerCreateError> {
-        autoreleasepool(|_| Sampler::create(self, desc))
+        abort_on_unwind(|| autoreleasepool(|_| Sampler::create(self, desc)))
     }
 
     // ========================================================================================== //
@@ -259,19 +265,21 @@ impl IDevice for Device {
         &self,
         desc: &CommandListDesc,
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
-        autoreleasepool(|_| CommandList::create(self, desc))
+        abort_on_unwind(|| autoreleasepool(|_| CommandList::create(self, desc)))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn get_queue(&self, queue_type: QueueType) -> Option<Arc<dyn IQueue>> {
-        let queue = match queue_type {
-            QueueType::General => self.general_queue.clone(),
-            QueueType::Compute => self.compute_queue.clone(),
-            QueueType::Transfer => self.transfer_queue.clone(),
-        };
-        Some(queue?)
+        abort_on_unwind(|| {
+            let queue = match queue_type {
+                QueueType::General => self.general_queue.clone(),
+                QueueType::Compute => self.compute_queue.clone(),
+                QueueType::Transfer => self.transfer_queue.clone(),
+            };
+            Some(queue?)
+        })
     }
 
     // ========================================================================================== //
@@ -284,47 +292,201 @@ impl IDevice for Device {
         base: u32,
         writes: &[ParameterWrite],
     ) {
-        let layout = unwrap::parameter_block_layout(layout);
-        let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
-        let cpu_handle = block.cpu_addr.unwrap();
+        abort_on_unwind(|| {
+            let layout = unwrap::parameter_block_layout(layout);
+            let block = unsafe { block.into_raw::<ParameterBlock>().as_mut() };
+            let cpu_handle = block.cpu_addr.unwrap();
 
-        let visitor =
-            ParameterBlockLayoutVisitor::new(layout.desc.get(), base as u64, writes).unwrap();
-        for write_group in visitor {
-            for (i, write) in write_group.writes.iter().enumerate() {
-                let i = i + write_group.index as usize;
-                match write {
-                    ParameterWrite::Sampler(v) => unsafe {
-                        let sampler = Sampler::get(v.sampler);
-                        let id = sampler.objects.sampler.gpuResourceID().to_raw();
-                        cpu_handle.add(i).write(id);
-                    },
-                    ParameterWrite::Texture(v) => unsafe {
-                        let id = v.image_view.into_raw_int();
-                        cpu_handle.add(i).write(id);
-                    },
-                    ParameterWrite::Buffer(v) => unsafe {
-                        let src = Buffer::get(v.buffer);
-                        let addr = src.gpu_addr.get() + v.offset;
-                        cpu_handle.add(i).write(addr);
-                    },
-                    ParameterWrite::TextureBuffer(_) => unimplemented!(),
+            let visitor =
+                ParameterBlockLayoutVisitor::new(layout.desc.get(), base as u64, writes).unwrap();
+            for write_group in visitor {
+                for (i, write) in write_group.writes.iter().enumerate() {
+                    let i = i + write_group.index as usize;
+                    match write {
+                        ParameterWrite::Sampler(v) => unsafe {
+                            let sampler = Sampler::get(v.sampler);
+                            let id = sampler.objects.sampler.gpuResourceID().to_raw();
+                            cpu_handle.add(i).write(id);
+                        },
+                        ParameterWrite::Texture(v) => unsafe {
+                            let id = v.image_view.into_raw_int();
+                            cpu_handle.add(i).write(id);
+                        },
+                        ParameterWrite::Buffer(v) => unsafe {
+                            let src = Buffer::get(v.buffer);
+                            let addr = src.gpu_addr.get() + v.offset;
+                            cpu_handle.add(i).write(addr);
+                        },
+                        ParameterWrite::TextureBuffer(_) => unimplemented!(),
+                    }
                 }
             }
-        }
+        })
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_fence(&self, value: u64) -> Result<FenceHandle, FenceCreateError> {
-        autoreleasepool(|_| Fence::create(self, value))
+        abort_on_unwind(|| autoreleasepool(|_| Fence::create(self, value)))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn wait_fences(
+        &self,
+        fences: &[&FenceHandle],
+        values: &[u64],
+        wait_all: bool,
+        timeout: u32,
+    ) -> Result<FenceWaitResult, FenceWaitError> {
+        abort_on_unwind(|| self.wait_fences_inner(fences, values, wait_all, timeout))
+    }
+
+    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> Result<u64, FencePollError> {
+        abort_on_unwind(|| {
+            let fence = Fence::get(fence);
+            // TODO: on device lost this should always return u64::MAX
+            Ok(fence.objects.event.signaledValue())
+        })
+    }
+
+    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) -> Result<(), FenceSignalError> {
+        abort_on_unwind(|| {
+            let fence = Fence::get(fence);
+            fence.objects.event.setSignaledValue(value);
+            Ok(())
+        })
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_backend_api(&self) -> BackendAPI {
+        BackendAPI::Metal
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_buffer_id(&self, buffer: &BufferHandle) -> std::num::NonZeroU64 {
+        abort_on_unwind(|| Buffer::get(buffer).get_buffer_id())
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
+        abort_on_unwind(|| Buffer::get(buffer).desc())
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn map_buffer(&self, buffer: &BufferHandle) -> Result<std::ptr::NonNull<u8>, ResourceMapError> {
+        abort_on_unwind(|| Buffer::get(buffer).map_buffer())
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError> {
+        abort_on_unwind(|| Buffer::get(buffer).unmap_buffer())
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn flush_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
+        abort_on_unwind(|| Buffer::get(buffer).flush_buffer_range(offset, len))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn invalidate_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
+        abort_on_unwind(|| Buffer::get(buffer).invalidate_buffer_range(offset, len))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_id(&self, texture: &TextureHandle) -> std::num::NonZeroU64 {
+        abort_on_unwind(|| Texture::get(texture).get_id())
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_desc<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
+        abort_on_unwind(|| Texture::get(texture).desc())
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_view(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        abort_on_unwind(|| Texture::get(texture).get_view(desc))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_rtv(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        abort_on_unwind(|| Texture::get(texture).get_rtv(desc))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_dsv(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        abort_on_unwind(|| Texture::get(texture).get_dsv(desc))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_sampler_id(&self, sampler: &SamplerHandle) -> std::num::NonZeroU64 {
+        abort_on_unwind(|| Sampler::get(sampler).id)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
+        abort_on_unwind(|| Sampler::get(sampler).desc())
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_graphics_pipeline_id(&self, pipeline: &GraphicsPipelineHandle) -> std::num::NonZeroU64 {
+        abort_on_unwind(|| GraphicsPipeline::get(pipeline).id)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_compute_pipeline_id(&self, pipeline: &ComputePipelineHandle) -> std::num::NonZeroU64 {
+        abort_on_unwind(|| ComputePipeline::get(pipeline).id)
+    }
+}
+
+impl Device {
+    fn wait_fences_inner(
         &self,
         fences: &[&FenceHandle],
         values: &[u64],
@@ -421,8 +583,9 @@ impl IDevice for Device {
                     let notify_block = RcBlock::new(
                         move |_event: NonNull<ProtocolObject<dyn MTLSharedEvent>>, _value: u64| {
                             // This code relies on 'notifyListener' calling the closure even if the
-                            // fence is _already_ signaled when attached to the MTLSharedEvent. If it
-                            // doesn't then we may deadlock waiting on a signal that will never come.
+                            // fence is _already_ signaled when attached to the MTLSharedEvent. If
+                            // it doesn't then we may deadlock waiting on a signal that will never
+                            // come.
                             let (lock, cvar) = notify_pair.as_ref();
                             let mut waiting = lock.lock();
                             *waiting -= 1;
@@ -436,8 +599,8 @@ impl IDevice for Device {
                     for (fence, value) in iter {
                         unsafe {
                             // TODO: we need to
-                            // 1) Test that this _drops_ the block once the notification has been called
-                            //    so that we don't leak the Arc
+                            // 1) Test that this _drops_ the block once the notification has been
+                            //    called so that we don't leak the Arc
                             // 2) Test that this calls the block even if the event is already
                             //    signalled.
                             let block = RcBlock::into_raw(notify_block.copy());
@@ -467,142 +630,6 @@ impl IDevice for Device {
                 })
             }
         }
-    }
-
-    fn get_fence_signaled_value(&self, fence: &FenceHandle) -> Result<u64, FencePollError> {
-        let fence = Fence::get(fence);
-        // TODO: on device lost this should always return u64::MAX
-        Ok(fence.objects.event.signaledValue())
-    }
-
-    unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) -> Result<(), FenceSignalError> {
-        let fence = Fence::get(fence);
-        fence.objects.event.setSignaledValue(value);
-        Ok(())
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_backend_api(&self) -> BackendAPI {
-        BackendAPI::Metal
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_buffer_id(&self, buffer: &BufferHandle) -> std::num::NonZeroU64 {
-        Buffer::get(buffer).get_buffer_id()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
-        Buffer::get(buffer).desc()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn map_buffer(&self, buffer: &BufferHandle) -> Result<std::ptr::NonNull<u8>, ResourceMapError> {
-        Buffer::get(buffer).map_buffer()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError> {
-        Buffer::get(buffer).unmap_buffer()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn flush_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
-        Buffer::get(buffer).flush_buffer_range(offset, len)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn invalidate_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
-        Buffer::get(buffer).invalidate_buffer_range(offset, len)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_texture_id(&self, texture: &TextureHandle) -> std::num::NonZeroU64 {
-        Texture::get(texture).get_id()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_texture_desc<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
-        Texture::get(texture).desc()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_texture_view(
-        &self,
-        texture: &TextureHandle,
-        desc: &ImageViewDesc,
-    ) -> Result<ImageView, ()> {
-        Texture::get(texture).get_view(desc)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_texture_rtv(
-        &self,
-        texture: &TextureHandle,
-        desc: &ImageViewDesc,
-    ) -> Result<ImageView, ()> {
-        Texture::get(texture).get_rtv(desc)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_texture_dsv(
-        &self,
-        texture: &TextureHandle,
-        desc: &ImageViewDesc,
-    ) -> Result<ImageView, ()> {
-        Texture::get(texture).get_dsv(desc)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_sampler_id(&self, sampler: &SamplerHandle) -> std::num::NonZeroU64 {
-        Sampler::get(sampler).id
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
-        Sampler::get(sampler).desc()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_graphics_pipeline_id(&self, pipeline: &GraphicsPipelineHandle) -> std::num::NonZeroU64 {
-        GraphicsPipeline::get(pipeline).id
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_compute_pipeline_id(&self, pipeline: &ComputePipelineHandle) -> std::num::NonZeroU64 {
-        ComputePipeline::get(pipeline).id
     }
 }
 

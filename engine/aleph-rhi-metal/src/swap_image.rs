@@ -31,6 +31,7 @@ use std::any::TypeId;
 use std::sync::Arc;
 
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::abort_on_unwind;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_quartz_core::CAMetalDrawable;
@@ -51,11 +52,11 @@ impl IGetPlatformInterface for SwapImage {
 
 impl ISwapImage for SwapImage {
     fn texture(&self) -> &TextureHandle {
-        &self.texture
+        abort_on_unwind(|| &self.texture)
     }
 
     fn texture_desc(&self) -> &TextureDesc<'_> {
-        self._swap_chain.device.get_texture_desc(self.texture())
+        abort_on_unwind(|| self._swap_chain.device.get_texture_desc(self.texture()))
     }
 }
 
