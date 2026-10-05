@@ -405,9 +405,7 @@ async fn copy_mesh_data_to_gpu(
         };
         let handle = match v.0 {
             Ok(v) => Ok(v),
-            Err(_) => {
-                Err(io::Error::from(io::ErrorKind::Other))
-            }
+            Err(_) => Err(io::Error::from(io::ErrorKind::Other)),
         };
         prim_buffers[v.1 as usize].0 = handle?;
     }
@@ -421,9 +419,7 @@ async fn copy_mesh_data_to_gpu(
         };
         let handle = match v.0 {
             Ok(v) => Ok(v),
-            Err(_) => {
-                Err(io::Error::from(io::ErrorKind::Other))
-            }
+            Err(_) => Err(io::Error::from(io::ErrorKind::Other)),
         };
         prim_buffers[v.1 as usize].1 = handle?;
     }
