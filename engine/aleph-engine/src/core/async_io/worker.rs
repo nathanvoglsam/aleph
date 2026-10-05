@@ -243,36 +243,36 @@ impl AsyncLoaderWorker {
                 match self.loader.flush_submitted_uploads() {
                     Ok(_) => {}
                     Err(e @ FlushError::DeviceLost) => {
-                        log::error!("Error: {e:?}");
-                        continue 'main;
+                        log::error!("'pre_sleep_flush' flush error: {e:?}");
+                        // continue 'main;
                     }
                     Err(e @ FlushError::RendererDisconnected) => {
-                        log::error!("Error: {e:?}");
-                        continue 'main;
+                        log::error!("'pre_sleep_flush' flush error: {e:?}");
+                        // continue 'main;
                     }
                     Err(e @ FlushError::CommandRecordingFailure) => {
-                        log::error!("Error: {e:?}");
-                        continue 'main;
+                        log::error!("'pre_sleep_flush' flush error: {e:?}");
+                        // continue 'main;
                     }
                     Err(e @ FlushError::WaitFailure) => {
-                        log::error!("Error: {e:?}");
-                        abort_unwind(|| panic!("Error: {e:?}"))
+                        log::error!("'pre_sleep_flush' flush error: {e:?}");
+                        abort_unwind(|| panic!("'pre_sleep_flush' flush error: {e:?}"))
                     }
                 };
 
                 match self.loader.wait_all_submissions() {
                     Ok(_) => {}
                     Err(e @ RetireError::DeviceLost) => {
-                        log::error!("Error: {e:?}");
-                        continue 'main;
+                        log::error!("'pre_sleep_flush' wait error: {e:?}");
+                        // continue 'main;
                     }
                     Err(e @ RetireError::RendererDisconnected) => {
-                        log::error!("Error: {e:?}");
-                        continue 'main;
+                        log::error!("'pre_sleep_flush' wait error: {e:?}");
+                        // continue 'main;
                     }
                     Err(e @ RetireError::WaitFailure) => {
-                        log::error!("Error: {e:?}");
-                        abort_unwind(|| panic!("Error: {e:?}"))
+                        log::error!("'pre_sleep_flush' error: {e:?}");
+                        abort_unwind(|| panic!("'pre_sleep_flush' wait error: {e:?}"))
                     }
                 }
             }

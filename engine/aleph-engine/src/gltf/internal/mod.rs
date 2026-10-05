@@ -399,15 +399,13 @@ async fn copy_mesh_data_to_gpu(
     for _ in 0..i_receiver.capacity() {
         let v = match i_receiver.recv().await {
             Ok(v) => v,
-            Err(e) => {
-                log::error!("The load request was lost '{e:?}'.");
-                return Err(io::Error::from(io::ErrorKind::Other));
+            Err(_) => {
+                return Err(io::Error::from(io::ErrorKind::ConnectionAborted));
             }
         };
         let handle = match v.0 {
             Ok(v) => Ok(v),
-            Err(e) => {
-                log::error!("Failed to create GPU resource with error '{e:?}'.");
+            Err(_) => {
                 Err(io::Error::from(io::ErrorKind::Other))
             }
         };
@@ -417,15 +415,13 @@ async fn copy_mesh_data_to_gpu(
     for _ in 0..v_receiver.capacity() {
         let v = match v_receiver.recv().await {
             Ok(v) => v,
-            Err(e) => {
-                log::error!("The load request was lost '{e:?}'.");
-                return Err(io::Error::from(io::ErrorKind::Other));
+            Err(_) => {
+                return Err(io::Error::from(io::ErrorKind::ConnectionAborted));
             }
         };
         let handle = match v.0 {
             Ok(v) => Ok(v),
-            Err(e) => {
-                log::error!("Failed to create GPU resource with error '{e:?}'.");
+            Err(_) => {
                 Err(io::Error::from(io::ErrorKind::Other))
             }
         };
