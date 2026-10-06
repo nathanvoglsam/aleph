@@ -71,7 +71,7 @@ impl ISurface for Surface {
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
     ) -> Result<Arc<dyn ISwapChain>, SwapChainCreateError> {
-        abort_on_unwind(|| {
+        abort_on_unwind(|| -> Result<Arc<dyn ISwapChain>, SwapChainCreateError> {
             let swap_chain = autoreleasepool(|_| {
                 let device = unwrap::device(device);
 

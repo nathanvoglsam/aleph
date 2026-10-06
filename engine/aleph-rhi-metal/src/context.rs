@@ -71,7 +71,7 @@ impl IContext for Context {
     }
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Arc<dyn IAdapter>> {
-        abort_on_unwind(|| {
+        abort_on_unwind(|| -> Option<Arc<dyn IAdapter>> {
             let adapter = autoreleasepool(|_| {
                 // Metal doesn't have software adapters so the solution here is obvious. We bail.
                 if options.deny_hardware_adapters {
@@ -164,7 +164,7 @@ impl IContext for Context {
         &self,
         layer: NonNull<c_void>,
     ) -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
-        abort_on_unwind(|| {
+        abort_on_unwind(|| -> Result<Arc<dyn ISurface>, SurfaceCreateError> {
             let surface = autoreleasepool(|_| {
                 let layer = unsafe { Retained::retain(layer.cast::<CAMetalLayer>().as_ptr()) };
                 let layer = layer.unwrap();

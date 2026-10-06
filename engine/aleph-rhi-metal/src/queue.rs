@@ -33,13 +33,14 @@ use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
 
+use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{Rhi, abort_on_unwind};
 use objc2::rc::{Retained, autoreleasepool};
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::ns_string;
 use objc2_metal::*;
-use parking_lot::{Mutex, MutexGuard};
+use parking_lot::Mutex;
 
 use crate::command_list::{CommandList, ListState};
 use crate::device::{Device, FreeCommandList};
@@ -135,11 +136,7 @@ impl IQueue for Queue {
     }
 
     fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
-        abort_on_unwind(|| {
-            // Lock access to the queue to ensure nobody submits while we're running the GC cycle.
-            let _lock = self.in_flight.lock();
-            autoreleasepool(|_| self.garbage_collect_internal())
-        })
+        abort_on_unwind(|| autoreleasepool(|_| self.garbage_collect_internal()))
     }
 
     fn wait_idle(&self) -> Result<(), QueueWaitError> {

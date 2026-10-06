@@ -129,9 +129,6 @@ impl IDevice for Device {
 
     fn garbage_collect(&self) -> Result<(), QueueGarbageCollectError> {
         abort_on_unwind(|| {
-            let _lock1 = self.general_queue.as_ref().map(|v| v.in_flight.lock());
-            let _lock2 = self.compute_queue.as_ref().map(|v| v.in_flight.lock());
-            let _lock3 = self.transfer_queue.as_ref().map(|v| v.in_flight.lock());
             autoreleasepool(|_| {
                 if let Some(queue) = &self.general_queue {
                     queue.garbage_collect_internal()?;
@@ -272,7 +269,7 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn get_queue(&self, queue_type: QueueType) -> Option<Arc<dyn IQueue>> {
-        abort_on_unwind(|| {
+        abort_on_unwind(|| -> Option<Arc<dyn IQueue>> {
             let queue = match queue_type {
                 QueueType::General => self.general_queue.clone(),
                 QueueType::Compute => self.compute_queue.clone(),
@@ -344,6 +341,9 @@ impl IDevice for Device {
         abort_on_unwind(|| self.wait_fences_inner(fences, values, wait_all, timeout))
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn get_fence_signaled_value(&self, fence: &FenceHandle) -> Result<u64, FencePollError> {
         abort_on_unwind(|| {
             let fence = Fence::get(fence);
@@ -351,6 +351,9 @@ impl IDevice for Device {
             Ok(fence.objects.event.signaledValue())
         })
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     unsafe fn signal_fence(&self, fence: &FenceHandle, value: u64) -> Result<(), FenceSignalError> {
         abort_on_unwind(|| {
