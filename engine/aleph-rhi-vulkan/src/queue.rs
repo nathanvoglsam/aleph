@@ -141,6 +141,10 @@ impl IQueue for Queue {
         self._this.weak_count()
     }
 
+    fn get_queue_type(&self) -> QueueType {
+        abort_on_unwind(|| self.queue_type)
+    }
+
     fn queue_properties(&self) -> QueueProperties {
         abort_on_unwind(|| {
             let v = self.info.min_image_transfer_granularity;

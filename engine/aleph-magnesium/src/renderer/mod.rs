@@ -164,7 +164,9 @@ impl Renderer {
         config: AsyncResourceLoaderConfig,
     ) -> Option<AsyncResourceLoader<C>> {
         let device = self.device.clone();
-        let queue = device.get_queue(rhi::QueueType::Transfer)?;
+        let queue = device
+            .get_queue(rhi::QueueType::Transfer)
+            .or_else(|| device.get_queue(rhi::QueueType::Compute))?;
         let fence = device.create_fence(0).ok()?;
 
         // Construct the channel that connects the loader to the renderer.
@@ -195,6 +197,7 @@ impl Renderer {
         // uploaded resources.
         let generic_dispatcher = GenericLoaderMessageDispatcher {
             device: device.clone(),
+            queue_type: queue.get_queue_type(),
             renderer_receiver,
         };
         let dispatcher = BBox::new_in(generic_dispatcher, system());

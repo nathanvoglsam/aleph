@@ -93,6 +93,12 @@ pub struct GenericLoaderMessageDispatcher<C: Send + 'static> {
     /// The GPU we're rendering with.
     pub device: Arc<dyn rhi::IDevice>,
 
+    /// What type of queue the remote loader is using to record upload commands.
+    ///
+    /// This dictates the 'before_queue' type we need to issue for queue ownership
+    /// transitions.
+    pub queue_type: rhi::QueueType,
+
     /// Receives messages from a resource loader.
     pub renderer_receiver: LoaderReceiver<C>,
 }
@@ -122,7 +128,7 @@ impl<C: Send + 'static> LoaderMessageDispatcher for GenericLoaderMessageDispatch
                             sync: Default::default(),
                             access: Default::default(),
                             queue_transition: Some(rhi::QueueTransition {
-                                before_queue: rhi::QueueType::Transfer,
+                                before_queue: self.queue_type,
                                 after_queue: rhi::QueueType::General,
                             }),
                         },
@@ -162,7 +168,7 @@ impl<C: Send + 'static> LoaderMessageDispatcher for GenericLoaderMessageDispatch
                             access: Default::default(),
                             layout: rhi::ImageLayout::ShaderReadOnly,
                             queue_transition: Some(rhi::QueueTransition {
-                                before_queue: rhi::QueueType::Transfer,
+                                before_queue: self.queue_type,
                                 after_queue: rhi::QueueType::General,
                             }),
                         },

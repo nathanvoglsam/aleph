@@ -58,6 +58,10 @@ impl IQueue for ValidationQueue {
         self._this.weak_count()
     }
 
+    fn get_queue_type(&self) -> QueueType {
+        abort_on_unwind(|| self.inner.get_queue_type())
+    }
+
     fn queue_properties(&self) -> QueueProperties {
         abort_on_unwind(|| self.inner.queue_properties())
     }

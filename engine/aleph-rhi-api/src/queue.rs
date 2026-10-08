@@ -37,6 +37,12 @@ use crate::*;
 pub trait IQueue: IGetPlatformInterface + Send + Sync {
     arc_trait_utils_decl!(IQueue);
 
+    /// Returns the [`QueueType`] for this queue.
+    ///
+    /// The type of the queue dictates the command list types that can be submitted, and what kind
+    /// of commands are allowed to be encoded in those lists.
+    fn get_queue_type(&self) -> QueueType;
+
     /// Returns the set of per-queue properties associated with this queue.
     fn queue_properties(&self) -> QueueProperties;
 

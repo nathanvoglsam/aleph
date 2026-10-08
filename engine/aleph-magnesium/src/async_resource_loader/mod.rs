@@ -640,10 +640,11 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         let request_states = self.request_states.borrow();
         let mut queue = self.queue_manager.queue.borrow_mut();
 
+        let queue_type = self.queue.get_queue_type();
         let mut list = self
             .device
             .create_command_list(&rhi::CommandListDesc {
-                queue_type: rhi::QueueType::Transfer,
+                queue_type,
                 name: None,
             })
             .inspect_err(|err| log::error!("IDevice 'create_command_list': '{}'", err))
@@ -699,7 +700,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
                                 before_access: rhi::BarrierAccess::COPY_WRITE,
                                 after_access: Default::default(), // Ignored for queue transitions
                                 queue_transition: Some(rhi::QueueTransition {
-                                    before_queue: rhi::QueueType::Transfer,
+                                    before_queue: queue_type,
                                     after_queue: rhi::QueueType::General,
                                 }),
                             });
@@ -792,7 +793,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
                                 before_layout: rhi::ImageLayout::CopyDst,
                                 after_layout: rhi::ImageLayout::ShaderReadOnly,
                                 queue_transition: Some(rhi::QueueTransition {
-                                    before_queue: rhi::QueueType::Transfer,
+                                    before_queue: queue_type,
                                     after_queue: rhi::QueueType::General,
                                 }),
                             });

@@ -129,6 +129,10 @@ impl IQueue for Queue {
         self._this.weak_count()
     }
 
+    fn get_queue_type(&self) -> QueueType {
+        abort_on_unwind(|| self.queue_type)
+    }
+
     fn queue_properties(&self) -> QueueProperties {
         QueueProperties {
             min_image_transfer_granularity: Extent3D::default(),
