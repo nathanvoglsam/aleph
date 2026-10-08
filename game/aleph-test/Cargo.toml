@@ -50,7 +50,7 @@ aleph-alloc = { workspace = true, features = [] }
 aleph-engine = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-egui = { workspace = true }
-aleph-profile = { workspace = true, features = ["profile-with-tracy"] }
+aleph-profile = { workspace = true, features = [] }
 
 serde = { workspace = true }
 serde_json = { workspace = true }
