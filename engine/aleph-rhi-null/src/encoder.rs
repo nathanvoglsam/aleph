@@ -104,7 +104,6 @@ impl ICommandEncoderAbi for NullEncoder {
         _base: u32,
         _writes: &[ParameterWrite],
     ) {
-        todo!()
     }
 
     unsafe fn __dispatch(&mut self, _group_count_x: u32, _group_count_y: u32, _group_count_z: u32) {

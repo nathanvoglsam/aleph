@@ -197,7 +197,6 @@ impl<A: Allocator> Mallocator<A> {
     }
 
     const fn align_for(size: usize) -> usize {
-        // TODO: is this good enough?
         let align = size.next_power_of_two();
         if size.next_power_of_two() > 16 {
             16

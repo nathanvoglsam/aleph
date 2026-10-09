@@ -33,6 +33,7 @@ use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 
 use crate::internal::MgSystem;
+use crate::internal::utils::abort_on_unwind;
 
 /// Manager object that handles extending rhi resource lifetimes until they are no longer in use on
 /// the GPU.
@@ -94,8 +95,7 @@ impl DeferredDeletionManager {
 
                 // Panic for other errors, we're hosed.
                 Err(_) => {
-                    // TODO: surface an error?
-                    panic!("Unrecoverable 'get_fence_signaled_value' error");
+                    abort_on_unwind(|| panic!("Unrecoverable 'get_fence_signaled_value' error"))
                 }
             };
             if logical_value >= bundle.value {

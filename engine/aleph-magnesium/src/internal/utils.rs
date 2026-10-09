@@ -43,3 +43,10 @@ pub fn get_view_matrix(this: &RenderTransform) -> Mat4 {
     let orientation = this.rotation.reversed().into_matrix().into_homogeneous();
     orientation * translation
 }
+
+/// polyfill for nightly only api. exploits the implicit panic -> abort promotion injected into
+/// extern "C" functions to make sure that if the called closure tries to unwind panics are promoted
+/// to aborts.
+pub extern "C" fn abort_on_unwind<T, F: FnOnce() -> T>(f: F) -> T {
+    f()
+}
