@@ -62,6 +62,22 @@ pub trait IContext: IGetPlatformInterface + Send + Sync {
     fn get_backend_api(&self) -> BackendAPI;
 }
 
+/// Common set of options that should be exposed by context loaders for configuring the context that
+/// is created.
+#[derive(Clone, Default, Debug)]
+pub struct ContextOptions {
+    /// Requests the platform API to enable profiling hooks and timing collection systems to
+    /// integrate with profilers.
+    pub profiling: bool,
+
+    /// Requests the platform API to load any debugging utilities available on the host system. This
+    /// is required for debug regions and markers to appear in debuggers.
+    pub debug: bool,
+
+    /// Requests the platform API to load any validation and error checking layers.
+    pub validation: bool,
+}
+
 /// Enumeration of all available backends.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum BackendAPI {

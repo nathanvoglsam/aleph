@@ -32,7 +32,7 @@ use std::sync::Arc;
 
 use aleph_rhi_api::*;
 use aleph_rhi_loader::{
-    BackendConfigs, ContextOptions, D3D12Config, MetalConfig, RhiLoader, VulkanConfig,
+    BackendConfigs, D3D12Config, LoaderOptions, MetalConfig, RhiLoader, VulkanConfig,
 };
 use api::platform::AWindow;
 use api::plugin::{
@@ -85,10 +85,13 @@ impl IPlugin for CoreRhi {
         // Construct the context from the RHI loader with the final set of settings
         let context = self
             .rhi_loader
-            .make_context(&ContextOptions {
+            .make_context(&LoaderOptions {
                 backend: config.api.into(),
-                validation: config.validation,
-                debug: config.debug,
+                options: ContextOptions {
+                    profiling: config.profiling,
+                    debug: config.debug,
+                    validation: config.validation,
+                },
                 config: BackendConfigs {
                     vulkan: config.vulkan.map(|v| v.into()),
                     d3d12: config.d3d12.map(|v| v.into()),
@@ -171,8 +174,9 @@ struct Config {
     #[serde(default)]
     pub metal: Option<MetalConfig>,
 
-    pub validation: bool,
+    pub profiling: bool,
     pub debug: bool,
+    pub validation: bool,
 }
 
 impl Config {
@@ -182,8 +186,9 @@ impl Config {
         // self.vulkan.as_ref().inspect(|v| {});
         // self.d3d12.as_ref().inspect(|v| {});
 
-        log::info!("rhi.validation = {}", self.validation);
+        log::info!("rhi.profiling = {}", self.profiling);
         log::info!("rhi.debug = {}", self.debug);
+        log::info!("rhi.validation = {}", self.validation);
     }
 }
 

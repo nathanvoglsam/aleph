@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::ffi::CStr;
 use std::iter;
 use std::mem::ManuallyDrop;
@@ -5,7 +6,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use aleph_alloc::instrumentation::IAllocationCategory;
-use aleph_rhi_api::{ContextCreateError, IContext};
+use aleph_rhi_api::{ContextCreateError, ContextOptions, IContext};
 use aleph_rhi_impl_utils::{Rhi, abort_on_unwind};
 use ash::vk;
 
@@ -39,8 +40,7 @@ impl VulkanLoader {
 
     pub fn make_context(
         &self,
-        validation: bool,
-        debug: bool,
+        options: &ContextOptions,
         config: &VulkanConfig,
     ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         match self
@@ -58,35 +58,35 @@ impl VulkanLoader {
                     }
                 };
 
-                let (instance, extensions) =
-                    Rhi::with(|| Self::create_instance(&entry, debug, validation))?;
+                let (instance, extensions) = Rhi::with(|| Self::create_instance(&entry, options))?;
 
-                let messenger = match (extensions.debug_loader.as_ref(), validation) {
-                    (Some(loader), true) => match install_debug_messenger(loader) {
-                        Ok(v) => Some(v),
-                        Err(e) => {
-                            log::warn!(
-                                "Context validation requested but couldn't create debug messenger"
-                            );
-                            log::warn!("Reason: {:?}", e);
-                            log::warn!("No validation messages will be logged");
-                            None
-                        }
-                    },
-                    (None, true) => {
+                if extensions.debug_loader.is_none() {
+                    if options.validation {
                         log::warn!(
-                            "Context validation requested but couldn't create debug messenger"
+                            "ContextOptions::validation = true, but failed to load VK_EXT_debug_utils"
                         );
-                        log::warn!("Reason: Failed to load VK_EXT_debug_utils");
-                        log::warn!("No validation messages will be logged");
-                        None
                     }
-                    (_, false) => None,
+                    if options.debug {
+                        log::warn!(
+                            "ContextOptions::debug = true, but failed to load VK_EXT_debug_utils"
+                        );
+                    }
+                }
+
+                let messenger = if let Some(loader) = extensions.debug_loader.as_ref() {
+                    install_debug_messenger(loader)
+                        .inspect_err(|e| {
+                            log::warn!("Failed to install debug messenger: {e:?}",);
+                        })
+                        .ok()
+                } else {
+                    None
                 };
 
                 let context: Arc<dyn IContext> = Rhi::with(|| {
                     Arc::new_cyclic(move |v| Context {
                         _this: v.clone(),
+                        _options: options.clone(),
                         _config: config.clone(),
                         entry_loader: ManuallyDrop::new(entry),
                         instance: ManuallyDrop::new(instance),
@@ -105,16 +105,11 @@ impl VulkanLoader {
 impl VulkanLoader {
     fn create_instance(
         entry: &ash::Entry,
-        debug: bool,
-        validation: bool,
+        options: &ContextOptions,
     ) -> Result<(ash::Instance, Extensions), ContextCreateError> {
-        // If validation is requested we must force debug on as we require debug extensions to log
-        // the validation messages
-        let debug = if validation { true } else { debug };
-
         // We need to configure MoltenVK before we do much of anything with Vulkan so we can
         // properly observe all the configuration stuff we change.
-        let result = Self::configure_mvk(debug);
+        let result = Self::configure_mvk(options);
         if result.is_none() && cfg!(any(target_os = "macos", target_os = "ios")) {
             log::warn!("Failed to configure MoltenVK on macOS");
         }
@@ -136,7 +131,7 @@ impl VulkanLoader {
         }
 
         // Select the set of layers we want to load
-        let wanted_layers = get_wanted_layers(validation);
+        let wanted_layers = get_wanted_layers(options.validation);
         let supported_layers = strip_unsupported_layers(entry, wanted_layers.clone());
         check_all_layers_supported(&wanted_layers, &supported_layers)?;
         let layers: Vec<_> = supported_layers
@@ -149,25 +144,35 @@ impl VulkanLoader {
         let ext_sets = get_supported_extension_sets(entry, &supported_layers);
 
         // Get the set of extensions we want to try and load
-        let required_extensions = get_required_extensions(debug);
-        let wsi_extensions = get_wsi_extensions();
-
-        {
-            let supported = strip_unsupported_extensions(&ext_sets, required_extensions.clone());
-            check_all_extensions_supported(&required_extensions, &supported)?;
-        }
-
-        let wsi_supported = strip_unsupported_extensions(&ext_sets, wsi_extensions);
-        if wsi_supported.is_empty() {
-            // If no WSI extensions are available we're in a sad place
-            log::error!("The Vulkan instance does not support any WSI extensions we know of");
-            return Err(ContextCreateError::MissingRequiredFeatures);
-        }
-
-        let required_iter = required_extensions.iter().copied();
-        let wsi_iter = wsi_supported.iter().copied();
-        let loaded_extensions: Vec<_> = required_iter.chain(wsi_iter).collect();
-        let loaded_extensions_abi: Vec<_> = loaded_extensions
+        let required_extensions = {
+            let extensions = get_required_extensions(options);
+            let supported = strip_unsupported_extensions(&ext_sets, extensions.clone());
+            check_all_extensions_supported(&extensions, &supported)?;
+            extensions
+        };
+        let optional_extensions = {
+            let extensions = get_optional_extensions(options);
+            strip_unsupported_extensions(&ext_sets, extensions)
+        };
+        let wsi_extensions = {
+            let extensions = get_wsi_extensions();
+            let stripped = strip_unsupported_extensions(&ext_sets, extensions);
+            if stripped.is_empty() {
+                // If no WSI extensions are available we're in a sad place
+                log::error!("The Vulkan instance does not support any WSI extensions we know of");
+                return Err(ContextCreateError::MissingRequiredFeatures);
+            }
+            stripped
+        };
+        let extensions_to_load = {
+            let required_iter = required_extensions.iter().copied();
+            let wsi_iter = optional_extensions.iter().copied();
+            let optional_iter = wsi_extensions.iter().copied();
+            let deduplicated_extensions =
+                BTreeSet::from_iter(required_iter.chain(wsi_iter).chain(optional_iter));
+            Vec::from_iter(deduplicated_extensions.into_iter())
+        };
+        let extensions_to_load_abi: Vec<_> = extensions_to_load
             .iter()
             .copied()
             .map(CStr::as_ptr)
@@ -182,14 +187,14 @@ impl VulkanLoader {
         let app_info = app_and_engine_info();
         let create_info = vk::InstanceCreateInfo::default()
             .application_info(&app_info)
-            .enabled_extension_names(&loaded_extensions_abi)
+            .enabled_extension_names(&extensions_to_load_abi)
             .enabled_layer_names(&layers)
             .flags(flags);
 
         log::info!("Creating Vulkan instance");
         let instance_loader = unsafe {
-            let configurable_validation =
-                validation && get_supported_in_set(&ext_sets, ash::ext::layer_settings::NAME);
+            let configurable_validation = options.validation
+                && get_supported_in_set(&ext_sets, ash::ext::layer_settings::NAME);
             if !configurable_validation {
                 log::warn!(
                     "VK_EXT_layer_settings is not available! Unable to config validation layers."
@@ -218,7 +223,7 @@ impl VulkanLoader {
         };
 
         let extensions =
-            Self::load_instance_extensions(entry, &instance_loader, &loaded_extensions);
+            Self::load_instance_extensions(entry, &instance_loader, &extensions_to_load);
 
         Ok((instance_loader, extensions))
     }
@@ -288,7 +293,7 @@ impl VulkanLoader {
         }
     }
 
-    fn configure_mvk(debug: bool) -> Option<()> {
+    fn configure_mvk(options: &ContextOptions) -> Option<()> {
         Self::load_mvk_fns(move |get_fn, set_fn| unsafe {
             let mut config = mvk::Configuration::default();
             let mut size = std::mem::size_of_val(&config);
@@ -305,7 +310,7 @@ impl VulkanLoader {
                 );
             }
 
-            if debug {
+            if options.validation {
                 config.log_level = mvk::ConfigLogLevel::DEBUG;
             } else {
                 config.log_level = mvk::ConfigLogLevel::NONE;
@@ -368,13 +373,24 @@ impl VulkanLoader {
     }
 }
 
-fn get_required_extensions(debug: bool) -> Vec<&'static CStr> {
+fn get_required_extensions(options: &ContextOptions) -> Vec<&'static CStr> {
     // Get surface extensions
     // Push the base surface extension
     let mut extensions = vec![ash::khr::surface::NAME];
 
-    // Add the debug extension if requested
-    if debug {
+    // The debug extension is _required_ if validation is requested, but optional otherwise
+    if options.validation {
+        extensions.push(ash::ext::debug_utils::NAME);
+    }
+
+    extensions
+}
+
+fn get_optional_extensions(options: &ContextOptions) -> Vec<&'static CStr> {
+    let mut extensions = vec![];
+
+    // Only add this if the validation option hasn't added it to the 'required' set.
+    if options.debug && !options.validation {
         extensions.push(ash::ext::debug_utils::NAME);
     }
 

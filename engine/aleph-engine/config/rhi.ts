@@ -68,14 +68,19 @@ namespace rhi {
         /** Any options to configure the Metal backend, if it is loaded. **/
         metal?: rhi.MetalOptions;
 
-        /** Whether to enable RHI and platform validation layers if they are available. **/
-        validation: boolean;
+        /**
+         * Whether profiling utilities should be enabled.
+         */
+        profiling: boolean;
 
         /**
-         * Whether debuging utilities are allowed to be initialized. Different backends have debug
+         * Whether debugging utilities are allowed to be initialized. Different backends have debug
          * tools only available on dev machines.
          */
         debug: boolean;
+
+        /** Whether to enable RHI and platform validation layers if they are available. **/
+        validation: boolean;
     }
 }
 
@@ -93,7 +98,8 @@ declare interface Configs {
 
     Configs.rhi = {
         api: api[Environment.platform],
-        validation: false,
+        profiling: false,
         debug: false,
+        validation: false,
     };
 }

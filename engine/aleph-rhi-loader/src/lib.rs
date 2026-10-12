@@ -33,44 +33,17 @@ use aleph_rhi_api::*;
 use serde::Deserialize;
 
 /// Options provided when a context is created
-#[derive(Clone, Hash, PartialEq, Eq, Debug)]
-pub struct ContextOptions {
+#[derive(Clone, Debug)]
+pub struct LoaderOptions {
     /// Specifies a preference for a specific API to the loader. `None` denotes no preference.
     ///
     /// When a `preferred_api` is provided the loader will always choose the selected backend if it
-    /// is available. If the backend is *not* available then the loader will chose another from the
+    /// is available. If the backend is *not* available then the loader will choose another from the
     /// available backends itself.
     pub backend: BackendAPI,
 
-    /// Whether backend API validation should be enabled.
-    ///
-    /// Will implicitly force the `debug` option to true if `validation` is also true as on some
-    /// backends the `validation` option requires loading the same `debug` utilities to function.
-    ///
-    /// This flag requests that the backend should enable their backend specific API validation.
-    ///
-    /// This will add massive amounts of overhead and should never be enabled unless debugging the
-    /// backends themselves.
-    ///
-    /// # Detail
-    ///
-    /// This is will enable w/e API validation and debug tools that are available to the backend.
-    ///
-    /// For Vulkan this will enable the validation layers and install a debug messenger the uses
-    /// the rust `log` framework.
-    ///
-    /// For Direct3D 12 this will enable API validation.
-    pub validation: bool,
-
-    /// Whether backend debug utilities should be enabled. This enables debug integrations for
-    /// naming objects and marking code sections to the backend's API for markup in debug tools.
-    ///
-    /// # Detail
-    ///
-    /// Basically just a request to enable `VK_EXT_debug_utils` for Vulkan without enabling
-    /// validation layers. Vulkan requires `VK_EXT_debug_utils` for object naming as that is the
-    /// extension that provides the naming functionality.
-    pub debug: bool,
+    /// [`ContextOptions`], common platform-agnostic options.
+    pub options: ContextOptions,
 
     /// A set of per-backend configs that will be used by the loader to configure the loaded backend
     /// when creating the context. Only one of these will be used, depending on what backend API
@@ -164,7 +137,7 @@ impl RhiLoader {
     /// will always return Err.
     pub fn make_context(
         &self,
-        options: &ContextOptions,
+        options: &LoaderOptions,
     ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         // Check if the backends list is empty, meaning none are available
         if self.backends.is_empty() {
@@ -302,10 +275,10 @@ impl RhiLoader {
     }
 
     fn wrap_with_validation(
-        options: &ContextOptions,
+        options: &LoaderOptions,
         context: Arc<dyn IContext>,
     ) -> Arc<dyn IContext> {
-        if options.validation {
+        if options.options.validation {
             aleph_rhi_validation::ValidationContext::wrap_context(context)
         } else {
             context
@@ -324,7 +297,7 @@ trait IRhiBackend {
     /// will always return `Err`.
     fn make_context(
         &self,
-        options: &ContextOptions,
+        options: &LoaderOptions,
     ) -> Result<Arc<dyn IContext>, ContextCreateError>;
 }
 
@@ -336,16 +309,11 @@ impl IRhiBackend for aleph_rhi_vulkan::VulkanLoader {
 
     fn make_context(
         &self,
-        options: &ContextOptions,
+        options: &LoaderOptions,
     ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         let config = options.config.vulkan.clone().unwrap_or_default();
         let config = config.into();
-        aleph_rhi_vulkan::VulkanLoader::make_context(
-            self,
-            options.validation,
-            options.debug,
-            &config,
-        )
+        aleph_rhi_vulkan::VulkanLoader::make_context(self, &options.options, &config)
     }
 }
 
@@ -357,11 +325,16 @@ impl IRhiBackend for aleph_rhi_dx12::D3D12Loader {
 
     fn make_context(
         &self,
-        options: &ContextOptions,
+        options: &LoaderOptions,
     ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         let config = options.config.d3d12.clone().unwrap_or_default();
         let config = config.into();
-        aleph_rhi_dx12::D3D12Loader::make_context(self, options.validation, options.debug, &config)
+        aleph_rhi_dx12::D3D12Loader::make_context(
+            self,
+            options.options.validation,
+            options.options.debug,
+            &config,
+        )
     }
 }
 
@@ -373,10 +346,15 @@ impl IRhiBackend for aleph_rhi_metal::MetalLoader {
 
     fn make_context(
         &self,
-        options: &ContextOptions,
+        options: &LoaderOptions,
     ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         let config = options.config.metal.clone().unwrap_or_default();
         let config = config.into();
-        aleph_rhi_metal::MetalLoader::make_context(self, options.validation, options.debug, &config)
+        aleph_rhi_metal::MetalLoader::make_context(
+            self,
+            options.options.validation,
+            options.options.debug,
+            &config,
+        )
     }
 }

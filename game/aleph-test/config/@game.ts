@@ -29,8 +29,9 @@
 
 if (Configs.rhi !== undefined) {
     Configs.rhi.api = rhi.Backend.Vulkan;
-    Configs.rhi.validation = true;
+    Configs.rhi.profiling = true;
     Configs.rhi.debug = true;
+    Configs.rhi.validation = true;
 }
 if (Configs["aleph-test"] !== undefined) {
     Configs["aleph-test"].scenes = ["aleph-test/IntelSponza/NewSponza_Main_Blender_glTF.gltf", "aleph-test/IntelSponzaCurtains/NewSponza_Curtains_glTF.gltf", "aleph-test/flying_world/FlyingWorld-BattleOfTheTrashGod.gltf"];
