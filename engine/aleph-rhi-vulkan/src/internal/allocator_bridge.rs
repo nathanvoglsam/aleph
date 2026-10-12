@@ -117,9 +117,8 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
         );
 
         // Otherwise fall back to staging memory. Slow but does work.
-        let gpu_to_cpu_t1_mask = vk::MemoryPropertyFlags::HOST_VISIBLE
-            | vk::MemoryPropertyFlags::HOST_COHERENT
-            | vk::MemoryPropertyFlags::HOST_CACHED;
+        let gpu_to_cpu_t1_mask =
+            vk::MemoryPropertyFlags::HOST_VISIBLE | vk::MemoryPropertyFlags::HOST_COHERENT;
         let gpu_to_cpu_t1_types = filter_memory_types(
             properties.memory_properties.memory_types_as_slice(),
             gpu_to_cpu_t1_mask,
