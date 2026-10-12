@@ -38,6 +38,7 @@ pub mod messenger;
 pub mod mvk;
 pub mod profile;
 pub mod queue_present_support;
+pub mod queue_timing_query_manager;
 pub mod semaphore_pool;
 pub mod set_name;
 pub mod unwrap;

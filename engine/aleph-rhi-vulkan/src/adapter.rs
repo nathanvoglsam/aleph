@@ -317,6 +317,14 @@ impl Adapter {
         };
 
         enable_if_supported(ash::khr::swapchain::NAME);
+        if self.context._options.profiling {
+            if !is_supported(ash::khr::calibrated_timestamps::NAME) {
+                log::warn!(
+                    "ContextOptions::profiling = true, but VK_KHR_calibrated_timestamps is not supported"
+                );
+            }
+            enable_if_supported(ash::khr::calibrated_timestamps::NAME);
+        }
         enable_if_supported(ash::khr::portability_subset::NAME);
 
         // Find our general, async compute and transfer queue families
@@ -379,6 +387,22 @@ impl Adapter {
             None
         };
 
+        let calibrated_timestamp = {
+            let supported = is_supported(ash::khr::calibrated_timestamps::NAME);
+            let wanted = self.context._options.profiling;
+            if supported && wanted {
+                let instance = ash::khr::calibrated_timestamps::Instance::new(
+                    &self.context.entry_loader,
+                    &self.context.instance,
+                );
+                let device =
+                    ash::khr::calibrated_timestamps::Device::new(&self.context.instance, &device);
+                Some((instance, device))
+            } else {
+                None
+            }
+        };
+
         Rhi::with(|| {
             let device: Arc<dyn IDevice> = Arc::new_cyclic(move |v| {
                 let queues = queues;
@@ -390,6 +414,7 @@ impl Adapter {
                     push_descriptor,
                     swapchain,
                     debug_loader,
+                    calibrated_timestamp,
                     allocator: None,
                     general_queue: None,
                     compute_queue: None,

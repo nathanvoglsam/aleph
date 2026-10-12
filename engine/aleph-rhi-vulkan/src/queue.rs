@@ -34,6 +34,7 @@ use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
+use aleph_nstr::nstr;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind, try_clone_value_into_slot};
 use ash::vk::{self, Handle};
@@ -44,6 +45,7 @@ use crate::device::{Device, FreeCommandList};
 use crate::fence::Fence;
 use crate::internal::allocation_callbacks::GLOBAL;
 use crate::internal::error_mapper::map_error_class;
+use crate::internal::queue_timing_query_manager::QueueTimingQueryManager;
 use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::unwrap;
 use crate::swap_image::SwapImage;
@@ -53,6 +55,9 @@ pub struct Queue {
     pub(crate) _device: Weak<Device>,
     pub(crate) queue_type: QueueType,
     pub(crate) handle: vk::Queue,
+
+    /// Optional, manages timing queries for the GPU profiling infrastructure.
+    pub(crate) timing: Option<QueueTimingQueryManager>,
 
     /// Properties specific to the queue that need to be known by the implementation to report and
     /// work around.
@@ -100,12 +105,35 @@ impl Queue {
             let info = vk::SemaphoreCreateInfo::default().push_next(&mut info);
             device.device.create_semaphore(&info, GLOBAL).unwrap()
         };
+        if device.calibrated_timestamp.is_some() && info._timestamp_valid_bits == 0 {
+            log::warn!(
+                "Unable to profile queue '{queue_type}'. Timestamp queries are unsupported on this queue"
+            );
+        }
+        let timing = if device.calibrated_timestamp.is_some() && info._timestamp_valid_bits > 0 {
+            log::info!("Attempting to setup timing query manager for queue '{queue_type}'");
+            let name = match queue_type {
+                QueueType::General => nstr!("GPU General"),
+                QueueType::Compute => nstr!("GPU Compute"),
+                QueueType::Transfer => nstr!("GPU Transfer"),
+            };
+            match QueueTimingQueryManager::new(name, device) {
+                Some(v) => Some(v),
+                None => {
+                    log::error!("Failed to setup timing query manager for queue '{queue_type}'");
+                    None
+                }
+            }
+        } else {
+            None
+        };
         Rhi::with(|| {
             Arc::new_cyclic(|v| Self {
                 _this: v.clone(),
                 _device: device._this.clone(),
                 queue_type,
                 handle,
+                timing,
                 info,
                 semaphore,
                 last_submitted_index: Default::default(),
@@ -225,7 +253,7 @@ impl IQueue for Queue {
                 }
             });
 
-            for submission in retired {
+            for mut submission in retired {
                 // Now that we know the submission is complete we can return the swap semaphore
                 // (if there is one) to the semaphore pool
                 if !submission.swap_ready_semaphore.is_null() {
@@ -238,6 +266,19 @@ impl IQueue for Queue {
                 if let Some(pool) = submission.swap_work_semaphore_pool.as_deref() {
                     assert!(!submission.swap_work_semaphore.is_null());
                     pool.push(submission.swap_work_semaphore);
+                }
+
+                if let Some(timing) = self.timing.as_ref() {
+                    unsafe {
+                        for list in submission.lists.iter_mut() {
+                            for block in list.retired_timing_blocks.iter() {
+                                block.block.notify_profiler(timing, block.count);
+                            }
+                            timing.return_blocks(
+                                list.retired_timing_blocks.drain(..).map(|v| v.block),
+                            );
+                        }
+                    }
                 }
 
                 // Grab the pool for the specific queue type. Don't want to get different
@@ -270,6 +311,10 @@ impl IQueue for Queue {
                         }
                     }
                 }
+            }
+
+            if let Some(timing) = self.timing.as_ref() {
+                timing.issue_calibration(&device)
             }
 
             Ok(())

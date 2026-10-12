@@ -33,7 +33,7 @@ use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
 use aleph_alloc::alloc::Allocator;
-use aleph_alloc::instrumentation::IAllocationCategory;
+use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_gpu_allocator::{AllocationDesc, GpuAllocator, MemoryLocation};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
@@ -78,6 +78,7 @@ pub struct Device {
     pub(crate) push_descriptor: ash::khr::push_descriptor::Device,
     pub(crate) swapchain: Option<ash::khr::swapchain::Device>,
     pub(crate) debug_loader: Option<ash::ext::debug_utils::Device>,
+    pub(crate) calibrated_timestamp: Option<CalibratedTimestampsFns>,
     pub(crate) allocator: Option<ManuallyDrop<GpuAllocator<VulkanAllocatorBridge>>>,
     pub(crate) general_queue: Option<Arc<Queue>>,
     pub(crate) compute_queue: Option<Arc<Queue>>,
@@ -925,6 +926,7 @@ impl IDevice for Device {
                         buffer: list.buffer,
                         list_type: list.list_type,
                         state: ListState::Empty,
+                        retired_timing_blocks: BVec::new_in(system()),
                     });
                     return Ok(out);
                 }
@@ -986,6 +988,7 @@ impl IDevice for Device {
                     buffer: command_buffer,
                     list_type: desc.queue_type,
                     state: ListState::Empty,
+                    retired_timing_blocks: BVec::new_in(system()),
                 });
 
                 Ok(out)
@@ -1294,6 +1297,14 @@ impl Device {
         }
     }
 
+    pub(crate) fn get_queue_internal(&self, queue_type: QueueType) -> Option<&Queue> {
+        match queue_type {
+            QueueType::General => self.general_queue.as_deref(),
+            QueueType::Compute => self.compute_queue.as_deref(),
+            QueueType::Transfer => self.transfer_queue.as_deref(),
+        }
+    }
+
     fn unwrap_shader_bytecode<'a, A: Allocator + 'a>(
         bump: A,
         index: usize,
@@ -1496,14 +1507,23 @@ impl Drop for Device {
             if let Some(queue) = self.general_queue.take() {
                 self.device.queue_wait_idle(queue.handle).unwrap();
                 self.device.destroy_semaphore(queue.semaphore, GLOBAL);
+                if let Some(timing) = queue.timing.as_ref() {
+                    timing.free(self);
+                }
             }
             if let Some(queue) = self.compute_queue.take() {
                 self.device.queue_wait_idle(queue.handle).unwrap();
                 self.device.destroy_semaphore(queue.semaphore, GLOBAL);
+                if let Some(timing) = queue.timing.as_ref() {
+                    timing.free(self);
+                }
             }
             if let Some(queue) = self.transfer_queue.take() {
                 self.device.queue_wait_idle(queue.handle).unwrap();
                 self.device.destroy_semaphore(queue.semaphore, GLOBAL);
+                if let Some(timing) = queue.timing.as_ref() {
+                    timing.free(self);
+                }
             }
 
             self.command_list_pool.collect(self);
@@ -1584,3 +1604,8 @@ impl CommandListPool {
         }
     }
 }
+
+pub type CalibratedTimestampsFns = (
+    ash::khr::calibrated_timestamps::Instance,
+    ash::khr::calibrated_timestamps::Device,
+);

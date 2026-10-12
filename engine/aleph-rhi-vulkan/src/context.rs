@@ -49,6 +49,7 @@ use crate::surface::Surface;
 
 pub struct Context {
     pub _this: Weak<Self>,
+    pub _options: ContextOptions,
     pub _config: VulkanConfig,
     pub entry_loader: ManuallyDrop<ash::Entry>,
     pub instance: ManuallyDrop<ash::Instance>,

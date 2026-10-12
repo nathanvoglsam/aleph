@@ -37,10 +37,11 @@ use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind, try_clone_value_into_slot
 use ash::vk;
 
 use crate::buffer::Buffer;
-use crate::command_list::{CommandList, ListState};
+use crate::command_list::{CommandList, ListState, RetiredTimingQueryBlock};
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv::*;
+use crate::internal::queue_timing_query_manager::{QueryPoolBlock, QueueTimingQueryManager};
 use crate::internal::unwrap;
 use crate::internal::write_descriptors::translate_descriptor_writes;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
@@ -54,6 +55,7 @@ pub struct Encoder<'a> {
     pub(crate) bound_graphics_pipeline: Option<Arc<Object<GraphicsPipeline>>>,
     pub(crate) bound_compute_pipeline: Option<Arc<Object<ComputePipeline>>>,
     pub(crate) arena: Blink<BlinkAlloc<RhiSystem>>,
+    pub(crate) timing_state: TimingState,
 }
 
 impl<'a> IGetPlatformInterface for Encoder<'a> {
@@ -705,6 +707,37 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         abort_on_unwind(|| match self._parent.state {
             ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
             ListState::Open => unsafe {
+                let queue = self
+                    ._device
+                    .get_queue_internal(self._parent.list_type)
+                    .unwrap_unchecked();
+                if let Some(timing) = queue.timing.as_ref() {
+                    // If we had a timing query block still left in the slot then we should retire
+                    // it now that we closed the command list.
+                    if let Some(block) = self.timing_state.block.take() {
+                        // 'next_offset' will also equal the number of used queries, but _only_ when
+                        // block != None. Thankfully we check before we get here :)
+                        //
+                        // We have a special case, where block = None and next_offset = 128. This is
+                        // so the first call 'next_query_id' will allocate a new block without
+                        // needing an extra field while lazily allocating the blocks.
+                        let count = self.timing_state.next_offset;
+                        self._parent
+                            .retired_timing_blocks
+                            .push(RetiredTimingQueryBlock { block, count });
+                    }
+
+                    for retired in self._parent.retired_timing_blocks.iter() {
+                        retired.block.flush_on_queue(
+                            timing,
+                            &self._device,
+                            self._buffer,
+                            retired.count,
+                        );
+                    }
+                    timing.issue_flush_to_host(&self._device, self._buffer);
+                }
+
                 self._device
                     .device
                     .end_command_buffer(self._buffer)
@@ -743,6 +776,32 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
                     loader.cmd_begin_debug_utils_label(self._buffer, &info);
                 }
             }
+
+            let queue = unsafe {
+                self._device
+                    .get_queue_internal(self._parent.list_type)
+                    .unwrap_unchecked()
+            };
+            if let Some(timing) = queue.timing.as_ref() {
+                unsafe {
+                    let query_id = next_query_id(
+                        &mut self.timing_state,
+                        &mut self._parent.retired_timing_blocks,
+                        timing,
+                        self._device.as_ref(),
+                        self._buffer,
+                    );
+                    timing.issue_begin_span_alloc(
+                        self._device.as_ref(),
+                        self._buffer,
+                        message,
+                        message,
+                        message,
+                        0,
+                        query_id,
+                    );
+                }
+            }
             self.arena.reset();
         })
     }
@@ -752,6 +811,82 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
             if let Some(loader) = self._device.debug_loader.as_ref() {
                 unsafe { loader.cmd_end_debug_utils_label(self._buffer) }
             }
+            let queue = unsafe {
+                self._device
+                    .get_queue_internal(self._parent.list_type)
+                    .unwrap_unchecked()
+            };
+            if let Some(timing) = queue.timing.as_ref() {
+                unsafe {
+                    let query_id = next_query_id(
+                        &mut self.timing_state,
+                        &mut self._parent.retired_timing_blocks,
+                        timing,
+                        self._device.as_ref(),
+                        self._buffer,
+                    );
+                    timing.issue_end_span(self._device.as_ref(), self._buffer, query_id);
+                }
+            }
         })
     }
+}
+
+pub struct TimingState {
+    block: Option<QueryPoolBlock>,
+    next_offset: u16,
+}
+
+impl Default for TimingState {
+    fn default() -> Self {
+        Self {
+            block: None,
+            next_offset: QueryPoolBlock::SIZE,
+        }
+    }
+}
+
+unsafe fn next_query_id(
+    state: &mut TimingState,
+    retired: &mut BVec<RetiredTimingQueryBlock, RhiSystem>,
+    manager: &QueueTimingQueryManager,
+    device: &Device,
+    command_buffer: vk::CommandBuffer,
+) -> u16 {
+    abort_on_unwind(|| {
+        if state.next_offset >= QueryPoolBlock::SIZE {
+            // Allocate a new block of query slots
+            let new = manager
+                .allocate_block()
+                .expect("Out of timing query blocks!");
+
+            // Retire the old block
+            if let Some(old) = state.block.take() {
+                // If the block was 'none' then we hadn't allocated one yet and this won't run.
+                retired.push(RetiredTimingQueryBlock {
+                    block: old,
+                    count: QueryPoolBlock::SIZE,
+                });
+            }
+
+            // Acquire the new block
+            unsafe {
+                new.acquire_on_queue(manager, device, command_buffer);
+            }
+
+            // Yield the next query offset
+            let base = new.base_index();
+            state.block = Some(new);
+            state.next_offset = 1;
+            base
+        } else {
+            let block = state.block.as_ref().unwrap();
+
+            let offset = state.next_offset;
+            state.next_offset += 1;
+
+            let base = block.base_index();
+            base + offset
+        }
+    })
 }

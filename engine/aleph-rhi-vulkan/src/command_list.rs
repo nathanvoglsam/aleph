@@ -30,7 +30,7 @@
 use std::any::TypeId;
 use std::sync::Arc;
 
-use aleph_alloc::{Blink, BlinkAlloc};
+use aleph_alloc::{BVec, Blink, BlinkAlloc};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind, try_clone_value_into_slot};
 use ash::vk;
@@ -38,6 +38,7 @@ use ash::vk;
 use crate::device::Device;
 use crate::encoder::Encoder;
 use crate::internal::allocation_callbacks::GLOBAL;
+use crate::internal::queue_timing_query_manager::QueryPoolBlock;
 
 pub struct CommandList {
     pub(crate) _device: Arc<Device>,
@@ -45,6 +46,7 @@ pub struct CommandList {
     pub(crate) buffer: vk::CommandBuffer,
     pub(crate) list_type: QueueType,
     pub(crate) state: ListState,
+    pub(crate) retired_timing_blocks: BVec<RetiredTimingQueryBlock, RhiSystem>,
 }
 
 impl IGetPlatformInterface for CommandList {
@@ -128,6 +130,7 @@ impl CommandList {
                     bound_graphics_pipeline: None,
                     bound_compute_pipeline: None,
                     arena: Blink::new_in(BlinkAlloc::new_in(RhiSystem::default())),
+                    timing_state: Default::default(),
                 };
                 let encoder = Box::new(encoder);
 
@@ -147,6 +150,18 @@ impl Drop for CommandList {
                 // The list is destroyed with the pool
                 self._device.device.destroy_command_pool(self.pool, GLOBAL);
             }
+
+            // The list is only dropped once it's no longer in use. If there are any timing blocks
+            // still attached to the list they can be freed.
+            let queue = match self.list_type {
+                QueueType::General => self._device.general_queue.as_deref(),
+                QueueType::Compute => self._device.compute_queue.as_deref(),
+                QueueType::Transfer => self._device.transfer_queue.as_deref(),
+            };
+            let queue = queue.unwrap_unchecked();
+            if let Some(timing) = queue.timing.as_ref() {
+                timing.return_blocks(self.retired_timing_blocks.drain(..).map(|v| v.block));
+            }
         })
     }
 }
@@ -156,4 +171,9 @@ pub(crate) enum ListState {
     Empty,
     Open,
     Closed,
+}
+
+pub struct RetiredTimingQueryBlock {
+    pub block: QueryPoolBlock,
+    pub count: u16,
 }
