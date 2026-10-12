@@ -55,6 +55,12 @@ use std::ffi::{CStr, CString};
 
 pub extern crate tracy_client;
 
+pub mod impl_empty;
+pub mod impl_pix;
+pub mod impl_superluminal;
+pub mod impl_tracy;
+pub mod tracy_gpu;
+
 #[cfg(feature = "procmacros")]
 pub use aleph_profile_procmacros::all_functions;
 #[cfg(feature = "procmacros")]
@@ -63,32 +69,6 @@ pub use aleph_profile_procmacros::function;
 pub use aleph_profile_procmacros::skip;
 #[cfg(feature = "profile-with-superluminal")]
 pub use aleph_superluminal_sys;
-
-#[cfg(feature = "profile-with-superluminal")]
-mod impl_superluminal;
-#[cfg(feature = "profile-with-superluminal")]
-#[allow(unused_imports)]
-pub use impl_superluminal::*;
-
-#[cfg(feature = "profile-with-tracy")]
-mod impl_tracy;
-#[cfg(feature = "profile-with-tracy")]
-#[allow(unused_imports)]
-pub use impl_tracy::*;
-
-#[cfg(feature = "profile-with-pix")]
-mod impl_pix;
-#[cfg(feature = "profile-with-pix")]
-#[allow(unused_imports)]
-pub use impl_pix::*;
-
-#[cfg(not(any(
-    feature = "profile-with-superluminal",
-    feature = "profile-with-tracy",
-    feature = "profile-with-pix"
-)))]
-mod impl_empty;
-
 #[cfg(not(any(
     feature = "profile-with-superluminal",
     feature = "profile-with-tracy",
@@ -96,6 +76,15 @@ mod impl_empty;
 )))]
 #[allow(unused_imports)]
 pub use impl_empty::*;
+#[cfg(feature = "profile-with-pix")]
+#[allow(unused_imports)]
+pub use impl_pix::*;
+#[cfg(feature = "profile-with-superluminal")]
+#[allow(unused_imports)]
+pub use impl_superluminal::*;
+#[cfg(feature = "profile-with-tracy")]
+#[allow(unused_imports)]
+pub use impl_tracy::*;
 
 pub trait ProfileDataParam<'a>: Copy + Clone {
     fn get_str(self) -> &'a str;
@@ -155,4 +144,22 @@ pub const ENABLED: bool = cfg!(any(
 
 pub const fn is_enabled() -> bool {
     ENABLED
+}
+
+pub const IS_SUPERLUMINAL: bool = cfg!(feature = "profile-with-superluminal");
+
+pub const fn is_superluminal() -> bool {
+    IS_SUPERLUMINAL
+}
+
+pub const IS_TRACY: bool = cfg!(feature = "profile-with-tracy");
+
+pub const fn is_tracy() -> bool {
+    IS_TRACY
+}
+
+pub const IS_PIX: bool = cfg!(feature = "profile-with-pix");
+
+pub const fn is_pix() -> bool {
+    IS_PIX
 }

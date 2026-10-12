@@ -51,6 +51,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#![cfg(not(any(
+    feature = "profile-with-superluminal",
+    feature = "profile-with-tracy",
+    feature = "profile-with-pix"
+)))]
+
 #[macro_export]
 macro_rules! scope {
     ($name:expr) => {{}};
