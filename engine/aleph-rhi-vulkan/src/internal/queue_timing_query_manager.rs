@@ -389,7 +389,11 @@ impl QueueTimingQueryManager {
         // Safety: We only ask for valid query pools with valid info structs.
         unsafe {
             // Try a few (power of two) sizes until the pool size is too small to be useful
-            for count in [65536, 32768, 16384, 8192, 4096, 2048] {
+            let sizes = cfg_select! {
+                any(target_os = "macos", target_os = "ios") => [4096, 2048],
+                _ => [65536, 32768, 16384, 8192, 4096, 2048],
+            };
+            for count in sizes {
                 let info = vk::QueryPoolCreateInfo {
                     query_type: vk::QueryType::TIMESTAMP,
                     query_count: count,
