@@ -121,16 +121,26 @@ impl<'a> CommandEncoder<'a> {
 
     #[inline]
     pub fn debug_zone(&mut self, color: Color, message: &NStr, f: impl FnOnce(&mut Self)) {
+        /// This kinda sucks, but ensures __end_event is called even when unwinding
+        struct Zone<'a, 'b>(&'a mut CommandEncoder<'b>);
+        impl<'a, 'b> Drop for Zone<'a, 'b> {
+            fn drop(&mut self) {
+                unsafe {
+                    if cfg!(feature = "markers") {
+                        self.0.0.__end_event();
+                    }
+                }
+            }
+        }
         unsafe {
             if cfg!(feature = "markers") {
                 self.0.__begin_event(color, message);
             }
+            let zone = Zone(self);
 
-            f(self);
+            f(zone.0);
 
-            if cfg!(feature = "markers") {
-                self.0.__end_event();
-            }
+            drop(zone);
         }
     }
 }
