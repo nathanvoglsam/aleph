@@ -31,15 +31,13 @@
 
 use tracy_client::sys;
 
-use crate::tracy_gpu::TracyQueue;
-
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug)]
 pub struct QueueId {
     id: u8,
 }
 
-impl TracyQueue for QueueId {
+impl crate::tracy_gpu::TracyQueue for QueueId {
     fn new_queue_id(
         name: &std::ffi::CStr,
         context_type: crate::tracy_gpu::ContextType,

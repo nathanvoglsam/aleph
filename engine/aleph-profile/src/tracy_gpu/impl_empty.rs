@@ -42,7 +42,7 @@ pub struct QueueId {
     _private: (),
 }
 
-impl TracyQueue for QueueId {
+impl crate::tracy_gpu::TracyQueue for QueueId {
     fn new_queue_id(
         _name: &std::ffi::CStr,
         _context_type: crate::tracy_gpu::ContextType,
