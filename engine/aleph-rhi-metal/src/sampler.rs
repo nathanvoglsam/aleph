@@ -81,7 +81,7 @@ impl Sampler {
         mtl_desc.setSupportArgumentBuffers(true);
 
         if let Some(name) = desc.name
-            && device.context.debug
+            && device.context.options.debug
         {
             let mtl_name = NSString::from_str(name);
             mtl_desc.setLabel(Some(&mtl_name));

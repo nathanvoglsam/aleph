@@ -30,7 +30,7 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use aleph_rhi_api::{ContextCreateError, IContext};
+use aleph_rhi_api::{ContextCreateError, ContextOptions, IContext};
 
 use crate::context::Context;
 
@@ -54,8 +54,7 @@ impl MetalLoader {
 
     pub fn make_context(
         &self,
-        validation: bool,
-        debug: bool,
+        options: &ContextOptions,
         config: &MetalConfig,
     ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         match self
@@ -66,8 +65,7 @@ impl MetalLoader {
                 let context = Arc::new_cyclic(move |v| Context {
                     _this: v.clone(),
                     _config: config.clone(),
-                    validation,
-                    debug,
+                    options: options.clone(),
                 });
                 Ok(context)
             }

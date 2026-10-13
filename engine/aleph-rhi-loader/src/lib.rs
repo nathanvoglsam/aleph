@@ -350,11 +350,6 @@ impl IRhiBackend for aleph_rhi_metal::MetalLoader {
     ) -> Result<Arc<dyn IContext>, ContextCreateError> {
         let config = options.config.metal.clone().unwrap_or_default();
         let config = config.into();
-        aleph_rhi_metal::MetalLoader::make_context(
-            self,
-            options.options.validation,
-            options.options.debug,
-            &config,
-        )
+        aleph_rhi_metal::MetalLoader::make_context(self, &options.options, &config)
     }
 }

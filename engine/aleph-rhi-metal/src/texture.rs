@@ -109,7 +109,7 @@ impl Texture {
         };
 
         if let Some(name) = desc.name
-            && device.context.debug
+            && device.context.options.debug
         {
             let label = NSString::from_str(name);
             texture.setLabel(Some(&label));
@@ -292,7 +292,7 @@ impl Texture {
                             )
                             .expect("Failed to construct MTLTexture image view")
                     });
-                    if self._device.context.debug {
+                    if self._device.context.options.debug {
                         autoreleasepool(|_| view.setLabel(self.objects.texture.label().as_deref()));
                     }
                     view

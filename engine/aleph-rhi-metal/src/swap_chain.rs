@@ -141,7 +141,7 @@ impl ISwapChain for SwapChain {
 
                 let texture = drawable.texture();
 
-                if self.device.context.debug {
+                if self.device.context.options.debug {
                     texture.setLabel(Some(ns_string!("Swap Image")));
                 }
 

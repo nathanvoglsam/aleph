@@ -47,8 +47,7 @@ use crate::surface::{Surface, SurfaceObjects};
 pub struct Context {
     pub _this: Weak<Self>,
     pub _config: MetalConfig,
-    pub validation: bool,
-    pub debug: bool,
+    pub options: ContextOptions,
 }
 
 impl IGetPlatformInterface for Context {

@@ -221,13 +221,13 @@ impl GraphicsPipeline {
         }
 
         if let Some(name) = desc.name
-            && device.context.debug
+            && device.context.options.debug
         {
             let mtl_name = NSString::from_str(name);
             mtl_desc.setLabel(Some(&mtl_name));
         }
 
-        if device.context.validation {
+        if device.context.options.validation {
             mtl_desc.setShaderValidation(MTLShaderValidation::Enabled);
         }
 
@@ -331,13 +331,13 @@ impl ComputePipeline {
         let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
         if let Some(name) = desc.name
-            && device.context.debug
+            && device.context.options.debug
         {
             let mtl_name = NSString::from_str(name);
             mtl_desc.setLabel(Some(&mtl_name));
         }
 
-        if device.context.validation {
+        if device.context.options.validation {
             mtl_desc.setShaderValidation(MTLShaderValidation::Enabled);
         }
 
