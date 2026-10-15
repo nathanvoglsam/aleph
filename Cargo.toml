@@ -188,7 +188,7 @@ objc2-foundation = "0.3"
 
 ## Windows Platform
 embed-resource = "3"
-windows-interface = "0.59.0"
+windows-interface = "0.100.0"
 windows.version = "0.62.0"
 windows.features = [
     "Win32_Foundation",
@@ -207,6 +207,7 @@ windows.features = [
     "Win32_System_SystemInformation",
     "Win32_System_WindowsProgramming",
     "Win32_System_Memory",
+    "Win32_System_Performance",
     "Win32_Storage_StructuredStorage",
     "Win32_Security",
 ]
