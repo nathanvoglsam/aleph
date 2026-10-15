@@ -49,4 +49,3 @@ libc = { workspace = true }
 [build-dependencies]
 aleph-compile = { workspace = true }
 aleph-target = { workspace = true }
-cc = { workspace = true }

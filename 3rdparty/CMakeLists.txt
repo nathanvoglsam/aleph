@@ -27,9 +27,9 @@ FetchContent_Declare(
 
 ## SDL3
 FetchContent_Declare(
-        sdl3
-        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-        GIT_TAG        release-3.4.18
+    sdl3
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+    GIT_TAG        release-3.4.18
 )
 
 ## mimalloc
@@ -41,22 +41,22 @@ FetchContent_Declare(
 
 ## Tracy Profiler
 FetchContent_Declare(
-        tracy
-        GIT_REPOSITORY https://github.com/wolfpld/tracy.git
-        GIT_TAG        v0.14.1
-        SOURCE_SUBDIR  profiler
+    tracy
+    GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+    GIT_TAG        v0.14.1
+    SOURCE_SUBDIR  profiler
 )
 
 ## D3D12 Agility SDK
 FetchContent_Declare(
-        d3d12_agility_sdk
-        URL https://www.nuget.org/api/v2/package/Microsoft.Direct3D.D3D12/1.618.5
+    d3d12_agility_sdk
+    URL https://www.nuget.org/api/v2/package/Microsoft.Direct3D.D3D12/1.618.5
 )
 
 ## WinPixEventRuntime
 FetchContent_Declare(
-        win_pix_event_runtime
-        URL https://www.nuget.org/api/v2/package/WinPixEventRuntime/1.0.240308001
+    win_pix_event_runtime
+    URL https://www.nuget.org/api/v2/package/WinPixEventRuntime/1.0.240308001
 )
 
 ##
