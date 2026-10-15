@@ -158,8 +158,8 @@ thiserror = "2"
 
 ## API Bindings
 ash = { version = "0.38", default-features = false, features = ["debug"] }
-sdl3 = { version = "0.18", features = ["raw-window-handle"] }
-sdl3-sys = { version = "^0.6", features = ["no-link"] }
+sdl3 = { version = "0.20", features = ["raw-window-handle"] }
+sdl3-sys = { version = "^0.7", features = ["no-link"] }
 tracy-client = { version = "0.19", default-features = false, features = ["system-tracing", "context-switch-tracing", "sampling", "code-transfer", "broadcast", "callstack-inlines", "crash-handler", "wait-stacks"] }
 
 ## Common Platform
@@ -174,7 +174,7 @@ ctor = "1"
 ## Memory Alloc and Containers
 allocator-api2 = "0.2"
 blink-alloc = { version = "0.3" }
-hashbrown = { version = "0.16", features = ["allocator-api2"] }
+hashbrown = { version = "0.17", features = ["allocator-api2"] }
 arrayvec = "0.7"
 smallbox = "0.8"
 

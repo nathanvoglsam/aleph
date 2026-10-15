@@ -39,9 +39,9 @@ use api::platform::{
     GamepadEvent, GamepadId, GamepadState, IGamepads, IGamepadsAccessor,
 };
 use parking_lot::RwLock;
-use sdl3::sys::joystick::SDL_JoystickID;
+use sdl3::joystick::JoystickId;
 
-pub(crate) type GamepadsMap = HashMap<u32, GamepadEntry, BuildHasherDefault<IdentityHasher>>;
+pub(crate) type GamepadsMap = HashMap<JoystickId, GamepadEntry, BuildHasherDefault<IdentityHasher>>;
 
 pub struct Gamepads {
     /// Set of all gamepads currently connected and opened by the gamepads system. Only one of these
@@ -50,10 +50,10 @@ pub struct Gamepads {
 
     /// The highest gamepad ID we've opened. Used to determine if we get handed a bad ID or an ID
     /// for a controller that has since been disconnected and not in the gamepads set anymore.
-    pub(crate) highest_id: Cell<u32>,
+    pub(crate) highest_id: Cell<JoystickId>,
 
     /// The index of the currently active controller, if one is active
-    pub(crate) active_controller: Cell<Option<u32>>,
+    pub(crate) active_controller: Cell<Option<JoystickId>>,
 
     /// The thread-safe object we can share to enable safe access to the current gamepad state
     /// outside of the main thread. New state and events will be published here every frame.
@@ -81,55 +81,58 @@ impl Gamepads {
     ) {
         use sdl3::event::Event as SdlEvent;
         match event {
-            SdlEvent::ControllerDeviceAdded { which, .. } => {
-                let which = SDL_JoystickID(*which);
+            SdlEvent::GamepadAdded { which, .. } => {
+                let which = *which;
 
                 let is_controller = gamepad.is_gamepad(which);
                 let name = gamepad.name_for_id(which).unwrap();
 
-                log::info!("Controller Added: {}", which.0);
+                log::info!("Controller Added: {}", which.raw());
                 log::info!("name = {name}; is_controller = {is_controller};");
 
                 if is_controller {
                     let pad = gamepad.open(which).unwrap();
-                    let instance_id = pad.id().unwrap().0;
+                    let instance_id = pad.id().unwrap();
                     let current_highest = self.highest_id.take();
-                    self.highest_id.set(instance_id.max(current_highest));
+                    let new_highest = if instance_id.raw() > current_highest.raw() {
+                        instance_id
+                    } else {
+                        current_highest
+                    };
+                    self.highest_id.set(new_highest);
 
                     log::info!("Controller Opened: instance_id = {instance_id}");
 
                     let entry = GamepadEntry {
-                        _device_index: which.0,
+                        _device_index: which.raw(),
                         pad,
                         state: Default::default(),
                     };
                     gamepads.insert(instance_id, entry);
                 }
             }
-            SdlEvent::ControllerDeviceRemoved { which, .. } => {
-                let which = *which;
-
+            SdlEvent::GamepadRemoved { which, .. } => {
                 log::info!("Controller Removed: {which}");
 
-                if let Some(gamepad) = gamepads.get(&which) {
+                if let Some(gamepad) = gamepads.get(which) {
                     let name = gamepad.pad.name();
                     let name = name.as_deref().unwrap_or("Unknown");
                     log::info!("Removing Controler: name = {name};");
-                    gamepads.remove(&which);
+                    gamepads.remove(which);
 
                     // Remove the active controller if we happened to have it disconnect
                     if let Some(active) = self.active_controller.get() {
-                        if active == which {
+                        if active == *which {
                             self.active_controller.set(None);
                         }
                     }
                 }
             }
-            SdlEvent::ControllerDeviceRemapped { which, .. } => {
+            SdlEvent::GamepadRemapped { which, .. } => {
                 let which = *which;
                 log::info!("Controller Remapped: {which}");
             }
-            SdlEvent::ControllerAxisMotion {
+            SdlEvent::GamepadAxisMotion {
                 which, axis, value, ..
             } => {
                 let which = *which;
@@ -141,29 +144,27 @@ impl Gamepads {
                 let entry = gamepads.get_mut(&which).unwrap();
                 set_axis(&mut entry.state, axis, value);
             }
-            SdlEvent::ControllerButtonDown { which, button, .. } => {
-                let which = *which;
+            SdlEvent::GamepadButtonDown { which, button, .. } => {
                 let button = *button;
 
-                self.update_active_controller(which);
+                self.update_active_controller(*which);
 
-                let entry = gamepads.get_mut(&which).unwrap();
+                let entry = gamepads.get_mut(which).unwrap();
                 set_button(&mut entry.state, button, true);
             }
-            SdlEvent::ControllerButtonUp { which, button, .. } => {
-                let which = *which;
+            SdlEvent::GamepadButtonUp { which, button, .. } => {
                 let button = *button;
 
-                self.update_active_controller(which);
+                self.update_active_controller(*which);
 
-                let entry = gamepads.get_mut(&which).unwrap();
+                let entry = gamepads.get_mut(which).unwrap();
                 set_button(&mut entry.state, button, false);
             }
             _ => {}
         }
     }
 
-    fn update_active_controller(&self, new_id: u32) {
+    fn update_active_controller(&self, new_id: JoystickId) {
         match self.active_controller.get() {
             Some(active) => {
                 if active != new_id {
@@ -195,12 +196,12 @@ impl Gamepads {
             let filtered_events = events.iter().filter_map(|v| {
                 use sdl3::event::Event as SdlEvent;
                 match v {
-                    SdlEvent::ControllerAxisMotion {
+                    SdlEvent::GamepadAxisMotion {
                         which, axis, value, ..
                     } => {
                         if *which == active {
                             Some(GamepadEvent::AxisMotion(GamepadAxisMotion {
-                                which: GamepadId(active),
+                                which: GamepadId(active.raw()),
                                 axis: map_axis(*axis),
                                 value: *value,
                             }))
@@ -208,20 +209,20 @@ impl Gamepads {
                             None
                         }
                     }
-                    SdlEvent::ControllerButtonDown { which, button, .. } => {
+                    SdlEvent::GamepadButtonDown { which, button, .. } => {
                         if *which == active {
                             Some(GamepadEvent::ButtonDown(GamepadButtonDown {
-                                which: GamepadId(active),
+                                which: GamepadId(active.raw()),
                                 button: map_button(*button),
                             }))
                         } else {
                             None
                         }
                     }
-                    SdlEvent::ControllerButtonUp { which, button, .. } => {
+                    SdlEvent::GamepadButtonUp { which, button, .. } => {
                         if *which == active {
                             Some(GamepadEvent::ButtonUp(GamepadButtonUp {
-                                which: GamepadId(active),
+                                which: GamepadId(active.raw()),
                                 button: map_button(*button),
                             }))
                         } else {

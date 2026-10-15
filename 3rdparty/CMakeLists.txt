@@ -29,7 +29,7 @@ FetchContent_Declare(
 FetchContent_Declare(
         sdl3
         GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-        GIT_TAG        release-3.4.0
+        GIT_TAG        release-3.4.18
 )
 
 ## Tracy Profiler

@@ -383,12 +383,12 @@ impl CorePlatform {
                         event,
                     );
                 }
-                event @ SdlEvent::ControllerDeviceAdded { .. }
-                | event @ SdlEvent::ControllerDeviceRemoved { .. }
-                | event @ SdlEvent::ControllerDeviceRemapped { .. }
-                | event @ SdlEvent::ControllerAxisMotion { .. }
-                | event @ SdlEvent::ControllerButtonDown { .. }
-                | event @ SdlEvent::ControllerButtonUp { .. } => {
+                event @ SdlEvent::GamepadAdded { .. }
+                | event @ SdlEvent::GamepadRemoved { .. }
+                | event @ SdlEvent::GamepadRemapped { .. }
+                | event @ SdlEvent::GamepadAxisMotion { .. }
+                | event @ SdlEvent::GamepadButtonDown { .. }
+                | event @ SdlEvent::GamepadButtonUp { .. } => {
                     gamepads.process_gamepad_event(&mut gamepads_map, &sdl_gamepad, &event);
                     gamepad_events.push(event);
                 }
