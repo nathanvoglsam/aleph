@@ -31,10 +31,10 @@ use std::env::current_dir;
 use std::path::Path;
 use std::sync::LazyLock;
 
-use log::LevelFilter;
 use target::{Architecture, BuildConfig, BuildType, Platform};
 
 use crate::api::plugin::IPlugin;
+use crate::core::logger::LOGGER;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 
 pub struct EngineBuilder {
@@ -96,11 +96,9 @@ impl EngineBuilder {
 
         // This will be one of the earliest pieces of code to run in aleph engine so initialize the
         // logger here. By initializing it here then this plugin remains optional (technically)
-        let logger = env_logger::Builder::from_default_env()
-            .filter_level(LevelFilter::Trace)
-            .build();
-        log::set_boxed_logger(Box::new(logger)).expect("Attempting to install logger");
-        log::set_max_level(LevelFilter::Trace);
+        log::set_logger(&LOGGER)
+            .map(|()| log::set_max_level(log::LevelFilter::Trace))
+            .unwrap();
 
         Self {
             registry: PluginRegistry::builder(),

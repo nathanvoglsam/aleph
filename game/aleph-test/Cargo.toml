@@ -55,7 +55,7 @@ aleph-profile = { workspace = true, features = [] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 bytemuck = { workspace = true }
-log = { workspace = true }
+log = { workspace = true, features = ["release_max_level_trace"] }
 
 [target.'cfg(windows)'.dependencies]
 aleph-dx12-agility-sdk = { workspace = true }

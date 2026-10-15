@@ -121,7 +121,7 @@ cargo_metadata = "0.23"
 cc = "1"
 
 ## Logging and Profiling
-log = { version = "0.4", features = ["release_max_level_debug"] }
+log = "0.4"
 env_logger = "0.11.0" ## Heavy
 
 ## Macros and Utilities
