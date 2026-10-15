@@ -640,7 +640,7 @@ unsafe extern "C" {
 /// # Example
 ///
 /// ```
-/// use libmimalloc_sys as mi;
+/// use aleph_mimalloc_sys as mi;
 /// unsafe {
 ///     let h = mi::mi_heap_new();
 ///     assert!(!h.is_null());

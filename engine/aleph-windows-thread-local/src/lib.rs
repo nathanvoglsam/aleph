@@ -124,7 +124,7 @@ pub(crate) unsafe fn oskey_destroy(key: Key) {
 /// use std::cell::RefCell;
 /// use std::thread;
 /// use once_cell::sync::Lazy;
-/// use os_thread_local::ThreadLocal;
+/// use aleph_windows_thread_local::ThreadLocal;
 ///
 /// static FOO: Lazy<ThreadLocal<RefCell<u32>>> =
 ///     Lazy::new(|| ThreadLocal::new(|| RefCell::new(1)));
@@ -156,8 +156,8 @@ pub(crate) unsafe fn oskey_destroy(key: Key) {
 ///
 /// ```rust
 /// use std::cell::RefCell;
-/// use crossbeam_utils::thread::scope;
-/// use os_thread_local::ThreadLocal;
+/// use crossbeam::scope;
+/// use aleph_windows_thread_local::ThreadLocal;
 ///
 /// struct Foo {
 ///     data: u32,
@@ -278,7 +278,7 @@ impl<T> ThreadLocal<T> {
     /// each thread.
     ///
     /// ```rust
-    /// use os_thread_local::ThreadLocal;
+    /// use aleph_windows_thread_local::ThreadLocal;
     ///
     /// let tls = ThreadLocal::new(|| 42);
     /// ```
@@ -295,7 +295,7 @@ impl<T> ThreadLocal<T> {
     /// yet.
     ///
     /// ```rust
-    /// use os_thread_local::ThreadLocal;
+    /// use aleph_windows_thread_local::ThreadLocal;
     /// use std::cell::Cell;
     ///
     /// let tls = ThreadLocal::new(|| Cell::new(42));
@@ -322,7 +322,7 @@ impl<T> ThreadLocal<T> {
     /// `AccessError`.
     ///
     /// ```rust
-    /// use os_thread_local::ThreadLocal;
+    /// use aleph_windows_thread_local::ThreadLocal;
     /// use std::cell::Cell;
     ///
     /// let tls = ThreadLocal::new(|| Cell::new(42));
