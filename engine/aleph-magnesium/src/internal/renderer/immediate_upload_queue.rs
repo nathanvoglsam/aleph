@@ -35,7 +35,7 @@ use aleph_nstr::nstr;
 use smallbox::SmallBox;
 use smallbox::space::S8;
 
-use crate::internal::MgSystem;
+use crate::internal::MgRoot;
 use crate::internal::buffer::BufferObjectStore;
 use crate::internal::renderer::deferred_deletion_manager::DeletionBundle;
 use crate::internal::renderer::last_use_tracker::{
@@ -50,8 +50,8 @@ use crate::resource_loader::upload_buffer::IUploadBuffer;
 
 pub struct ImmediateUploadQueue {
     pub device: Arc<dyn rhi::IDevice>,
-    pub textures: BVec<ImmediateTextureUpload, MgSystem>,
-    pub buffers: BVec<ImmediateBufferUpload, MgSystem>,
+    pub textures: BVec<ImmediateTextureUpload, MgRoot>,
+    pub buffers: BVec<ImmediateBufferUpload, MgRoot>,
 }
 
 impl ImmediateUploadQueue {

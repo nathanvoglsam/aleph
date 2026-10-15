@@ -45,7 +45,7 @@ use crate::directory_layer::async_file::AsyncVFile;
 use crate::directory_layer::sync_file::{POOL, PooledFile, VTABLE};
 use crate::file::{IAsyncVFile, VFile};
 use crate::path::{Component, VPath};
-use crate::{ILayer, Vfs, VfsSystem, box_layer};
+use crate::{ILayer, Vfs, VfsRoot, box_layer};
 
 struct LocalVFile;
 aleph_gen_arena::make_handle_id!(LocalVFile);
@@ -59,7 +59,7 @@ pub struct DirectoryLayer {
 }
 
 impl DirectoryLayer {
-    pub fn new(mounted_path: Utf8PathBuf) -> BBox<dyn ILayer, VfsSystem> {
+    pub fn new(mounted_path: Utf8PathBuf) -> BBox<dyn ILayer, VfsRoot> {
         box_layer(Self {
             mounted_path,
             io_queue: None,
@@ -69,7 +69,7 @@ impl DirectoryLayer {
     pub fn new_with_io_queue(
         mounted_path: Utf8PathBuf,
         io_queue: Arc<IoQueue>,
-    ) -> BBox<dyn ILayer, VfsSystem> {
+    ) -> BBox<dyn ILayer, VfsRoot> {
         box_layer(Self {
             mounted_path,
             io_queue: Some(io_queue),

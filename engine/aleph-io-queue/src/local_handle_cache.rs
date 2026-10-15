@@ -37,7 +37,7 @@ use aleph_alloc::BHashMap;
 use aleph_alloc::instrumentation::IAllocationCategory;
 
 use crate::top_level_handle_cache::TopLevelHandleCache;
-use crate::{AsyncIo, AsyncIoSystem};
+use crate::{AsyncIo, AsyncIoRoot};
 
 /// A bottom level cache, and sibling of [`TopLevelHandleCache`]. It exposes a similar interface.
 ///
@@ -50,7 +50,7 @@ use crate::{AsyncIo, AsyncIoSystem};
 /// is `!Send` and `!Sync` and uses a [`RefCell`] internally.
 pub struct LocalHandleCache {
     top_level: Arc<TopLevelHandleCache>,
-    cache: RefCell<BHashMap<PathBuf, Arc<[File]>, AsyncIoSystem>>,
+    cache: RefCell<BHashMap<PathBuf, Arc<[File]>, AsyncIoRoot>>,
 }
 
 impl LocalHandleCache {

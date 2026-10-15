@@ -38,7 +38,7 @@ use crate::{
 };
 
 pub struct GpuAllocator<T: IApiBridge> {
-    memory_pools: BVec<MemoryPool<T>, GpuAllocatorHostSystem>,
+    memory_pools: BVec<MemoryPool<T>, GpuAllocatorHostRoot>,
     info: T::AllocatorInfo,
 }
 
@@ -619,12 +619,12 @@ pub struct PoolConfig {
 
 struct PoolBlocks<T: IApiBridge + ?Sized> {
     /// Set of all sub-allocated memory blocks in this pool.
-    memory_blocks: BVec<MemoryBlock<T>, GpuAllocatorHostSystem>,
+    memory_blocks: BVec<MemoryBlock<T>, GpuAllocatorHostRoot>,
 
     /// Associated table that provides a sorted view of 'memory_blocks'. This table stores indices
     /// into the 'memory_blocks' list and will be incrementally sorted to provide an index of blocks
     /// from least to most free space.
-    sorted_blocks: BVec<usize, GpuAllocatorHostSystem>,
+    sorted_blocks: BVec<usize, GpuAllocatorHostRoot>,
 }
 
 impl<T: IApiBridge + ?Sized> Default for PoolBlocks<T> {
@@ -666,14 +666,14 @@ impl<T: IApiBridge + ?Sized> PoolBlocks<T> {
 struct DedicatedBlocks<T: IApiBridge + ?Sized> {
     /// Backing storage for each dedicated memory block. This will contain a mix of live and dead
     /// memory blocks, which is required to keep indices into this array stable.
-    memory_blocks: BVec<T::DedicatedBlockInfo, GpuAllocatorHostSystem>,
+    memory_blocks: BVec<T::DedicatedBlockInfo, GpuAllocatorHostRoot>,
 
     /// A list of indices into 'memory_blocks' that are free to reuse.
     ///
     /// This _could_ use a union based linked list, stored in the space of free block entries. It
     /// would save memory. However, the memory overhead is small compared to the average size of a
     /// dedicated block. I think the simplicity of two arrays is worth the memory cost.
-    free_blocks: BVec<u16, GpuAllocatorHostSystem>,
+    free_blocks: BVec<u16, GpuAllocatorHostRoot>,
 }
 
 impl<T: IApiBridge + ?Sized> Default for DedicatedBlocks<T> {
@@ -915,4 +915,4 @@ impl Default for AllocatorConfig {
 pub struct GpuAllocatorHost;
 aleph_alloc::new_alloc_category!(GpuAllocatorHost, "0199fec4-0296-7160-9f21-9e10a6abaeca");
 
-pub type GpuAllocatorHostSystem = Instrumented<GpuAllocatorHost>;
+pub type GpuAllocatorHostRoot = Instrumented<GpuAllocatorHost>;

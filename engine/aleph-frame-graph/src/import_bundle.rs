@@ -29,12 +29,12 @@
 
 use aleph_alloc::BHashMap;
 
-use crate::internal::FgSystem;
+use crate::internal::FgRoot;
 use crate::{ResourceRef, ResourceVariant};
 
 #[derive(Default)]
 pub struct ImportBundle {
-    pub(crate) imports: BHashMap<u16, ResourceVariant, FgSystem>,
+    pub(crate) imports: BHashMap<u16, ResourceVariant, FgRoot>,
 }
 
 impl ImportBundle {

@@ -39,7 +39,7 @@ use std::ptr::NonNull;
 use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BBox, BHashMap, BHashSet, BVec};
 
-use crate::EcsSystem;
+use crate::EcsRoot;
 use crate::archetype::Archetype;
 use crate::component::internal::{COMPONENTS, ComponentIdMap};
 use crate::component::singleton::Singleton;
@@ -185,16 +185,16 @@ pub struct World {
     pub(crate) entities: EntityHandleArena,
 
     /// The list of all archetypes in the ECS world
-    pub(crate) archetypes: BVec<Archetype, EcsSystem>,
+    pub(crate) archetypes: BVec<Archetype, EcsRoot>,
 
     /// Map that maps an entity layout to the index inside the archetypes list
-    pub(crate) archetype_map: BHashMap<BBox<TypeLayout, EcsSystem>, usize, EcsSystem>,
+    pub(crate) archetype_map: BHashMap<BBox<TypeLayout, EcsRoot>, usize, EcsRoot>,
 
     /// Holds the edges of the archetype graph. Maps component ID to the links.
-    pub(crate) archetype_add_edges: BVec<ComponentIdMap<usize>, EcsSystem>,
+    pub(crate) archetype_add_edges: BVec<ComponentIdMap<usize>, EcsRoot>,
 
     /// Holds the edges of the archetype graph. Maps component ID to the links.
-    pub(crate) archetype_del_edges: BVec<ComponentIdMap<usize>, EcsSystem>,
+    pub(crate) archetype_del_edges: BVec<ComponentIdMap<usize>, EcsRoot>,
 }
 
 impl World {
@@ -950,7 +950,7 @@ impl World {
     fn find_archetypes_with_components(
         &self,
         components: &[ComponentId],
-    ) -> BHashSet<usize, EcsSystem> {
+    ) -> BHashSet<usize, EcsRoot> {
         let mut matches = BHashSet::new_in(system());
 
         // We first seed the matches with all archetypes that contain the first component in the
@@ -1000,7 +1000,7 @@ impl World {
                 //
                 // The slow-path requires us to materialize the dst layout so we can find it in
                 // the archetype map.
-                let mut dst_layout: TypeLayoutBuf<EcsSystem> = TypeLayoutBuf::from_layout_in(
+                let mut dst_layout: TypeLayoutBuf<EcsRoot> = TypeLayoutBuf::from_layout_in(
                     self.archetypes[src_archetype_index].type_layout(),
                     system(),
                 );
@@ -1053,7 +1053,7 @@ impl World {
                 //
                 // The slow-path requires us to materialize the dst layout so we can find it in
                 // the archetype map.
-                let mut dst_layout: TypeLayoutBuf<EcsSystem> = TypeLayoutBuf::from_layout_in(
+                let mut dst_layout: TypeLayoutBuf<EcsRoot> = TypeLayoutBuf::from_layout_in(
                     &self.archetypes[src_archetype_index].type_layout,
                     system(),
                 );
@@ -1092,7 +1092,7 @@ impl World {
 
         // If there's too many component types we fall back to a heap allocation for our
         // layout scratch space.
-        let mut indices_heap: BVec<_, EcsSystem> = BVec::new_in(system());
+        let mut indices_heap: BVec<_, EcsRoot> = BVec::new_in(system());
 
         let indices = if types.len() <= indices_stack.len() {
             // Take a sub-slice of the stack space to use as scratch space.
@@ -1400,7 +1400,7 @@ impl World {
         }
     }
 
-    fn find_query_matches<Q: ComponentQuery>(&self) -> BHashSet<usize, EcsSystem> {
+    fn find_query_matches<Q: ComponentQuery>(&self) -> BHashSet<usize, EcsRoot> {
         let mut matches = [ComponentId(0); 64];
         let mut required = [ComponentId(0); 64];
         let mut denied = [ComponentId(0); 64];

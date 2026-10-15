@@ -31,7 +31,7 @@ use std::ffi::c_void;
 
 use aleph_alloc::mallocator::Mallocator;
 
-use crate::core::platform::SdlSystem;
+use crate::core::platform::SdlRoot;
 
 /// A very, very unsafe wrapper function used to inject malloc wrappers into SDL. These are used to
 /// track all the allocations SDL makes and should be disabled when memory instrumentation is not
@@ -53,17 +53,17 @@ pub unsafe fn set_memory_functions() {
 }
 
 unsafe extern "C" fn malloc_func(size: usize) -> *mut c_void {
-    unsafe { Mallocator::new(SdlSystem::default()).malloc(size) }
+    unsafe { Mallocator::new(SdlRoot::default()).malloc(size) }
 }
 
 unsafe extern "C" fn calloc_func(nmemb: usize, size: usize) -> *mut c_void {
-    unsafe { Mallocator::new(SdlSystem::default()).calloc(nmemb, size) }
+    unsafe { Mallocator::new(SdlRoot::default()).calloc(nmemb, size) }
 }
 
 unsafe extern "C" fn realloc_func(mem: *mut c_void, size: usize) -> *mut c_void {
-    unsafe { Mallocator::new(SdlSystem::default()).realloc(mem, size) }
+    unsafe { Mallocator::new(SdlRoot::default()).realloc(mem, size) }
 }
 
 unsafe extern "C" fn free_func(mem: *mut c_void) {
-    unsafe { Mallocator::new(SdlSystem::default()).free(mem) }
+    unsafe { Mallocator::new(SdlRoot::default()).free(mem) }
 }

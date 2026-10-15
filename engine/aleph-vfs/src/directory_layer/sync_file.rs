@@ -34,7 +34,7 @@ use std::num::NonZero;
 
 use aleph_gen_arena::{GenArena, Handle, HandleType, RawHandle};
 
-use crate::VfsSystem;
+use crate::VfsRoot;
 use crate::directory_layer::LocalVFile;
 use crate::file::VFileVtable;
 
@@ -94,7 +94,7 @@ pub struct PooledFile {
     pub len: u64,
 }
 
-type Pool = RefCell<GenArena<PooledFile, Handle<LocalVFile>, VfsSystem>>;
+type Pool = RefCell<GenArena<PooledFile, Handle<LocalVFile>, VfsRoot>>;
 thread_local! {
     pub static POOL: Pool = const { RefCell::new(GenArena::new_in()) };
 }

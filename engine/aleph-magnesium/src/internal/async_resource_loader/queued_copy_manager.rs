@@ -36,12 +36,12 @@ use aleph_alloc::offset_allocator::Allocation;
 use crate::async_resource_loader::buffer_upload_range::BufferUploadRange;
 use crate::async_resource_loader::texture_upload_range::TextureUploadRange;
 use crate::async_resource_loader::{BufferLoadHandle, TextureLoadHandle};
-use crate::internal::async_resource_loader::MgAsyncLdrSystem;
+use crate::internal::async_resource_loader::MgAsyncLdrRoot;
 
 pub struct QueuedCopyManager {
     /// Queue of submitted upload ranges that should have upload commands recorded for in the next
     /// flush operation.
-    pub queue: RefCell<BVec<SubmittedCopy, MgAsyncLdrSystem>>,
+    pub queue: RefCell<BVec<SubmittedCopy, MgAsyncLdrRoot>>,
 
     /// Sum total of the sizes of all upload ranges currently queued.
     pub queued_bytes: Cell<u64>,
@@ -146,10 +146,10 @@ pub struct SubmittedTextureCopy {
 
     /// A list of dst copy regions, typically one for each target mip level, this upload block is
     /// trying to copy into.
-    pub regions: BVec<rhi::BufferToTextureCopyRegion, MgAsyncLdrSystem>,
+    pub regions: BVec<rhi::BufferToTextureCopyRegion, MgAsyncLdrRoot>,
 
     /// Allocation handles that hold ownership over the regions we're using in the upload block
-    pub allocations: BVec<Allocation, MgAsyncLdrSystem>,
+    pub allocations: BVec<Allocation, MgAsyncLdrRoot>,
 
     /// 'true' if this is the first copy into the texture. Requires issuing a discard barrier if
     /// 'true'.

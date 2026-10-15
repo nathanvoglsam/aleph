@@ -42,7 +42,7 @@ use crossbeam::channel::{Receiver, RecvError, SendError, Sender, never, unbounde
 use crossbeam::select;
 use mg::async_resource_loader::{AsyncResourceLoader, FlushError, RetireError};
 
-use crate::core::alloc::{Engine, EngineSystem};
+use crate::core::alloc::{Engine, EngineRoot};
 use crate::core::async_io::TaskFuture;
 use crate::core::async_io::context::IoContext;
 use crate::core::async_io::internal::{FutureSpawner, TaskWaker};
@@ -428,7 +428,7 @@ struct Task<'a> {
 }
 
 type RootBoxedFuture<'a> = Pin<Box<TaskFuture<'a>>>;
-type Tasks<'a> = GenArena<Task<'a>, RawHandle, EngineSystem>;
+type Tasks<'a> = GenArena<Task<'a>, RawHandle, EngineRoot>;
 
 extern "C" fn abort_unwind<F: FnOnce() -> R, R>(f: F) -> R {
     f()

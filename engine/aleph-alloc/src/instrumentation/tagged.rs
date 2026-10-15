@@ -27,11 +27,12 @@
 // SOFTWARE.
 //
 
-use std::alloc::{GlobalAlloc, Layout, System, handle_alloc_error};
+use std::alloc::{GlobalAlloc, Layout, handle_alloc_error};
 use std::ptr::NonNull;
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
+use crate::Root;
 use crate::allocator_global_handle::AllocatorGlobalHandle;
 use crate::instrumentation::{CategoryInfo, IAllocationCategory, emit_alloc, emit_free};
 
@@ -46,7 +47,7 @@ use crate::instrumentation::{CategoryInfo, IAllocationCategory, emit_alloc, emit
 /// allocator means you can inject categories into allocations from crates that are not instrumented
 /// with 'aleph-alloc' categories. Simply wrap your calls in a [`with_category`] scope and any
 /// allocations made within will be tagged with the given category.
-pub struct Tagged<A: Allocator = System>(A);
+pub struct Tagged<A: Allocator = Root>(A);
 
 impl<A: Allocator> Tagged<A> {
     /// Constructs a new [`Tagged`] wrapping the given allocator.

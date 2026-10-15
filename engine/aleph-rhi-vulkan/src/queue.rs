@@ -36,7 +36,7 @@ use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_nstr::nstr;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, RhiRoot, abort_on_unwind, try_clone_value_into_slot};
 use ash::vk::{self, Handle};
 use parking_lot::Mutex;
 
@@ -471,16 +471,16 @@ pub struct QueueSubmission {
 
     /// We separate the command lists in the submission into their own list so they can be easily
     /// filtered out and recycled later
-    pub lists: BVec<Box<CommandList>, RhiSystem>,
+    pub lists: BVec<Box<CommandList>, RhiRoot>,
 }
 
 pub struct SubmissionManager<'a> {
-    pub wait_semaphores: BVec<vk::Semaphore, RhiSystem>,
-    pub wait_values: BVec<u64, RhiSystem>,
-    pub wait_dst_stage_masks: BVec<vk::PipelineStageFlags, RhiSystem>,
-    pub signal_semaphores: BVec<vk::Semaphore, RhiSystem>,
-    pub signal_values: BVec<u64, RhiSystem>,
-    pub command_buffers: BVec<vk::CommandBuffer, RhiSystem>,
+    pub wait_semaphores: BVec<vk::Semaphore, RhiRoot>,
+    pub wait_values: BVec<u64, RhiRoot>,
+    pub wait_dst_stage_masks: BVec<vk::PipelineStageFlags, RhiRoot>,
+    pub signal_semaphores: BVec<vk::Semaphore, RhiRoot>,
+    pub signal_values: BVec<u64, RhiRoot>,
+    pub command_buffers: BVec<vk::CommandBuffer, RhiRoot>,
     pub swap_image: Option<&'a SwapImage>,
 }
 
@@ -507,13 +507,12 @@ impl<'a> SubmissionManager<'a> {
         let swap_signal_num = if desc.swap_image.is_some() { 1 } else { 0 };
         let signal_num = caller_signal_num + internal_signal_num + swap_signal_num;
 
-        let wait_semaphores = BVec::with_capacity_in(wait_num, RhiSystem::default());
-        let wait_values = BVec::with_capacity_in(wait_num, RhiSystem::default());
-        let wait_dst_stage_masks = BVec::with_capacity_in(wait_num, RhiSystem::default());
-        let signal_semaphores = BVec::with_capacity_in(signal_num, RhiSystem::default());
-        let signal_values = BVec::with_capacity_in(signal_num, RhiSystem::default());
-        let command_buffers =
-            BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
+        let wait_semaphores = BVec::with_capacity_in(wait_num, RhiRoot::default());
+        let wait_values = BVec::with_capacity_in(wait_num, RhiRoot::default());
+        let wait_dst_stage_masks = BVec::with_capacity_in(wait_num, RhiRoot::default());
+        let signal_semaphores = BVec::with_capacity_in(signal_num, RhiRoot::default());
+        let signal_values = BVec::with_capacity_in(signal_num, RhiRoot::default());
+        let command_buffers = BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
         let swap_image = desc.swap_image.map(unwrap::swap_image);
 
         Self {
@@ -537,7 +536,7 @@ impl<'a> SubmissionManager<'a> {
             swap_work_semaphore: vk::Semaphore::null(),
             swap_work_semaphore_pool: None,
             index: 0,
-            lists: BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default()),
+            lists: BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default()),
         };
 
         self.handle_command_lists(desc, &mut submission)?;

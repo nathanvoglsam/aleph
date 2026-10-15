@@ -33,7 +33,7 @@ use rhi::TextureDimension;
 
 use crate::async_resource_loader::TextureLoadResult;
 use crate::async_resource_loader::texture_upload_range::WantedTextureRows;
-use crate::internal::async_resource_loader::MgAsyncLdrSystem;
+use crate::internal::async_resource_loader::MgAsyncLdrRoot;
 use crate::internal::async_resource_loader::upload_memory_manager::UploadMemoryManager;
 use crate::resource::texture::physical::{PhysicalTextureDesc, PhysicalTextureLayout};
 use crate::resource::texture::simple::{SimpleTextureDesc, SimpleTextureLayout};
@@ -48,7 +48,7 @@ pub struct TextureLoadState<C> {
 
     /// Tracks the state associated with loading each mip level the caller should provide for the
     /// texture.
-    pub levels: BVec<TextureLevelLoadState, MgAsyncLdrSystem>,
+    pub levels: BVec<TextureLevelLoadState, MgAsyncLdrRoot>,
 
     /// Caller provided cookie that will be sent alongside messages on the loader's notification
     /// channel to identify the associated request.
@@ -92,7 +92,7 @@ impl<C> TextureLoadState<C> {
         pitch_align: u32,
         mut num_bytes: u64,
         granularity: rhi::Extent3D,
-    ) -> BVec<WantedTextureRows, MgAsyncLdrSystem> {
+    ) -> BVec<WantedTextureRows, MgAsyncLdrRoot> {
         assert!(!self.has_outstanding_range());
 
         let texture_dimension = self.layout.texture_dimension().unwrap();

@@ -39,7 +39,7 @@ use aleph_nstr::nstr;
 use aleph_rhi_api::*;
 
 use crate::internal::{
-    FgSystem, FrameGraphBufferDesc, FrameGraphTextureDesc, IIRNode, IRNode, PassOrderBundle,
+    FgRoot, FrameGraphBufferDesc, FrameGraphTextureDesc, IIRNode, IRNode, PassOrderBundle,
     RenderPass, ResourceRoot, ResourceVersion, TransientResourceBundle,
 };
 use crate::render_pass::PassArgs;
@@ -54,7 +54,7 @@ pub struct FrameGraph<A: PassArgs = ()> {
     ///
     /// This won't be directly used by a constructed graph but must be stored inside the graph in
     /// order to keep the allocations for all the render passes alive.
-    pub(crate) _arena: Grave<Blink<BlinkAlloc<FgSystem>>>,
+    pub(crate) _arena: Grave<Blink<BlinkAlloc<FgRoot>>>,
 
     /// The device object that this frame graph is created to work with
     pub(crate) device: Arc<dyn IDevice>,
@@ -62,24 +62,24 @@ pub struct FrameGraph<A: PassArgs = ()> {
     /// Our final pass + barrier execution order that is the final output of our graph building
     /// operations. The passes and barriers are executed by iterating this list and executing the
     /// barriers and passes referenced within in order.
-    pub(crate) execution_bundles: BVec<PassOrderBundle, FgSystem>,
+    pub(crate) execution_bundles: BVec<PassOrderBundle, FgRoot>,
 
     /// Backing storage for our IR nodes.
     ///
     /// This array is indexed by the [PassOrderBundle] objects in the
     /// [FrameGraph::execution_bundles] array. Each bundle contains a set of barriers and passes to
     /// execute in order, with each barrier and pass identified as an index into this array.
-    pub(crate) ir_nodes: BVec<IRNode, FgSystem>,
+    pub(crate) ir_nodes: BVec<IRNode, FgRoot>,
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
-    pub(crate) render_passes: BVec<RenderPass<A>, FgSystem>,
+    pub(crate) render_passes: BVec<RenderPass<A>, FgRoot>,
 
     /// The backing storage used for all of the root resourcs objects. A root resource represents
     /// a concrete [ITexture] or [IBuffer] as created by the graph. This includes both the created
     /// transient resources as well as imported resources. Imported resources are identified by
     /// having their index in the 'imported_resources' set.
-    pub(crate) root_resources: BVec<ResourceRoot, FgSystem>,
+    pub(crate) root_resources: BVec<ResourceRoot, FgRoot>,
 
     /// The backing storage used for all the resource version objects. A resource version is an
     /// indexed set that is used to identify a particular version of a root resource.
@@ -91,18 +91,18 @@ pub struct FrameGraph<A: PassArgs = ()> {
     /// These entries are critical as resource versions are what form the core of the graph. They
     /// are what allows the graph to construct a stable program order via an SSA form graph
     /// construction.
-    pub(crate) resource_versions: BVec<ResourceVersion, FgSystem>,
+    pub(crate) resource_versions: BVec<ResourceVersion, FgRoot>,
 
     /// The set of resources within the graph that were imported, stored as indices into the
     /// root_resources array.
-    pub(crate) imported_resources: BVec<u16, FgSystem>,
+    pub(crate) imported_resources: BVec<u16, FgRoot>,
 
     /// The transient resource bundles that the user requested by allocated for N frames in flight.
     pub(crate) transient_bundles: Option<TransientResourceBundle>,
 
     /// Per-frame deletion pool for extending the lifetime of internally managed resources like
     /// command buffers or descriptor pool.
-    pub(crate) deletion_pools: BVec<DeletionPool, FgSystem>,
+    pub(crate) deletion_pools: BVec<DeletionPool, FgRoot>,
 
     /// Another 'transient pool' of sorts, but used for descriptors.
     pub(crate) linear_descriptor_pools: Arc<AllocatorPool<LinearDescriptorPoolFactory>>,

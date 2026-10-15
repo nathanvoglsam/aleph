@@ -34,7 +34,7 @@ use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_gpu_allocator::{AllocationDesc, GpuAllocation, MemoryLocation};
 use aleph_nstr::NStr;
 use aleph_profile::tracy_gpu::TracyQueue;
-use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind};
+use aleph_rhi_impl_utils::{Rhi, RhiRoot, abort_on_unwind};
 use ash::vk;
 use parking_lot::Mutex;
 
@@ -43,7 +43,7 @@ use crate::internal::allocation_callbacks::GLOBAL;
 
 pub struct SharedState {
     /// A free-list where retired pool ranges are placed, ready for re-use.
-    range_free_list: BVec<QueryPoolBlock, RhiSystem>,
+    range_free_list: BVec<QueryPoolBlock, RhiRoot>,
 
     /// The CPU timestamp of the last calibration event.
     previous_calibration: u64,

@@ -43,7 +43,7 @@ use crate::resource::ResourceId;
 use crate::{IRenderPass, ResourceVariant, Result};
 
 pub(crate) struct RenderPass<A: PassArgs> {
-    pub pass: BBox<dyn IRenderPass<A>, FgSystem>,
+    pub pass: BBox<dyn IRenderPass<A>, FgRoot>,
     pub name: NonNull<NStr>,
     pub skip: bool,
 }
@@ -135,8 +135,8 @@ impl ResourceVersion {
     pub fn reads_sorted_by_image_layout_in<'a, 'b>(
         &'a self,
         format: Format,
-        bump: &'b Blink<BlinkAlloc<FgSystem>>,
-    ) -> BVec<(&'a VersionReaderLink, ImageLayout), &'b BlinkAlloc<FgSystem>> {
+        bump: &'b Blink<BlinkAlloc<FgRoot>>,
+    ) -> BVec<(&'a VersionReaderLink, ImageLayout), &'b BlinkAlloc<FgRoot>> {
         let mut reads = BVec::with_capacity_in(self.read_count, bump.allocator());
         reads.extend(
             self.reads_iter()
@@ -974,4 +974,4 @@ impl TransientResourceBundle {
 pub struct FrameGraph;
 aleph_alloc::new_alloc_category!(FrameGraph, "01996b09-7751-7510-ac93-79ba89b964ae");
 
-pub type FgSystem = aleph_alloc::instrumentation::Instrumented<FrameGraph>;
+pub type FgRoot = aleph_alloc::instrumentation::Instrumented<FrameGraph>;

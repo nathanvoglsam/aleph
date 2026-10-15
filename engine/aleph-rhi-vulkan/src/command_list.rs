@@ -32,7 +32,7 @@ use std::sync::Arc;
 
 use aleph_alloc::{BVec, Blink, BlinkAlloc};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind, try_clone_value_into_slot};
 use ash::vk;
 
 use crate::device::Device;
@@ -46,7 +46,7 @@ pub struct CommandList {
     pub(crate) buffer: vk::CommandBuffer,
     pub(crate) list_type: QueueType,
     pub(crate) state: ListState,
-    pub(crate) retired_timing_blocks: BVec<RetiredTimingQueryBlock, RhiSystem>,
+    pub(crate) retired_timing_blocks: BVec<RetiredTimingQueryBlock, RhiRoot>,
 }
 
 impl IGetPlatformInterface for CommandList {
@@ -129,7 +129,7 @@ impl CommandList {
                     _device,
                     bound_graphics_pipeline: None,
                     bound_compute_pipeline: None,
-                    arena: Blink::new_in(BlinkAlloc::new_in(RhiSystem::default())),
+                    arena: Blink::new_in(BlinkAlloc::new_in(RhiRoot::default())),
                     timing_state: Default::default(),
                 };
                 let encoder = Box::new(encoder);

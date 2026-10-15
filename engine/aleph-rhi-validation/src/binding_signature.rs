@@ -31,7 +31,7 @@ use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
 
 use crate::{ValidationDevice, ValidationParameterBlockLayout};
 
@@ -39,7 +39,7 @@ pub struct ValidationBindingSignature {
     pub(crate) _this: Weak<Self>,
     pub(crate) _device: Arc<ValidationDevice>,
     pub(crate) inner: Arc<dyn IBindingSignature>,
-    pub(crate) parameter_block_layouts: BVec<Arc<ValidationParameterBlockLayout>, RhiSystem>,
+    pub(crate) parameter_block_layouts: BVec<Arc<ValidationParameterBlockLayout>, RhiRoot>,
     pub(crate) push_constant_block: Option<PushConstantBlock>,
 }
 

@@ -33,7 +33,7 @@ use std::sync::Arc;
 
 use aleph_alloc::BVec;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind, try_clone_value_into_slot};
 use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::Handle;
@@ -112,7 +112,7 @@ impl IDescriptorArena for DescriptorArena {
     ) -> Result<Box<[ParameterBlockHandle]>, DescriptorAllocateError> {
         abort_on_unwind(|| {
             let layout = unwrap::parameter_block_layout(layout);
-            let mut set_layouts = BVec::with_capacity_in(num_blocks, RhiSystem::default());
+            let mut set_layouts = BVec::with_capacity_in(num_blocks, RhiRoot::default());
             for _ in 0..num_blocks {
                 set_layouts.push(layout.descriptor_set_layout);
             }

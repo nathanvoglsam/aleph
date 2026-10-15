@@ -130,4 +130,4 @@ pub fn map_acquired_image(
 pub struct Rhi;
 aleph_alloc::new_alloc_category!(Rhi, "019914c0-090a-7690-8276-8b2c4c43ff75");
 
-pub type RhiSystem = Instrumented<Rhi>;
+pub type RhiRoot = Instrumented<Rhi>;

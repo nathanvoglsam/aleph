@@ -115,7 +115,7 @@ use crate::path::{Component, Components, VPath};
 /// make no guarantees about expected behavior other than the interface must remain safe. Do not
 /// mutate mounted data.
 pub struct Router {
-    layers: BHashMap<String, BBox<dyn ILayer, VfsSystem>, VfsSystem>,
+    layers: BHashMap<String, BBox<dyn ILayer, VfsRoot>, VfsRoot>,
 }
 
 impl Router {
@@ -342,7 +342,7 @@ pub struct LayerDesc<'a> {
     pub mount_name: &'a str,
 
     /// The fs layer to mount.
-    pub layer: BBox<dyn ILayer, VfsSystem>,
+    pub layer: BBox<dyn ILayer, VfsRoot>,
 }
 
 /// Interface expected of a 'layer'. A 'layer' will be mounted into a vfs as a mount point and
@@ -415,7 +415,7 @@ pub trait ILayer: Send + Sync + 'static {
 
 /// Utility for boxing a layer implementation into the tagged box types we use for allocation
 /// tracking.
-pub fn box_layer<T: ILayer>(layer: T) -> BBox<dyn ILayer, VfsSystem> {
+pub fn box_layer<T: ILayer>(layer: T) -> BBox<dyn ILayer, VfsRoot> {
     let (ptr, allocator) = BBox::into_raw_with_allocator(BBox::new_in(layer, system()));
     let ptr: *mut _ = ptr;
     unsafe { BBox::from_raw_in(ptr, allocator) }
@@ -424,4 +424,4 @@ pub fn box_layer<T: ILayer>(layer: T) -> BBox<dyn ILayer, VfsSystem> {
 pub struct Vfs;
 aleph_alloc::new_alloc_category!(Vfs, "019f06a8-fabd-7761-b89c-e5d13c09926c");
 
-pub type VfsSystem = aleph_alloc::instrumentation::Instrumented<Vfs>;
+pub type VfsRoot = aleph_alloc::instrumentation::Instrumented<Vfs>;

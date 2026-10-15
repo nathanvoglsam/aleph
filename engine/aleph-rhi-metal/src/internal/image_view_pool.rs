@@ -30,7 +30,7 @@
 use aleph_alloc::BVec;
 use aleph_alloc::allocator_global_handle::AllocatorGlobalHandle;
 use aleph_alloc::instrumentation::system;
-use aleph_rhi_impl_utils::RhiSystem;
+use aleph_rhi_impl_utils::RhiRoot;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::NSError;
@@ -51,7 +51,7 @@ use parking_lot::Mutex;
 ///
 /// Otherwise, the interface is just a standard pool allocator.
 pub struct ShardedImageViewPool<const NUM_POOLS: usize> {
-    pools: BVec<ImageViewPool, RhiSystem>,
+    pools: BVec<ImageViewPool, RhiRoot>,
     handles: Handles,
 }
 
@@ -60,7 +60,7 @@ impl<const NUM_POOLS: usize> ShardedImageViewPool<NUM_POOLS> {
     ///
     /// Needs to retain a reference to the device for creating new image view pools.
     pub fn new(device: Retained<ProtocolObject<dyn MTLDevice>>) -> Self {
-        let mut pools = BVec::new_in(RhiSystem::HANDLE);
+        let mut pools = BVec::new_in(RhiRoot::HANDLE);
         for _ in 0..NUM_POOLS {
             let pool = ImageViewPool::new();
             pools.push(pool);
@@ -237,8 +237,8 @@ impl ImageViewPool {
 
 struct Inner {
     count: usize,
-    blocks: BVec<Block, RhiSystem>,
-    free_list: BVec<usize, RhiSystem>,
+    blocks: BVec<Block, RhiRoot>,
+    free_list: BVec<usize, RhiRoot>,
 }
 
 struct Block {

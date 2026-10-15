@@ -35,7 +35,7 @@ use aleph_alloc::offset_allocator::Allocation;
 use crossbeam::channel::SendError;
 
 use crate::async_resource_loader::{BufferLoadHandle, RetireError, TextureLoadHandle};
-use crate::internal::async_resource_loader::MgAsyncLdrSystem;
+use crate::internal::async_resource_loader::MgAsyncLdrRoot;
 use crate::internal::async_resource_loader::renderer_channel::{
     LoaderSender, LoaderToRendererMessage,
 };
@@ -50,17 +50,17 @@ pub struct Submission {
 
     /// All the upload memory allocations that should be released to the allocator once this
     /// submission is retired on the copy queue.
-    pub retired_allocations: BVec<Allocation, MgAsyncLdrSystem>,
+    pub retired_allocations: BVec<Allocation, MgAsyncLdrRoot>,
 
     /// Collection of resource handles that are in use on the GPU in this submission, resources that
     /// must be kept alive while the submission is in-flight. Without this canceling a request may
     /// drop the resource while it's still in use.
-    pub live_resources: BVec<LiveResource, MgAsyncLdrSystem>,
+    pub live_resources: BVec<LiveResource, MgAsyncLdrRoot>,
 
     /// Handles to all the resource upload requests that will become fully complete once this
     /// submission is retired on the copy queue. As soon as these are observed to be retired they
     /// should be dispatched to the render thread to be made available to the renderer.
-    pub completed_uploads: BVec<CompletedResource, MgAsyncLdrSystem>,
+    pub completed_uploads: BVec<CompletedResource, MgAsyncLdrRoot>,
 
     /// The number of bytes uploaded across all commands recorded in this submission.
     pub bytes: u64,
@@ -182,7 +182,7 @@ pub struct SubmissionManager {
 
     /// The set of all live submissions, and any resources they currently own that should be retired
     /// once the submission is observed to be complete on the copy queue.
-    pub live: RefCell<BVec<Submission, MgAsyncLdrSystem>>,
+    pub live: RefCell<BVec<Submission, MgAsyncLdrRoot>>,
 }
 
 impl SubmissionManager {

@@ -41,7 +41,7 @@ use crate::material_instance::{MaterialInstanceHandle, MaterialInstancePoolAcces
 /// Manager that owns the material instance pool, and any other resources directly associated with
 /// our pooled material instance resources.
 pub struct MaterialInstanceStore {
-    pub pool: GenArena<MaterialInstanceObject, MaterialInstanceHandle, MgMatInstSystem>,
+    pub pool: GenArena<MaterialInstanceObject, MaterialInstanceHandle, MgMatInstRoot>,
 }
 
 impl MaterialInstanceStore {
@@ -85,7 +85,7 @@ pub struct MaterialInstanceObject {
 
     /// Indexed list of material bindings. The layout of this list is defined by the material we are
     /// instancing.
-    pub bindings: BVec<MaterialBinding, MgMatInstSystem>,
+    pub bindings: BVec<MaterialBinding, MgMatInstRoot>,
 }
 
 impl MaterialInstanceObject {
@@ -179,4 +179,4 @@ aleph_alloc::new_child_alloc_category!(
     "019b314e-9a6a-7250-9006-6dca7282c5b5"
 );
 
-pub type MgMatInstSystem = aleph_alloc::instrumentation::Instrumented<MaterialInstance>;
+pub type MgMatInstRoot = aleph_alloc::instrumentation::Instrumented<MaterialInstance>;

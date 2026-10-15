@@ -33,7 +33,7 @@ use aleph_alloc::BVec;
 use aleph_rhi_api::*;
 
 use crate::FrameGraphResources;
-use crate::internal::FgSystem;
+use crate::internal::FgRoot;
 
 pub trait PassArgs: 'static {
     type Args<'a>: Send + Sync;
@@ -107,12 +107,12 @@ pub struct GraphChannel {
 
     /// Accumulated list of texture handles held to keep the references in the texture barrier list
     /// live.
-    pub(crate) texture_objects: BVec<Option<TextureHandle>, FgSystem>,
+    pub(crate) texture_objects: BVec<Option<TextureHandle>, FgRoot>,
 
     /// Accumulated list of manually queued texture barriers. 'deferred_texture_objects' stores
     /// owned references to the texture objects. We do some unsafe casting hackery so we can use
     /// [`TextureBarrier`] directly. It should be safe as long as we're careful.
-    pub(crate) texture_barriers: BVec<TextureBarrier<'static>, FgSystem>,
+    pub(crate) texture_barriers: BVec<TextureBarrier<'static>, FgRoot>,
 }
 
 impl GraphChannel {

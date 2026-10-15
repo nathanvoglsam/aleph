@@ -38,12 +38,12 @@ pub use tagged::*;
 
 /// Utility for getting an [`Allocator`] instance wrapping [`System`] with the given category.
 pub const fn system<T: IAllocationCategory>() -> Instrumented<T> {
-    Instrumented::new(allocator_api2::alloc::System)
+    Instrumented::new(crate::root())
 }
 
 /// Utility for getting an [`Allocator`] instance wrapping [`System`] with a [`Tagged`] allocator.
 pub const fn system_tagged() -> Tagged {
-    Tagged::new(allocator_api2::alloc::System)
+    Tagged::new(crate::root())
 }
 
 /// The default allocation category.
@@ -58,14 +58,17 @@ macro_rules! register_global_allocator {
     () => {
         #[global_allocator]
         static GLOBAL_TAGGED: $crate::instrumentation::Tagged =
-            $crate::instrumentation::Tagged::new(::std::alloc::System);
+            $crate::instrumentation::Tagged::new($crate::root());
     };
 }
 
 #[cfg(not(feature = "instrumentation-enabled"))]
 #[macro_export]
 macro_rules! register_global_allocator {
-    () => {};
+    () => {
+        #[global_allocator]
+        static GLOBAL: $crate::Root = $crate::root();
+    };
 }
 
 /// Returns whether the 'instrumentation-enabled' feature is enabled.

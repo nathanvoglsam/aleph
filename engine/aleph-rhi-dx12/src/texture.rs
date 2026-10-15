@@ -39,7 +39,7 @@ use aleph_gpu_allocator::GpuAllocation;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind, try_clone_value_into_slot};
 use blink_alloc::Blink;
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -59,9 +59,9 @@ pub struct Texture {
     pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) desc: OwnedTextureDesc,
     pub(crate) dxgi_format: DXGI_FORMAT,
-    pub(crate) views: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiSystem>>,
-    pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiSystem>>,
-    pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiSystem>>,
+    pub(crate) views: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiRoot>>,
+    pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiRoot>>,
+    pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiRoot>>,
     pub(crate) image_views: Mutex<Blink>,
 }
 

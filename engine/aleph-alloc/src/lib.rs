@@ -39,6 +39,15 @@ pub extern crate ctor;
 #[doc(hidden)]
 pub extern crate const_format;
 
+#[doc(hidden)]
+pub extern crate aleph_mimalloc;
+
+pub type Root = aleph_mimalloc::MiMalloc;
+
+pub const fn root() -> Root {
+    aleph_mimalloc::MiMalloc
+}
+
 pub mod allocator_global_handle;
 pub mod instrumentation;
 pub mod mallocator;

@@ -34,7 +34,7 @@ use aleph_alloc::BVec;
 use aleph_alloc::offset_allocator::Allocation;
 
 use crate::async_resource_loader::{AsyncResourceLoader, FlushError, TextureLoadHandle};
-use crate::internal::async_resource_loader::MgAsyncLdrSystem;
+use crate::internal::async_resource_loader::MgAsyncLdrRoot;
 use crate::resource::texture::physical::PhysicalTextureLayout;
 
 pub struct TextureUploadRange<'a, C: Send + 'static> {
@@ -50,7 +50,7 @@ pub struct TextureUploadRange<'a, C: Send + 'static> {
 
     /// An array of [`WantedTextureRows`] that marks up what data the caller should provide and
     /// where in the upload range to write it.
-    pub(crate) wanted: BVec<WantedTextureRows, MgAsyncLdrSystem>,
+    pub(crate) wanted: BVec<WantedTextureRows, MgAsyncLdrRoot>,
 }
 
 impl<'a, C: Send + 'static> Drop for TextureUploadRange<'a, C> {

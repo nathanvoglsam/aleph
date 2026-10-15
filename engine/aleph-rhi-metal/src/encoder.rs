@@ -37,7 +37,7 @@ use aleph_alloc::instrumentation::system;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::Blink;
 use objc2::rc::{Retained, autoreleasepool};
@@ -1033,9 +1033,9 @@ unsafe impl Send for BoundIndexBuffer {}
 
 pub struct BoundPipelineState {
     primitive_type: MTLPrimitiveType,
-    push_params: [BVec<u64, RhiSystem>; 8],
+    push_params: [BVec<u64, RhiRoot>; 8],
     push_params_dirty: bool,
-    push_constant_block: BVec<u8, RhiSystem>,
+    push_constant_block: BVec<u8, RhiRoot>,
 }
 
 impl BoundPipelineState {

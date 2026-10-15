@@ -32,7 +32,7 @@ use std::ptr::NonNull;
 
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
-use aleph_rhi_impl_utils::RhiSystem;
+use aleph_rhi_impl_utils::RhiRoot;
 
 use crate::device::Device;
 use crate::internal::memory_block::MemoryBlock;
@@ -54,7 +54,7 @@ const BLOCK_SIZE: usize = 1024 * 32;
 /// geometrically.
 pub struct UploadBumpAllocator {
     active_block: MemoryBlock,
-    full_blocks: BVec<MemoryBlock, RhiSystem>,
+    full_blocks: BVec<MemoryBlock, RhiRoot>,
     cursor: usize,
 }
 

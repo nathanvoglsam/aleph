@@ -30,13 +30,13 @@
 use aleph_gen_arena::GenArena;
 
 use crate::async_resource_loader::{BufferLoadHandle, TextureLoadHandle};
-use crate::internal::async_resource_loader::MgAsyncLdrSystem;
+use crate::internal::async_resource_loader::MgAsyncLdrRoot;
 use crate::internal::async_resource_loader::buffer::BufferLoadState;
 use crate::internal::async_resource_loader::texture::TextureLoadState;
 
 pub struct RequestStates<C> {
-    pub buffers: GenArena<BufferLoadState<C>, BufferLoadHandle, MgAsyncLdrSystem>,
-    pub textures: GenArena<TextureLoadState<C>, TextureLoadHandle, MgAsyncLdrSystem>,
+    pub buffers: GenArena<BufferLoadState<C>, BufferLoadHandle, MgAsyncLdrRoot>,
+    pub textures: GenArena<TextureLoadState<C>, TextureLoadHandle, MgAsyncLdrRoot>,
 }
 
 impl<C> RequestStates<C> {

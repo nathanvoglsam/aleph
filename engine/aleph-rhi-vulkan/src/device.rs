@@ -42,7 +42,7 @@ use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::owned_desc::{
     OwnedBufferDesc, OwnedParameterBlockDesc, OwnedSamplerDesc, OwnedTextureDesc,
 };
-use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind};
+use aleph_rhi_impl_utils::{Rhi, RhiRoot, abort_on_unwind};
 use ash::vk;
 use byteorder::{ByteOrder, NativeEndian};
 use crossbeam::queue::ArrayQueue;
@@ -253,10 +253,8 @@ impl IDevice for Device {
             DEVICE_BUMP.with(|bump_cell| {
                 let bump = bump_cell.scope();
 
-                let mut block_layouts = BVec::with_capacity_in(
-                    desc.parameter_block_layouts.len(),
-                    RhiSystem::default(),
-                );
+                let mut block_layouts =
+                    BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiRoot::default());
                 let mut set_layouts =
                     BVec::with_capacity_in(desc.parameter_block_layouts.len(), bump.allocator());
                 for v in desc.parameter_block_layouts {

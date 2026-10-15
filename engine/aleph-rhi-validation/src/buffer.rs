@@ -32,7 +32,7 @@ use std::sync::Arc;
 use aleph_alloc::BBox;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
+use aleph_rhi_impl_utils::RhiRoot;
 
 use crate::ValidationDevice;
 
@@ -40,7 +40,7 @@ pub struct ValidationBuffer {
     pub(crate) _device: Arc<ValidationDevice>,
     pub(crate) size: u64,
     pub(crate) usage: ResourceUsageFlags,
-    pub(crate) name: Option<BBox<str, RhiSystem>>,
+    pub(crate) name: Option<BBox<str, RhiRoot>>,
     pub(crate) inner: BufferHandle,
 }
 

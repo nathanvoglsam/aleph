@@ -35,7 +35,7 @@ use crate::resource::buffer::{BufferHandle, BufferPoolAccessor};
 /// Manager that owns the buffer object pool, and any other resources directly associated with
 /// our pooled buffer resources.
 pub struct BufferObjectStore {
-    pub pool: GenArena<BufferObject, BufferHandle, MgBufSystem>,
+    pub pool: GenArena<BufferObject, BufferHandle, MgBufRoot>,
 }
 
 impl BufferObjectStore {
@@ -87,4 +87,4 @@ pub const fn make_standard_buffer_desc(size: u64) -> rhi::BufferDesc<'static> {
 pub struct Buffer;
 aleph_alloc::new_child_alloc_category!(Magnesium, Buffer, "019b2ef7-63cc-70f0-8369-da19cf0a80cc");
 
-pub type MgBufSystem = aleph_alloc::instrumentation::Instrumented<Buffer>;
+pub type MgBufRoot = aleph_alloc::instrumentation::Instrumented<Buffer>;

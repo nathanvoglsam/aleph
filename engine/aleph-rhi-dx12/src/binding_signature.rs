@@ -33,7 +33,7 @@ use std::sync::{Arc, Weak};
 use aleph_alloc::instrumentation::system;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
 use allocator_api2::alloc::Allocator;
 use allocator_api2::vec::Vec as BVec;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -46,7 +46,7 @@ pub struct BindingSignature {
     pub(crate) this: Weak<Self>,
     pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
-    pub(crate) _parameter_block_layouts: BVec<Arc<ParameterBlockLayout>, RhiSystem>,
+    pub(crate) _parameter_block_layouts: BVec<Arc<ParameterBlockLayout>, RhiRoot>,
     pub(crate) root_signature: ID3D12RootSignature,
     pub(crate) compiled: CompiledBindingSignature,
 }
@@ -180,7 +180,7 @@ pub struct CompiledBindingSignature {
     /// Table that associates with the index of each [`IParameterBlockLayout`] given in
     /// [`BindingSignatureDesc`] that is used to look up the base index in the root signature the
     /// block should be bound to.
-    pub block_offsets: BVec<CompiledBlockOffset, RhiSystem>,
+    pub block_offsets: BVec<CompiledBlockOffset, RhiRoot>,
 
     /// Table that is present when a push constant block was defined in [`BindingSignatureDesc`].
     /// Stores the root parameter index and the number of DWORDs the block consumes.

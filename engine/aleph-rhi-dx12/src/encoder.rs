@@ -35,7 +35,7 @@ use std::sync::Arc;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind, try_clone_value_into_slot};
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::{Blink, BlinkAlloc};
 use pix::{begin_event_cstr_on_list, end_event_on_list, set_marker_cstr_on_list};
@@ -63,7 +63,7 @@ pub struct Encoder<'a> {
     pub(crate) bound_graphics_pipeline: Option<Arc<Object<GraphicsPipeline>>>,
     pub(crate) bound_compute_pipeline: Option<Arc<Object<ComputePipeline>>>,
     pub(crate) input_binding_strides: [u32; 16],
-    pub(crate) arena: Blink<BlinkAlloc<RhiSystem>>,
+    pub(crate) arena: Blink<BlinkAlloc<RhiRoot>>,
     pub(crate) bound_graphics_sets: Box<[Option<ParameterBlockHandle>]>,
     pub(crate) bound_compute_sets: Box<[Option<ParameterBlockHandle>]>,
 }

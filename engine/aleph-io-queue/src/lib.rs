@@ -50,7 +50,7 @@ use crate::top_level_handle_cache::TopLevelHandleCache;
 
 pub struct IoQueue {
     top_level_handle_cache: Arc<TopLevelHandleCache>,
-    threads: BVec<JoinHandle<()>, AsyncIoSystem>,
+    threads: BVec<JoinHandle<()>, AsyncIoRoot>,
     sender: Option<Sender<AsyncRequest>>,
 }
 
@@ -253,7 +253,7 @@ impl Drop for IoQueue {
 pub struct AsyncIo;
 aleph_alloc::new_alloc_category!(AsyncIo, "019feb3d-4b0e-7d50-915f-3d01fb2baf6d");
 
-pub type AsyncIoSystem = aleph_alloc::instrumentation::Instrumented<AsyncIo>;
+pub type AsyncIoRoot = aleph_alloc::instrumentation::Instrumented<AsyncIo>;
 
 struct IoQueueWorker {
     /// Assigned ID of the worker. Used to index the file handles to reduce contention to shared

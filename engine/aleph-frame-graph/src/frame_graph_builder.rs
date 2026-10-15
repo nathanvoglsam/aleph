@@ -153,17 +153,17 @@ impl GraphVizOutputOptions {
 pub struct FrameGraphBuilder<A: PassArgs = ()> {
     /// An arena that will be moved into the FrameGraph once the graph is finalized. This can be
     /// used to store anything that persists to the fully constructed graph.
-    pub(crate) arena: Blink<BlinkAlloc<FgSystem>>,
+    pub(crate) arena: Blink<BlinkAlloc<FgRoot>>,
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
-    pub(crate) render_passes: BVec<RenderPass<A>, FgSystem>,
+    pub(crate) render_passes: BVec<RenderPass<A>, FgRoot>,
 
     /// The backing storage used for all of the root resources objects. A root resource represents
     /// a concrete [ITexture] or [IBuffer] as created by the graph. This includes both the created
     /// transient resources as well as imported resources. Imported resources are identified by
     /// having their index in the 'imported_resources' set.
-    pub(crate) root_resources: BVec<ResourceRoot, FgSystem>,
+    pub(crate) root_resources: BVec<ResourceRoot, FgRoot>,
 
     /// The backing storage used for all the resource version objects. A resource version is an
     /// indexed set that is used to identify a particular version of a root resource.
@@ -175,11 +175,11 @@ pub struct FrameGraphBuilder<A: PassArgs = ()> {
     /// These entries are critical as resource versions are what form the core of the graph. They
     /// are what allows the graph to construct a stable program order via an SSA form graph
     /// construction.
-    pub(crate) resource_versions: BVec<ResourceVersion, FgSystem>,
+    pub(crate) resource_versions: BVec<ResourceVersion, FgRoot>,
 
     /// The set of resources within the graph that were imported, stored as indices into the
     /// root_resources array.
-    pub(crate) imported_resources: BVec<u16, FgSystem>,
+    pub(crate) imported_resources: BVec<u16, FgRoot>,
 }
 
 impl<A: PassArgs> Default for FrameGraphBuilder<A> {
@@ -339,7 +339,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         let execution_bundles = pass_order_builder.bundles;
         let ir_nodes = ir_builder.nodes;
 
-        fn take_bvec<T>(v: &mut BVec<T, FgSystem>) -> BVec<T, FgSystem> {
+        fn take_bvec<T>(v: &mut BVec<T, FgRoot>) -> BVec<T, FgRoot> {
             let mut slot = BVec::new_in(system());
             std::mem::swap(&mut slot, v);
             slot
@@ -1305,7 +1305,7 @@ struct IRBuilder<'arena, 'b, 'c, T: std::io::Write> {
     /// allocations that will not outlive the full frame graph build operation.
     ///
     /// That is: this arena will remain live for the scope of [FrameGraphBuilder::build_internal].
-    arena: &'arena Blink<BlinkAlloc<FgSystem>>,
+    arena: &'arena Blink<BlinkAlloc<FgRoot>>,
 
     /// Our target writter for our graphviz output, if we have one.
     writer: Option<(&'b mut T, &'c GraphVizOutputOptions)>,
@@ -1321,22 +1321,22 @@ struct IRBuilder<'arena, 'b, 'c, T: std::io::Write> {
     ///
     /// That is, given an index 'i': `ir_builder.ir_nodes[i]` will hold a [RenderPassIRNode] that
     /// points to `frame_graph_build.render_passes[i]`.
-    nodes: BVec<IRNode, FgSystem>,
+    nodes: BVec<IRNode, FgRoot>,
 
     /// A temporary list used as part of the build algorithm. This list is SoA mapped to each render
     /// pass node in the IR graph. Each entry in this list is another Vec (arena allocated) that
     /// will be used to accumulate the 'prev' edges of the render pass IR nodes before they get
     /// patched onto their IR nodes at the end of the build phase.
-    pass_prevs: &'arena mut [BVec<usize, &'arena BlinkAlloc<FgSystem>>],
+    pass_prevs: &'arena mut [BVec<usize, &'arena BlinkAlloc<FgRoot>>],
 
     /// See [IRBuilder::pass_prevs]. This is logically the same list, but instead used for storing
     /// the 'next' edges.
-    pass_nexts: &'arena mut [BVec<usize, &'arena BlinkAlloc<FgSystem>>],
+    pass_nexts: &'arena mut [BVec<usize, &'arena BlinkAlloc<FgRoot>>],
 }
 
 impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     pub fn new(
-        arena: &'arena Blink<BlinkAlloc<FgSystem>>,
+        arena: &'arena Blink<BlinkAlloc<FgRoot>>,
         writer: Option<(&'b mut T, &'c GraphVizOutputOptions)>,
         num_passes: usize,
     ) -> Self {
@@ -2517,7 +2517,7 @@ struct PassOrderBuilder<'arena> {
     /// allocations that will not outlive the full frame graph build operation.
     ///
     /// That is: this arena will remain live for the scope of [FrameGraphBuilder::build_internal].
-    arena: &'arena Blink<BlinkAlloc<FgSystem>>,
+    arena: &'arena Blink<BlinkAlloc<FgRoot>>,
 
     /// A temporary buffer that associates with ir.nodes that flags whether the matching node has
     /// been scheduled or not.
@@ -2534,12 +2534,12 @@ struct PassOrderBuilder<'arena> {
     runnable_prev_nums: &'arena mut [usize],
 
     /// This list is our primary output, and contains the ordered list of execution bundles.
-    bundles: BVec<PassOrderBundle, FgSystem>,
+    bundles: BVec<PassOrderBundle, FgRoot>,
 }
 
 impl<'arena> PassOrderBuilder<'arena> {
     pub fn new<T: std::io::Write>(
-        arena: &'arena Blink<BlinkAlloc<FgSystem>>,
+        arena: &'arena Blink<BlinkAlloc<FgRoot>>,
         ir: &IRBuilder<'_, '_, '_, T>,
     ) -> Self {
         let mut node_scheduled = BVec::new_in(arena.allocator());
@@ -2774,7 +2774,7 @@ impl<'arena> PassOrderBuilder<'arena> {
 
     fn schedule_pass_barriers<T: std::io::Write>(
         &mut self,
-        barriers: &mut BVec<usize, &'_ BlinkAlloc<FgSystem>>,
+        barriers: &mut BVec<usize, &'_ BlinkAlloc<FgRoot>>,
         ir: &IRBuilder<'_, '_, '_, T>,
         node_variant: &RenderPassIRNode,
     ) {
@@ -2797,8 +2797,8 @@ impl<'arena> PassOrderBuilder<'arena> {
         roots: &[usize],
         leafs: &[usize],
     ) -> (
-        BVec<usize, &'graph BlinkAlloc<FgSystem>>,
-        BVec<usize, &'graph BlinkAlloc<FgSystem>>,
+        BVec<usize, &'graph BlinkAlloc<FgRoot>>,
+        BVec<usize, &'graph BlinkAlloc<FgRoot>>,
     ) {
         let num_export_barriers = barrier_type_counts[IRBarrierType::ExportAfterRead as usize]
             + barrier_type_counts[IRBarrierType::ExportAfterWrite as usize];
@@ -2910,8 +2910,8 @@ impl<'arena> PassOrderBuilder<'arena> {
         graph_builder: &FrameGraphBuilder<A>,
         ir: &IRBuilder<'arena, '_, '_, T>,
     ) -> (
-        BVec<usize, &'arena BlinkAlloc<FgSystem>>,
-        BVec<usize, &'arena BlinkAlloc<FgSystem>>,
+        BVec<usize, &'arena BlinkAlloc<FgRoot>>,
+        BVec<usize, &'arena BlinkAlloc<FgRoot>>,
     ) {
         // Find the root and leaf nodes of the graph by iterating all the nodes and filtering them
         // into the apropriate category based on whether they have an previous or next nodes.

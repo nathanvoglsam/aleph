@@ -39,7 +39,7 @@ use crate::resource_loader::mip_upload::{LevelOffsets, MipUploadDesc};
 /// Manager that owns the texture object pool, and any other resources directly associated with
 /// our pooled texture resources.
 pub struct TextureObjectStore {
-    pub pool: GenArena<TextureObject, TextureHandle, MgTexSystem>,
+    pub pool: GenArena<TextureObject, TextureHandle, MgTexRoot>,
 }
 
 impl TextureObjectStore {
@@ -153,7 +153,7 @@ pub fn make_standard_texture_desc<T: SimpleTextureDesc>(
 pub struct Texture;
 aleph_alloc::new_child_alloc_category!(Magnesium, Texture, "019b2eff-71d9-7c03-a3a8-9ab3efa9b04e");
 
-pub type MgTexSystem = aleph_alloc::instrumentation::Instrumented<Texture>;
+pub type MgTexRoot = aleph_alloc::instrumentation::Instrumented<Texture>;
 
 pub fn validate_mip_data_for_immediate_upload<T: SimpleTextureDesc>(
     desc: &T,

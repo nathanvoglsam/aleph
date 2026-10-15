@@ -35,7 +35,7 @@ use aleph_gpu_allocator::GpuAllocation;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
 use ash::vk;
 use parking_lot::Mutex;
 
@@ -51,9 +51,9 @@ pub struct Texture {
     // pub(crate) created_usage: vk::ImageUsageFlags,
     pub(crate) allocation: Option<GpuAllocation>,
     pub(crate) is_owned: bool,
-    pub(crate) views: Mutex<BHashMap<ImageViewDesc, vk::ImageView, RhiSystem>>,
-    pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, vk::ImageView, RhiSystem>>,
-    pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, vk::ImageView, RhiSystem>>,
+    pub(crate) views: Mutex<BHashMap<ImageViewDesc, vk::ImageView, RhiRoot>>,
+    pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, vk::ImageView, RhiRoot>>,
+    pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, vk::ImageView, RhiRoot>>,
     pub(crate) desc: OwnedTextureDesc,
 }
 

@@ -51,7 +51,7 @@ use smallbox::SmallBox;
 use smallbox::space::S8;
 
 use crate::async_resource_loader::{AsyncResourceLoader, AsyncResourceLoaderConfig};
-use crate::internal::MgSystem;
+use crate::internal::MgRoot;
 use crate::internal::async_resource_loader::renderer_channel::{
     GenericLoaderMessageDispatcher, LoaderDispatcherError, LoaderMessageDispatcher,
 };
@@ -87,8 +87,7 @@ pub struct Renderer {
     pub(crate) device: Arc<dyn rhi::IDevice>,
     pub(crate) queue: Arc<dyn rhi::IQueue>,
     pub(crate) frame_fence: rhi::FenceHandle,
-    pub(crate) async_loader_dispatchers:
-        BVec<BBox<dyn LoaderMessageDispatcher, MgSystem>, MgSystem>,
+    pub(crate) async_loader_dispatchers: BVec<BBox<dyn LoaderMessageDispatcher, MgRoot>, MgRoot>,
     pub(crate) graph_manager: GraphManager,
     pub(crate) frame_manager: FrameManager,
     pub(crate) swap_manager: SwapManager,

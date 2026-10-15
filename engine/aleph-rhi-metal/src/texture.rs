@@ -35,7 +35,7 @@ use aleph_alloc::BHashMap;
 use aleph_gpu_allocator::{AllocationDesc, GpuAllocation, MemoryLocation};
 use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
+use aleph_rhi_impl_utils::RhiRoot;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use blink_alloc::{Blink, BlinkAlloc};
 use objc2::rc::{Retained, autoreleasepool};
@@ -55,10 +55,10 @@ pub struct Texture {
     pub(crate) objects: TextureObjects,
     pub(crate) allocation: Option<GpuAllocation>,
     pub(crate) views:
-        Mutex<BHashMap<ImageViewDesc, (ImageView, Option<ImageViewAllocation>), RhiSystem>>,
-    pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
-    pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
-    pub(crate) image_views: Mutex<Blink<BlinkAlloc<RhiSystem>>>,
+        Mutex<BHashMap<ImageViewDesc, (ImageView, Option<ImageViewAllocation>), RhiRoot>>,
+    pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, ImageView, RhiRoot>>,
+    pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, ImageView, RhiRoot>>,
+    pub(crate) image_views: Mutex<Blink<BlinkAlloc<RhiRoot>>>,
     pub(crate) desc: OwnedTextureDesc,
 }
 
@@ -123,7 +123,7 @@ impl Texture {
             allocation: Some(allocation),
             rtvs: Default::default(),
             dsvs: Default::default(),
-            image_views: Mutex::new(Blink::new_in(BlinkAlloc::new_in(RhiSystem::default()))),
+            image_views: Mutex::new(Blink::new_in(BlinkAlloc::new_in(RhiRoot::default()))),
             desc: OwnedTextureDesc::new(desc.clone()),
         };
         let out = Object::new_arc_opaque(out);
@@ -158,7 +158,7 @@ impl Texture {
 
     pub(crate) fn get_mtl_texture_view(
         &self,
-        map: &Mutex<BHashMap<ImageViewDesc, (ImageView, Option<ImageViewAllocation>), RhiSystem>>,
+        map: &Mutex<BHashMap<ImageViewDesc, (ImageView, Option<ImageViewAllocation>), RhiRoot>>,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
         let mut views = map.lock();
@@ -235,7 +235,7 @@ impl Texture {
     /// map.
     pub(crate) fn get_mtl_render_view(
         &self,
-        map: &Mutex<BHashMap<ImageViewDesc, ImageView, RhiSystem>>,
+        map: &Mutex<BHashMap<ImageViewDesc, ImageView, RhiRoot>>,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
         let mut views = map.lock();

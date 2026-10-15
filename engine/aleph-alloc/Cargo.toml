@@ -45,6 +45,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-malloc-info = { workspace = true }
 aleph-profile = { workspace = true }
 aleph-nstr = { workspace = true }
+aleph-mimalloc = { workspace = true }
 allocator-api2 = { workspace = true }
 blink-alloc = { workspace = true }
 crossbeam = { workspace = true }

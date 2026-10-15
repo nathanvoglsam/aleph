@@ -33,7 +33,7 @@ use std::sync::{Arc, Weak};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
 use blink_alloc::{Blink, BlinkAlloc};
 use objc2::rc::{Retained, autoreleasepool};
 use objc2_core_foundation::CGSize;
@@ -153,9 +153,7 @@ impl ISwapChain for SwapChain {
                     allocation: None,
                     rtvs: Default::default(),
                     dsvs: Default::default(),
-                    image_views: Mutex::new(Blink::new_in(
-                        BlinkAlloc::new_in(RhiSystem::default()),
-                    )),
+                    image_views: Mutex::new(Blink::new_in(BlinkAlloc::new_in(RhiRoot::default()))),
                     desc: OwnedTextureDesc::new(TextureDesc {
                         width: inner.config.width,
                         height: inner.config.height,

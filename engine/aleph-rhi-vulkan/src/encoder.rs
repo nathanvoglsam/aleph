@@ -33,7 +33,7 @@ use std::sync::Arc;
 use aleph_alloc::{BVec, Blink, BlinkAlloc};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind, try_clone_value_into_slot};
 use ash::vk;
 
 use crate::buffer::Buffer;
@@ -54,7 +54,7 @@ pub struct Encoder<'a> {
     pub(crate) _device: Arc<Device>,
     pub(crate) bound_graphics_pipeline: Option<Arc<Object<GraphicsPipeline>>>,
     pub(crate) bound_compute_pipeline: Option<Arc<Object<ComputePipeline>>>,
-    pub(crate) arena: Blink<BlinkAlloc<RhiSystem>>,
+    pub(crate) arena: Blink<BlinkAlloc<RhiRoot>>,
     pub(crate) timing_state: TimingState,
 }
 
@@ -848,7 +848,7 @@ impl Default for TimingState {
 
 unsafe fn next_query_id(
     state: &mut TimingState,
-    retired: &mut BVec<RetiredTimingQueryBlock, RhiSystem>,
+    retired: &mut BVec<RetiredTimingQueryBlock, RhiRoot>,
     manager: &QueueTimingQueryManager,
     device: &Device,
     command_buffer: vk::CommandBuffer,

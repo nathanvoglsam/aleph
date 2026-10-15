@@ -32,7 +32,7 @@ use std::sync::Arc;
 
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, RhiRoot, abort_on_unwind, try_clone_value_into_slot};
 use blink_alloc::{Blink, BlinkAlloc};
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -129,7 +129,7 @@ impl CommandList {
                     bound_graphics_pipeline: None,
                     bound_compute_pipeline: None,
                     input_binding_strides: [0; 16],
-                    arena: Blink::new_in(BlinkAlloc::new_in(RhiSystem::default())),
+                    arena: Blink::new_in(BlinkAlloc::new_in(RhiRoot::default())),
                     bound_graphics_sets: vec![None; 16].into(),
                     bound_compute_sets: vec![None; 16].into(),
                 };

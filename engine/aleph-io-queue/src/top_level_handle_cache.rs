@@ -35,7 +35,7 @@ use std::sync::{Arc, Mutex};
 use aleph_alloc::BHashMap;
 use aleph_alloc::instrumentation::IAllocationCategory;
 
-use crate::{AsyncIo, AsyncIoSystem};
+use crate::{AsyncIo, AsyncIoRoot};
 
 /// A global, send+sync file handle cache.
 ///
@@ -54,7 +54,7 @@ pub struct TopLevelHandleCache {
     threads: usize,
 
     /// Maps a path to a set of file handles for that file.
-    cache: Mutex<BHashMap<PathBuf, Arc<[File]>, AsyncIoSystem>>,
+    cache: Mutex<BHashMap<PathBuf, Arc<[File]>, AsyncIoRoot>>,
 }
 
 impl TopLevelHandleCache {

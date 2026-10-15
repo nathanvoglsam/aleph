@@ -30,16 +30,16 @@
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 
-use crate::internal::MgSystem;
+use crate::internal::MgRoot;
 use crate::resource::buffer::BufferHandle;
 use crate::resource::texture::TextureHandle;
 
 pub struct ObjectDeleteQueue {
     /// List of texture objects that should be deleted
-    pub texture: BVec<TextureHandle, MgSystem>,
+    pub texture: BVec<TextureHandle, MgRoot>,
 
     /// List of buffer objects that should be deleted
-    pub buffer: BVec<BufferHandle, MgSystem>,
+    pub buffer: BVec<BufferHandle, MgRoot>,
 }
 
 impl ObjectDeleteQueue {

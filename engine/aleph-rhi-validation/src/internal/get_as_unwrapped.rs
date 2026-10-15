@@ -37,7 +37,7 @@ use std::cell::Cell;
 
 use aleph_alloc::BVec;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::RhiSystem;
+use aleph_rhi_impl_utils::RhiRoot;
 
 use crate::internal::unwrap;
 use crate::texture::ValidationImageView;
@@ -106,7 +106,7 @@ pub fn queue_submit_desc<Return>(
     desc: &QueueSubmitDesc,
     f: impl FnOnce(&QueueSubmitDesc) -> Return,
 ) -> Return {
-    let mut command_lists = BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
+    let mut command_lists = BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
     command_lists.extend(desc.command_lists.iter().map(|v| {
         let v = v.take().unwrap();
         let v = {
@@ -121,7 +121,7 @@ pub fn queue_submit_desc<Return>(
         Cell::new(Some(v))
     }));
 
-    let mut wait_fences = BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
+    let mut wait_fences = BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
     wait_fences.extend(
         desc.wait_fences
             .iter()
@@ -130,7 +130,7 @@ pub fn queue_submit_desc<Return>(
             .map(|v| &v.inner),
     );
 
-    let mut signal_fences = BVec::with_capacity_in(desc.command_lists.len(), RhiSystem::default());
+    let mut signal_fences = BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
     signal_fences.extend(
         desc.signal_fences
             .iter()

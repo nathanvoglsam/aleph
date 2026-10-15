@@ -35,7 +35,7 @@ use aleph_alloc::{BBox, BVec};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
 
 use crate::internal::parameter_block::ParameterBlock;
 use crate::internal::{get_as_unwrapped, unwrap};
@@ -176,14 +176,14 @@ impl IDevice for ValidationDevice {
             }
 
             let mut parameter_block_layouts =
-                BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiSystem::default());
+                BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiRoot::default());
             parameter_block_layouts.extend(
                 desc.parameter_block_layouts
                     .iter()
                     .map(|v| unwrap::parameter_block_layout_d(v)._this.upgrade().unwrap()),
             );
             let mut parameter_block_layouts_inner =
-                BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiSystem::default());
+                BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiRoot::default());
             parameter_block_layouts_inner.extend(
                 desc.parameter_block_layouts
                     .iter()

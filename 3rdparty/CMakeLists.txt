@@ -32,6 +32,13 @@ FetchContent_Declare(
         GIT_TAG        release-3.4.18
 )
 
+## mimalloc
+FetchContent_Declare(
+    mimalloc
+    GIT_REPOSITORY https://github.com/microsoft/mimalloc.git
+    GIT_TAG        v3.5.3
+)
+
 ## Tracy Profiler
 FetchContent_Declare(
         tracy
@@ -58,6 +65,12 @@ FetchContent_Declare(
 
 ## QuickJS is built for all platforms
 FetchContent_MakeAvailable(quickjs)
+
+## mimalloc is built for all platforms
+set(MI_BUILD_SHARED OFF)
+set(MI_BUILD_TESTS OFF)
+set(MI_INSTALL_TOPLEVEL ON)
+FetchContent_MakeAvailable(mimalloc)
 
 ## Windows and Mac build SDL3, Linux pulls from the system
 if(WIN32 OR APPLE)

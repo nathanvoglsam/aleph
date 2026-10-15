@@ -31,7 +31,7 @@ use aleph_alloc::HashMap;
 use aleph_alloc::instrumentation::system;
 use aleph_identity_hasher::BuildIdentityHasher;
 
-use crate::internal::MgSystem;
+use crate::internal::MgRoot;
 use crate::internal::buffer::BufferObjectStore;
 use crate::internal::texture::TextureObjectStore;
 use crate::resource::buffer::BufferHandle;
@@ -42,8 +42,8 @@ use crate::resource::texture::TextureHandle;
 /// This is intended to be used for GPU work outside a frame graph where the usage is highly
 /// dynamic.
 pub struct LastUseTracker {
-    pub buffers: HashMap<BufferHandle, LastBufferUse, BuildIdentityHasher, MgSystem>,
-    pub textures: HashMap<TextureHandle, LastTextureUse, BuildIdentityHasher, MgSystem>,
+    pub buffers: HashMap<BufferHandle, LastBufferUse, BuildIdentityHasher, MgRoot>,
+    pub textures: HashMap<TextureHandle, LastTextureUse, BuildIdentityHasher, MgRoot>,
 }
 
 impl LastUseTracker {

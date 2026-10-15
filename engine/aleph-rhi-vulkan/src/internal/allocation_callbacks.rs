@@ -92,18 +92,18 @@ unsafe extern "system" fn free<A: Allocator>(p_user_data: *mut c_void, p_memory:
 pub static GLOBAL: Option<&'static vk::AllocationCallbacks<'static>> = Some(&GLOBAL_CALLBACKS);
 
 pub static GLOBAL_CALLBACKS: vk::AllocationCallbacks<'static> = vk::AllocationCallbacks {
-    p_user_data: &GLOBAL_OBJECT as *const VulkanSystem as *mut VulkanSystem as *mut c_void,
-    pfn_allocation: Some(allocation::<VulkanSystem>),
-    pfn_reallocation: Some(reallocation::<VulkanSystem>),
-    pfn_free: Some(free::<VulkanSystem>),
+    p_user_data: &GLOBAL_OBJECT as *const VulkanRoot as *mut VulkanRoot as *mut c_void,
+    pfn_allocation: Some(allocation::<VulkanRoot>),
+    pfn_reallocation: Some(reallocation::<VulkanRoot>),
+    pfn_free: Some(free::<VulkanRoot>),
     pfn_internal_allocation: None,
     pfn_internal_free: None,
     _marker: PhantomData,
 };
 
-static GLOBAL_OBJECT: VulkanSystem = system();
+static GLOBAL_OBJECT: VulkanRoot = system();
 
 pub struct Vulkan;
 aleph_alloc::new_alloc_category!(Vulkan, "01991523-55ad-7942-a26e-477ae9cf712d");
 
-pub type VulkanSystem = Instrumented<Vulkan>;
+pub type VulkanRoot = Instrumented<Vulkan>;

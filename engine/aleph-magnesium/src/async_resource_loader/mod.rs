@@ -41,7 +41,7 @@ use thiserror::Error;
 
 use crate::async_resource_loader::buffer_upload_range::BufferUploadRange;
 use crate::async_resource_loader::texture_upload_range::TextureUploadRange;
-use crate::internal::async_resource_loader::MgAsyncLdrSystem;
+use crate::internal::async_resource_loader::MgAsyncLdrRoot;
 use crate::internal::async_resource_loader::buffer::BufferLoadState;
 use crate::internal::async_resource_loader::queued_copy_manager::{
     QueuedCopyManager, SubmittedCopy,
@@ -177,6 +177,7 @@ impl<C: Send + 'static> Drop for AsyncResourceLoader<C> {
 }
 
 impl<C: Send + 'static> AsyncResourceLoader<C> {
+    #[aleph_profile::function]
     pub fn begin_buffer_load(
         &self,
         sender: kanal::Sender<BufferLoadResult<C>>,
@@ -563,8 +564,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         }
 
         // Use 'wait_fences' to block on all the fences, rather than waiting on them individually.
-        let mut fences: BVec<_, MgAsyncLdrSystem> = BVec::new_in(system());
-        let mut values: BVec<_, MgAsyncLdrSystem> = BVec::new_in(system());
+        let mut fences: BVec<_, MgAsyncLdrRoot> = BVec::new_in(system());
+        let mut values: BVec<_, MgAsyncLdrRoot> = BVec::new_in(system());
         for submission in live.iter() {
             fences.push(&self.fence);
             values.push(submission.signal_value);
@@ -664,8 +665,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
 
             let mut transfer = encoder.begin_transfer(nstr!("AsyncResourceLoader::flush"));
 
-            let mut buffer_barriers: BVec<_, MgAsyncLdrSystem> = BVec::new_in(system());
-            let mut texture_barriers: BVec<_, MgAsyncLdrSystem> = BVec::new_in(system());
+            let mut buffer_barriers: BVec<_, MgAsyncLdrRoot> = BVec::new_in(system());
+            let mut texture_barriers: BVec<_, MgAsyncLdrRoot> = BVec::new_in(system());
 
             // Record copy commands for all the submitted upload ranges.
             for block in queue.iter() {

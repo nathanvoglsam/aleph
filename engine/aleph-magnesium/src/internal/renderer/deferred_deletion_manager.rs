@@ -32,7 +32,7 @@ use std::sync::Arc;
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 
-use crate::internal::MgSystem;
+use crate::internal::MgRoot;
 use crate::internal::utils::abort_on_unwind;
 
 /// Manager object that handles extending rhi resource lifetimes until they are no longer in use on
@@ -56,7 +56,7 @@ pub struct DeferredDeletionManager {
 
     /// Collection of deletion bundles. These will be destroyed when their associated fence is
     /// found to be signaled.
-    bundles: BVec<DeletionBundle, MgSystem>,
+    bundles: BVec<DeletionBundle, MgRoot>,
 }
 
 impl DeferredDeletionManager {
@@ -183,10 +183,10 @@ pub struct DeletionBundle {
     value: u64,
 
     /// List of buffer handles to be kept alive in a deletion manager
-    pub buffers: BVec<rhi::BufferHandle, MgSystem>,
+    pub buffers: BVec<rhi::BufferHandle, MgRoot>,
 
     /// List of texture handles to be kept alive in a deletion manager
-    pub textures: BVec<rhi::TextureHandle, MgSystem>,
+    pub textures: BVec<rhi::TextureHandle, MgRoot>,
 }
 
 impl DeletionBundle {

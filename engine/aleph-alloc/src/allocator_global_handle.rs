@@ -47,3 +47,7 @@ pub unsafe trait AllocatorGlobalHandle: Allocator {
 unsafe impl AllocatorGlobalHandle for System {
     const HANDLE: Self = Self;
 }
+
+unsafe impl AllocatorGlobalHandle for aleph_mimalloc::MiMalloc {
+    const HANDLE: Self = Self;
+}

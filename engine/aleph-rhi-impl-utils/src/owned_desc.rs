@@ -30,7 +30,7 @@
 use aleph_alloc::{BBox, BVec};
 use aleph_rhi_api::*;
 
-use crate::RhiSystem;
+use crate::RhiRoot;
 
 #[repr(transparent)]
 #[derive(Hash, PartialEq, Eq, Debug)]
@@ -48,7 +48,7 @@ impl OwnedBufferDesc {
         // Allocate the name on the heap and update the desc with the new allocated name ptr
         let name: Option<&str> = match desc.name {
             Some(name) => {
-                let v = BBox::<_, RhiSystem>::from(name);
+                let v = BBox::<_, RhiRoot>::from(name);
                 let v = BBox::leak(v);
                 Some(v)
             }
@@ -82,7 +82,7 @@ impl Drop for OwnedBufferDesc {
             //         is really a Box<str> so we reconstitute the box and drop it here.
             unsafe {
                 let v = v as *const str as *mut str;
-                let v: BBox<str, RhiSystem> = BBox::from_raw_in(v, RhiSystem::default());
+                let v: BBox<str, RhiRoot> = BBox::from_raw_in(v, RhiRoot::default());
                 drop(v);
             }
         }
@@ -105,7 +105,7 @@ impl OwnedTextureDesc {
         // Allocate the name on the heap and update the desc with the new allocated name ptr
         let name: Option<&str> = match desc.name {
             Some(name) => {
-                let v = BBox::<_, RhiSystem>::from(name);
+                let v = BBox::<_, RhiRoot>::from(name);
                 let v = BBox::leak(v);
                 Some(v)
             }
@@ -138,7 +138,7 @@ impl Drop for OwnedTextureDesc {
             //         is really a Box<str> so we reconstitute the box and drop it here.
             unsafe {
                 let v = v as *const str as *mut str;
-                let v = BBox::from_raw_in(v, RhiSystem::default());
+                let v = BBox::from_raw_in(v, RhiRoot::default());
                 drop(v);
             }
         }
@@ -161,7 +161,7 @@ impl OwnedSamplerDesc {
         // Allocate the name on the heap and update the desc with the new allocated name ptr
         let name: Option<&str> = match desc.name {
             Some(name) => {
-                let v = BBox::<_, RhiSystem>::from(name);
+                let v = BBox::<_, RhiRoot>::from(name);
                 let v = BBox::leak(v);
                 Some(v)
             }
@@ -194,7 +194,7 @@ impl Drop for OwnedSamplerDesc {
             //         is really a Box<str> so we reconstitute the box and drop it here.
             unsafe {
                 let v = v as *const str as *mut str;
-                let v = BBox::from_raw_in(v, RhiSystem::default());
+                let v = BBox::from_raw_in(v, RhiRoot::default());
                 drop(v);
             }
         }
@@ -215,7 +215,7 @@ impl OwnedParameterBlockDesc {
     /// desc getter functions.
     pub fn new(desc: &ParameterBlockDesc) -> Self {
         let params = {
-            let mut params = BVec::with_capacity_in(desc.params.len(), RhiSystem::default());
+            let mut params = BVec::with_capacity_in(desc.params.len(), RhiRoot::default());
             params.extend_from_slice(desc.params);
             params.shrink_to_fit();
             let params = params.into_boxed_slice();
@@ -225,7 +225,7 @@ impl OwnedParameterBlockDesc {
         // Allocate the name on the heap and update the desc with the new allocated name ptr
         let name: Option<&str> = match desc.name {
             Some(name) => {
-                let v = BBox::<_, RhiSystem>::from(name);
+                let v = BBox::<_, RhiRoot>::from(name);
                 let v = BBox::leak(v);
                 Some(v)
             }
@@ -261,7 +261,7 @@ impl Drop for OwnedParameterBlockDesc {
         //         is really a Box<[]> so we reconstitute the box and drop it here.
         unsafe {
             let v = self.desc.params as *const [ParameterDesc] as *mut [ParameterDesc];
-            let v = BBox::from_raw_in(v, RhiSystem::default());
+            let v = BBox::from_raw_in(v, RhiRoot::default());
             drop(v);
         }
         if let Some(v) = self.desc.name {
@@ -269,7 +269,7 @@ impl Drop for OwnedParameterBlockDesc {
             //         is really a Box<str> so we reconstitute the box and drop it here.
             unsafe {
                 let v = v as *const str as *mut str;
-                let v = BBox::from_raw_in(v, RhiSystem::default());
+                let v = BBox::from_raw_in(v, RhiRoot::default());
                 drop(v);
             }
         }

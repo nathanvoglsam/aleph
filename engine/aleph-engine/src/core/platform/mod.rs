@@ -70,7 +70,7 @@ pub use sdl_alloc_wrapper::set_memory_functions;
 use sdl3::mouse::SystemCursor;
 pub use window::Window;
 
-use crate::core::alloc::EngineSystem;
+use crate::core::alloc::EngineRoot;
 use crate::core::platform::keyboard::KeyboardState;
 use crate::core::platform::window::WindowState;
 
@@ -196,7 +196,7 @@ impl IPlugin for CorePlatform {
 
         let io_queue = IoQueue::new(TopLevelHandleCache::new(2));
 
-        let mut layers: BVec<_, EngineSystem> = BVec::new_in(system());
+        let mut layers: BVec<_, EngineRoot> = BVec::new_in(system());
 
         // TODO: right now for the shaders we either mount the CWD or .aleph if we find it
         if Path::new(".aleph/shaders").exists() {
@@ -536,4 +536,4 @@ impl SdlObjects {
 pub struct Sdl;
 aleph_alloc::new_alloc_category!(Sdl, "01993166-455d-7e71-9a81-022a9b388514");
 
-pub type SdlSystem = Instrumented<Sdl>;
+pub type SdlRoot = Instrumented<Sdl>;

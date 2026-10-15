@@ -41,4 +41,4 @@ pub mod utils;
 pub struct Magnesium;
 aleph_alloc::new_alloc_category!(Magnesium, "019b2eec-f6e4-7753-9b83-ad3f1822b961");
 
-pub type MgSystem = aleph_alloc::instrumentation::Instrumented<Magnesium>;
+pub type MgRoot = aleph_alloc::instrumentation::Instrumented<Magnesium>;

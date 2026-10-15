@@ -32,7 +32,7 @@ use std::ptr::NonNull;
 
 use aleph_alloc::BHashSet;
 
-use crate::EcsSystem;
+use crate::EcsRoot;
 use crate::component::{Component, ComponentId};
 use crate::entity::EntityHandle;
 use crate::world::World;
@@ -366,7 +366,7 @@ impl_query_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M);
 
 pub struct QueryRef<'world, Q: ReadOnlyComponentQuery> {
     pub(crate) world: &'world World,
-    pub(crate) inner: UnsafeQuery<<BHashSet<usize, EcsSystem> as IntoIterator>::IntoIter, Q>,
+    pub(crate) inner: UnsafeQuery<<BHashSet<usize, EcsRoot> as IntoIterator>::IntoIter, Q>,
 }
 
 impl<'world, Q: ReadOnlyComponentQuery> Iterator for QueryRef<'world, Q> {
@@ -383,7 +383,7 @@ impl<'world, Q: ReadOnlyComponentQuery> Iterator for QueryRef<'world, Q> {
 
 pub struct QueryMut<'world, Q: ComponentQuery> {
     pub(crate) world: &'world mut World,
-    pub(crate) inner: UnsafeQuery<<BHashSet<usize, EcsSystem> as IntoIterator>::IntoIter, Q>,
+    pub(crate) inner: UnsafeQuery<<BHashSet<usize, EcsRoot> as IntoIterator>::IntoIter, Q>,
 }
 
 impl<'world, Q: ComponentQuery> Iterator for QueryMut<'world, Q> {

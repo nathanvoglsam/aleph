@@ -34,7 +34,7 @@ use aleph_alloc::BVec;
 use aleph_rhi_api::{
     BindingSignatureCreateError, BindingSignatureDesc, IBindingSignature, PushConstantBlock,
 };
-use aleph_rhi_impl_utils::{RhiSystem, abort_on_unwind};
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
 
 use crate::device::Device;
 use crate::internal::unwrap;
@@ -44,7 +44,7 @@ pub struct BindingSignature {
     pub(crate) this: Weak<Self>,
     pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
-    pub(crate) _parameter_block_layouts: BVec<Arc<ParameterBlockLayout>, RhiSystem>,
+    pub(crate) _parameter_block_layouts: BVec<Arc<ParameterBlockLayout>, RhiRoot>,
     pub(crate) push_constant_block: Option<PushConstantBlock>,
 }
 

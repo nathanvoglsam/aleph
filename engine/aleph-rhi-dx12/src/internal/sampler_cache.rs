@@ -32,7 +32,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use aleph_alloc::BHashMap;
 use aleph_rhi_api::SamplerDesc;
-use aleph_rhi_impl_utils::RhiSystem;
+use aleph_rhi_impl_utils::RhiRoot;
 use parking_lot::RwLock;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
@@ -72,7 +72,7 @@ pub struct SamplerCache {
     start_gpu_handle: GPUDescriptorHandle,
 
     /// A cache that maps a sampler description to an index in the heap
-    cache: RwLock<BHashMap<SamplerCacheKey<'static>, u32, RhiSystem>>,
+    cache: RwLock<BHashMap<SamplerCacheKey<'static>, u32, RhiRoot>>,
 
     /// The mutable state wrapped in a mutex for safe multi-threaded access
     state: AtomicU32,

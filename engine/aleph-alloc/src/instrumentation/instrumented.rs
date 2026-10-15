@@ -27,18 +27,19 @@
 // SOFTWARE.
 //
 
-use std::alloc::{GlobalAlloc, Layout, System};
+use std::alloc::{GlobalAlloc, Layout};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 use allocator_api2::alloc::{AllocError, Allocator};
 
+use crate::Root;
 use crate::allocator_global_handle::AllocatorGlobalHandle;
 use crate::instrumentation::{CategoryInfo, IAllocationCategory, emit_alloc, emit_free};
 
 /// An allocator wrapper type that will instrument all allocations made into it with the associated
 /// category.
-pub struct Instrumented<T: IAllocationCategory, A: Allocator = System> {
+pub struct Instrumented<T: IAllocationCategory, A: Allocator = Root> {
     inner: A,
     phantom: PhantomData<T>,
 }

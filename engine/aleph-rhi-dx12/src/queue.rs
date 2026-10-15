@@ -36,7 +36,7 @@ use std::sync::{Arc, Weak};
 use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, RhiRoot, abort_on_unwind, try_clone_value_into_slot};
 use parking_lot::Mutex;
 use windows::Win32::Foundation::HANDLE;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -322,9 +322,9 @@ impl IQueue for Queue {
                     .map_err(|_| QueueSubmitError::Platform)?;
             }
 
-            let mut lists: BVec<Box<CommandList>, RhiSystem> =
+            let mut lists: BVec<Box<CommandList>, RhiRoot> =
                 BVec::with_capacity_in(desc.command_lists.len(), system());
-            let mut handles: BVec<Option<ID3D12CommandList>, RhiSystem> =
+            let mut handles: BVec<Option<ID3D12CommandList>, RhiRoot> =
                 BVec::with_capacity_in(desc.command_lists.len(), system());
             for list in desc.command_lists {
                 let list = list.take().unwrap();
@@ -444,5 +444,5 @@ pub struct QueueSubmission {
 
     /// A list of command lists that are in flight in this submission. These lists will eventually
     /// be recycled!
-    pub lists: BVec<Box<CommandList>, RhiSystem>,
+    pub lists: BVec<Box<CommandList>, RhiRoot>,
 }

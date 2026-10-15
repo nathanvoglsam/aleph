@@ -38,7 +38,7 @@ use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use aleph_rhi_impl_utils::{
-    Rhi, RhiSystem, abort_on_unwind, manually_drop, try_clone_value_into_slot,
+    Rhi, RhiRoot, abort_on_unwind, manually_drop, try_clone_value_into_slot,
 };
 use blink_alloc::Blink;
 use parking_lot::Mutex;
@@ -71,7 +71,7 @@ impl IGetPlatformInterface for SwapChain {
 
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
-    pub textures: BVec<Arc<Object<Texture>>, RhiSystem>,
+    pub textures: BVec<Arc<Object<Texture>>, RhiRoot>,
     pub dxgi_format: DXGI_FORMAT,
     pub dxgi_flags: DXGI_SWAP_CHAIN_FLAG,
 }

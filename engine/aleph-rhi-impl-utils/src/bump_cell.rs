@@ -32,16 +32,16 @@ use std::ops::{Deref, DerefMut};
 
 use aleph_alloc::{Blink, BlinkAlloc};
 
-use crate::RhiSystem;
+use crate::RhiRoot;
 
-pub type BlinkCellAlloc = Blink<BlinkAlloc<RhiSystem>>;
+pub type BlinkCellAlloc = Blink<BlinkAlloc<RhiRoot>>;
 
 pub struct BlinkCell(Cell<Option<Box<BlinkCellAlloc>>>);
 
 impl BlinkCell {
     #[inline]
     pub fn new() -> Self {
-        let v = RhiSystem::default();
+        let v = RhiRoot::default();
         let v = BlinkAlloc::new_in(v);
         let v = Blink::new_in(v);
         let v = Box::new(v);

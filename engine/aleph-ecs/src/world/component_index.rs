@@ -34,7 +34,7 @@ use aleph_alloc::{BHashMap, BVec};
 
 use crate::component::{ComponentDescription, ComponentId};
 use crate::entity::EntityHandle;
-use crate::world::component_index::alloc::ComponentIndexSystem;
+use crate::world::component_index::alloc::ComponentIndexRoot;
 
 /// This API maintains an append-only register of component types, indexable by the [`ComponentId`]
 /// assigned when a type is registered.
@@ -42,7 +42,7 @@ use crate::world::component_index::alloc::ComponentIndexSystem;
 /// This is basically just an append only `Vec`.
 pub struct ComponentIndex {
     /// The list of all component types registered with some ECS world.
-    components: BVec<ComponentEntry, ComponentIndexSystem>,
+    components: BVec<ComponentEntry, ComponentIndexRoot>,
 }
 
 impl ComponentIndex {
@@ -125,7 +125,7 @@ pub struct ComponentEntry {
     /// - The keys form the set of all archetypes (indices) that some component type is a member of.
     /// - Maps the archetype index to the column index the component type is located in for that
     ///   archetype.
-    pub archetypes: BHashMap<usize, ComponentArchetypeRecord, ComponentIndexSystem>,
+    pub archetypes: BHashMap<usize, ComponentArchetypeRecord, ComponentIndexRoot>,
 
     /// A handle to the current 'singleton' entity for the component type. This is backbone of the
     /// singleton API. A component singleton is a special entity that can be looked up for a
@@ -153,5 +153,5 @@ mod alloc {
         "019c89bf-5ce3-78c1-ad5c-411442dd4091"
     );
 
-    pub type ComponentIndexSystem = aleph_alloc::instrumentation::Instrumented<ComponentIndex>;
+    pub type ComponentIndexRoot = aleph_alloc::instrumentation::Instrumented<ComponentIndex>;
 }

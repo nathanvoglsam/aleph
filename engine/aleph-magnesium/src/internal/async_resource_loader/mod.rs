@@ -44,4 +44,4 @@ aleph_alloc::new_child_alloc_category!(
     "019b4deb-857f-78b2-8889-2695e7cdb0f6"
 );
 
-pub type MgAsyncLdrSystem = aleph_alloc::instrumentation::Instrumented<AsyncResourceLoader>;
+pub type MgAsyncLdrRoot = aleph_alloc::instrumentation::Instrumented<AsyncResourceLoader>;

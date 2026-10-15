@@ -33,7 +33,7 @@ use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BBox, BVec};
 use aleph_gen_arena::HandleType;
 
-use crate::EcsSystem;
+use crate::EcsRoot;
 use crate::archetype::column::Column;
 use crate::entity::EntityHandle;
 use crate::type_layout::{TypeLayout, TypeLayoutBuf};
@@ -77,17 +77,17 @@ use crate::world::component_index::ComponentIndex;
 /// responsible for implementing the ECS semantics.
 pub struct Archetype {
     /// The layout of this archetype
-    pub(crate) type_layout: BBox<TypeLayout, EcsSystem>,
+    pub(crate) type_layout: BBox<TypeLayout, EcsRoot>,
 
     /// A list that maps an entity's index in the archetype storage back to the ID it was allocated
     /// with.
     ///
     /// Typically used by iterators that yield an `EntityID` alongside the components.
-    pub(crate) entity_handles: BVec<EntityHandle, EcsSystem>,
+    pub(crate) entity_handles: BVec<EntityHandle, EcsRoot>,
 
     /// A list of all the storages of each component type in the entity layout, indexed by the
     /// storage index.
-    pub(crate) columns: BVec<Column<EcsSystem>, EcsSystem>,
+    pub(crate) columns: BVec<Column<EcsRoot>, EcsRoot>,
 
     /// The number of live entities currently stored in this archetype
     len: usize,
@@ -175,7 +175,7 @@ impl Archetype {
     /// as [`Archetype::type_layout`], and associates such that a components column is found by
     /// `type_layout[i] -> columns[i]`.
     #[inline(always)]
-    pub fn columns_ref(&self) -> &[Column<EcsSystem>] {
+    pub fn columns_ref(&self) -> &[Column<EcsRoot>] {
         &self.columns
     }
 
@@ -183,7 +183,7 @@ impl Archetype {
     /// as [`Archetype::type_layout`], and associates such that a components column is found by
     /// `type_layout[i] -> columns[i]`.
     #[inline(always)]
-    pub fn columns_mut(&mut self) -> &mut [Column<EcsSystem>] {
+    pub fn columns_mut(&mut self) -> &mut [Column<EcsRoot>] {
         &mut self.columns
     }
 

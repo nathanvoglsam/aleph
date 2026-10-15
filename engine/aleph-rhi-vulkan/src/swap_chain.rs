@@ -37,7 +37,7 @@ use aleph_nstr::{NStr, nstr};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use aleph_rhi_impl_utils::{Rhi, RhiSystem, abort_on_unwind};
+use aleph_rhi_impl_utils::{Rhi, RhiRoot, abort_on_unwind};
 use ash::vk::{self, Handle};
 use parking_lot::Mutex;
 
@@ -237,7 +237,7 @@ impl SwapChain {
 
         // Select our set of view-compatible formats
         let view_formats = config.format.compatible_view_formats();
-        let mut format_list = BVec::with_capacity_in(view_formats.len(), RhiSystem::default());
+        let mut format_list = BVec::with_capacity_in(view_formats.len(), RhiRoot::default());
         format_list.extend(view_formats.iter().copied().map(texture_format_to_vk));
         let mut format_flags = vk::SwapchainCreateFlagsKHR::empty();
         if format_list.len() > 1 {
@@ -477,8 +477,8 @@ pub struct SwapChainState {
     pub present_mode: PresentationMode,
     pub vk_present_mode: vk::PresentModeKHR,
     pub extent: vk::Extent2D,
-    pub images: BVec<Arc<Object<Texture>>, RhiSystem>,
-    pub semaphore_pools: BVec<Arc<SemaphorePool>, RhiSystem>,
+    pub images: BVec<Arc<Object<Texture>>, RhiRoot>,
+    pub semaphore_pools: BVec<Arc<SemaphorePool>, RhiRoot>,
 }
 
 impl SwapChainState {

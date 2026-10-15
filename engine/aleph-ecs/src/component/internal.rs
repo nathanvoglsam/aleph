@@ -33,16 +33,16 @@ use aleph_alloc::instrumentation::system;
 use aleph_alloc::{BHashMap, BVec};
 use init_list::{InitList, ListItem};
 
-use crate::EcsSystem;
+use crate::EcsRoot;
 use crate::component::{ComponentDescription, ComponentId};
 
 /// A type alias for a configuration of `std::hash::HashMap` that efficiently uses `ComponentTypeId`
 /// as a key. This alias is special as it skips hashing the `ComponentTypeId` and uses that id
 /// directly as the key.
-pub type ComponentIdMap<T> = BHashMap<ComponentId, T, EcsSystem>;
+pub type ComponentIdMap<T> = BHashMap<ComponentId, T, EcsRoot>;
 
 /// A lazily initialized table of all types registered into the object system.
-pub static COMPONENTS: LazyLock<BVec<&'static ComponentDescription, EcsSystem>> =
+pub static COMPONENTS: LazyLock<BVec<&'static ComponentDescription, EcsRoot>> =
     LazyLock::new(|| {
         // We don't care if someone's sealed the list before, only that it has been sealed.
         let _ = __UNSAFE_COMPONENT_REGISTRY_HEAD.seal();

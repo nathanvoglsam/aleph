@@ -29,7 +29,7 @@
 
 use aleph_gen_arena::{GenArena, Handle, make_handle_id};
 
-use crate::EcsSystem;
+use crate::EcsRoot;
 
 /// Type tag used with [`Handle`] to create a unique 'entity handle' type.
 pub struct Entity;
@@ -40,7 +40,7 @@ make_handle_id!(Entity);
 pub type EntityHandle = Handle<Entity>;
 
 /// Specialized alias of [`GenArena`] that provides an arena for our entity handles.
-pub type EntityHandleArena = GenArena<EntityLocation, EntityHandle, EcsSystem>;
+pub type EntityHandleArena = GenArena<EntityLocation, EntityHandle, EcsRoot>;
 
 /// Fully describes the storage location of a specific entity within an ECS world.
 ///
