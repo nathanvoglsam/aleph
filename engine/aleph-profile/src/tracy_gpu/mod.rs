@@ -89,7 +89,7 @@ pub trait TracyQueue {
         function: &std::ffi::CStr,
         file: &std::ffi::CStr,
         line: u32,
-        queue_id: QueueId,
+        queue_id: Self,
         query_id: u16,
     );
 

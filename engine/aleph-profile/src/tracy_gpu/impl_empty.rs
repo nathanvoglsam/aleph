@@ -27,11 +27,7 @@
 // SOFTWARE.
 //
 
-#![cfg(not(any(
-    feature = "profile-with-superluminal",
-    feature = "profile-with-tracy",
-    feature = "profile-with-pix"
-)))]
+#![cfg(not(any(feature = "profile-with-tracy")))]
 
 //! Fallback 'no-op' profiler implementation of the GPU API. This gets re-exported when one of the
 //! real profiling integration libraries is not available.
