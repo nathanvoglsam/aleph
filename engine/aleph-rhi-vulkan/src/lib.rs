@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+extern crate aleph_sdl3_link;
+
 mod adapter;
 mod binding_signature;
 mod buffer;

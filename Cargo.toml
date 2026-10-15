@@ -77,6 +77,7 @@ members = [
     "engine/aleph-rhi-validation",
     "engine/aleph-rhi-vulkan",
     "engine/aleph-scheduler",
+    "engine/aleph-sdl3-link",
     "engine/aleph-shader-db",
     "engine/aleph-slang-reflection",
     "engine/aleph-superluminal-sys",
@@ -256,6 +257,7 @@ aleph-rhi-null = { path = "./engine/aleph-rhi-null", version = "0.1" }
 aleph-rhi-validation = { path = "./engine/aleph-rhi-validation", version = "0.1" }
 aleph-rhi-vulkan = { path = "./engine/aleph-rhi-vulkan", version = "0.1" }
 aleph-scheduler = { path = "./engine/aleph-scheduler", version = "0.1" }
+aleph-sdl3-link = { path = "./engine/aleph-sdl3-link", version = "0.1" }
 aleph-shader-db = { path = "./engine/aleph-shader-db", version = "0.1" }
 aleph-slang-reflection = { path = "./engine/aleph-slang-reflection", version = "0.1" }
 aleph-superluminal-sys = { path = "./engine/aleph-superluminal-sys", version = "0.1" }

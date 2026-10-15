@@ -38,6 +38,8 @@ pub extern crate aleph_magnesium as mg;
 pub extern crate aleph_rhi_api as rhi;
 pub extern crate aleph_target as target;
 
+extern crate aleph_sdl3_link;
+
 // =================================================================================================
 // Modules
 // =================================================================================================

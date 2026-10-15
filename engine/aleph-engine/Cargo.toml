@@ -77,6 +77,7 @@ aleph-gen-arena = { workspace = true }
 aleph-vfs = { workspace = true }
 aleph-ktx = { workspace = true }
 aleph-mikktspace = { workspace = true }
+aleph-sdl3-link = { workspace = true }
 
 kanal = { workspace = true }
 bytemuck = { workspace = true }
@@ -109,10 +110,6 @@ features = [
     "KHR_materials_volume",
     "KHR_texture_transform"
 ]
-
-[build-dependencies]
-aleph-compile = { workspace = true }
-aleph-target = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }
