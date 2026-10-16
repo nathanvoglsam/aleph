@@ -35,6 +35,172 @@ use core::ffi::{c_char, c_int, c_long, c_ulonglong, c_void};
 /// in the `_small` family ([`mi_malloc_small`], [`mi_zalloc_small`], etc).
 pub const MI_SMALL_SIZE_MAX: usize = 128 * core::mem::size_of::<*mut c_void>();
 
+pub const MI_BIN_HUGE: usize = 73;
+
+pub const MI_STAT_VERSION: usize = 5;
+
+// Size bins for chunks
+#[repr(C)]
+pub enum mi_chunkbin_t {
+    /// slice_count == 1
+    MI_CBIN_SMALL,
+    /// slice_count: any other from the other bins, and 1 <= slice_count <= MI_BCHUNK_BITS
+    MI_CBIN_OTHER,
+    /// slice_count == 8
+    MI_CBIN_MEDIUM,
+    /// slice_count == MI_SIZE_BITS  (only used if MI_ENABLE_LARGE_PAGES is 1)
+    MI_CBIN_LARGE,
+    /// slice_count > MI_BCHUNK_BITS
+    MI_CBIN_HUGE,
+    /// no bin assigned yet (the chunk is completely free)
+    MI_CBIN_NONE,
+    /// count
+    MI_CBIN_COUNT,
+}
+
+/// count allocation over time
+#[repr(C)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Default)]
+pub struct mi_stat_count_t {
+    /// total allocated
+    pub total: i64,
+
+    /// peak allocation
+    pub peak: i64,
+
+    /// current allocation
+    pub current: i64,
+}
+
+/// counters only increase
+#[repr(C)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Default)]
+pub struct mi_stat_counter_t {
+    /// total count
+    pub total: i64,
+}
+
+#[repr(C)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct mi_stats_t {
+    /// size of the mi_stats_t structure
+    pub size: usize,
+    pub version: usize,
+
+    pub pages: mi_stat_count_t,
+    pub reserved: mi_stat_count_t,
+    pub committed: mi_stat_count_t,
+    pub reset: mi_stat_counter_t,
+    pub purged: mi_stat_counter_t,
+    pub page_committed: mi_stat_count_t,
+    pub pages_abandoned: mi_stat_count_t,
+    pub threads: mi_stat_count_t,
+    pub malloc_normal: mi_stat_count_t,
+    pub malloc_huge: mi_stat_count_t,
+    pub malloc_requested: mi_stat_counter_t,
+
+    pub mmap_calls: mi_stat_counter_t,
+    pub commit_calls: mi_stat_counter_t,
+    pub reset_calls: mi_stat_counter_t,
+    pub purge_calls: mi_stat_counter_t,
+    pub arena_count: mi_stat_counter_t,
+    pub malloc_normal_count: mi_stat_counter_t,
+    pub malloc_huge_count: mi_stat_counter_t,
+    pub malloc_guarded_count: mi_stat_counter_t,
+
+    pub arena_rollback_count: mi_stat_counter_t,
+    pub arena_purges: mi_stat_counter_t,
+    pub pages_extended: mi_stat_counter_t,
+    pub pages_retire: mi_stat_counter_t,
+    pub page_searches: mi_stat_counter_t,
+    pub page_searches_count: mi_stat_counter_t,
+
+    pub segments: mi_stat_count_t,
+    pub segments_abandoned: mi_stat_count_t,
+    pub segments_cache: mi_stat_count_t,
+    pub _segments_reserved: mi_stat_count_t,
+
+    pub heaps: mi_stat_count_t,
+    pub theaps: mi_stat_count_t,
+    pub pages_os_abandoned: mi_stat_count_t,
+    pub pages_os_allocated: mi_stat_count_t,
+    pub pages_reclaim_on_alloc: mi_stat_counter_t,
+    pub pages_reclaim_on_free: mi_stat_counter_t,
+    pub pages_reabandon_full: mi_stat_counter_t,
+    pub pages_unabandon_busy_wait: mi_stat_counter_t,
+    pub heaps_delete_wait: mi_stat_counter_t,
+    pub pages_stat_updates: mi_stat_counter_t,
+    pub pages_stat_update_count: mi_stat_counter_t,
+    pub profile_samples: mi_stat_counter_t,
+
+    // future extension
+    _stat_reserved: [mi_stat_count_t; 4],
+    _stat_counter_reserved: [mi_stat_counter_t; 4],
+
+    // size segregated statistics
+    /// allocation per size bin
+    pub malloc_bins: [mi_stat_count_t; MI_BIN_HUGE + 1],
+    /// pages allocated per size bin
+    pub page_bins: [mi_stat_count_t; MI_BIN_HUGE + 1],
+    /// chunks per page sizes
+    pub chunk_bins: [mi_stat_count_t; mi_chunkbin_t::MI_CBIN_COUNT as usize],
+}
+
+impl Default for mi_stats_t {
+    fn default() -> Self {
+        Self {
+            size: size_of::<Self>(),
+            version: MI_STAT_VERSION,
+            pages: Default::default(),
+            reserved: Default::default(),
+            committed: Default::default(),
+            reset: Default::default(),
+            purged: Default::default(),
+            page_committed: Default::default(),
+            pages_abandoned: Default::default(),
+            threads: Default::default(),
+            malloc_normal: Default::default(),
+            malloc_huge: Default::default(),
+            malloc_requested: Default::default(),
+            mmap_calls: Default::default(),
+            commit_calls: Default::default(),
+            reset_calls: Default::default(),
+            purge_calls: Default::default(),
+            arena_count: Default::default(),
+            malloc_normal_count: Default::default(),
+            malloc_huge_count: Default::default(),
+            malloc_guarded_count: Default::default(),
+            arena_rollback_count: Default::default(),
+            arena_purges: Default::default(),
+            pages_extended: Default::default(),
+            pages_retire: Default::default(),
+            page_searches: Default::default(),
+            page_searches_count: Default::default(),
+            segments: Default::default(),
+            segments_abandoned: Default::default(),
+            segments_cache: Default::default(),
+            _segments_reserved: Default::default(),
+            heaps: Default::default(),
+            theaps: Default::default(),
+            pages_os_abandoned: Default::default(),
+            pages_os_allocated: Default::default(),
+            pages_reclaim_on_alloc: Default::default(),
+            pages_reclaim_on_free: Default::default(),
+            pages_reabandon_full: Default::default(),
+            pages_unabandon_busy_wait: Default::default(),
+            heaps_delete_wait: Default::default(),
+            pages_stat_updates: Default::default(),
+            pages_stat_update_count: Default::default(),
+            profile_samples: Default::default(),
+            _stat_reserved: core::array::from_fn(|_| Default::default()),
+            _stat_counter_reserved: core::array::from_fn(|_| Default::default()),
+            malloc_bins: core::array::from_fn(|_| Default::default()),
+            page_bins: core::array::from_fn(|_| Default::default()),
+            chunk_bins: core::array::from_fn(|_| Default::default()),
+        }
+    }
+}
+
 unsafe extern "C" {
     /// Allocate `count` items of `size` length each.
     ///
@@ -473,6 +639,9 @@ unsafe extern "C" {
     ///
     /// Returns pointer to the buffer or NULL on failure. Use mi_free() to free the buffer if the buf parameter was NULL.
     pub fn mi_stats_get_json(buf_size: usize, buf: *mut c_char) -> *mut c_char;
+
+    /// Get the statistics for the current subprocess aggregated over all its heaps.
+    pub fn mi_stats_get(stats: *mut mi_stats_t) -> bool;
 }
 
 /// An output callback. Must be thread-safe.
@@ -505,68 +674,54 @@ pub type mi_option_t = c_int;
 // show_errors reversed as of 1.6.3, however what I have here is correct:
 // https://github.com/microsoft/mimalloc/issues/266#issuecomment-653822341
 
-/// Print error messages to `stderr`.
 pub const mi_option_show_errors: mi_option_t = 0;
-
-/// Print statistics to `stderr` when the program is done.
 pub const mi_option_show_stats: mi_option_t = 1;
-
-/// Print verbose messages to `stderr`.
 pub const mi_option_verbose: mi_option_t = 2;
-
-/// ### The following options are experimental
-///
-/// Option (experimental) Use large OS pages (2MiB in size) if possible.
-///
-/// Use large OS pages (2MiB) when available; for some workloads this can
-/// significantly improve performance. Use mi_option_verbose to check if
-/// the large OS pages are enabled -- usually one needs to explicitly allow
-/// large OS pages (as on Windows and Linux). However, sometimes the OS is
-/// very slow to reserve contiguous physical memory for large OS pages so
-/// use with care on systems that can have fragmented memory (for that
-/// reason, we generally recommend to use mi_option_reserve_huge_os_pages
-/// instead whenever possible).
-pub const mi_option_large_os_pages: mi_option_t = 6;
-
-/// Option (experimental) The number of huge OS pages (1GiB in size) to reserve at the start of the program.
-///
-/// This reserves the huge pages at startup and sometimes this can give a large (latency) performance
-/// improvement on big workloads. Usually it is better to not use MIMALLOC_LARGE_OS_PAGES in
-/// combination with this setting. Just like large OS pages, use with care as reserving contiguous
-/// physical memory can take a long time when memory is fragmented (but reserving the huge pages is
-/// done at startup only once). Note that we usually need to explicitly enable huge OS pages (as on
-/// Windows and Linux)). With huge OS pages, it may be beneficial to set the setting
-/// mi_option_eager_commit_delay=N (N is 1 by default) to delay the initial N segments (of 4MiB) of
-/// a thread to not allocate in the huge OS pages; this prevents threads that are short lived and
-/// allocate just a little to take up space in the huge OS page area (which cannot be reset).
-pub const mi_option_reserve_huge_os_pages: mi_option_t = 7;
-
-/// Option (experimental) Reserve huge OS pages at node N.
-///
-/// The huge pages are usually allocated evenly among NUMA nodes.
-/// You can use mi_option_reserve_huge_os_pages_at=N where `N` is the numa node (starting at 0) to allocate all
-/// the huge pages at a specific numa node instead.
-pub const mi_option_reserve_huge_os_pages_at: mi_option_t = 8;
-
-/// Option (experimental) Reserve specified amount of OS memory at startup, e.g. "1g" or "512m".
-pub const mi_option_reserve_os_memory: mi_option_t = 9;
-
-/// Option (experimental) Pretend there are at most N NUMA nodes; Use 0 to use the actual detected NUMA nodes at runtime.
-pub const mi_option_use_numa_nodes: mi_option_t = 16;
-
-/// Option (experimental) If set to 1, do not use OS memory for allocation (but only pre-reserved arenas)
-pub const mi_option_limit_os_alloc: mi_option_t = 17;
-
-/// Option (experimental) OS tag to assign to mimalloc'd memory
-pub const mi_option_os_tag: mi_option_t = 18;
-
-/// Option (experimental)
-pub const mi_option_max_errors: mi_option_t = 19;
-
-/// Option (experimental)
-pub const mi_option_max_warnings: mi_option_t = 20;
-
-pub const _mi_option_last: mi_option_t = 47;
+pub const mi_option_deprecated_eager_commit: mi_option_t = 3;
+pub const mi_option_arena_eager_commit: mi_option_t = 4; // eager commit arenas? Use 2 to enable just on overcommit systems (=2)
+pub const mi_option_purge_decommits: mi_option_t = 5; // should a memory purge decommit? (=1). Set to 0 to use memory reset on a purge (instead of decommit)
+pub const mi_option_allow_large_os_pages: mi_option_t = 6; // allow use of large (2 or 4 MiB) OS pages, implies eager commit.
+pub const mi_option_reserve_huge_os_pages: mi_option_t = 7; // reserve N huge OS pages (1GiB pages) at startup
+pub const mi_option_reserve_huge_os_pages_at: mi_option_t = 8; // reserve huge OS pages at a specific NUMA node
+pub const mi_option_reserve_os_memory: mi_option_t = 9; // reserve specified amount of OS memory in an arena at startup (internally, this value is in KiB; use `mi_option_get_size`)
+pub const mi_option_deprecated_segment_cache: mi_option_t = 10;
+pub const mi_option_deprecated_page_reset: mi_option_t = 11;
+pub const mi_option_deprecated_abandoned_page_purge: mi_option_t = 12;
+pub const mi_option_deprecated_segment_reset: mi_option_t = 13;
+pub const mi_option_deprecated_eager_commit_delay: mi_option_t = 14;
+pub const mi_option_purge_delay: mi_option_t = 15; // memory purging is delayed by N milli seconds; use 0 for immediate purging or -1 for no purging at all. (=10)
+pub const mi_option_use_numa_nodes: mi_option_t = 16; // 0 = use all available numa nodes, otherwise use at most N nodes.
+pub const mi_option_disallow_os_alloc: mi_option_t = 17; // 1 = do not use OS memory for allocation (but only programmatically reserved arenas)
+pub const mi_option_os_tag: mi_option_t = 18; // tag used for OS logging (macOS only for now) (=100)
+pub const mi_option_max_errors: mi_option_t = 19; // issue at most N error messages
+pub const mi_option_max_warnings: mi_option_t = 20; // issue at most N warning messages
+pub const mi_option_deprecated_max_segment_reclaim: mi_option_t = 21; // max. percentage of the abandoned segments can be reclaimed per try (=10%)
+pub const mi_option_destroy_on_exit: mi_option_t = 22; // if set, release all memory on exit; sometimes used for dynamic unloading but can be unsafe
+pub const mi_option_arena_reserve: mi_option_t = 23; // initial memory size for arena reservation (= 1 GiB on 64-bit) (internally, this value is in KiB; use `mi_option_get_size`)
+pub const mi_option_arena_purge_mult: mi_option_t = 24; // multiplier for `purge_delay` for the purging delay for arenas (=10)
+pub const mi_option_deprecated_purge_extend_delay: mi_option_t = 25;
+pub const mi_option_disallow_arena_alloc: mi_option_t = 26; // 1 = do not use arena's for allocation (except if using specific arena id's)
+pub const mi_option_retry_on_oom: mi_option_t = 27; // retry on out-of-memory for N milli seconds (=400), set to 0 to disable retries. (only on windows)
+pub const mi_option_deprecated_visit_abandoned: mi_option_t = 28; // allow visiting theap blocks from abandoned threads (=0)
+pub const mi_option_guarded_min: mi_option_t = 29; // only used when building with MI_GUARDED: minimal rounded object size for guarded objects (=0)
+pub const mi_option_guarded_max: mi_option_t = 30; // only used when building with MI_GUARDED: maximal rounded object size for guarded objects (=0)
+pub const mi_option_guarded_precise: mi_option_t = 31; // disregard minimal alignment requirement to always place guarded blocks exactly in front of a guard page (=0)
+pub const mi_option_guarded_sample_rate: mi_option_t = 32; // 1 out of N allocations in the min/max range will be guarded (=1000)
+pub const mi_option_guarded_sample_seed: mi_option_t = 33; // can be set to allow for a (more) deterministic re-execution when a guard page is triggered (=0)
+pub const mi_option_generic_collect: mi_option_t = 34; // collect theaps every N (=10000) generic allocation calls
+pub const mi_option_page_reclaim_on_free: mi_option_t = 35; // reclaim abandoned pages on a free (=0). -1 disallow always, 0 allows if the page originated from the current theap, 1 allow always
+pub const mi_option_page_full_retain: mi_option_t = 36; // retain N full (small) pages per size class (=2)
+pub const mi_option_page_max_candidates: mi_option_t = 37; // max candidate pages to consider for allocation (=4)
+pub const mi_option_max_vabits: mi_option_t = 38; // max user space virtual address bits to consider (=48)
+pub const mi_option_pagemap_commit: mi_option_t = 39; // commit the full pagemap (to always catch invalid pointer uses) (=0)
+pub const mi_option_page_commit_on_demand: mi_option_t = 40; // commit page memory on-demand
+pub const mi_option_page_max_reclaim: mi_option_t = 41; // don't reclaim pages of the same originating theap if we already own N pages (in that size class) (=-1 (unlimited))
+pub const mi_option_page_cross_thread_max_reclaim: mi_option_t = 42; // don't reclaim pages across threads if we already own N pages (in that size class) (=32)
+pub const mi_option_allow_thp: mi_option_t = 43; // allow transparent huge pages? (=1) (on Android =0 by default). Set to 0 to disable THP for the process.
+pub const mi_option_minimal_purge_size: mi_option_t = 44; // set minimal purge size (in KiB) (=0). By default set to either 64 or 2048 if THP is enabled.
+pub const mi_option_arena_max_object_size: mi_option_t = 45; // set maximal object size that can be allocated in an arena (in KiB) (=2GiB on 64-bit). 
+pub const mi_option_arena_is_numa_local: mi_option_t = 46; // experimental: associate local numa node with an initial arena allocation
+pub const mi_option_collect_merges_stats: mi_option_t = 47; // on each theap collection, the theap stats are merged automatically with the parent heap
 
 unsafe extern "C" {
     // Note: mi_option_{enable,disable} aren't exposed because they're redundant
@@ -963,6 +1118,28 @@ unsafe extern "C" {
     ///
     /// `size` must be smaller or equal to [`MI_SMALL_SIZE_MAX`].
     pub fn mi_theap_zalloc_small(theap: *mut mi_theap_t, size: usize) -> *mut c_void;
+
+    /// This is done automatically for threads in the Windows threadpool, but if using a custom
+    /// threadpool it is good to call this on worker threads. Internally, mimalloc uses different
+    /// locality heuristics for worker threads to try to reduce non-local access.
+    pub fn mi_thread_set_in_threadpool();
+
+    /// Reserve OS memory for use by mimalloc.
+    ///
+    /// Reserved areas are used before allocating from the OS again. By reserving a large area
+    /// upfront, allocation can be more efficient, and can be better managed on systems without
+    /// mmap/VirtualAlloc (like WASM for example).
+    ///
+    /// # Parameters
+    ///
+    /// - size: The size to reserve.
+    /// - commit: Commit the memory upfront.
+    /// - allow_large: Allow large OS pages (2MiB) to be used?
+    ///
+    /// # Returns
+    ///
+    /// 0 if successful, and an error code otherwise (e.g. ENOMEM).
+    pub fn mi_reserve_os_memory(size: usize, commit: bool, allow_large: bool) -> c_int;
 }
 
 #[cfg(test)]

@@ -31,7 +31,7 @@
 //
 // Copyright 2019 Octavian Oncescu
 
-extern crate aleph_mimalloc_sys as ffi;
+pub extern crate aleph_mimalloc_sys as ffi;
 
 use core::alloc::{GlobalAlloc, Layout};
 use core::ffi::c_void;
@@ -59,8 +59,8 @@ unsafe impl GlobalAlloc for MiMalloc {
     }
 
     #[inline]
-    unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
-        unsafe { mi_free(ptr as *mut c_void) }
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        unsafe { mi_free_size_aligned(ptr as *mut c_void, layout.size(), layout.align()) };
     }
 
     #[inline]
@@ -120,7 +120,9 @@ unsafe impl Allocator for MiMalloc {
             // Do nothing
             0 => {}
             // Safety: by the function preconditions, `ptr` came from this allocator
-            _ => unsafe { mi_free(ptr.as_ptr() as *mut _) },
+            _ => unsafe {
+                mi_free_size_aligned(ptr.as_ptr() as *mut _, layout.size(), layout.align())
+            },
         }
     }
 
