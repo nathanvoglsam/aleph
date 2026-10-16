@@ -119,7 +119,10 @@ pub fn single_directory_mount() {
     let router = Router::new(layers).unwrap();
 
     let err = router.open("/package_a").err().unwrap();
-    assert!(matches!(err.kind(), io::ErrorKind::IsADirectory | io::ErrorKind::PermissionDenied));
+    assert!(matches!(
+        err.kind(),
+        io::ErrorKind::IsADirectory | io::ErrorKind::PermissionDenied
+    ));
 
     let err = router.open("/package_b").err().unwrap();
     assert!(matches!(err.kind(), io::ErrorKind::NotFound));
@@ -202,13 +205,22 @@ pub fn multi_directory_mount() {
     let router = Router::new(layers).unwrap();
 
     let err = router.open("/package_a").err().unwrap();
-    assert!(matches!(err.kind(), io::ErrorKind::IsADirectory | io::ErrorKind::PermissionDenied));
+    assert!(matches!(
+        err.kind(),
+        io::ErrorKind::IsADirectory | io::ErrorKind::PermissionDenied
+    ));
 
     let err = router.open("/package_b").err().unwrap();
-    assert!(matches!(err.kind(), io::ErrorKind::IsADirectory | io::ErrorKind::PermissionDenied));
+    assert!(matches!(
+        err.kind(),
+        io::ErrorKind::IsADirectory | io::ErrorKind::PermissionDenied
+    ));
 
     let err = router.open("/package_b/folder").err().unwrap();
-    assert!(matches!(err.kind(), io::ErrorKind::IsADirectory | io::ErrorKind::PermissionDenied));
+    assert!(matches!(
+        err.kind(),
+        io::ErrorKind::IsADirectory | io::ErrorKind::PermissionDenied
+    ));
 
     let err = router.open("/package_b/folder/no.txt").err().unwrap();
     assert!(matches!(err.kind(), io::ErrorKind::NotFound));
