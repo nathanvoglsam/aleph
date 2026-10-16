@@ -6,4 +6,4 @@ podman run \
  -h "$(hostname)" \
  -it \
  aleph-steamrt \
- cargo build --package aleph-test --release --target-dir /out
+ /root/utils/steamrt/build-in-container.sh

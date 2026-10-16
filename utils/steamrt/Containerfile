@@ -19,7 +19,4 @@ RUN /root/node-v26.12.0-linux-x64/bin/node /root/utils/3rdparty/build.mts --buil
 
 ENV ALEPH_DEPS_DIR="/root/deps"
 
-# Layer 3 will build aleph-test
-FROM aleph-steamrt-workspace AS aleph-steamrt-builder
-
 WORKDIR /aleph
