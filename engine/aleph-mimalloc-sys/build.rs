@@ -37,7 +37,12 @@ fn main() {
     println!("cargo::rerun-if-changed=src");
     println!("cargo::rerun-if-changed={}", deps_install_path.display());
 
-    let lib_path = deps_install_path.join("lib");
+    let mut lib_path = deps_install_path.join("lib");
+    if !lib_path.exists() {
+        // Because GNU likes to be difficult with their standard paths sometimes we get this
+        // rubbish. I love making build logic more complicated!!!!
+        lib_path = deps_install_path.join("lib64");
+    }
 
     let target_platform = Platform::build_target();
 
