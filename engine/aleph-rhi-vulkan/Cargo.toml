@@ -67,3 +67,4 @@ aleph-windows = { workspace = true }
 
 [build-dependencies]
 aleph-target = { workspace = true }
+aleph-compile = { workspace = true }

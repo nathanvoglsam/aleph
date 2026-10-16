@@ -59,6 +59,12 @@ FetchContent_Declare(
     URL https://www.nuget.org/api/v2/package/WinPixEventRuntime/1.0.240308001
 )
 
+## MoltenVK for iOS
+FetchContent_Declare(
+    moltenvk_ios
+    URL https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.2/MoltenVK-ios.tar
+)
+
 ##
 ## PULL DEPS
 ##
@@ -73,6 +79,9 @@ set(MI_OVERRIDE OFF)
 set(MI_OPT_ARCH ON)
 set(MI_INSTALL_TOPLEVEL ON)
 FetchContent_MakeAvailable(mimalloc)
+
+## We always grab this because cross compilation
+FetchContent_MakeAvailable(moltenvk_ios)
 
 ## Windows and Mac build SDL3, Linux pulls from the system
 if(WIN32 OR APPLE)
