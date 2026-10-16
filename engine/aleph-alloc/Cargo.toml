@@ -60,3 +60,4 @@ aleph-windows-thread-local = { workspace = true }
 [features]
 default = []
 instrumentation-enabled = []
+force-system-alloc = []

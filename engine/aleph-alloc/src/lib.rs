@@ -41,17 +41,17 @@ pub extern crate const_format;
 
 pub extern crate aleph_mimalloc as mimalloc;
 
-pub type Root = mimalloc::MiMalloc;
+pub type Root = cfg_select! {
+    feature = "force-system-alloc" => std::alloc::System,
+    _ => mimalloc::MiMalloc,
+};
 
 pub const fn root() -> Root {
-    mimalloc::MiMalloc
+    cfg_select! {
+        feature = "force-system-alloc" => std::alloc::System,
+        _ => mimalloc::MiMalloc,
+    }
 }
-
-// pub type Root = std::alloc::System;
-//
-// pub const fn root() -> std::alloc::System {
-//     std::alloc::System
-// }
 
 pub mod allocator_global_handle;
 pub mod instrumentation;
