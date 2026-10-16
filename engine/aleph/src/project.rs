@@ -78,20 +78,20 @@ pub struct AlephProject<'a> {
     /// The path to the '.aleph/sdk/{platform}/{arch}' folder appropriate for the host system,
     _sdk_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/**/dxc/bin/{platform}/dxc' executable for this project
+    /// The path to the '.aleph/sdk/dxc/bin/{platform}/dxc' executable for this project
     dxc_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/**/slang/bin/{platform}/release/slangc' executable for this
+    /// The path to the '.aleph/sdk/slang/bin/{platform}/release/slangc' executable for this
     /// project
     slang_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/**/ninja/ninja' executable for this project
+    /// The path to the '.aleph/sdk/ninja/ninja' executable for this project
     ninja_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/**/node' executable for this project
+    /// The path to the '.aleph/sdk/node' executable for this project
     node_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/**/tsc' executable for this project
+    /// The path to the '.aleph/sdk/tsc' executable for this project
     tsc_path: Utf8PathBuf,
 
     /// The path to the Cargo.toml file adjacent to the aleph-project.toml
@@ -145,14 +145,8 @@ impl<'a> AlephProject<'a> {
         let assets_build_path = dot_aleph_path.join("data").join("assets");
         let configs_build_path = dot_aleph_path.join("configs");
 
-        let mut common_sdk_path = dot_aleph_path.clone();
-        common_sdk_path.push("sdk");
-        common_sdk_path.push("common");
-
         let mut sdk_path = dot_aleph_path.clone();
         sdk_path.push("sdk");
-        sdk_path.push(sdk_platform_name());
-        sdk_path.push(Architecture::host().name());
 
         let mut dxc_path = sdk_path.clone();
         dxc_path.push("dxc");
@@ -197,7 +191,7 @@ impl<'a> AlephProject<'a> {
             node_path.push("node");
         }
 
-        let mut tsc_path = common_sdk_path.clone();
+        let mut tsc_path = sdk_path.clone();
         tsc_path.push("tsc");
         tsc_path.push("lib");
         tsc_path.push("tsc.js");
@@ -311,38 +305,38 @@ impl<'a> AlephProject<'a> {
         &self._cargo_target_dir
     }
 
-    /// Returns the path to the project's bundled NDK, in '.aleph/sdk/**/ndk'. This path may not
+    /// Returns the path to the project's bundled SDK, in '.aleph/sdk'. This path may not
     /// exist so check before using!
     pub fn _sdk_path(&self) -> &Utf8Path {
         &self._sdk_path
     }
 
-    /// Returns the path to the project's bundled dxc, in '.aleph/sdk/**/dxc/bin/{platform}/dxc'.
+    /// Returns the path to the project's bundled dxc, in '.aleph/sdk/dxc/bin/{platform}/dxc'.
     /// This path may not exist so check before using!
     pub fn dxc_path(&self) -> &Utf8Path {
         &self.dxc_path
     }
 
-    /// Returns the path to the project's bundled dxc, in
-    /// '.aleph/sdk/**/slang/bin/{platform}/release/slang'. This path may not exist so check before
+    /// Returns the path to the project's bundled slang, in
+    /// '.aleph/sdk/slang/bin/{platform}/release/slang'. This path may not exist so check before
     /// using!
     pub fn slang_path(&self) -> &Utf8Path {
         &self.slang_path
     }
 
-    /// Returns the path to the project's bundled ninja, in '.aleph/sdk/**/ninja/ninja'. This path
+    /// Returns the path to the project's bundled ninja, in '.aleph/sdk/ninja/ninja'. This path
     /// may not exist so check before using!
     pub fn ninja_path(&self) -> &Utf8Path {
         &self.ninja_path
     }
 
-    /// Returns the path to the project's bundled ninja, in '.aleph/sdk/**/node'. This path
+    /// Returns the path to the project's bundled node, in '.aleph/sdk/node'. This path
     /// may not exist so check before using!
     pub fn node_path(&self) -> &Utf8Path {
         &self.node_path
     }
 
-    /// Returns the path to the project's bundled ninja, in '.aleph/sdk/**/tsc'. This path
+    /// Returns the path to the project's bundled tsc, in '.aleph/sdk/tsc'. This path
     /// may not exist so check before using!
     pub fn tsc_path(&self) -> &Utf8Path {
         &self.tsc_path
@@ -674,15 +668,4 @@ pub enum SearchMode {
 
     #[allow(dead_code)]
     OnlySdkPath,
-}
-
-fn sdk_platform_name() -> &'static str {
-    match Platform::host() {
-        Platform::WindowsGNU => "windows",
-        Platform::WindowsMSVC => "windows",
-        Platform::Linux => "linux",
-        Platform::MacOS => "macos",
-        Platform::IOS => panic!("What are you doing???????"),
-        Platform::Unknown => panic!("Unknown host platform"),
-    }
 }
