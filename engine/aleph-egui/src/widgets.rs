@@ -147,6 +147,20 @@ pub fn memory_stats(ctx: &Context, history: &mut MemoryStats) {
                         ui.label(format!("{kb}KB"));
                         ui.end_row();
 
+                        let mut stats = aleph_alloc::mimalloc::ffi::mi_stats_t::default();
+                        unsafe { aleph_alloc::mimalloc::ffi::mi_stats_get(&mut stats) };
+                        let b = stats.malloc_normal.current;
+                        let kb = b / 1_000;
+                        ui.label("mimalloc normal:");
+                        ui.label(format!("{kb}KB"));
+                        ui.end_row();
+
+                        let b = stats.malloc_huge.current;
+                        let kb = b / 1_000;
+                        ui.label("mimalloc huge:");
+                        ui.label(format!("{kb}KB"));
+                        ui.end_row();
+
                         for cat in history.categories.iter() {
                             let b = cat.history.latest();
                             let kb = b / 1_000;
