@@ -69,6 +69,8 @@ FetchContent_MakeAvailable(quickjs)
 ## mimalloc is built for all platforms
 set(MI_BUILD_SHARED OFF)
 set(MI_BUILD_TESTS OFF)
+set(MI_OVERRIDE OFF)
+set(MI_OPT_ARCH ON)
 set(MI_INSTALL_TOPLEVEL ON)
 FetchContent_MakeAvailable(mimalloc)
 
