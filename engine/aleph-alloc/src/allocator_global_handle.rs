@@ -48,6 +48,6 @@ unsafe impl AllocatorGlobalHandle for System {
     const HANDLE: Self = Self;
 }
 
-unsafe impl AllocatorGlobalHandle for aleph_mimalloc::MiMalloc {
+unsafe impl AllocatorGlobalHandle for mimalloc::MiMalloc {
     const HANDLE: Self = Self;
 }

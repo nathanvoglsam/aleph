@@ -39,14 +39,19 @@ pub extern crate ctor;
 #[doc(hidden)]
 pub extern crate const_format;
 
-#[doc(hidden)]
-pub extern crate aleph_mimalloc;
+pub extern crate aleph_mimalloc as mimalloc;
 
-pub type Root = aleph_mimalloc::MiMalloc;
+pub type Root = mimalloc::MiMalloc;
 
 pub const fn root() -> Root {
-    aleph_mimalloc::MiMalloc
+    mimalloc::MiMalloc
 }
+
+// pub type Root = std::alloc::System;
+//
+// pub const fn root() -> std::alloc::System {
+//     std::alloc::System
+// }
 
 pub mod allocator_global_handle;
 pub mod instrumentation;
