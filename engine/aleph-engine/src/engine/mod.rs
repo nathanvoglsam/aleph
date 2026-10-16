@@ -67,6 +67,24 @@ impl EngineBuilder {
             aleph_windows::name_current_thread(&utf16_lit::utf16_null!("MainThread")).unwrap();
         }
 
+        unsafe {
+            use aleph_alloc::mimalloc::ffi::*;
+
+            // We definitely want large pages if we can for less TLB pressure.
+            mi_option_set_enabled(mi_option_allow_large_os_pages, true);
+
+            // Don't do delayed purging because we can't accept the random stall. Measured to stall
+            // the main thread for 25ms+ in some cases on Windows.
+            mi_option_set(mi_option_purge_delay, -1);
+
+            // Reserve a big block of memory upfront, as mimalloc recommends this. It can make
+            // allocation more efficient.
+            let kb = 1024;
+            let mb = kb * 1024;
+            let gb = mb * 1024;
+            let _ = mi_reserve_os_memory(gb, false, true);
+        }
+
         rayon::ThreadPoolBuilder::new()
             .spawn_handler(|thread| {
                 let mut b = std::thread::Builder::new();
@@ -75,6 +93,10 @@ impl EngineBuilder {
                     b = b.stack_size(stack_size);
                 }
                 b.spawn(|| {
+                    unsafe {
+                        // Hint that the thread is part of a thread pool.
+                        aleph_alloc::mimalloc::ffi::mi_thread_set_in_threadpool();
+                    }
                     // Initialize COM with MTA
                     #[cfg(target_os = "windows")]
                     unsafe {

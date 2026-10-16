@@ -204,7 +204,12 @@ impl PluginRegistry {
                 aleph_profile::scope_named!("OnUpdate");
 
                 schedule.run(&(), &mut resources);
-
+                unsafe {
+                    // Intentionally offer time for mi_collect at the end of a frame to avoid the
+                    // time being taken randomly somewhere else.
+                    aleph_profile::scope_named!("mi_collect");
+                    aleph_alloc::mimalloc::ffi::mi_collect(false);
+                }
                 aleph_profile::finish_frame!();
             });
         }
