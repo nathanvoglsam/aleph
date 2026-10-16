@@ -166,5 +166,9 @@ pub fn dot_aleph_path() -> PathBuf {
 
 /// Gets the path to the '.aleph/deps' folder that the aleph project is being built in the scope of.
 pub fn deps_path() -> PathBuf {
-    dot_aleph_path().join("deps")
+    if let Ok(dir) = std::env::var("ALEPH_DEPS_DIR") {
+        dir.into()
+    } else {
+        dot_aleph_path().join("deps")
+    }
 }

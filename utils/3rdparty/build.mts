@@ -14,6 +14,8 @@ const {values} = parseArgs({
     options: {
         "debug-info": {type: "boolean"},
         "build-root": {type: "string"},
+        "cmake-dir": {type: "string"},
+        "no-tracy": {type: "boolean"},
     },
 });
 
@@ -37,23 +39,20 @@ function main(): void {
 
     // Either resolves to the directory referenced by the "build-root" parameter, if present, or it
     // will resolve to ${cwd}/.aleph/deps.
-    let depsDirectory: string;
-    if (values["build-root"] !== undefined) {
-        depsDirectory = path.resolve(values["build-root"]);
-    } else {
-        depsDirectory = path.join(projectDirectory, ".aleph", "deps");
-    }
+    const depsDirectory = values["build-root"] ?? path.join(projectDirectory, ".aleph", "deps");
 
     // Build for "Release" by default, but sometimes you want debug symbols for profiling.
     const buildType = values["debug-info"] ? "RelWithDebInfo" : "Release";
 
+    const noTracy = values["no-tracy"] ? "ON" : "OFF";
+
     // These are always placed in the 'deps' directory, where ever that has been configured
-    const installDirectory = path.join(depsDirectory, "install");
-    const buildDirectory = path.join(depsDirectory, "build");
+    const installDirectory = path.resolve(path.join(depsDirectory, "install"));
+    const buildDirectory = path.resolve(path.join(depsDirectory, "build"));
 
     // However, we do need to find the CMakeLists.txt. We still assume we're running from the root
     // of an aleph workspace!
-    const thirdPartyDirectory = path.join(projectDirectory, "utils", "3rdparty");
+    const listDir = values["cmake-dir"] ?? path.join(projectDirectory, "utils", "3rdparty");
 
     fs.mkdirSync(installDirectory, {recursive: true});
     fs.mkdirSync(buildDirectory, {recursive: true});
@@ -61,12 +60,13 @@ function main(): void {
     const args = [
         "-G",
         "Ninja",
+        `-DALEPH_NO_TRACY=${noTracy}`,
         `-DCMAKE_INSTALL_PREFIX=${installDirectory}`,
         `-DCMAKE_BUILD_TYPE=${buildType}`,
         "-DCMAKE_POSITION_INDEPENDENT_CODE=TRUE",
         "-DCMAKE_OSX_DEPLOYMENT_TARGET=15.0",
         "-DCOMPILER_SUPPORTS_Werror=FALSE",
-        thirdPartyDirectory,
+        listDir,
     ];
     run_cmake(buildDirectory, args);
     run_cmake(buildDirectory, ["--build", "./", "--config", buildType, "--parallel"]);

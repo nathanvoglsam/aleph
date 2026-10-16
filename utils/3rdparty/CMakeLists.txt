@@ -93,7 +93,7 @@ if(WIN32 OR APPLE)
 endif()
 
 ## For Tracy Profiler Windows uses published binaries, other platforms must build from source
-if(NOT WIN32)
+if(NOT WIN32 AND NOT ALEPH_NO_TRACY)
     FetchContent_MakeAvailable(tracy)
 endif()
 
