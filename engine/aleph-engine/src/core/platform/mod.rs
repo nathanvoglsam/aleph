@@ -39,12 +39,11 @@ mod window;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::{Instrumented, system};
+use aleph_alloc::{BBox, BVec};
 use aleph_io_queue::IoQueue;
 use aleph_io_queue::top_level_handle_cache::TopLevelHandleCache;
 use aleph_vfs::directory_layer::DirectoryLayer;
@@ -132,6 +131,16 @@ impl IPlugin for CorePlatform {
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
+        let config = registry.config("core").unwrap();
+        let core_config: crate::core::config::Config =
+            serde_json::from_value(config.clone()).unwrap();
+        core_config.log();
+
+        let config = registry.config("render").unwrap();
+        let render_config: crate::render::config::Config =
+            serde_json::from_value(config.clone()).unwrap();
+        render_config.log();
+
         log::info!("Initializing SDL3 Library");
         let sdl = sdl3::init().expect("Failed to initialize SDL3");
 
@@ -198,19 +207,8 @@ impl IPlugin for CorePlatform {
 
         let mut layers: BVec<_, EngineRoot> = BVec::new_in(system());
 
-        // TODO: right now for the shaders we either mount the CWD or .aleph if we find it
-        if Path::new(".aleph/shaders").exists() {
-            let layer = DirectoryLayer::new_with_io_queue(
-                Utf8PathBuf::from(".aleph/shaders"),
-                io_queue.clone(),
-            );
-            layers.push(LayerDesc {
-                mount_name: "__shader",
-                layer,
-            });
-        } else {
-            let layer =
-                DirectoryLayer::new_with_io_queue(Utf8PathBuf::from("./"), io_queue.clone());
+        {
+            let layer = select_shaders_mount(&render_config, &io_queue);
             layers.push(LayerDesc {
                 mount_name: "__shader",
                 layer,
@@ -218,10 +216,7 @@ impl IPlugin for CorePlatform {
         }
 
         {
-            let layer = DirectoryLayer::new_with_io_queue(
-                Utf8PathBuf::from("/mnt/NVME_02/Code/aleph-test-assets/assets"),
-                io_queue.clone(),
-            );
+            let layer = select_assets_mount(&core_config, &io_queue);
             layers.push(LayerDesc {
                 mount_name: "aleph-test",
                 layer,
@@ -507,6 +502,59 @@ fn init_cursor_map() -> HashMap<Cursor, sdl3::mouse::Cursor> {
         sdl3::mouse::Cursor::from_system(SystemCursor::No).unwrap(),
     );
     cursors
+}
+
+fn select_shaders_mount(
+    config: &crate::render::config::Config,
+    io_queue: &Arc<IoQueue>,
+) -> BBox<dyn aleph_vfs::ILayer, aleph_vfs::VfsRoot> {
+    let mut shader_candidate: BVec<_, EngineRoot> = BVec::new_in(system());
+    match config.shaders.as_deref() {
+        Some(override_dir) => {
+            // Only try the specified override directory
+            shader_candidate.push(Utf8PathBuf::from(override_dir));
+        }
+        None => {
+            // First guess we're running from an aleph workspace, and try .aleph/shaders
+            shader_candidate.push(Utf8PathBuf::from(".aleph/shaders"));
+
+            // Otherwise assume we're in a packaged build and try the ./shaders folder
+            shader_candidate.push(Utf8PathBuf::from("./shaders"));
+        }
+    }
+    for candidate in shader_candidate {
+        log::info!("Trying to mount {candidate} as __shader");
+        if candidate.exists() {
+            return DirectoryLayer::new_with_io_queue(candidate, io_queue.clone());
+        }
+    }
+    log::error!("Failed to locate a valid __shader mount point.");
+    panic!("Failed to locate a valid __shader mount point.");
+}
+
+fn select_assets_mount(
+    config: &crate::core::config::Config,
+    io_queue: &Arc<IoQueue>,
+) -> BBox<dyn aleph_vfs::ILayer, aleph_vfs::VfsRoot> {
+    let mut shader_candidate: BVec<_, EngineRoot> = BVec::new_in(system());
+    match config.assets.as_deref() {
+        Some(override_dir) => {
+            // Only try the specified override directory
+            shader_candidate.push(Utf8PathBuf::from(override_dir));
+        }
+        None => {
+            // Assume we're in a packaged build and try the ./shaders folder
+            shader_candidate.push(Utf8PathBuf::from("./assets"));
+        }
+    }
+    for candidate in shader_candidate {
+        log::info!("Trying to mount {candidate} as assets");
+        if candidate.exists() {
+            return DirectoryLayer::new_with_io_queue(candidate, io_queue.clone());
+        }
+    }
+    log::error!("Failed to locate a valid assets mount point.");
+    panic!("Failed to locate a valid assets mount point.");
 }
 
 struct SdlObjects {

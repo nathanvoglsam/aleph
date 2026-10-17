@@ -48,6 +48,9 @@ pub struct TypescriptCompilerOptions {
     pub lib: Option<Vec<String>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub types: Option<Vec<String>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub strict: Option<bool>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -96,6 +99,7 @@ pub fn root_tsconfig_template() -> TypescriptConfig {
             composite: None,
             target: None,
             lib: None,
+            types: None,
             strict: None,
             always_strict: None,
             remove_comments: None,
@@ -118,6 +122,7 @@ pub fn configs_tsconfig_template() -> TypescriptConfig {
             composite: Some(true),
             target: Some("ES2020".to_string()),
             lib: Some(vec!["ES2020".to_string()]),
+            types: Some(vec![]),
             strict: Some(true),
             always_strict: Some(true),
             remove_comments: Some(true),

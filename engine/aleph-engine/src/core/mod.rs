@@ -29,6 +29,7 @@
 
 pub mod alloc;
 pub mod async_io;
+pub mod config;
 pub mod logger;
 pub mod platform;
 pub mod rhi;

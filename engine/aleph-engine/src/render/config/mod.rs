@@ -36,11 +36,16 @@ pub struct Config {
 
     #[serde(rename = "forceGraphRebuild")]
     pub force_graph_rebuild: bool,
+
+    #[serde(rename = "shaders")]
+    pub shaders: Option<String>,
 }
 
 impl Config {
     pub fn log(&self) {
         log::info!("render.renderAheadFrames = {}", self.render_ahead_frames);
         log::info!("render.forceGraphRebuild = {}", self.force_graph_rebuild);
+        let shaders = self.shaders.as_deref().unwrap_or("<unspecified>");
+        log::info!("render.shaders = {}", shaders);
     }
 }

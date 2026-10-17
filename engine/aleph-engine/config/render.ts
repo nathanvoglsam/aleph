@@ -42,6 +42,11 @@ namespace render {
          * Useful for profiling.
          */
         forceGraphRebuild: boolean;
+
+        /**
+         * Path to the folder to import shaders from
+         */
+        shaders?: string;
     }
 }
 

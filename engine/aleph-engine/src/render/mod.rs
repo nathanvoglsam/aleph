@@ -28,7 +28,7 @@
 //
 
 pub mod async_loader;
-mod config;
+pub mod config;
 mod core;
 pub mod default_resources;
 mod egui;
@@ -101,7 +101,6 @@ impl IPlugin for PluginRender {
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
         let config = registry.config("render").unwrap();
         let config: Config = serde_json::from_value(config.clone()).unwrap();
-        config.log();
 
         // VFS handle
         let router = registry.get_interface::<ARouter>().unwrap().get();

@@ -27,8 +27,14 @@
 // SOFTWARE.
 //
 
+namespace core {
+    export interface Config {
+        assets?: string;
+    }
+}
+
 declare interface Configs {
-    core?: {},
+    core?: core.Config,
 }
 
 Configs.core = {};
