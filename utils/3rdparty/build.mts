@@ -37,9 +37,9 @@ function run_cmake(cwd: string, args: string[]) {
 function main(): void {
     const projectDirectory = process.cwd();
 
-    // Either resolves to the directory referenced by the "build-root" parameter, if present, or it
-    // will resolve to ${cwd}/.aleph/deps.
-    const depsDirectory = values["build-root"] ?? path.join(projectDirectory, ".aleph", "deps");
+    // Either resolves to the directory referenced by the ${build-root}/.aleph/deps parameter, if
+    // present, or it will resolve to ${cwd}/.aleph/deps.
+    const depsDirectory = path.join(values["build-root"] ?? projectDirectory, ".aleph", "deps");
 
     // Build for "Release" by default, but sometimes you want debug symbols for profiling.
     const buildType = values["debug-info"] ? "RelWithDebInfo" : "Release";

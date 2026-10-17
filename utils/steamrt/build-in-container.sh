@@ -1,1 +1,1 @@
-cargo build --package aleph-test --release --target-dir /tmp/target && cp /tmp/target/release/aleph-test /out/aleph-test
+cargo build --package aleph-test --release --target-dir /tmp/build/target && cp /tmp/build/target/release/aleph-test /out/aleph-test

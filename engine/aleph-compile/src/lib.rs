@@ -109,7 +109,7 @@ pub fn copy_file_to_artifacts_dir_with_name(source: &Path, name: &str) -> std::i
 
     // Create the artifacts dir if it doesn't already exist
     if !out_artifact.exists() {
-        std::fs::create_dir_all(&out_artifact).unwrap();
+        std::fs::create_dir_all(&out_artifact)?;
     }
 
     // Make the output file name
@@ -166,9 +166,5 @@ pub fn dot_aleph_path() -> PathBuf {
 
 /// Gets the path to the '.aleph/deps' folder that the aleph project is being built in the scope of.
 pub fn deps_path() -> PathBuf {
-    if let Ok(dir) = std::env::var("ALEPH_DEPS_DIR") {
-        dir.into()
-    } else {
-        dot_aleph_path().join("deps")
-    }
+    dot_aleph_path().join("deps")
 }

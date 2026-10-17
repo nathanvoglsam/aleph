@@ -15,8 +15,6 @@ FROM aleph-steamrt-base AS aleph-steamrt-workspace
 
 COPY --from=project utils /root/utils
 
-RUN /root/node-v26.12.0-linux-x64/bin/node /root/utils/3rdparty/build.mts --build-root /root/deps --cmake-dir /root/utils/3rdparty --no-tracy
-
-ENV ALEPH_DEPS_DIR="/root/deps"
+RUN /root/node-v26.12.0-linux-x64/bin/node /root/utils/3rdparty/build.mts --build-root /tmp/build --cmake-dir /root/utils/3rdparty --no-tracy
 
 WORKDIR /aleph
