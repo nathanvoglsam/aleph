@@ -193,7 +193,7 @@ impl WeakContext {
         unsafe {
             // Construct our object. May lazy init the class id on first usage.
             let id = T::get_thread_class_id();
-            let v = raw::JS_NewObjectClass(self.c, id.0.get() as c_int);
+            let v = raw::JS_NewObjectClass(self.c, id);
             let v = self.maybe_exception(RefValue::new(v))?;
 
             // Try and set the opaque. This should never be able to fail, but we keep this here as
@@ -462,6 +462,11 @@ impl WeakContext {
             JSTag::BIG_INT => unimplemented!(),
             JSTag::SYMBOL => unimplemented!(),
             JSTag::STRING => {
+                let string = self.to_c_str(v).ok_or(Exception::undefined(self))?;
+                let string = string.to_owned();
+                serde_json::Value::String(string)
+            }
+            JSTag::STRING_ROPE => {
                 let string = self.to_c_str(v).ok_or(Exception::undefined(self))?;
                 let string = string.to_owned();
                 serde_json::Value::String(string)

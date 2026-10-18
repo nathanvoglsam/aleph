@@ -18,32 +18,32 @@ endif()
 ## DEPENDENCIES DECLARATIONS
 ##
 
-## QuickJS-NG
+## QuickJS-NG @ tag v0.17.0
 FetchContent_Declare(
     quickjs
-    GIT_REPOSITORY https://github.com/nathanvoglsam/quickjs.git
-    GIT_TAG        1beea86df0b3cf4b16d4a411fa00ab5c6b267a58
+    GIT_REPOSITORY https://github.com/quickjs-ng/quickjs.git
+    GIT_TAG        6d46d07d04041b40f4f49eaa7fdebe44c314c699
 )
 
-## SDL3
+## SDL3 @ tag release-3.4.18
 FetchContent_Declare(
     sdl3
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG        release-3.4.18
+    GIT_TAG        829a65d769d935c4852f8159e964312c0957260a
 )
 
-## mimalloc
+## mimalloc @ tag v3.5.3
 FetchContent_Declare(
     mimalloc
     GIT_REPOSITORY https://github.com/microsoft/mimalloc.git
-    GIT_TAG        v3.5.3
+    GIT_TAG        d4881d338125e1cb7c47ba4cfb398d6f7c0c8d45
 )
 
-## Tracy Profiler
+## Tracy Profiler @ tag v0.14.1
 FetchContent_Declare(
     tracy
     GIT_REPOSITORY https://github.com/wolfpld/tracy.git
-    GIT_TAG        v0.14.1
+    GIT_TAG        30997d5ca6bb632cc10807a1da8a6d3de0aeeb3c
     SOURCE_SUBDIR  profiler
 )
 

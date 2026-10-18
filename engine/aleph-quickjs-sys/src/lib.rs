@@ -283,7 +283,7 @@ pub use non_nan_boxed::*;
 pub type JSValueConst = JSValue;
 
 pub const QJS_VERSION_MAJOR: u32 = 0;
-pub const QJS_VERSION_MINOR: u32 = 11;
+pub const QJS_VERSION_MINOR: u32 = 17;
 pub const QJS_VERSION_PATCH: u32 = 0;
 pub const QJS_VERSION_SUFFIX: &str = "";
 
@@ -404,7 +404,7 @@ impl JSValue {
 
     pub const fn is_big_int(&self) -> bool {
         let tag = self.get_tag();
-        tag.0 == JSTag::BIG_INT.0
+        tag.0 == JSTag::BIG_INT.0 || tag.0 == JSTag::SHORT_BIG_INT.0
     }
 
     pub const fn is_bool(&self) -> bool {
@@ -428,7 +428,8 @@ impl JSValue {
     }
 
     pub const fn is_string(&self) -> bool {
-        self.get_tag().0 == JSTag::STRING.0
+        let tag = self.get_tag().0;
+        tag == JSTag::STRING.0 || tag == JSTag::STRING_ROPE.0
     }
 
     pub const fn is_symbol(&self) -> bool {
@@ -520,6 +521,7 @@ impl JSTag {
     pub const BIG_INT: JSTag = JSTag(-9);
     pub const SYMBOL: JSTag = JSTag(-8);
     pub const STRING: JSTag = JSTag(-7);
+    pub const STRING_ROPE: JSTag = JSTag(-6);
     pub const MODULE: JSTag = JSTag(-3);
     pub const FUNCTION_BYTECODE: JSTag = JSTag(-2);
     pub const OBJECT: JSTag = JSTag(-1);
@@ -541,6 +543,7 @@ impl Debug for JSTag {
             Self::BIG_INT => "BIG_INT",
             Self::SYMBOL => "SYMBOL",
             Self::STRING => "STRING",
+            Self::STRING_ROPE => "STRING_ROPE",
             Self::MODULE => "MODULE",
             Self::FUNCTION_BYTECODE => "FUNCTION_BYTECODE",
             Self::OBJECT => "OBJECT",
@@ -706,6 +709,7 @@ impl JSTypedArrayEnum {
 pub struct JSPromiseStateEnum(pub c_int);
 
 impl JSPromiseStateEnum {
+    pub const NOT_A_PROMISE: Self = Self(-1);
     pub const PENDING: Self = Self(0);
     pub const FULFILLED: Self = Self(1);
     pub const REJECTED: Self = Self(2);
@@ -715,9 +719,34 @@ impl Debug for JSPromiseStateEnum {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(match *self {
+            Self::NOT_A_PROMISE => "NOT_A_PROMISE",
             Self::PENDING => "PENDING",
             Self::FULFILLED => "FULFILLED",
             Self::REJECTED => "REJECTED",
+            _ => "(Unknown)",
+        })
+    }
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default)]
+pub struct JSPromiseHookType(pub c_int);
+
+impl JSPromiseHookType {
+    pub const INIT: Self = Self(0);
+    pub const BEFORE: Self = Self(1);
+    pub const AFTER: Self = Self(2);
+    pub const RESOLVE: Self = Self(3);
+}
+
+impl Debug for JSPromiseHookType {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match *self {
+            Self::INIT => "INIT",
+            Self::BEFORE => "BEFORE",
+            Self::AFTER => "AFTER",
+            Self::RESOLVE => "RESOLVE",
             _ => "(Unknown)",
         })
     }
@@ -806,6 +835,8 @@ impl JSDef {
     pub const PROP_UNDEFINED: Self = Self(7);
     pub const OBJECT: Self = Self(8);
     pub const ALIAS: Self = Self(9);
+    pub const PROP_SYMBOL: Self = Self(10);
+    pub const PROP_BOOL: Self = Self(11);
 }
 
 impl Debug for JSDef {
@@ -822,6 +853,8 @@ impl Debug for JSDef {
             Self::PROP_UNDEFINED => "PROP_UNDEFINED",
             Self::OBJECT => "OBJECT",
             Self::ALIAS => "ALIAS",
+            Self::PROP_SYMBOL => "PROP_SYMBOL",
+            Self::PROP_BOOL => "PROP_BOOL",
             _ => "(Unknown)",
         })
     }
@@ -846,6 +879,8 @@ mod fns {
     pub type JSCFunctionFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValueConst, argc: c_int, argv: *mut JSValueConst) -> JSValue;
     pub type JSCFunctionMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValueConst, argc: c_int, argv: *mut JSValueConst, magic: c_int) -> JSValue;
     pub type JSCFunctionDataFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValueConst, argc: c_int, argv: *mut JSValueConst, magic: c_int, func_data: *mut JSValueConst) -> JSValue;
+    pub type JSCClosureFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValueConst, argc: c_int, argv: *mut JSValueConst, magic: c_int, opaque: *mut c_void) -> JSValue;
+    pub type JSCClosureFinalizerFn = extern "C" fn(*mut c_void);
 
     pub type JSCallocFn = extern "C" fn(opaque: *mut c_void, count: usize, size: usize) -> *mut c_void;
     pub type JSMallocFn = extern "C" fn(opaque: *mut c_void, size: usize) -> *mut c_void;
@@ -853,7 +888,7 @@ mod fns {
     pub type JSReallocFn = extern "C" fn(opaque: *mut c_void, ptr: *mut c_void, size: usize) -> *mut c_void;
     pub type JSUsableSizeFn = extern "C" fn(ptr: *const c_void) -> usize;
 
-    pub type JSMarkFunc = extern "C" fn(rt: NonNull<JSGCObjectHeader>, gp: *mut JSGCObjectHeader);
+    pub type JSMarkFunc = extern "C" fn(rt: NonNull<JSRuntime>, gp: *mut JSGCObjectHeader);
 
     pub type JSGetOwnPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, desc: *mut JSPropertyDescriptor, obj: JSValueConst, prop: JSAtom) -> c_int;
     pub type JSGetOwnPropertyNamesFn = extern "C" fn(ctx: NonNull<JSContext>, ptab: *mut *mut JSPropertyEnum, plen: *mut u32, obj: JSValueConst) -> c_int;
@@ -867,7 +902,7 @@ mod fns {
     pub type JSClassGCMarkFn = extern "C" fn(rt: NonNull<JSRuntime>, val: JSValueConst, mark_func: JSMarkFunc);
     pub type JSClassCallFn = extern "C" fn(ctx: NonNull<JSContext>, func_obj: JSValueConst, this_val: JSValueConst, argc: c_int, argv: *mut JSValueConst, flags: c_int) -> JSValue;
 
-    pub type JSFreeArrayBufferDataFn = extern "C" fn(rt: NonNull<JSRuntime>, opaque: *mut c_void, ptr: *mut c_void);
+    pub type JSReallocArrayBufferDataFn = extern "C" fn(rt: NonNull<JSRuntime>, opaque: *mut c_void, ptr: *mut c_void, size: usize) -> *mut c_void;
 
     pub type JSSabMallocFn = extern "C" fn(opaque: *mut c_void, size: usize) -> *mut c_void;
     pub type JSSabFreeFn = extern "C" fn(opaque: *mut c_void, ptr: *mut c_void);
@@ -875,10 +910,15 @@ mod fns {
 
     pub type JSHostPromiseRejectionTrackerFn = extern "C" fn(ctx: NonNull<JSContext>, promise: JSValueConst, reason: JSValueConst, is_handled: bool, opaque: *mut c_void);
 
+    pub type JSPromiseHookFn = extern "C" fn(ctx: NonNull<JSContext>, hook_type: JSPromiseHookType, promise: JSValueConst, parent_promise: JSValueConst, opaque: *mut c_void);
+
     pub type JSInterruptHandlerFn = extern "C" fn(rt: NonNull<JSRuntime>, opaque: *mut c_void) -> c_int;
 
     pub type JSModuleNormalizeFn = extern "C" fn(ctx: NonNull<JSContext>, module_base_name: *const c_char, module_name: *const c_char, opaque: *mut c_void) -> *mut c_char;
+    pub type JSModuleNormalizeFn2 = extern "C" fn(ctx: NonNull<JSContext>, module_base_name: *const c_char, module_name: *const c_char, attributes: JSValueConst, opaque: *mut c_void) -> *mut c_char;
     pub type JSModuleLoaderFn = extern "C" fn(ctx: NonNull<JSContext>, module_name: *const c_char, opaque: *mut c_void) -> Option<NonNull<JSModuleDef>>;
+    pub type JSModuleLoaderFn2 = extern "C" fn(ctx: NonNull<JSContext>, module_name: *const c_char, opaque: *mut c_void, attributes: JSValueConst) -> Option<NonNull<JSModuleDef>>;
+    pub type JSModuleCheckSupportedImportAttributesFn = extern "C" fn(ctx: NonNull<JSContext>, opaque: *mut c_void, attributes: JSValueConst) -> c_int;
 
     pub type JSJobFn = extern "C" fn(ctx: NonNull<JSContext>, argc: c_int, argv: *mut JSValueConst) -> JSValue;
 
@@ -993,12 +1033,11 @@ pub struct JSSharedArrayBufferFunctions {
     pub sab_opaque: *mut c_void,
 }
 
-// /* Structure to retrieve (de)serialized SharedArrayBuffer objects. */
-// #[repr(C)]
-// pub struct JSSABTab {
-//     pub tab: *mut *mut u8,
-//     pub len: usize,
-// }
+#[repr(C)]
+pub struct JSSABTab {
+    pub tab: *mut *mut u8,
+    pub len: usize,
+}
 
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -1418,20 +1457,21 @@ unsafe extern "C" {
     pub fn JS_GetFunctionProto(ctx: NonNull<JSContext>) -> JSValue;
 
     pub fn JS_NewContextRaw(rt: NonNull<JSRuntime>) -> Option<NonNull<JSContext>>;
-    pub fn JS_AddIntrinsicBaseObjects(ctx: NonNull<JSContext>);
-    pub fn JS_AddIntrinsicDate(ctx: NonNull<JSContext>);
-    pub fn JS_AddIntrinsicEval(ctx: NonNull<JSContext>);
+    pub fn JS_AddIntrinsicBaseObjects(ctx: NonNull<JSContext>) -> c_int;
+    pub fn JS_AddIntrinsicDate(ctx: NonNull<JSContext>) -> c_int;
+    pub fn JS_AddIntrinsicEval(ctx: NonNull<JSContext>) -> c_int;
     pub fn JS_AddIntrinsicRegExpCompiler(ctx: NonNull<JSContext>);
-    pub fn JS_AddIntrinsicRegExp(ctx: NonNull<JSContext>);
-    pub fn JS_AddIntrinsicJSON(ctx: NonNull<JSContext>);
-    pub fn JS_AddIntrinsicProxy(ctx: NonNull<JSContext>);
-    pub fn JS_AddIntrinsicMapSet(ctx: NonNull<JSContext>);
-    pub fn JS_AddIntrinsicTypedArrays(ctx: NonNull<JSContext>);
-    pub fn JS_AddIntrinsicPromise(ctx: NonNull<JSContext>);
-    pub fn JS_AddIntrinsicBigInt(ctx: NonNull<JSContext>);
-    pub fn JS_AddIntrinsicWeakRef(ctx: NonNull<JSContext>);
-    pub fn JS_AddPerformance(ctx: NonNull<JSContext>);
-    pub fn JS_AddIntrinsicDOMException(ctx: NonNull<JSContext>);
+    pub fn JS_AddIntrinsicRegExp(ctx: NonNull<JSContext>) -> c_int;
+    pub fn JS_AddIntrinsicJSON(ctx: NonNull<JSContext>) -> c_int;
+    pub fn JS_AddIntrinsicProxy(ctx: NonNull<JSContext>) -> c_int;
+    pub fn JS_AddIntrinsicMapSet(ctx: NonNull<JSContext>) -> c_int;
+    pub fn JS_AddIntrinsicTypedArrays(ctx: NonNull<JSContext>) -> c_int;
+    pub fn JS_AddIntrinsicPromise(ctx: NonNull<JSContext>) -> c_int;
+    pub fn JS_AddIntrinsicBigInt(ctx: NonNull<JSContext>) -> c_int;
+    pub fn JS_AddIntrinsicWeakRef(ctx: NonNull<JSContext>) -> c_int;
+    pub fn JS_AddPerformance(ctx: NonNull<JSContext>) -> c_int;
+    pub fn JS_AddIntrinsicDOMException(ctx: NonNull<JSContext>) -> c_int;
+    pub fn JS_AddIntrinsicAToB(ctx: NonNull<JSContext>) -> c_int;
 
     pub fn JS_IsEqual(ctx: NonNull<JSContext>, op1: JSValueConst, op2: JSValueConst) -> c_int;
     pub fn JS_IsStrictEqual(ctx: NonNull<JSContext>, op1: JSValueConst, op2: JSValueConst) -> bool;
@@ -1443,17 +1483,16 @@ unsafe extern "C" {
     pub fn js_free_rt(rt: NonNull<JSRuntime>, ptr: *mut c_void);
     pub fn js_realloc_rt(rt: NonNull<JSRuntime>, ptr: *mut c_void, size: usize) -> *mut c_void;
     pub fn js_malloc_usable_size_rt(rt: NonNull<JSRuntime>, ptr: *const c_void) -> usize;
-    pub fn js_mallocz_rt(rt: NonNull<JSRuntime>, size: usize);
+    pub fn js_mallocz_rt(rt: NonNull<JSRuntime>, size: usize) -> *mut c_void;
 
     pub fn js_calloc(rt: NonNull<JSContext>, count: usize, size: usize) -> *mut c_void;
     pub fn js_malloc(ctx: NonNull<JSContext>, size: usize) -> *mut c_void;
     pub fn js_free(ctx: NonNull<JSContext>, ptr: *mut c_void);
     pub fn js_realloc(ctx: NonNull<JSContext>, ptr: *mut c_void, size: usize) -> *mut c_void;
     pub fn js_malloc_usable_size(ctx: NonNull<JSContext>, ptr: *const c_void) -> usize;
-    pub fn js_realloc2(ctx: NonNull<JSContext>, ptr: *mut c_void, size: usize, pslack: *mut usize) -> *mut c_void;
     pub fn js_mallocz(ctx: NonNull<JSContext>, size: usize) -> *mut c_void;
-    pub fn js_strdup(ctx: NonNull<JSContext>, str: *const c_char) -> *const c_char;
-    pub fn js_strndup(ctx: NonNull<JSContext>, str: *const c_char, n: usize) -> *const c_char;
+    pub fn js_strdup(ctx: NonNull<JSContext>, str: *const c_char) -> *mut c_char;
+    pub fn js_strndup(ctx: NonNull<JSContext>, str: *const c_char, n: usize) -> *mut c_char;
 
     pub fn JS_ComputeMemoryUsage(rt: NonNull<JSRuntime>, s: *mut JSMemoryUsage);
     // fn JS_DumpMemoryUsage(fp: *mut FILE, s: *const JSMemoryUsage, rt: NonNull<JSRuntime>);
@@ -1468,14 +1507,13 @@ unsafe extern "C" {
     pub fn JS_AtomToValue(ctx: NonNull<JSContext>, atom: JSAtom) -> JSValue;
     pub fn JS_AtomToString(ctx: NonNull<JSContext>, atom: JSAtom) -> JSValue;
     pub fn JS_AtomToCStringLen(ctx: NonNull<JSContext>, len: *mut usize, atom: JSAtom) -> *const c_char;
-    pub fn JS_AtomToCString(ctx: NonNull<JSContext>, atom: JSAtom) -> *const c_char;
     pub fn JS_ValueToAtom(ctx: NonNull<JSContext>, val: JSValueConst) -> Option<JSAtom>;
 
     pub fn JS_NewClassID(rt: NonNull<JSRuntime>, pclass_id: *mut Option<JSClassID>) -> Option<JSClassID>;
     pub fn JS_GetClassID(v: JSValueConst) -> Option<JSClassID>;
     pub fn JS_NewClass(rt: NonNull<JSRuntime>, class_id: JSClassID, class_def: *const JSClassDef) -> c_int;
-    pub fn JS_IsRegisteredClass(rt: NonNull<JSRuntime>, class_id: JSClassID) -> c_int;
-    // pub fn JS_GetClassName(rt: NonNull<JSRuntime>, class_id: JSClassID) -> JSAtom;
+    pub fn JS_IsRegisteredClass(rt: NonNull<JSRuntime>, class_id: JSClassID) -> bool;
+    pub fn JS_GetClassName(rt: NonNull<JSRuntime>, class_id: JSClassID) -> Option<JSAtom>;
 
     pub fn JS_NewBigInt64(ctx: NonNull<JSContext>, v: i64) -> JSValue;
     pub fn JS_NewBigUint64(ctx: NonNull<JSContext>, v: u64) -> JSValue;
@@ -1529,7 +1567,7 @@ unsafe extern "C" {
     pub fn JS_FreeCStringRT(ctx: NonNull<JSRuntime>, ptr: *const c_char);
 
     pub fn JS_NewObjectProtoClass(ctx: NonNull<JSContext>, proto: JSValueConst, class_id: JSClassID) -> JSValue;
-    pub fn JS_NewObjectClass(ctx: NonNull<JSContext>, class_id: c_int) -> JSValue;
+    pub fn JS_NewObjectClass(ctx: NonNull<JSContext>, class_id: JSClassID) -> JSValue;
     pub fn JS_NewObjectProto(ctx: NonNull<JSContext>, proto: JSValue) -> JSValue;
     pub fn JS_NewObject(ctx: NonNull<JSContext>) -> JSValue;
 
@@ -1539,6 +1577,7 @@ unsafe extern "C" {
     pub fn JS_ToObjectString(ctx: NonNull<JSContext>, val: JSValueConst) -> JSValue;
 
     pub fn JS_IsFunction(ctx: NonNull<JSContext>, v: JSValueConst) -> bool;
+    pub fn JS_IsAsyncFunction(v: JSValueConst) -> bool;
     pub fn JS_IsConstructor(ctx: NonNull<JSContext>, v: JSValueConst) -> bool;
     pub fn JS_SetConstructorBit(ctx: NonNull<JSContext>, func_obj: JSValueConst, val: bool) -> bool;
 
@@ -1557,6 +1596,7 @@ unsafe extern "C" {
     pub fn JS_IsProxy(v: JSValueConst) -> bool;
     pub fn JS_GetProxyTarget(ctx: NonNull<JSContext>, v: JSValueConst) -> JSValue;
     pub fn JS_GetProxyHandler(ctx: NonNull<JSContext>, v: JSValueConst) -> JSValue;
+    pub fn JS_NewProxy(ctx: NonNull<JSContext>, target: JSValueConst, handler: JSValueConst) -> JSValue;
 
     pub fn JS_NewDate(ctx: NonNull<JSContext>, epoch_ms: f64) -> JSValue;
     pub fn JS_IsDate(v: JSValueConst) -> bool;
@@ -1565,11 +1605,13 @@ unsafe extern "C" {
     pub fn JS_GetPropertyUint32(ctx: NonNull<JSContext>, this_obj: JSValueConst, idx: u32) -> JSValue;
     pub fn JS_GetPropertyInt64(ctx: NonNull<JSContext>, this_obj: JSValueConst, idx: i64) -> JSValue;
     pub fn JS_GetPropertyStr(ctx: NonNull<JSContext>, this_obj: JSValueConst, prop: *const c_char) -> JSValue;
+    pub fn JS_GetPropertyValue(ctx: NonNull<JSContext>, this_obj: JSValueConst, prop: JSValue) -> JSValue;
 
     pub fn JS_SetProperty(ctx: NonNull<JSContext>, this_obj: JSValueConst, prop: JSAtom, v: JSValue) -> c_int;
     pub fn JS_SetPropertyUint32(ctx: NonNull<JSContext>, this_obj: JSValueConst, idx: u32, v: JSValue) -> c_int;
     pub fn JS_SetPropertyInt64(ctx: NonNull<JSContext>, this_obj: JSValueConst, idx: i64, v: JSValue) -> c_int;
     pub fn JS_SetPropertyStr(ctx: NonNull<JSContext>, this_obj: JSValueConst, prop: *const c_char, v: JSValue) -> c_int;
+    pub fn JS_SetPropertyValue(ctx: NonNull<JSContext>, this_obj: JSValueConst, prop: JSValue, v: JSValue, flags: c_int) -> c_int;
     pub fn JS_HasProperty(ctx: NonNull<JSContext>, this_obj: JSValueConst, prop: JSAtom) -> c_int;
     pub fn JS_IsExtensible(ctx: NonNull<JSContext>, obj: JSValueConst) -> c_int;
     pub fn JS_PreventExtensions(ctx: NonNull<JSContext>, obj: JSValueConst) -> c_int;
@@ -1607,48 +1649,61 @@ unsafe extern "C" {
     pub fn JS_ParseJSON(ctx: NonNull<JSContext>, buf: *const c_char, buf_len: usize, filename: *const c_char) -> JSValue;
     pub fn JS_JSONStringify(ctx: NonNull<JSContext>, obj: JSValueConst, replacer: JSValueConst, space0: JSValueConst) -> JSValue;
 
-    pub fn JS_NewArrayBuffer(ctx: NonNull<JSContext>, buf: *mut u8, len: usize, free_func: JSFreeArrayBufferDataFn, opaque: *mut c_void, is_shared: bool) -> JSValue;
+    pub fn JS_NewArrayBuffer(ctx: NonNull<JSContext>, buf: *mut u8, len: usize, max_len: usize, realloc_func: Option<JSReallocArrayBufferDataFn>, opaque: *mut c_void, is_shared: bool) -> JSValue;
     pub fn JS_NewArrayBufferCopy(ctx: NonNull<JSContext>, buf: *const u8, len: usize) -> JSValue;
     pub fn JS_DetachArrayBuffer(ctx: NonNull<JSContext>, obj: JSValueConst);
     pub fn JS_GetArrayBuffer(ctx: NonNull<JSContext>, psize: *mut usize, obj: JSValueConst) -> *mut u8;
     pub fn JS_IsArrayBuffer(obj: JSValueConst) -> bool;
+    pub fn JS_IsImmutableArrayBuffer(obj: JSValueConst) -> c_int;
+    pub fn JS_SetImmutableArrayBuffer(obj: JSValueConst, immutable: bool) -> c_int;
     pub fn JS_GetUint8Array(ctx: NonNull<JSContext>, psize: *mut usize, obj: JSValueConst) -> *mut u8;
     pub fn JS_NewTypedArray(ctx: NonNull<JSContext>, argc: c_int, argv: *const JSValueConst, array_type: JSTypedArrayEnum) -> JSValue;
     pub fn JS_GetTypedArrayBuffer(ctx: NonNull<JSContext>, obj: JSValueConst, pbyte_offset: *mut usize, pbyte_length: *mut usize, pbytes_per_element: *mut usize) -> JSValue;
-    pub fn JS_NewUint8Array(ctx: NonNull<JSContext>, buf: *mut u8, len: usize, free_func: JSFreeArrayBufferDataFn, opaque: *mut c_void, is_shared: bool) -> JSValue;
+    pub fn JS_NewUint8Array(ctx: NonNull<JSContext>, buf: *mut u8, len: usize, realloc_func: Option<JSReallocArrayBufferDataFn>, opaque: *mut c_void, is_shared: bool) -> JSValue;
     pub fn JS_GetTypedArrayType(obj: JSValueConst) -> JSTypedArrayEnum;
     pub fn JS_NewUint8ArrayCopy(ctx: NonNull<JSContext>, buf: *const u8, len: usize) -> JSValue;
 
     pub fn JS_SetSharedArrayBufferFunctions(rt: NonNull<JSRuntime>, sf: *const JSSharedArrayBufferFunctions);
 
     pub fn JS_NewPromiseCapability(ctx: NonNull<JSContext>, resolving_funcs: *mut JSValue) -> JSValue;
+    pub fn JS_PromiseThen(ctx: NonNull<JSContext>, promise: JSValueConst, on_fulfilled: JSValueConst, on_rejected: JSValueConst) -> JSValue;
     pub fn JS_PromiseState(ctx: NonNull<JSContext>, promise: JSValueConst) -> JSPromiseStateEnum;
     pub fn JS_PromiseResult(ctx: NonNull<JSContext>, promise: JSValueConst) -> JSValue;
     pub fn JS_IsPromise(promise: JSValueConst) -> bool;
+    pub fn JS_PromiseMarkAsHandled(ctx: NonNull<JSContext>, promise: JSValueConst);
+    pub fn JS_NewSettledPromise(ctx: NonNull<JSContext>, is_reject: bool, value: JSValueConst) -> JSValue;
 
     pub fn JS_NewSymbol(ctx: NonNull<JSContext>, description: *const c_char, is_global: bool) -> JSValue;
+    pub fn JS_NewPrivateSymbol(ctx: NonNull<JSContext>, description: *const c_char) -> JSValue;
 
-    pub fn JS_SetHostPromiseRejectionTracker(rt: NonNull<JSRuntime>, cb: *mut JSHostPromiseRejectionTrackerFn, opaque: *mut c_void);
+    pub fn JS_SetPromiseHook(rt: NonNull<JSRuntime>, promise_hook: JSPromiseHookFn, opaque: *mut c_void);
+    pub fn JS_SetHostPromiseRejectionTracker(rt: NonNull<JSRuntime>, cb: JSHostPromiseRejectionTrackerFn, opaque: *mut c_void);
 
-    pub fn JS_SetInterruptHandler(rt: NonNull<JSRuntime>, cb: *mut JSInterruptHandlerFn, opaque: *mut c_void);
+    pub fn JS_SetInterruptHandler(rt: NonNull<JSRuntime>, cb: JSInterruptHandlerFn, opaque: *mut c_void);
     pub fn JS_SetCanBlock(rt: NonNull<JSRuntime>, can_block: bool);
     pub fn JS_SetIsHTMLDDA(ctx: NonNull<JSContext>, obj: JSValueConst);
 
-    pub fn JS_SetModuleLoaderFunc(rt: NonNull<JSRuntime>, module_normalize: JSModuleNormalizeFn, module_loader: JSModuleLoaderFn, opaque: *mut c_void);
+    pub fn JS_SetModuleLoaderFunc(rt: NonNull<JSRuntime>, module_normalize: Option<JSModuleNormalizeFn>, module_loader: JSModuleLoaderFn, opaque: *mut c_void);
+    pub fn JS_SetModuleLoaderFunc2(rt: NonNull<JSRuntime>, module_normalize: Option<JSModuleNormalizeFn>, module_loader: JSModuleLoaderFn2, module_check_attrs: JSModuleCheckSupportedImportAttributesFn, opaque: *mut c_void);
+    pub fn JS_SetModuleNormalizeFunc2(rt: NonNull<JSRuntime>, module_normalize: JSModuleNormalizeFn2);
     pub fn JS_GetImportMeta(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>) -> JSValue;
     pub fn JS_GetModuleName(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>) -> Option<JSAtom>;
     pub fn JS_GetModuleNamespace(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>) -> JSValue;
 
+    pub fn JS_SetModulePrivateValue(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>, val: JSValue) -> c_int;
+    pub fn JS_GetModulePrivateValue(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>) -> JSValue;
+
     pub fn JS_EnqueueJob(ctx: NonNull<JSContext>, job_func: JSJobFn, argc: c_int, argv: *mut JSValueConst) -> c_int;
 
     pub fn JS_IsJobPending(rt: NonNull<JSRuntime>) -> bool;
+    pub fn JS_GetPendingJobContext(rt: NonNull<JSRuntime>) -> Option<NonNull<JSContext>>;
     pub fn JS_ExecutePendingJob(rt: NonNull<JSRuntime>, pctx: *mut *mut JSContext) -> c_int;
 
-    pub fn JS_WriteObject(ctx: NonNull<JSContext>, psize: *mut usize, obj: JSValueConst, flags: c_uint) -> *mut u8;
-    pub fn JS_WriteObject2(ctx: NonNull<JSContext>, psize: *mut usize, obj: JSValueConst, flags: c_uint, psab_tab: *mut *mut *mut u8, psab_tab_len: *mut usize) -> *mut u8;
+    pub fn JS_WriteObject(ctx: NonNull<JSContext>, psize: *mut usize, obj: JSValueConst, flags: c_int) -> *mut u8;
+    pub fn JS_WriteObject2(ctx: NonNull<JSContext>, psize: *mut usize, obj: JSValueConst, flags: c_int, psab_tab: *mut JSSABTab) -> *mut u8;
 
-    pub fn JS_ReadObject(ctx: NonNull<JSContext>, buf: *mut u8, buf_len: usize, flags: c_int) -> JSValue;
-    // pub fn JS_ReadObject2(ctx: NonNull<JSContext>, buf: *mut u8, buf_len: usize, flags: c_int, psab_tab: *mut JSSABTab) -> JSValue;
+    pub fn JS_ReadObject(ctx: NonNull<JSContext>, buf: *const u8, buf_len: usize, flags: c_int) -> JSValue;
+    pub fn JS_ReadObject2(ctx: NonNull<JSContext>, buf: *const u8, buf_len: usize, flags: c_int, psab_tab: *mut JSSABTab) -> JSValue;
     pub fn JS_EvalFunction(ctx: NonNull<JSContext>, fun_obj: JSValue) -> JSValue;
     pub fn JS_ResolveModule(ctx: NonNull<JSContext>, obj: JSValueConst) -> c_int;
 
@@ -1656,11 +1711,12 @@ unsafe extern "C" {
     pub fn JS_LoadModule(ctx: NonNull<JSContext>, basename: *const c_char, filename: *const c_char) -> JSValue;
 
     pub fn JS_NewCFunction2(ctx: NonNull<JSContext>, func: JSCFunctionFn, name: *const c_char, length: c_int, cproto: JSCFunctionEnum, magic: c_int) -> JSValue;
-    pub fn JS_NewCFunction3(ctx: NonNull<JSContext>, func: JSCFunctionFn, name: *const c_char, length: c_int, cproto: JSCFunctionEnum, magic: c_int, proto_val: JSValueConst) -> JSValue;
+    pub fn JS_NewCFunction3(ctx: NonNull<JSContext>, func: JSCFunctionFn, name: *const c_char, length: c_int, cproto: JSCFunctionEnum, magic: c_int, proto_val: JSValueConst, n_fields: c_int) -> JSValue;
     pub fn JS_NewCFunctionData(ctx: NonNull<JSContext>, func: JSCFunctionDataFn, length: c_int, magic: c_int, data_len: c_int, data: *mut JSValueConst) -> JSValue;
     pub fn JS_NewCFunctionData2(ctx: NonNull<JSContext>, func: JSCFunctionDataFn, name: *const c_char, length: c_int, magic: c_int, data_len: c_int, data: *mut JSValueConst) -> JSValue;
+    pub fn JS_NewCClosure(ctx: NonNull<JSContext>, func: JSCClosureFn, name: *const c_char, opaque_finalize: JSCClosureFinalizerFn, length: c_int, magic: c_int, opaque: *mut c_void) -> JSValue;
 
-    pub fn JS_SetConstructor(ctx: NonNull<JSContext>, func_obj: JSValueConst, proto: JSValueConst);
+    pub fn JS_SetConstructor(ctx: NonNull<JSContext>, func_obj: JSValueConst, proto: JSValueConst) -> c_int;
 
     pub fn JS_SetPropertyFunctionList(ctx: NonNull<JSContext>, obj: JSValueConst, tab: *const JSCFunctionListEntry, len: c_int) -> c_int;
 

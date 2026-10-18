@@ -103,14 +103,15 @@ impl Value {
     /// holds an invalid pointer. There's no way to check at runtime and so the call must be unsafe.
     ///
     /// The [`Value::from_raw`] function on the other hand will only yield a value for pure value
-    /// JS types like number, checked at runtime These do not contain pointers and so as long as you
-    /// check the tag they are valid to use. If you want an unchecked conversion just use
+    /// JS types like number, checked at runtime. These do not contain pointers and so as long as
+    /// you check the tag they are valid to use. If you want an unchecked conversion just use
     /// [`Option::unwrap_unchecked`].
     pub const fn from_raw(v: JSValue) -> Option<Self> {
         match v.get_norm_tag() {
             JSTag::BIG_INT
             | JSTag::SYMBOL
             | JSTag::STRING
+            | JSTag::STRING_ROPE
             | JSTag::MODULE
             | JSTag::FUNCTION_BYTECODE
             | JSTag::OBJECT
