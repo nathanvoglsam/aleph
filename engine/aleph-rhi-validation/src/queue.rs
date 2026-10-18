@@ -74,12 +74,12 @@ impl IQueue for ValidationQueue {
         abort_on_unwind(|| self.inner.wait_idle())
     }
 
-    unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
+    unsafe fn submit(&self, desc: QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         abort_on_unwind(|| {
-            for v in desc.command_lists {
+            for v in desc.command_lists.iter_mut() {
                 let list_box = v.take().unwrap();
                 self.validate_command_list_submission(unwrap::command_list(list_box.as_ref()));
-                v.set(Some(list_box));
+                *v = Some(list_box);
             }
 
             get_as_unwrapped::queue_submit_desc(desc, |inner_desc| {

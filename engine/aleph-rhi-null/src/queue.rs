@@ -71,7 +71,7 @@ impl IQueue for NullQueue {
         Ok(())
     }
 
-    unsafe fn submit(&self, _desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
+    unsafe fn submit(&self, _desc: QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         Ok(())
     }
 

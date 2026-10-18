@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::cell::Cell;
 use std::sync::Arc;
 
 use thiserror::Error;
@@ -79,7 +78,7 @@ pub trait IQueue: IGetPlatformInterface + Send + Sync {
     /// It is the caller's responsibility to ensure that the command lists submitted to the GPU
     /// contain a valid command stream.
     ///
-    unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError>;
+    unsafe fn submit(&self, desc: QueueSubmitDesc) -> Result<(), QueueSubmitError>;
 
     ///
     /// Enqueues a 'present' operation onto the queue for the given [ISwapChain].
@@ -143,10 +142,10 @@ impl std::fmt::Display for QueueType {
     }
 }
 
-#[derive(Clone)]
+#[derive(Default)]
 pub struct QueueSubmitDesc<'a> {
     /// A list of the command lists that are to be submitted in this batch
-    pub command_lists: &'a [Cell<Option<Box<dyn ICommandList>>>],
+    pub command_lists: &'a mut [Option<Box<dyn ICommandList>>],
 
     /// A list of fences that will block the execution of the batch until all fences in the list are
     /// signaled.
@@ -165,7 +164,7 @@ pub struct QueueSubmitDesc<'a> {
     ///
     /// This fences will be signaled with the associated value in 'signal_values',
     ///
-    /// `signel_fences.len()` and `signal_values.len()` must be equal!
+    /// `signal_fences.len()` and `signal_values.len()` must be equal!
     pub signal_fences: &'a [&'a FenceHandle],
 
     /// Associated with 'signal_values'. Provides the value that will be signaled on the associated
@@ -181,23 +180,11 @@ pub struct QueueSubmitDesc<'a> {
 }
 
 impl<'a> QueueSubmitDesc<'a> {
-    /// Constructs a new, empty [QueueSubmitDesc]
-    pub const fn new() -> Self {
-        Self {
-            command_lists: &[],
-            wait_fences: &[],
-            wait_values: &[],
-            signal_fences: &[],
-            signal_values: &[],
-            swap_image: None,
-        }
-    }
-
     /// Takes the given desc and returns it with [`QueueSubmitDesc::command_lists`] set to the given
     /// parameter
     pub const fn with_lists(
         mut self,
-        command_lists: &'a [Cell<Option<Box<dyn ICommandList>>>],
+        command_lists: &'a mut [Option<Box<dyn ICommandList>>],
     ) -> Self {
         self.command_lists = command_lists;
         self
@@ -238,13 +225,6 @@ impl<'a> QueueSubmitDesc<'a> {
     pub const fn with_swap_image(mut self, swap_image: &'a dyn ISwapImage) -> Self {
         self.swap_image = Some(swap_image);
         self
-    }
-}
-
-impl<'a> Default for QueueSubmitDesc<'a> {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
     }
 }
 

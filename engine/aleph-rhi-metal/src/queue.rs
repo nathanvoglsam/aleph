@@ -152,7 +152,7 @@ impl IQueue for Queue {
         })
     }
 
-    unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
+    unsafe fn submit(&self, mut desc: QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         abort_on_unwind(|| {
             autoreleasepool(|_| {
                 let mut in_flight = self.in_flight.lock();
@@ -188,7 +188,7 @@ impl IQueue for Queue {
 
                 let lists: Vec<_> = desc
                     .command_lists
-                    .iter()
+                    .iter_mut()
                     .map(|list| {
                         let list = list.take().unwrap();
                         if list.as_ref().type_id() == TypeId::of::<CommandList>() {

@@ -33,7 +33,6 @@
 //!
 
 use std::any::TypeId;
-use std::cell::Cell;
 
 use aleph_alloc::BVec;
 use aleph_rhi_api::*;
@@ -103,11 +102,11 @@ pub unsafe fn parameter_writes<'a>(writes: &[ParameterWrite<'a>]) -> Vec<Paramet
 }
 
 pub fn queue_submit_desc<Return>(
-    desc: &QueueSubmitDesc,
-    f: impl FnOnce(&QueueSubmitDesc) -> Return,
+    desc: QueueSubmitDesc,
+    f: impl FnOnce(QueueSubmitDesc) -> Return,
 ) -> Return {
     let mut command_lists = BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
-    command_lists.extend(desc.command_lists.iter().map(|v| {
+    command_lists.extend(desc.command_lists.iter_mut().map(|v| {
         let v = v.take().unwrap();
         let v = {
             if v.as_ref().type_id() == TypeId::of::<ValidationCommandList>() {
@@ -118,7 +117,7 @@ pub fn queue_submit_desc<Return>(
             }
         };
         let v = v.inner;
-        Cell::new(Some(v))
+        Some(v)
     }));
 
     let mut wait_fences = BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
@@ -145,7 +144,7 @@ pub fn queue_submit_desc<Return>(
         .flatten();
 
     let new_desc = QueueSubmitDesc {
-        command_lists: command_lists.as_slice(),
+        command_lists: command_lists.as_mut_slice(),
         wait_fences: wait_fences.as_slice(),
         wait_values: desc.wait_values,
         signal_fences: signal_fences.as_slice(),
@@ -153,7 +152,7 @@ pub fn queue_submit_desc<Return>(
         swap_image,
     };
 
-    f(&new_desc)
+    f(new_desc)
 }
 
 pub fn input_assembly_buffer_binding<'a>(

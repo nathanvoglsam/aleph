@@ -431,8 +431,8 @@ impl Renderer {
             }
 
             self.queue
-                .submit(&rhi::QueueSubmitDesc {
-                    command_lists: &[Some(list).into()],
+                .submit(rhi::QueueSubmitDesc {
+                    command_lists: &mut [Some(list)],
                     wait_fences: &[],
                     wait_values: &[],
                     signal_fences: &[&self.frame_fence],

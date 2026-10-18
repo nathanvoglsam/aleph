@@ -298,7 +298,7 @@ impl IQueue for Queue {
         })
     }
 
-    unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
+    unsafe fn submit(&self, mut desc: QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         abort_on_unwind(|| unsafe {
             // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
             // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
@@ -326,7 +326,7 @@ impl IQueue for Queue {
                 BVec::with_capacity_in(desc.command_lists.len(), system());
             let mut handles: BVec<Option<ID3D12CommandList>, RhiRoot> =
                 BVec::with_capacity_in(desc.command_lists.len(), system());
-            for list in desc.command_lists {
+            for list in desc.command_lists.iter_mut() {
                 let list = list.take().unwrap();
                 let list = {
                     if list.as_ref().type_id() == TypeId::of::<CommandList>() {

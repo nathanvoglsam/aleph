@@ -336,12 +336,12 @@ impl IQueue for Queue {
         })
     }
 
-    unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
+    unsafe fn submit(&self, mut desc: QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         abort_on_unwind(|| {
             let device = self._device.upgrade().unwrap();
 
-            let mut manager = SubmissionManager::new(desc);
-            let submission = manager.prepare_submission(self, desc)?;
+            let mut manager = SubmissionManager::new(&desc);
+            let submission = manager.prepare_submission(self, &mut desc)?;
 
             let mut timeline_info = manager.timeline_info();
             let info = manager.submit_info(&mut timeline_info);
@@ -487,7 +487,7 @@ pub struct SubmissionManager<'a> {
 impl<'a> SubmissionManager<'a> {
     /// Constructs a new [`SubmissionSemaphoreManager`] with space in the internal lists reserved
     /// based on the given queue submission description
-    pub fn new(desc: &'a QueueSubmitDesc<'a>) -> Self {
+    pub fn new(desc: &QueueSubmitDesc<'a>) -> Self {
         assert_eq!(desc.wait_fences.len(), desc.wait_values.len());
         assert_eq!(desc.signal_fences.len(), desc.signal_values.len());
 
@@ -529,7 +529,7 @@ impl<'a> SubmissionManager<'a> {
     pub fn prepare_submission(
         &mut self,
         queue: &Queue,
-        desc: &QueueSubmitDesc,
+        desc: &mut QueueSubmitDesc,
     ) -> Result<QueueSubmission, QueueSubmitError> {
         let mut submission = QueueSubmission {
             swap_ready_semaphore: vk::Semaphore::null(),
@@ -570,10 +570,10 @@ impl<'a> SubmissionManager<'a> {
     /// to the vk api call.
     fn handle_command_lists(
         &mut self,
-        desc: &QueueSubmitDesc,
+        desc: &mut QueueSubmitDesc,
         submission: &mut QueueSubmission,
     ) -> Result<(), QueueSubmitError> {
-        for list in desc.command_lists {
+        for list in desc.command_lists.iter_mut() {
             let list = list.take().unwrap();
             let list = {
                 if list.as_ref().type_id() == TypeId::of::<CommandList>() {

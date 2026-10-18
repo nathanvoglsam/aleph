@@ -30,7 +30,7 @@
 pub mod buffer_upload_range;
 pub mod texture_upload_range;
 
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::sync::Arc;
 
 use aleph_alloc::BVec;
@@ -840,8 +840,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             // Submit the encoded copy commands to the transfer queue
             let result = self
                 .queue
-                .submit(&rhi::QueueSubmitDesc {
-                    command_lists: &[Cell::new(Some(list))],
+                .submit(rhi::QueueSubmitDesc {
+                    command_lists: &mut [Some(list)],
                     wait_fences: &[],
                     wait_values: &[],
                     signal_fences: &[&self.fence],
