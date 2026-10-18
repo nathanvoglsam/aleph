@@ -59,7 +59,26 @@ pub struct GraphManager {
 }
 
 impl GraphManager {
-    //#[aleph_profile::function]
+    /// Build, or re-build, the frame graph. This will trigger all a complete rebuild, including
+    /// a complete re-run of pass registration and setup, and allocation of transient resources.
+    ///
+    /// Calling this function is quite expensive. All transient resources will be freed and
+    /// re-allocated in this function. Pass registration will also be expensive.
+    ///
+    /// You must call this function in order to rebuild the graph in response to a change in the
+    /// input data and environment the graph is expected to run in. This includes if any input
+    /// resources have changed size or format, or if new passes need to be enabled/disabled.
+    ///
+    /// The most common reason for calling this function is to rebuild the graph for a resized
+    /// swap chain.
+    ///
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that all resources managed by the frame graph
+    /// are _not_ in use on the GPU when this function is called. In practice this means flushing
+    /// all GPU work. [`super::frame_manager::FrameManager::wait_all_retired`] is likely the correct
+    /// tool for the job.
+    #[aleph_profile::function]
     pub unsafe fn build_graph(
         &mut self,
         config: &RendererConfig,
@@ -80,7 +99,6 @@ impl GraphManager {
                 swap_image_id,
             } = self.register_graph_passes(state_cache, device);
 
-            // TODO: what is keeping the transients from a previous frame alive?
             let mut frame_graph = builder.build(device);
             frame_graph.allocate_transients(config.render_ahead_frames + 1);
 
