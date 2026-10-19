@@ -445,10 +445,11 @@ impl JSValue {
     }
 
     #[inline]
-    pub unsafe fn get_ref_count_header(&self) -> Option<&JSRefCountHeader> {
+    pub unsafe fn get_ref_count_header(&self) -> Option<&JSMallocBlockHeader> {
         if self.has_ref_count() {
             unsafe {
-                let ptr = self.get_ptr() as *mut JSRefCountHeader;
+                let ptr = self.get_ptr().byte_sub(size_of::<JSMallocBlockHeader>());
+                let ptr = ptr as *mut JSMallocBlockHeader;
                 Some(ptr.as_ref().unwrap_unchecked())
             }
         } else {
@@ -938,10 +939,10 @@ pub use fns::*;
 
 #[repr(C)]
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default)]
-pub struct JSRefCountHeader {
-    /// The C headers declare this as a raw c_int, but we have to inline shared mutable access to
-    /// this value into Rust code. To make the Rust code sound we wrap the value in a Cell to
-    /// respect the interior mutability semantics.
+pub struct JSMallocBlockHeader {
+    pub block_idx_or_free_next: u16,
+    pub block_size_idx: u8,
+    pub gc_obj_type_and_mark_bit: u8,
     pub ref_count: Cell<c_int>,
 }
 
