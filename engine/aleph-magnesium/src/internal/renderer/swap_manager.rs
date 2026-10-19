@@ -65,7 +65,10 @@ impl SwapManager {
                 rebuilt = true; // Flag if we had to rebuild before giving out the image.
             }
 
-            let swap_image = unsafe { self.surface.swap_chain.acquire_next_image() };
+            let swap_image = unsafe {
+                aleph_profile::scope_named!("SwapManager::acquire_next_image");
+                self.surface.swap_chain.acquire_next_image()
+            };
             let swap_image = match swap_image {
                 Ok(aleph_rhi_api::AcquiredImage::Ok(i)) => i,
                 Ok(aleph_rhi_api::AcquiredImage::SubOptimal(i)) => {
@@ -100,6 +103,7 @@ impl SwapManager {
     }
 
     pub unsafe fn present(&mut self, queue: &dyn rhi::IQueue, image: AcquiredImage) {
+        aleph_profile::scope_named!("FrameManager::present");
         let submit_result = unsafe { queue.present(image.swap_image) };
         match submit_result {
             Ok(_) => {}

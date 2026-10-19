@@ -305,6 +305,7 @@ impl Renderer {
             // that have been published since last time we checked.
             let mut i = 0;
             loop {
+                aleph_profile::scope_named!("Renderer consume_loader_messages");
                 if i >= self.async_loader_dispatchers.len() {
                     break;
                 }
@@ -332,15 +333,16 @@ impl Renderer {
                 }
             }
 
-            let mut list = self
-                .device
-                .create_command_list(&rhi::CommandListDesc {
-                    queue_type: rhi::QueueType::General,
-                    name: None,
-                })
-                .unwrap();
+            let list = {
+                aleph_profile::scope_named!("Renderer record_gpu_commands");
+                let mut list = self
+                    .device
+                    .create_command_list(&rhi::CommandListDesc {
+                        queue_type: rhi::QueueType::General,
+                        name: None,
+                    })
+                    .unwrap();
 
-            {
                 let mut cmd = list.begin_general().unwrap();
 
                 // The very first thing to do is to record our copy commands for the immediate
@@ -428,7 +430,8 @@ impl Renderer {
                 );
 
                 cmd.close().unwrap();
-            }
+                list
+            };
 
             self.queue
                 .submit(rhi::QueueSubmitDesc {

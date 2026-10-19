@@ -72,6 +72,8 @@ impl FrameManager {
     /// Takes a 'fence' that _must_ be the fence that will be signaled in the subsequent frame's
     /// queue submission.
     pub fn get_next_frame(&mut self, fence: rhi::FenceHandle) -> FrameInfo {
+        aleph_profile::scope_named!("FrameManager::get_next_frame");
+
         // The existing value in 'next_frame_index' is the index we give out. We increment it here
         // so that the next call will yield the next value in sequence.
         let frame_index = self.next_frame_index;
@@ -117,6 +119,7 @@ impl FrameManager {
     ///
     /// Once this returns there should be no render frame commands in flight on the GPU.
     pub fn wait_all_retired(&mut self) {
+        aleph_profile::scope_named!("FrameManager::wait_all_retired");
         for entry in self.frame_fences.iter_mut() {
             if let Some(entry) = entry {
                 let result =
