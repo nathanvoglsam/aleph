@@ -73,6 +73,14 @@ impl AsyncLoaderQueue {
     }
 }
 
+pub struct AsyncLoaderWorkerHandle(JoinHandle<()>);
+
+impl AsyncLoaderWorkerHandle {
+    pub fn join(self) -> thread::Result<()> {
+        self.0.join()
+    }
+}
+
 pub struct AsyncLoaderWorker {
     ext_recv: Receiver<WorkerMessage>,
     int_send: AsyncLoaderQueue,
@@ -91,7 +99,7 @@ impl AsyncLoaderWorker {
     /// [`AsyncResourceLoader`] from the given renderer.
     pub fn spawn_with(
         renderer: &mut mg::renderer::Renderer,
-    ) -> Option<(JoinHandle<()>, AsyncLoaderQueue)> {
+    ) -> Option<(AsyncLoaderWorkerHandle, AsyncLoaderQueue)> {
         let loader = renderer.create_async_resource_loader(Default::default())?;
         let (loader_thread, loader_sender) = Self::spawn(loader);
         Some((loader_thread, loader_sender))
@@ -102,7 +110,7 @@ impl AsyncLoaderWorker {
     ///
     /// Returns a handle to the thread, and a [`AsyncLoaderQueue`] that can be shared or invoked to
     /// enqueue work onto the worker thread.
-    pub fn spawn(loader: AsyncResourceLoader<u64>) -> (JoinHandle<()>, AsyncLoaderQueue) {
+    pub fn spawn(loader: AsyncResourceLoader<u64>) -> (AsyncLoaderWorkerHandle, AsyncLoaderQueue) {
         let (ext_send, ext_recv) = unbounded();
         let queue = AsyncLoaderQueue { sender: ext_send };
 
@@ -121,7 +129,7 @@ impl AsyncLoaderWorker {
             .spawn(move || Engine::with(|| this.run()))
             .expect("Failed to spawn AsyncLoaderWorker thread");
 
-        (handle, queue)
+        (AsyncLoaderWorkerHandle(handle), queue)
     }
 
     fn run(self) {

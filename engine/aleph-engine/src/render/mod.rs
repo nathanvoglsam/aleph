@@ -37,7 +37,6 @@ mod shaders;
 
 use std::io::Read;
 use std::sync::Arc;
-use std::thread::JoinHandle;
 
 use ::egui::AEguiRenderData;
 use aleph_magnesium::renderer::builder::RendererBuilder;
@@ -52,7 +51,7 @@ use api::plugin::*;
 use api::rhi::ARhiProvider;
 use mg::renderer::builder::ApplicationSurface;
 
-use crate::core::async_io::worker::{AsyncLoaderQueue, AsyncLoaderWorker};
+use crate::core::async_io::worker::{AsyncLoaderQueue, AsyncLoaderWorker, AsyncLoaderWorkerHandle};
 use crate::gltf::loader::GltfLoader;
 use crate::render::async_loader::systems::async_load_resolver::{
     AsyncLoadResolverQueue, AsyncLoadResolverSystem,
@@ -70,7 +69,7 @@ use crate::render::egui::render_plane::EguiRenderPlane;
 pub struct PluginRender {
     device: Option<Arc<dyn rhi::IDevice>>,
     loader_queue: Option<AsyncLoaderQueue>,
-    loader_thread: Option<JoinHandle<()>>,
+    loader_thread: Option<AsyncLoaderWorkerHandle>,
 }
 
 impl PluginRender {
