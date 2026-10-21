@@ -478,6 +478,11 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         let mut request_states = self.request_states.borrow_mut();
         let mut live = self.submission_manager.live.borrow_mut();
 
+        // Early exit if there are no live submissions.
+        if live.is_empty() {
+            return Ok(());
+        }
+
         // Poll all live submissions, removing and retiring any that we poll as complete.
         let mut is_device_lost = false;
         let mut maybe_retire_failed = Ok(());
@@ -555,24 +560,39 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
     }
 
     pub fn wait_all_submissions(&self) -> Result<(), RetireError> {
+        use std::task::{Context, Poll, Waker};
+
         aleph_profile::scope_named!("AsyncResourceLoader::wait_all_submissions");
-        let mut live = self.submission_manager.live.borrow_mut();
+        let fut = std::pin::pin!(self.wait_all_submissions_async(BlockingFenceWaiter {
+            device: self.device.as_ref(),
+        }));
+        match fut.poll(&mut Context::from_waker(Waker::noop())) {
+            Poll::Ready(result) => result,
+            Poll::Pending => unreachable!(),
+        }
+    }
+
+    pub async fn wait_all_submissions_async(
+        &self,
+        fence_waiter: impl IFenceWaiter,
+    ) -> Result<(), RetireError> {
+        let live = self.submission_manager.live.borrow();
 
         // If there's nothing in flight then we can just immediately exit
-        if live.is_empty() {
+        let max_signal_value = if live.is_empty() {
             return Ok(());
-        }
+        } else {
+            // It should never be empty here, because we already checked for that above.
+            live.iter().map(|v| v.signal_value).max().unwrap()
+        };
 
-        // Use 'wait_fences' to block on all the fences, rather than waiting on them individually.
-        let mut fences: BVec<_, MgAsyncLdrRoot> = BVec::new_in(system());
-        let mut values: BVec<_, MgAsyncLdrRoot> = BVec::new_in(system());
-        for submission in live.iter() {
-            fences.push(&self.fence);
-            values.push(submission.signal_value);
-        }
+        drop(live);
 
         let mut is_device_lost = false;
-        match self.device.wait_fences(&fences, &values, true, u32::MAX) {
+        let result = fence_waiter
+            .wait_fence(self.fence.clone(), max_signal_value)
+            .await;
+        match result {
             Ok(rhi::FenceWaitResult::Complete) => {
                 // Normal, successful wait
             }
@@ -587,8 +607,10 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             }
         }
 
+        aleph_profile::scope_named!("AsyncResourceLoader::wait_all_submissions::retire");
         // If we've made it this far then all submissions are now complete, so we retire all of them
         // to release their resources.
+        let mut live = self.submission_manager.live.borrow_mut();
         let mut retire_maybe_failed = Ok(());
         let mut request_states = self.request_states.borrow_mut();
         for submission in live.drain(..) {
@@ -635,6 +657,11 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
             Err(RetireError::WaitFailure) => Err(FlushError::WaitFailure),
             Err(RetireError::RendererDisconnected) => Err(FlushError::RendererDisconnected),
         }
+    }
+
+    /// Returns a handle to the device associated with this async resource loader.
+    pub fn get_device(&self) -> Arc<dyn rhi::IDevice> {
+        self.device.clone()
     }
 
     fn maybe_record_and_dispatch_commands(&self) -> Result<(), FlushError> {
@@ -925,6 +952,24 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
     }
 }
 
+/// Trait for objects that can wait on GPU fences.
+///
+/// Implementors of this trait provide a mechanism to asynchronously wait for a GPU fence to reach a
+/// specified value.
+///
+/// # Safety
+///
+/// The implementation _must_ wait for the fence to be signalled at the given value before
+/// resolving. The loader requires this guarantee to correctly manage GPU resource lifetimes.
+pub unsafe trait IFenceWaiter {
+    /// Asynchronously waits for the specified GPU fence to reach the given value.
+    fn wait_fence(
+        self,
+        fence: rhi::FenceHandle,
+        value: u64,
+    ) -> impl std::future::Future<Output = Result<rhi::FenceWaitResult, rhi::FenceWaitError>>;
+}
+
 #[derive(Error, Debug)]
 pub enum CreateTextureRequestError {
     #[error("The set of non-zero texture dimensions is invalid. Texture is not 1D, 2D or 3D.")]
@@ -1065,6 +1110,21 @@ impl Default for AsyncResourceLoaderConfig {
             max_upload_range_size: 48 * 1024 * 1024,
             flush_threshold: 64 * 1024 * 1024,
         }
+    }
+}
+
+struct BlockingFenceWaiter<'a> {
+    device: &'a dyn rhi::IDevice,
+}
+
+// Safety: We directly call the device's wait_fence function with the given value.
+unsafe impl<'a> IFenceWaiter for BlockingFenceWaiter<'a> {
+    fn wait_fence(
+        self,
+        fence: rhi::FenceHandle,
+        value: u64,
+    ) -> impl Future<Output = Result<rhi::FenceWaitResult, rhi::FenceWaitError>> {
+        async move { self.device.wait_fences(&[&fence], &[value], true, u32::MAX) }
     }
 }
 
