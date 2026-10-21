@@ -33,14 +33,10 @@ use std::io;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::ptr::NonNull;
-use std::sync::Arc;
-use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
+use std::task::{Context, Poll};
 
-use aleph_alloc::instrumentation::IAllocationCategory;
-use aleph_gen_arena::RawHandle;
-use aleph_io_queue::AsyncIo;
 use aleph_io_queue::channel::IoWaker;
-use crossbeam::channel::{Receiver, Sender, bounded};
+use crossbeam::channel::{Receiver, bounded};
 
 use crate::core::async_io::TaskFuture;
 use crate::core::async_io::context::IoContext;
@@ -58,7 +54,7 @@ impl FutureSpawner {
     /// Takes the given async function and wrap it into a [`FutureSpawner`].
     pub fn new<T>(spawner: T) -> Self
     where
-        for<'a> T: (AsyncFnOnce(IoContext<'a>) -> io::Result<()>) + Send + 'static,
+        for<'a> T: (AsyncFnOnce(&'a IoContext) -> io::Result<()>) + Send + 'static,
     {
         let spawner = SpawnerContainer::<T> {
             vtable: SpawnerVTable {
@@ -78,7 +74,7 @@ impl FutureSpawner {
 
     /// Consumes the spawner, calling the wrapped async function and returning a boxed future from
     /// it.
-    pub fn spawn<'a>(self, io: IoContext<'a>) -> Pin<Box<TaskFuture<'a>>> {
+    pub fn spawn<'a>(self, io: &'a IoContext) -> Pin<Box<TaskFuture<'a>>> {
         let unwrapper = unsafe { self.spawner.as_ref().unwrapper };
         let spawner = self.spawner;
         std::mem::forget(self);
@@ -108,14 +104,14 @@ struct SpawnerVTable {
 }
 
 type UnwrapperFn =
-    for<'a> unsafe fn(IoContext<'a>, NonNull<SpawnerVTable>) -> Pin<Box<TaskFuture<'a>>>;
+    for<'a> unsafe fn(&'a IoContext, NonNull<SpawnerVTable>) -> Pin<Box<TaskFuture<'a>>>;
 
 unsafe fn unwrapper<'aa, T>(
-    ctx: IoContext<'aa>,
+    ctx: &'aa IoContext,
     f: NonNull<SpawnerVTable>,
 ) -> Pin<Box<TaskFuture<'aa>>>
 where
-    for<'a> T: (AsyncFnOnce(IoContext<'a>) -> io::Result<()>) + Send + 'static,
+    for<'a> T: (AsyncFnOnce(&'a IoContext) -> io::Result<()>) + Send + 'static,
 {
     let f: Box<SpawnerContainer<T>> =
         unsafe { Box::from_raw(f.cast::<SpawnerContainer<T>>().as_ptr()) };
@@ -130,56 +126,7 @@ where
         unsafe { Box::from_raw(f.cast::<SpawnerContainer<T>>().as_ptr()) };
 }
 
-/// [`Waker`] implementation that notifies our event loop to poll a task.
-pub struct TaskWaker {
-    handle: RawHandle,
-    sender: Sender<RawHandle>,
-}
-
-impl TaskWaker {
-    /// Constructs a new [`TaskWaker`] directly.
-    pub fn new(handle: RawHandle, sender: Sender<RawHandle>) -> Self {
-        Self { handle, sender }
-    }
-
-    /// Constructs a new [`TaskWaker`] and wraps it into the [`Waker`] object.
-    pub fn new_waker(handle: RawHandle, sender: Sender<RawHandle>) -> Waker {
-        let this = Self::new(handle, sender);
-        let this = AsyncIo::with(|| Arc::new(this));
-        let this = Arc::into_raw(this) as *const ();
-        let raw_waker = RawWaker::new(this, &VTABLE);
-        unsafe { Waker::from_raw(raw_waker) }
-    }
-
-    unsafe fn clone_callback(ptr: *const ()) -> RawWaker {
-        let this = unsafe { Arc::from_raw(ptr as *const Self) };
-        let clone = Arc::clone(&this);
-        let _ = Arc::into_raw(this);
-        let clone = Arc::into_raw(clone) as *const ();
-        RawWaker::new(clone, &VTABLE)
-    }
-    unsafe fn wake_callback(ptr: *const ()) {
-        let this = unsafe { Arc::from_raw(ptr as *const Self) };
-        let _ = this.sender.send(this.handle);
-        let _ = Arc::into_raw(this);
-    }
-    unsafe fn wake_by_ref_callback(ptr: *const ()) {
-        let this = unsafe { Arc::from_raw(ptr as *const Self) };
-        let _ = this.sender.send(this.handle);
-        let _ = Arc::into_raw(this);
-    }
-    unsafe fn drop_callback(ptr: *const ()) {
-        let this = unsafe { Arc::from_raw(ptr as *const Self) };
-        drop(this);
-    }
-}
-
-static VTABLE: RawWakerVTable = RawWakerVTable::new(
-    TaskWaker::clone_callback,
-    TaskWaker::wake_callback,
-    TaskWaker::wake_by_ref_callback,
-    TaskWaker::drop_callback,
-);
+// TOOD: replace IoTask with tokio oneshot? or kanal?
 
 /// Future type intended for use with [`IoWaker`] based async tasks.
 ///

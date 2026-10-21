@@ -79,6 +79,7 @@ aleph-ktx = { workspace = true }
 aleph-mikktspace = { workspace = true }
 aleph-sdl3-link = { workspace = true }
 
+tokio = { workspace = true }
 kanal = { workspace = true }
 bytemuck = { workspace = true }
 camino = { workspace = true }

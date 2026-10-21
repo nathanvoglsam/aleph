@@ -29,6 +29,7 @@
 
 use std::io;
 use std::ptr::NonNull;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use aleph_vfs::file::IAsyncVFile;
@@ -36,25 +37,42 @@ use aleph_vfs::path::VPath;
 use aleph_vfs::{IRouter, IRouterExt};
 use crossbeam::channel::SendError;
 use mg::async_resource_loader::AsyncResourceLoader;
+use tokio::sync::mpsc::WeakUnboundedSender;
 
-use crate::core::async_io::internal::IoTask;
-use crate::core::async_io::worker::AsyncLoaderQueue;
+use crate::core::async_io::internal::{FutureSpawner, IoTask};
+use crate::core::async_io::worker::{AsyncLoaderQueue, WorkerMessage};
 
 /// Context struct given to all async tasks that provides access to the executor and vfs.
 ///
 /// Provides utilities so file IO can be performed asynchronously in a way the executor is able to
 /// wake and poll the correct future with our completion based async io system.
-pub struct IoContext<'a> {
-    pub(crate) this: &'a AsyncLoaderQueue,
-    pub(crate) loader: &'a AsyncResourceLoader<u64>,
+///
+/// # No Clone?
+///
+/// This struct is not cloneable to ensure that all GPU IO tasks are dispatched by our internal
+/// dispatcher task. GPU IO tasks must be registered with a local set to prevent GPU IO tasks from
+/// being dropped (potentially with outstanding completion based IO requests).
+///
+/// It would be very elegant to allow using `spawn_local` directly, cloning a context as
+/// needed, but this is not currently possible due to the requirement that all GPU IO tasks must
+/// be dispatched through the internal dispatcher to ensure proper handling of completion based IO.
+pub struct IoContext {
+    pub(crate) this: WeakUnboundedSender<WorkerMessage>,
+    pub(crate) loader: Rc<AsyncResourceLoader<u64>>,
 }
 
-impl<'a> IoContext<'a> {
+impl IoContext {
+    /// Spawns a new async task onto the executor associated with this context.
+    ///
+    /// The provided closure will be executed with an [`IoContext`] that is connected to the same
+    /// executor. Returns an error if the task could not be spawned.
     pub fn spawn<T>(&self, spawner: T) -> Result<(), SendError<()>>
     where
-        for<'aa> T: (AsyncFnOnce(IoContext<'aa>) -> io::Result<()>) + Send + 'static,
+        T: (AsyncFnOnce(&IoContext) -> io::Result<()>) + Send + 'static,
     {
-        match self.this.spawn(spawner) {
+        let this = self.this.upgrade().ok_or(SendError(()))?;
+        let spawner = FutureSpawner::new(spawner);
+        match this.send(WorkerMessage::Spawn(spawner)) {
             Ok(()) => Ok(()),
             Err(_) => Err(SendError(())),
         }
@@ -62,8 +80,8 @@ impl<'a> IoContext<'a> {
 
     /// Returns a new [`AsyncLoaderQueue`] that is connected to the executor that the current task
     /// is executing within. Can be used to issue more async tasks onto the same executor.
-    pub fn async_queue(&self) -> AsyncLoaderQueue {
-        self.this.clone()
+    pub fn async_queue(&self) -> Option<AsyncLoaderQueue> {
+        AsyncLoaderQueue::from_weak(&self.this)
     }
 
     /// Wrapper over [`IAsyncVFile::read_at`] that will correctly route the completion responses
@@ -115,7 +133,7 @@ impl<'a> IoContext<'a> {
 
     /// Returns a reference to the [`AsyncResourceLoader`] that the executor owns.
     pub fn loader(&self) -> &AsyncResourceLoader<u64> {
-        self.loader
+        &self.loader
     }
 }
 

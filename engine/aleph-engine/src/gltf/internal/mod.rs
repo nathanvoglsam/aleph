@@ -55,11 +55,7 @@ pub struct GltfLoadPayload {
     pub default_material: MaterialInstanceHandle,
 }
 
-pub async fn task<'a>(
-    vfs: Arc<dyn IRouter>,
-    io: IoContext<'a>,
-    msg: GltfLoadPayload,
-) -> io::Result<()> {
+pub async fn task(vfs: Arc<dyn IRouter>, io: &IoContext, msg: GltfLoadPayload) -> io::Result<()> {
     let result = import_path(vfs.as_ref(), &io, &msg.path).await;
     let result = result.map_err(|e| match e {
         gltf::Error::Io(e) => e,
@@ -78,7 +74,7 @@ pub async fn task<'a>(
 
 async fn import_path(
     vfs: &dyn IRouter,
-    io: &IoContext<'_>,
+    io: &IoContext,
     path: &VPath,
 ) -> gltf::Result<(gltf::Document, Vec<gltf::buffer::Data>)> {
     let base = path.parent().unwrap_or_else(|| VPath::new("./"));
@@ -98,7 +94,7 @@ async fn import_path(
 
 async fn import_buffers(
     vfs: &dyn IRouter,
-    io: &IoContext<'_>,
+    io: &IoContext,
     document: &gltf::Document,
     base: Option<&VPath>,
     mut blob: Option<Vec<u8>>,
@@ -120,7 +116,7 @@ async fn import_buffers(
 
 async fn from_source_and_blob(
     vfs: &dyn IRouter,
-    io: &IoContext<'_>,
+    io: &IoContext,
     source: gltf::buffer::Source<'_>,
     base: Option<&VPath>,
     blob: &mut Option<Vec<u8>>,
@@ -182,7 +178,7 @@ impl<'a> Scheme<'a> {
 
     async fn read(
         vfs: &dyn IRouter,
-        io: &IoContext<'_>,
+        io: &IoContext,
         base: Option<&VPath>,
         uri: &str,
     ) -> gltf::Result<Vec<u8>> {
@@ -200,7 +196,7 @@ impl<'a> Scheme<'a> {
     }
 }
 
-async fn read_to_end<P>(vfs: &dyn IRouter, io: &IoContext<'_>, path: P) -> gltf::Result<Vec<u8>>
+async fn read_to_end<P>(vfs: &dyn IRouter, io: &IoContext, path: P) -> gltf::Result<Vec<u8>>
 where
     P: AsRef<VPath>,
 {
@@ -211,7 +207,7 @@ where
 
 async fn process_document(
     _vfs: &dyn IRouter,
-    io: &IoContext<'_>,
+    io: &IoContext,
     imported: Arc<(gltf::Document, Vec<gltf::buffer::Data>)>,
     msg: GltfLoadPayload,
 ) -> io::Result<()> {
@@ -310,11 +306,14 @@ async fn process_document(
 }
 
 fn spawn_mesh_uploader(
-    io: &IoContext<'_>,
+    io: &IoContext,
     imported: Arc<(gltf::Document, Vec<gltf::buffer::Data>)>,
     sender: kanal::AsyncSender<(usize, Vec<(BufferHandle, BufferHandle)>)>,
 ) {
-    let async_queue = io.async_queue();
+    let Some(async_queue) = io.async_queue() else {
+        log::error!("Async IO worker stopped before glTF mesh uploads were queued.");
+        return;
+    };
     rayon::spawn(move || {
         aleph_profile::scope_named!("gltf::scene_mesh_uploader");
         use rayon::prelude::*;
@@ -370,7 +369,7 @@ fn spawn_mesh_uploader(
 }
 
 async fn copy_mesh_data_to_gpu(
-    io: IoContext<'_>,
+    io: &IoContext,
     mesh_index: usize,
     prims: Vec<(Vec<u32>, Vec<u8>)>,
     sender: kanal::AsyncSender<(usize, Vec<(BufferHandle, BufferHandle)>)>,

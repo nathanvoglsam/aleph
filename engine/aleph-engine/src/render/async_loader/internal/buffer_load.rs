@@ -40,7 +40,7 @@ use crate::render::async_loader::internal::utils::try_allocate_buffer_range_for;
 
 pub async fn load_buffer_from_file(
     vfs: &dyn IRouter,
-    io: &IoContext<'_>,
+    io: &IoContext,
     path: VPathBuf,
     offset: u64,
     size: u64,
@@ -157,7 +157,7 @@ pub async fn load_buffer_from_file(
 }
 
 pub fn issue_load_buffer_from_data(
-    io: &IoContext<'_>,
+    io: &IoContext,
     sender: kanal::Sender<BufferLoadResult<u64>>,
     cookie: u64,
     data: &[u8],

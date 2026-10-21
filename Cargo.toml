@@ -109,6 +109,7 @@ egui = { version = "0.36", features = ["bytemuck"] } ## Heavy
 egui_plot = "0.37" ## Heavy
 ignore = "0.4"
 rayon = "1"
+tokio = { version = "1", features = ["rt", "time", "parking_lot", "sync", "macros"] }
 
 ## Path Handling
 camino = "1"
