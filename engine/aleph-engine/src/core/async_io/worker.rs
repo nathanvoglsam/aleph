@@ -120,6 +120,28 @@ impl AsyncLoaderWorker {
     /// Returns a handle to the thread, and a [`AsyncLoaderQueue`] that can be shared or invoked to
     /// enqueue work onto the worker thread.
     pub fn spawn(loader: AsyncResourceLoader<u64>) -> (AsyncLoaderWorkerHandle, AsyncLoaderQueue) {
+        Self::spawn_with_sleep_range(loader, 2, 1024)
+    }
+
+    /// Same as [`AsyncLoaderWorker::spawn`] but with a configurable idle flush interval, in
+    /// milliseconds.
+    ///
+    /// The dispatcher sleeps for `min_sleep_ms` initially and after receiving a message. Each time
+    /// the sleep times out the interval doubles, clamped to `max_sleep_ms`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `min_sleep_ms` is greater than `max_sleep_ms`.
+    pub fn spawn_with_sleep_range(
+        loader: AsyncResourceLoader<u64>,
+        min_sleep_ms: u64,
+        max_sleep_ms: u64,
+    ) -> (AsyncLoaderWorkerHandle, AsyncLoaderQueue) {
+        assert!(
+            min_sleep_ms <= max_sleep_ms,
+            "minimum sleep interval must not exceed maximum sleep interval"
+        );
+
         let (ext_send, ext_recv) = mpsc::unbounded_channel();
         let queue = AsyncLoaderQueue { sender: ext_send };
         let queue_sender = queue.sender.downgrade();
@@ -128,7 +150,9 @@ impl AsyncLoaderWorker {
             .name("async-worker".into())
             .spawn(move || {
                 aleph_profile::register_thread!("async-worker");
-                let _result = Engine::with(|| Self::worker_main(loader, ext_recv, queue_sender));
+                let _result = Engine::with(|| {
+                    Self::worker_main(loader, ext_recv, queue_sender, min_sleep_ms, max_sleep_ms)
+                });
             })
             .expect("Failed to spawn AsyncLoaderWorker thread");
 
@@ -142,12 +166,21 @@ impl AsyncLoaderWorker {
         loader: AsyncResourceLoader<u64>,
         ext_recv: UnboundedReceiver<WorkerMessage>,
         queue_sender: WeakUnboundedSender<WorkerMessage>,
+        min_sleep_ms: u64,
+        max_sleep_ms: u64,
     ) -> Option<()> {
         let (waiter_handle, async_fence_waiter) = AsyncFenceWaiter::spawn(loader.get_device());
 
         let loader = Rc::new(loader);
 
-        Self::run_tokio_runtime(&loader, ext_recv, queue_sender, async_fence_waiter)?;
+        Self::run_tokio_runtime(
+            &loader,
+            ext_recv,
+            queue_sender,
+            async_fence_waiter,
+            min_sleep_ms,
+            max_sleep_ms,
+        )?;
 
         // We must ensure the runtime was dropped before the loader. All outstanding
         // handles to the loader should have been dropped now. We enforce this to
@@ -172,6 +205,8 @@ impl AsyncLoaderWorker {
         ext_recv: UnboundedReceiver<WorkerMessage>,
         queue_sender: WeakUnboundedSender<WorkerMessage>,
         fence_waiter_queue: AsyncFenceWaiterQueue,
+        min_sleep_ms: u64,
+        max_sleep_ms: u64,
     ) -> Option<()> {
         let runtime = Builder::new_current_thread()
             .enable_all()
@@ -188,6 +223,8 @@ impl AsyncLoaderWorker {
                 ext_recv,
                 queue_sender,
                 loader: loader.clone(),
+                min_sleep_ms,
+                max_sleep_ms,
             };
             let dispatcher = dispatcher.run(&local, fence_waiter_queue);
             let dispatcher = AbortUnwindFuture::new(dispatcher);
@@ -199,7 +236,7 @@ impl AsyncLoaderWorker {
             // because of our completion based file IO.
             //
             // _this_ task is safe to drop. It will be cancelled when the runtime
-            // is dropped. It _must_ be dropped to release the loader handle.
+            // is dropped. It _must_ be dropped to release the loader handle...
             let flusher = Self::shutdown_flush_loop(loader.clone());
             let flusher = AbortUnwindFuture::new(flusher);
             let _ = runtime.spawn_local(flusher);
@@ -230,29 +267,29 @@ struct AsyncLoaderDispatcher {
     ext_recv: UnboundedReceiver<WorkerMessage>,
     queue_sender: WeakUnboundedSender<WorkerMessage>,
     loader: Rc<AsyncResourceLoader<u64>>,
+    min_sleep_ms: u64,
+    max_sleep_ms: u64,
 }
 
 impl AsyncLoaderDispatcher {
     async fn run(mut self, local_set: &LocalSet, fence_waiter_queue: AsyncFenceWaiterQueue) {
         aleph_profile::scope_named!("AsyncLoaderWorker::run");
 
+        let mut sleep_ms = self.min_sleep_ms;
         loop {
             tokio::select! {
                 msg = self.ext_recv.recv() => {
                     if let Some(msg) = msg {
+                        sleep_ms = self.min_sleep_ms;
                         self.worker_message(local_set, msg);
                     } else {
                         break;
                     }
                 },
-                _ = tokio::time::sleep(Duration::from_millis(8)) => {
-                    let loader = self.loader.clone();
-                    let queue = fence_waiter_queue.clone();
-                    let task = AbortUnwindFuture::new(async move {
-                        flush_loader_checked(&loader);
-                        wait_all_loader_checked_async(&loader, &queue).await
-                    });
-                    let _ = local_set.spawn_local(task);
+                _ = tokio::time::sleep(Duration::from_millis(sleep_ms)) => {
+                    sleep_ms = sleep_ms.saturating_mul(2).min(self.max_sleep_ms);
+                    flush_loader_checked(&self.loader);
+                    wait_all_loader_checked_async(&self.loader, &fence_waiter_queue).await;
                 },
             };
         }
