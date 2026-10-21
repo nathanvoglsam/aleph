@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+pub mod futures;
+
 use std::io;
 use std::marker::PhantomData;
 use std::pin::Pin;
