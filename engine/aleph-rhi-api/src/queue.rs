@@ -229,7 +229,7 @@ impl<'a> QueueSubmitDesc<'a> {
 }
 
 /// Set of errors that can occur when calling [`IQueue::garbage_collect`]
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum QueueGarbageCollectError {
     #[error("The platform API device was lost.")]
     DeviceLost,
@@ -239,7 +239,7 @@ pub enum QueueGarbageCollectError {
 }
 
 /// Set of errors that can occur when calling [`IQueue::wait_idle`]
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum QueueWaitError {
     #[error("The platform API device was lost.")]
     DeviceLost,
@@ -248,7 +248,7 @@ pub enum QueueWaitError {
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum QueueSubmitError {
     #[error("The platform API device was lost.")]
     DeviceLost,
@@ -263,7 +263,7 @@ pub enum QueueSubmitError {
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum QueuePresentError {
     #[error("The platform API device was lost.")]
     DeviceLost,

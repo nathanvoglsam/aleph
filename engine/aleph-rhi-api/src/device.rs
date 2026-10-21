@@ -335,14 +335,14 @@ pub trait IDevice: Any + IGetPlatformInterface + Send + Sync {
     fn get_compute_pipeline_id(&self, pipeline: &ComputePipelineHandle) -> NonZeroU64;
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum FenceCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
 
 /// Set of errors that can occur when mapping a buffer
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 #[non_exhaustive]
 pub enum ResourceMapError {
     #[error("The backend got a null pointer when attempting to map the buffer memory")]
@@ -353,7 +353,7 @@ pub enum ResourceMapError {
 }
 
 /// Set of errors that can occur when unmapping a buffer
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 #[non_exhaustive]
 pub enum ResourceUnmapError {
     #[error("The buffer was not mapped yet was asked to be unmapped.")]
@@ -363,7 +363,7 @@ pub enum ResourceUnmapError {
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum BufferCreateError {
     #[error("There was not enough memory available to serve the requested buffer.")]
     OutOfMemory,
@@ -372,7 +372,7 @@ pub enum BufferCreateError {
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Clone, PartialEq, Error, Debug)]
 pub enum TextureCreateError {
     #[error("Requested texture width '{0}' is invalid")]
     InvalidWidth(u32),
@@ -402,7 +402,7 @@ pub enum TextureCreateError {
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum SamplerCreateError {
     #[error("The device has run out of space to allocate additional samplers.")]
     OutOfSamplers,
@@ -411,13 +411,13 @@ pub enum SamplerCreateError {
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum ParameterBlockLayoutCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum DescriptorPoolCreateError {
     #[error("There is not enough descriptor memory to create a pool with the requested capacity")]
     OutOfMemory,
@@ -426,7 +426,7 @@ pub enum DescriptorPoolCreateError {
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum BindingSignatureCreateError {
     #[error("A push constant block has an invalid size")]
     InvalidPushConstantBlockSize,
@@ -435,7 +435,7 @@ pub enum BindingSignatureCreateError {
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Clone, Eq, PartialEq, Error, Debug)]
 pub enum PipelineCreateError {
     /// The shader code for the given stage was found to be invalid.
     #[error("The shader code for stage '{0}' is invalid")]
@@ -459,13 +459,13 @@ pub enum PipelineCreateError {
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum CommandPoolCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum CommandListCreateError {
     #[error("The device does not have a queue of type '{0}' available.")]
     NoSuchQueue(QueueType),

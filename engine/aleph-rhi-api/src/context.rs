@@ -99,7 +99,7 @@ impl std::fmt::Display for BackendAPI {
 }
 
 /// Set of errors that can occur when creating an [IContext]
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 #[non_exhaustive]
 pub enum ContextCreateError {
     #[error("A context has already been created by the loader")]
@@ -119,7 +119,7 @@ pub enum ContextCreateError {
 }
 
 /// Set of errors that can occur when creating an [ISurface]
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 #[non_exhaustive]
 pub enum SurfaceCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]

@@ -99,7 +99,7 @@ pub struct DescriptorPoolDesc<'a> {
     pub name: Option<&'a str>,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum DescriptorAllocateError {
     #[error("The descriptor pool's backing memory has been exhausted due to pool fragmentation")]
     FragmentedPool,

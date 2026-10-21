@@ -50,7 +50,7 @@ pub struct CommandListDesc<'a> {
     pub name: Option<&'a str>,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum CommandListBeginError {
     #[error("The command list is not ready to begin recording commands")]
     InvalidCommandListState,
@@ -62,7 +62,7 @@ pub enum CommandListBeginError {
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 pub enum CommandListCloseError {
     #[error("The command list was already closed but has been closed again.")]
     AlreadyClosed,

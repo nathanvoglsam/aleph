@@ -259,7 +259,7 @@ pub struct SwapChainConfiguration {
     pub present_queue: QueueType,
 }
 
-#[derive(Error, Debug)]
+#[derive(Clone, Eq, PartialEq, Error, Debug)]
 #[non_exhaustive]
 pub enum SwapChainCreateError {
     #[error("The requested image format '{0}' is not supported by the swap chain")]
@@ -291,7 +291,7 @@ pub enum SwapChainCreateError {
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 #[non_exhaustive]
 pub enum SwapChainRebuildError {
     #[error("The GPU device was lost.")]
@@ -301,7 +301,7 @@ pub enum SwapChainRebuildError {
     Platform,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 #[non_exhaustive]
 pub enum ImageAcquireError {
     /// This error occurs when the underlying surface has changed state in a way that the swap-chain

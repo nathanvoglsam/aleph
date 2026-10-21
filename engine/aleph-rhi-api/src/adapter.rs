@@ -189,7 +189,7 @@ pub struct AdapterDescription<'a> {
 }
 
 /// Set of errors that can occur when creating an [IDevice]
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Error, Debug)]
 #[non_exhaustive]
 pub enum RequestDeviceError {
     #[error("An internal backend error has occurred. Details were logged.")]
