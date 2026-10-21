@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+pub mod async_fence;
 pub mod async_loader;
 pub mod config;
 mod core;
