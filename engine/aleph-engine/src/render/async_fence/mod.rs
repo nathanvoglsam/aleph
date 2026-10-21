@@ -35,10 +35,8 @@ use aleph_alloc::{BVec, Blink};
 use crossbeam::channel::{Receiver, SendError, Sender, TryRecvError, unbounded};
 use tokio::sync::oneshot;
 
-use crate::rhi::{FenceHandle, FenceWaitResult, IDevice};
-
 /// Result type for async fence operations.
-pub type AsyncFenceResult = Result<(), crate::rhi::FenceWaitError>;
+pub type AsyncFenceResult = Result<(), rhi::FenceWaitError>;
 
 /// Sender half of a channel used to submit fences to an [`AsyncFenceWaiter`].
 #[derive(Clone)]
@@ -50,7 +48,7 @@ impl AsyncFenceWaiterQueue {
     /// Queues a fence until it reaches `value`, then sends the result to `completion`.
     pub fn wait_for(
         &self,
-        fence: FenceHandle,
+        fence: rhi::FenceHandle,
         value: u64,
         completion: oneshot::Sender<AsyncFenceResult>,
     ) -> Result<(), SendError<()>> {
@@ -67,7 +65,7 @@ impl AsyncFenceWaiterQueue {
 /// Worker that waits for submitted GPU fences on a dedicated thread.
 pub struct AsyncFenceWaiter {
     receiver: Receiver<PendingFence>,
-    device: Arc<dyn IDevice>,
+    device: Arc<dyn rhi::IDevice>,
     pending: VecDeque<PendingFence>,
     wait_arena: Blink,
     min_timeout_ms: u32,
@@ -78,7 +76,7 @@ impl AsyncFenceWaiter {
     /// Spawns the fence waiter thread.
     ///
     /// Returns the thread's join handle and a queue that can submit fences to it.
-    pub fn spawn(device: Arc<dyn IDevice>) -> (JoinHandle<()>, AsyncFenceWaiterQueue) {
+    pub fn spawn(device: Arc<dyn rhi::IDevice>) -> (JoinHandle<()>, AsyncFenceWaiterQueue) {
         Self::spawn_with_timeout_range(device, 1, 8)
     }
 
@@ -91,7 +89,7 @@ impl AsyncFenceWaiter {
     ///
     /// Panics if `min_timeout_ms` is greater than `max_timeout_ms`.
     pub fn spawn_with_timeout_range(
-        device: Arc<dyn IDevice>,
+        device: Arc<dyn rhi::IDevice>,
         min_timeout_ms: u32,
         max_timeout_ms: u32,
     ) -> (JoinHandle<()>, AsyncFenceWaiterQueue) {
@@ -142,14 +140,14 @@ impl AsyncFenceWaiter {
 
                 // Wait for the pending fences to be signaled, with a timeout to allow polling.
                 match self.wait_with_timeout(wait_timeout_ms) {
-                    Ok(FenceWaitResult::Complete) => {
+                    Ok(rhi::FenceWaitResult::Complete) => {
                         wait_timeout_ms = self.min_timeout_ms;
                         if let Err(error) = self.poll_pending() {
                             log::error!("Async fence waiter failed to poll a fence: {error:?}");
                             break 'fail error;
                         }
                     }
-                    Ok(FenceWaitResult::Timeout) => {
+                    Ok(rhi::FenceWaitResult::Timeout) => {
                         // Wait timeout means nothing completed, so we can just continue to the next
                         // iteration and poll again.
                         wait_timeout_ms =
@@ -196,7 +194,7 @@ impl AsyncFenceWaiter {
     fn wait_with_timeout(
         &mut self,
         timeout_ms: u32,
-    ) -> Result<FenceWaitResult, rhi::FenceWaitError> {
+    ) -> Result<rhi::FenceWaitResult, rhi::FenceWaitError> {
         let mut fences = BVec::with_capacity_in(self.pending.len(), self.wait_arena.allocator());
         fences.extend(self.pending.iter().map(|entry| &entry.fence));
         let mut values = BVec::with_capacity_in(self.pending.len(), self.wait_arena.allocator());
@@ -211,7 +209,7 @@ impl AsyncFenceWaiter {
         out
     }
 
-    fn poll_pending(&mut self) -> Result<(), crate::rhi::FenceWaitError> {
+    fn poll_pending(&mut self) -> Result<(), rhi::FenceWaitError> {
         let mut temp = BVec::with_capacity_in(self.pending.len(), self.wait_arena.allocator());
 
         while let Some(entry) = self.pending.pop_front() {
@@ -241,15 +239,15 @@ impl AsyncFenceWaiter {
 }
 
 struct PendingFence {
-    fence: FenceHandle,
+    fence: rhi::FenceHandle,
     value: u64,
     completion: oneshot::Sender<AsyncFenceResult>,
 }
 
-fn map_poll_error(error: crate::rhi::FencePollError) -> crate::rhi::FenceWaitError {
+fn map_poll_error(error: rhi::FencePollError) -> rhi::FenceWaitError {
     match error {
-        crate::rhi::FencePollError::DeviceLost => crate::rhi::FenceWaitError::DeviceLost,
-        crate::rhi::FencePollError::Platform => crate::rhi::FenceWaitError::Platform,
-        _ => crate::rhi::FenceWaitError::Platform,
+        rhi::FencePollError::DeviceLost => rhi::FenceWaitError::DeviceLost,
+        rhi::FencePollError::Platform => rhi::FenceWaitError::Platform,
+        _ => rhi::FenceWaitError::Platform,
     }
 }
