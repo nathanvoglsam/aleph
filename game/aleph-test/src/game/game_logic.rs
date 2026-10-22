@@ -34,7 +34,7 @@ use aleph_engine::api::label::make_label;
 use aleph_engine::api::make_plugin_description_for_crate;
 use aleph_engine::api::math::{DVec3, Rotor3, Vec3};
 use aleph_engine::api::mg::renderer::Renderer;
-use aleph_engine::api::platform::{AFrameTimer, AGamepads};
+use aleph_engine::api::platform::{AFrameTimer, AGamepads, AKeyboard, AMouse};
 use aleph_engine::api::plugin::{
     CoreRefs, IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription,
 };
@@ -72,6 +72,8 @@ impl IPlugin for PluginGameLogic {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
+        registrar.requires::<AKeyboard>(InitOrder::After);
+        registrar.requires::<AMouse>(InitOrder::After);
         registrar.requires::<AGamepads>(InitOrder::After);
         registrar.requires::<AFrameTimer>(InitOrder::After);
 
@@ -89,6 +91,8 @@ impl IPlugin for PluginGameLogic {
             .get_interface::<AEguiContextProvider>()
             .map(|v| v.get());
         let frame_timer = registry.get_interface::<AFrameTimer>().unwrap().get();
+        let keyboard = registry.get_interface::<AKeyboard>().unwrap().get();
+        let mouse = registry.get_interface::<AMouse>().unwrap().get();
         let gamepads = registry.get_interface::<AGamepads>().unwrap().get();
         let gltf_loader = registry.get_interface::<GltfLoader>().unwrap().clone();
 
@@ -152,7 +156,13 @@ impl IPlugin for PluginGameLogic {
             },
         ));
 
-        let mut free_camera = FreeCamera::new(frame_timer.clone(), gamepads.get_accessor(), camera);
+        let mut free_camera = FreeCamera::new(
+            frame_timer.clone(),
+            keyboard,
+            mouse,
+            gamepads.get_accessor(),
+            camera,
+        );
         let throbber_logic = ThrobberLogic::new(frame_timer.clone(), throbber);
         schedule.add_system_to_stage(
             CoreStage::Update.into(),
