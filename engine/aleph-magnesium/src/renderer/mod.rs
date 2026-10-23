@@ -201,7 +201,7 @@ impl Renderer {
         };
         let dispatcher = BBox::new_in(generic_dispatcher, system());
         self.async_loader_dispatchers
-            .push(aleph_alloc::unsize_box!(dispatcher));
+            .push(aleph_alloc::unsize_bbox!(dispatcher));
 
         let loader = AsyncResourceLoader::<C>::new(device, queue, fence, loader_sender, config)?;
 

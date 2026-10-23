@@ -743,19 +743,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         let name = NonNull::from(name);
 
         let pass = BBox::new_in(pass, system());
-        // TODO: stolen from allocator_api2 because their macro is broken
-        let pass: BBox<dyn IRenderPass<A>, _> = {
-            let (ptr, allocator) = BBox::into_raw_with_allocator(pass);
-            // we don't want to allow casting to arbitrary type U, but we do want to allow unsize coercion to happen.
-            // that's exactly what's happening here -- this is *not* a pointer cast ptr as *mut _, but the compiler
-            // *will* allow an unsizing coercion to happen into the `ptr` place, if one is available. And we use _ so that the user can
-            // fill in what they want the unsized type to be by annotating the type of the variable this macro will
-            // assign its result to.
-            let ptr: *mut _ = ptr;
-            // SAFETY: see above for why ptr's type can only be something that can be safely coerced.
-            // also, ptr just came from a properly allocated box in the same allocator.
-            unsafe { BBox::from_raw_in(ptr, allocator) }
-        };
+        let pass: BBox<dyn IRenderPass<A>, _> = aleph_alloc::unsize_bbox!(pass);
         let pass = RenderPass { pass, name, skip };
         self.render_passes.push(pass);
     }
