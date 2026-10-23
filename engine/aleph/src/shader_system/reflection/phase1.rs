@@ -669,7 +669,7 @@ fn parameter_type_from_resource_info<'a>(
             access,
             ..
         } => {
-            let base = aleph_shader_db::ParameterType::ByteAddressBuffer;
+            let base = aleph_shader_db::ParameterType::StructuredBuffer;
 
             if *array {
                 push_unsupported_resource_error(

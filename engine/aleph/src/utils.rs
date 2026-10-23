@@ -182,17 +182,47 @@ pub mod ninja {
 
     /// Prepares the given path ready to be used in a ninja build statement
     pub fn prepare_path_for_build_statement(path: &Utf8Path) -> Cow<'_, str> {
-        if cfg!(windows) {
+        let path = if cfg!(windows) {
             // UNC = sadness for ninja
-            let path = dunce_utf8::simplified(path).as_str();
-
-            // The drive letter gets incorrectly parsed as the end of the build output so we have to
-            // escape it. /shrug
-            let string = path.replace(':', "$:");
-
-            Cow::Owned(string)
+            dunce_utf8::simplified(path).as_str()
         } else {
-            Cow::Borrowed(path.as_str())
+            path.as_str()
+        };
+
+        if path.contains(['$', ' ', ':']) {
+            Cow::Owned(
+                path.replace('$', "$$")
+                    .replace(' ', "$ ")
+                    .replace(':', "$:"),
+            )
+        } else {
+            Cow::Borrowed(path)
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use camino::Utf8Path;
+
+        use super::prepare_path_for_build_statement;
+
+        #[test]
+        fn escapes_ninja_path_syntax() {
+            let path = Utf8Path::new("shader dir/file$:input.slang");
+            assert_eq!(
+                prepare_path_for_build_statement(path),
+                "shader$ dir/file$$$:input.slang"
+            );
+            let path = Utf8Path::new("shader dir/file$:input file with spaces.slang");
+            assert_eq!(
+                prepare_path_for_build_statement(path),
+                "shader$ dir/file$$$:input$ file$ with$ spaces.slang"
+            );
+            let path = Utf8Path::new("shader dir/file$:input file.$lang");
+            assert_eq!(
+                prepare_path_for_build_statement(path),
+                "shader$ dir/file$$$:input$ file.$$lang"
+            );
         }
     }
 }
