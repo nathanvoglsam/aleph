@@ -31,12 +31,13 @@
 [package]
 name = "aleph-device-allocators"
 version = "0.1.0"
-authors.workspace = true
 description = "A set of utilities of doing ring-buffer and bump allocation for device memory"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-device-allocators/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

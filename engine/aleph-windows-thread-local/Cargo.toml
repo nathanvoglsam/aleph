@@ -31,12 +31,13 @@
 [package]
 name = "aleph-windows-thread-local"
 version = "0.1.0"
-authors.workspace = true
 description = "A Windows only utility for directly using the platform native thread local primitive"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-windows-thread-local/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

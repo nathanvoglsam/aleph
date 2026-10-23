@@ -31,12 +31,13 @@
 [package]
 name = "aleph-quickjs-sys"
 version = "0.1.0"
-authors.workspace = true
 description = "Aleph's quickjs raw bindings"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-quickjs-sys/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

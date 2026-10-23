@@ -1,14 +1,15 @@
 [package]
 name = "aleph-profile"
 version = "0.1.0"
-authors.workspace = true
 description = "This crate provides a very thin abstraction over other profiler crates."
-license.workspace = true
-repository.workspace = true
-documentation = "https://docs.rs/aleph-profile/"
 keywords = ["performance", "profiling"]
 categories = ["development-tools::profiling"]
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 tracy-client = { workspace = true }

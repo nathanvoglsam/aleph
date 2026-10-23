@@ -31,14 +31,15 @@
 [package]
 name = "aleph-gpu-allocator"
 version = "0.1.0"
-authors.workspace = true
 description = "A GPU memory allocator for Vulkan, D3D12, and Metal"
-license.workspace = true
-repository.workspace = true
-documentation = "https://docs.rs/aleph-gpu-allocator/"
 keywords = ["engine", "graphics", "game"]
 categories = ["game-engines"]
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

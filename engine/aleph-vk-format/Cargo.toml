@@ -31,12 +31,13 @@
 [package]
 name = "aleph-vk-format"
 version = "0.1.0+145"
-authors.workspace = true
 description = "A standalone description of VkFormat with some utility methods attached"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-vk-format/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 publish = false
 
 [badges]

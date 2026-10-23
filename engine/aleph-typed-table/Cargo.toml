@@ -31,12 +31,13 @@
 [package]
 name = "aleph-typed-table"
 version = "0.1.0"
-authors.workspace = true
 description = "A generic table based on aleph-object-system"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-typed-table/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

@@ -30,14 +30,15 @@
 [package]
 name = "aleph-mimalloc-sys"
 version = "0.1.0"
-authors.workspace = true
 description = "FFI binding crate wrapping the mimalloc allocator"
-license.workspace = true
-repository.workspace = true
-documentation = "https://docs.rs/aleph-mimalloc-sys/"
-edition.workspace = true
 keywords = ["allocator", "encrypted-heap", "performance"]
 categories = ["memory-management", "api-bindings"]
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 links = "mimalloc"
 
 [badges]

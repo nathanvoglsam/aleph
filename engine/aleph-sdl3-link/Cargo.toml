@@ -31,18 +31,16 @@
 [package]
 name = "aleph-sdl3-link"
 version = "0.1.0"
-authors.workspace = true
 description = "Links to the SDL3 binary within an aleph workspace"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-sdl3-link/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
-
-[dependencies]
-sdl3-sys = { workspace = true }
 
 [build-dependencies]
 aleph-compile = { workspace = true }

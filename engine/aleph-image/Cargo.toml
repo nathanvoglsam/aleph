@@ -31,12 +31,13 @@
 [package]
 name = "aleph-image"
 version = "0.1.0"
-authors.workspace = true
 description = "Expanded wrapper over the image crate, exposing new types and new functionality"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-image/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

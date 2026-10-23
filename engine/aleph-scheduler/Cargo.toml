@@ -31,12 +31,13 @@
 [package]
 name = "aleph-scheduler"
 version = "0.1.0"
-authors.workspace = true
 description = "Aleph's ecs"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-scheduler/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
@@ -49,4 +50,3 @@ aleph-typed-table = { workspace = true }
 aleph-objc = { workspace = true }
 
 crossbeam = { workspace = true }
-rayon = { workspace = true }

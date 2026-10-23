@@ -31,12 +31,13 @@
 [package]
 name = "aleph-nstr"
 version = "0.1.0"
-authors.workspace = true
 description = "A crate for efficiently handling borrowed guaranteed utf8 null-terminated strings"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-nstr/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

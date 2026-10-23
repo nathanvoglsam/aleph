@@ -31,12 +31,13 @@
 [package]
 name = "aleph-malloc-info"
 version = "0.1.0"
-authors.workspace = true
 description = "A platform agnostic crate that exposes functionality for querying information from the global allocator 'malloc'."
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-malloc-info/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

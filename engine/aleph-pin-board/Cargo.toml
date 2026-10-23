@@ -31,12 +31,13 @@
 [package]
 name = "aleph-pin-board"
 version = "0.1.0"
-authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "A general purpose, thread-safe data structure for pass-forward style messaging"
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-pin-board/"
 edition = "2021"
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

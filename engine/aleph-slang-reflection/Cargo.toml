@@ -31,12 +31,13 @@
 [package]
 name = "aleph-slang-reflection"
 version = "0.1.0"
-authors.workspace = true
 description = "Serde schema for the Slang shader compiler's reflection JSON dumps"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-slang-reflection/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

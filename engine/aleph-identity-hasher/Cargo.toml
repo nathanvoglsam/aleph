@@ -31,12 +31,13 @@
 [package]
 name = "aleph-identity-hasher"
 version = "0.1.0"
-authors.workspace = true
 description = "A utility hasher that crunches simple types like integers down to a 64bit hash by just casting the hashed object"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-identity-hasher/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

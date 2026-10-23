@@ -30,14 +30,15 @@
 [package]
 name = "aleph-mimalloc"
 version = "0.1.0"
-authors.workspace = true
 description = "FFI binding crate wrapping the mimalloc allocator"
-license.workspace = true
-repository.workspace = true
-documentation = "https://docs.rs/aleph-mimalloc/"
-edition.workspace = true
 keywords = ["allocator", "performance"]
 categories = ["memory-management", "api-bindings"]
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

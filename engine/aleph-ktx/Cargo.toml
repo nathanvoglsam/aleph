@@ -31,12 +31,13 @@
 [package]
 name = "aleph-ktx"
 version = "0.1.0"
-authors.workspace = true
 description = "KTX 2.0 parsing library"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-ktx/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 publish = false
 
 [dependencies]

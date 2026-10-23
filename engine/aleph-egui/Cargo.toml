@@ -31,12 +31,13 @@
 [package]
 name = "aleph-egui"
 version = "0.1.0"
-authors.workspace = true
 description = "Aleph's egui plugin"
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-egui/"
 edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 aleph-alloc = { workspace = true }
