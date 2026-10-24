@@ -146,7 +146,7 @@ impl CommandList {
 impl Drop for CommandList {
     fn drop(&mut self) {
         abort_on_unwind(|| unsafe {
-            if self.pool == vk::CommandPool::null() {
+            if self.pool != vk::CommandPool::null() {
                 // The list is destroyed with the pool
                 self._device.device.destroy_command_pool(self.pool, GLOBAL);
             }
