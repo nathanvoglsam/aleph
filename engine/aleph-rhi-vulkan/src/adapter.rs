@@ -309,9 +309,17 @@ impl Adapter {
         let is_supported = |v: &CStr| self.device_info.supports_extension_cstr(v);
         let mut enable_if_supported = |wanted: &CStr| {
             if is_supported(wanted) {
+                log::info!(
+                    "Enabling optional extension: {}",
+                    wanted.to_str().unwrap_or("<invalid UTF-8>")
+                );
                 enabled_extensions.push(wanted.as_ptr());
                 true
             } else {
+                log::info!(
+                    "Optional extension not supported: {}",
+                    wanted.to_str().unwrap_or("<invalid UTF-8>")
+                );
                 false
             }
         };
@@ -326,6 +334,7 @@ impl Adapter {
             enable_if_supported(ash::khr::calibrated_timestamps::NAME);
         }
         enable_if_supported(ash::khr::portability_subset::NAME);
+        enable_if_supported(ash::khr::maintenance5::NAME);
 
         // Find our general, async compute and transfer queue families
         let queue_families = unsafe {
@@ -352,10 +361,14 @@ impl Adapter {
 
         let DeviceInfo {
             mut portability_features,
+            mut maintenance5_features,
             ..
         } = self.device_info.clone();
         if is_supported(ash::khr::portability_subset::NAME) {
             device_create_info = device_create_info.push_next(&mut portability_features)
+        }
+        if is_supported(ash::khr::maintenance5::NAME) {
+            device_create_info = device_create_info.push_next(&mut maintenance5_features)
         }
 
         let device = unsafe {

@@ -833,6 +833,30 @@ impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan13Properties<'a> {
     }
 }
 
+impl CheckMeetsProfile for vk::PhysicalDeviceMaintenance5PropertiesKHR<'_> {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        let mut s = Some(());
+        feat!(self, v, s, early_fragment_multisample_coverage_after_sample_counting);
+        feat!(self, v, s, early_fragment_sample_mask_test_before_sample_counting);
+        feat!(self, v, s, depth_stencil_swizzle_one_support);
+        feat!(self, v, s, polygon_mode_point_size);
+        feat!(self, v, s, non_strict_single_pixel_wide_lines_use_parallelogram);
+        feat!(self, v, s, non_strict_wide_lines_use_parallelogram);
+        s
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_feat!(self, v, early_fragment_multisample_coverage_after_sample_counting);
+        merge_feat!(self, v, early_fragment_sample_mask_test_before_sample_counting);
+        merge_feat!(self, v, depth_stencil_swizzle_one_support);
+        merge_feat!(self, v, polygon_mode_point_size);
+        merge_feat!(self, v, non_strict_single_pixel_wide_lines_use_parallelogram);
+        merge_feat!(self, v, non_strict_wide_lines_use_parallelogram);
+    }
+}
+
 impl CheckMeetsProfile for vk::PhysicalDeviceFeatures {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
@@ -1410,5 +1434,19 @@ impl CheckMeetsProfile for vk::ShaderFloatControlsIndependence {
             (V::ALL, V::ALL) => (),
             _ => (),
         }
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDeviceMaintenance5FeaturesKHR<'_> {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        let mut s = Some(());
+        feat!(self, v, s, maintenance5);
+        s
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_feat!(self, v, maintenance5);
     }
 }

@@ -453,6 +453,26 @@ impl<'a> CreateProfile for vk::PhysicalDeviceMaintenance3Properties<'a> {
     }
 }
 
+impl<'a> CreateProfile for vk::PhysicalDeviceMaintenance5PropertiesKHR<'a> {
+    fn baseline() -> Self {
+        Self {
+            early_fragment_multisample_coverage_after_sample_counting: vk::FALSE,
+            early_fragment_sample_mask_test_before_sample_counting: vk::FALSE,
+            depth_stencil_swizzle_one_support: vk::FALSE,
+            polygon_mode_point_size: vk::FALSE,
+            non_strict_single_pixel_wide_lines_use_parallelogram: vk::FALSE,
+            non_strict_wide_lines_use_parallelogram: vk::FALSE,
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
 impl CreateProfile for vk::PhysicalDeviceFeatures {
     fn baseline() -> Self {
         Self::default()
@@ -1060,6 +1080,21 @@ impl<'a> CreateProfile for vk::PhysicalDeviceDriverProperties<'a> {
     fn baseline() -> Self {
         Self {
             conformance_version: Default::default(),
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl<'a> CreateProfile for vk::PhysicalDeviceMaintenance5FeaturesKHR<'a> {
+    fn baseline() -> Self {
+        Self {
+            maintenance5: vk::FALSE,
             ..Default::default()
         }
     }

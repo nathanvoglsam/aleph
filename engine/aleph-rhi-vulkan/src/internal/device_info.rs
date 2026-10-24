@@ -43,11 +43,13 @@ pub struct DeviceInfo {
     pub properties_12: vk::PhysicalDeviceVulkan12Properties<'static>,
     pub properties_13: vk::PhysicalDeviceVulkan13Properties<'static>,
     pub portability_properties: vk::PhysicalDevicePortabilitySubsetPropertiesKHR<'static>,
+    pub maintenance5_properties: vk::PhysicalDeviceMaintenance5PropertiesKHR<'static>,
     pub features_10: vk::PhysicalDeviceFeatures,
     pub features_11: vk::PhysicalDeviceVulkan11Features<'static>,
     pub features_12: vk::PhysicalDeviceVulkan12Features<'static>,
     pub features_13: vk::PhysicalDeviceVulkan13Features<'static>,
     pub portability_features: vk::PhysicalDevicePortabilitySubsetFeaturesKHR<'static>,
+    pub maintenance5_features: vk::PhysicalDeviceMaintenance5FeaturesKHR<'static>,
     pub memory_properties: vk::PhysicalDeviceMemoryProperties2<'static>,
 }
 
@@ -87,11 +89,13 @@ impl DeviceInfo {
             properties_12: CreateProfile::minimum(),
             properties_13: CreateProfile::minimum(),
             portability_properties: Default::default(),
+            maintenance5_properties: Default::default(),
             features_10: CreateProfile::minimum(),
             features_11: CreateProfile::minimum(),
             features_12: CreateProfile::minimum(),
             features_13: CreateProfile::minimum(),
             portability_features: Default::default(),
+            maintenance5_features: Default::default(),
             memory_properties: Default::default(),
         }
     }
@@ -115,11 +119,13 @@ impl DeviceInfo {
             properties_12,
             properties_13,
             portability_properties,
+            maintenance5_properties,
             features_10,
             features_11,
             features_12,
             features_13,
             portability_features,
+            maintenance5_features,
             memory_properties,
         } = &mut out;
 
@@ -137,6 +143,14 @@ impl DeviceInfo {
             }
         };
 
+        // Safety: we assume all the strings vulkan gives us are valid
+        unsafe {
+            // We load the maintenance5 properties if the extension is present
+            if Self::list_contains_extension_cstr(extensions, ash::khr::maintenance5::NAME) {
+                properties = properties.push_next(maintenance5_properties)
+            }
+        };
+
         *properties_10 = unsafe {
             instance.get_physical_device_properties2(physical_device, &mut properties);
             properties.properties
@@ -148,9 +162,17 @@ impl DeviceInfo {
             .push_next(features_12)
             .push_next(features_13);
 
+        // Safety: we assume all the strings vulkan gives us are valid
         unsafe {
             if Self::list_contains_extension_cstr(extensions, ash::khr::portability_subset::NAME) {
                 features = features.push_next(portability_features)
+            }
+        };
+
+        // Safety: we assume all the strings vulkan gives us are valid
+        unsafe {
+            if Self::list_contains_extension_cstr(extensions, ash::khr::maintenance5::NAME) {
+                features = features.push_next(maintenance5_features)
             }
         };
 
@@ -174,10 +196,12 @@ impl DeviceInfo {
         self.properties_12.p_next = std::ptr::null_mut();
         self.properties_13.p_next = std::ptr::null_mut();
         self.portability_properties.p_next = std::ptr::null_mut();
+        self.maintenance5_properties.p_next = std::ptr::null_mut();
         self.features_11.p_next = std::ptr::null_mut();
         self.features_12.p_next = std::ptr::null_mut();
         self.features_13.p_next = std::ptr::null_mut();
         self.portability_features.p_next = std::ptr::null_mut();
+        self.maintenance5_features.p_next = std::ptr::null_mut();
         self.memory_properties.p_next = std::ptr::null_mut();
     }
 }
@@ -228,6 +252,9 @@ impl DeviceInfo {
         if self.portability_properties.meets_minimum().is_none() {
             s = None;
         }
+        if self.maintenance5_properties.meets_minimum().is_none() {
+            s = None;
+        }
         if self.features_10.meets_minimum().is_none() {
             s = None;
         }
@@ -241,6 +268,9 @@ impl DeviceInfo {
             s = None;
         }
         if self.portability_features.meets_minimum().is_none() {
+            s = None;
+        }
+        if self.maintenance5_features.meets_minimum().is_none() {
             s = None;
         }
 
