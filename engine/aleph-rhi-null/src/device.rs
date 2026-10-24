@@ -360,6 +360,18 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
+    fn get_buffer_view(
+        &self,
+        buffer: &BufferHandle,
+        _desc: &BufferViewDesc,
+    ) -> Result<BufferView, ()> {
+        let _ = NullBuffer::get(buffer);
+        unimplemented!()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn flush_buffer_range(&self, buffer: &BufferHandle, _offset: u64, _len: u64) {
         let _ = NullBuffer::get(buffer);
     }
