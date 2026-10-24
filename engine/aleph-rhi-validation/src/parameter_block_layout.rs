@@ -35,6 +35,7 @@ use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 
 use crate::ValidationBuffer;
+use crate::buffer::ValidationBufferView;
 use crate::device::ValidationDevice;
 use crate::internal::unwrap;
 use crate::texture::ValidationImageView;
@@ -107,6 +108,7 @@ impl ValidationParameterBlockLayout {
                         let usage = texture.desc.usage;
                         let resource_name = texture.desc.name.unwrap_or("<unnamed resource>");
                         validate_resource_usage(param, usage, "Texture", resource_name);
+                        validate_view_writable(param, view.desc.writable, "Texture", resource_name);
                     }
                     ParameterWrite::Buffer(v) => {
                         assert!(
@@ -126,9 +128,12 @@ impl ValidationParameterBlockLayout {
                             param_i,
                             param.ty
                         );
-                        let buffer = ValidationBuffer::get(v.buffer);
+                        let view = unsafe { ValidationBufferView::get(&v.view) };
+                        let buffer = view._buffer.upgrade().unwrap();
+                        let usage = buffer.usage;
                         let resource_name = buffer.name.as_deref().unwrap_or("<unnamed resource>");
-                        validate_resource_usage(param, buffer.usage, "Buffer", resource_name);
+                        validate_resource_usage(param, usage, "Buffer", resource_name);
+                        validate_view_writable(param, view.desc.writable, "Buffer", resource_name);
                     }
                 }
             }
@@ -171,5 +176,28 @@ fn validate_resource_usage(
         );
     } else {
         unreachable!()
+    }
+}
+
+fn validate_view_writable(
+    param: &ParameterDesc,
+    writable: bool,
+    resource_type: &'static str,
+    resource_name: &str,
+) {
+    if writable {
+        assert!(
+            param.ty.is_uav(),
+            "Writable view '{}' of type '{}' must be bound to a UAV parameter",
+            resource_name,
+            resource_type
+        );
+    } else {
+        assert!(
+            param.ty.is_srv(),
+            "Non-writable view '{}' of type '{}' must not be bound to a UAV parameter",
+            resource_name,
+            resource_type
+        );
     }
 }

@@ -353,14 +353,18 @@ impl IDevice for ValidationDevice {
                 "Attempted to create a buffer with usage flags meant only for textures!"
             );
             let inner = self.inner.create_buffer(desc)?;
-            let out = ValidationBuffer {
-                _device: self._this.upgrade().unwrap(),
-                size: desc.size,
-                usage: desc.usage,
-                name: desc.name.map(|v| BBox::from(v)),
-                inner,
-            };
-            let out = Object::new_arc_opaque(out);
+            let out = Arc::new_cyclic(|v| {
+                Object::new(ValidationBuffer {
+                    _this: v.clone(),
+                    _device: self._this.upgrade().unwrap(),
+                    size: desc.size,
+                    usage: desc.usage,
+                    name: desc.name.map(|v| BBox::from(v)),
+                    inner,
+                    views: Default::default(),
+                })
+            });
+            let out = ArcObject::from_object(out);
             unsafe { Ok(BufferHandle::new(out)) }
         })
     }
@@ -579,6 +583,34 @@ impl IDevice for ValidationDevice {
         abort_on_unwind(|| {
             let buffer = ValidationBuffer::get(buffer);
             self.inner.unmap_buffer(&buffer.inner)
+        })
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_buffer_view(
+        &self,
+        buffer: &BufferHandle,
+        desc: &BufferViewDesc,
+    ) -> Result<BufferView, ()> {
+        abort_on_unwind(|| {
+            let buffer = ValidationBuffer::get(buffer);
+
+            let element_size = desc.format.bytes_per_element() as u64;
+            let byte_offset = desc.offset.saturating_mul(element_size);
+            assert!(
+                byte_offset <= buffer.size,
+                "Buffer view offset out of bounds"
+            );
+
+            if desc.num_elements != u64::MAX {
+                let byte_len = desc.num_elements.saturating_mul(element_size);
+                let byte_end = byte_offset.saturating_add(byte_len);
+                assert!(byte_end <= buffer.size, "Buffer view range out of bounds");
+            }
+
+            buffer.get_view(self, desc)
         })
     }
 

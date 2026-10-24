@@ -27,21 +27,24 @@
 // SOFTWARE.
 //
 
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
-use aleph_alloc::BBox;
-use aleph_object_system::unsafe_impl_iobject;
+use aleph_alloc::{BBox, BHashMap};
+use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiRoot;
+use parking_lot::Mutex;
 
 use crate::ValidationDevice;
 
 pub struct ValidationBuffer {
+    pub(crate) _this: Weak<Object<ValidationBuffer>>,
     pub(crate) _device: Arc<ValidationDevice>,
     pub(crate) size: u64,
     pub(crate) usage: ResourceUsageFlags,
     pub(crate) name: Option<BBox<str, RhiRoot>>,
     pub(crate) inner: BufferHandle,
+    pub(crate) views: Mutex<BHashMap<BufferViewDesc, Box<ValidationBufferView>, RhiRoot>>,
 }
 
 unsafe_impl_iobject!(ValidationBuffer, "01944e4f-dacb-7122-bdec-ae9da89e1a0e");
@@ -51,6 +54,31 @@ impl ValidationBuffer {
         v.get()
             .downcast_ref::<Self>()
             .expect("Unknown Buffer implementation!")
+    }
+
+    pub(crate) fn get_view(
+        &self,
+        device: &ValidationDevice,
+        desc: &BufferViewDesc,
+    ) -> Result<BufferView, ()> {
+        let mut views = self.views.lock();
+        let view = if let Some(v) = views.get(desc) {
+            let v = Box::as_ptr(v);
+            unsafe { std::mem::transmute::<_, BufferView>(v) }
+        } else {
+            let buffer_view = Box::new(ValidationBufferView {
+                _buffer: self._this.clone(),
+                buffer_view: device.inner.get_buffer_view(&self.inner, desc)?,
+                desc: desc.clone(),
+            });
+
+            let v = Box::as_ptr(&buffer_view);
+            let v = unsafe { std::mem::transmute::<_, BufferView>(v) };
+            views.insert(desc.clone(), buffer_view);
+
+            v
+        };
+        Ok(view)
     }
 
     pub fn validate_range(&self, offset: u64, len: u64) {
@@ -63,5 +91,21 @@ impl ValidationBuffer {
             offset + len < size,
             "Invalidation range (offset: {offset}, len: {len}) outside buffer size ({size})",
         );
+    }
+}
+
+pub struct ValidationBufferView {
+    pub _buffer: Weak<Object<ValidationBuffer>>,
+    pub buffer_view: BufferView,
+    pub desc: BufferViewDesc,
+}
+
+impl ValidationBufferView {
+    pub unsafe fn get(v: &BufferView) -> &ValidationBufferView {
+        unsafe {
+            std::mem::transmute::<_, *const ValidationBufferView>(*v)
+                .as_ref()
+                .unwrap()
+        }
     }
 }

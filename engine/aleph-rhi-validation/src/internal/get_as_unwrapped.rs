@@ -38,6 +38,7 @@ use aleph_alloc::BVec;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiRoot;
 
+use crate::buffer::ValidationBufferView;
 use crate::internal::unwrap;
 use crate::texture::ValidationImageView;
 use crate::{
@@ -85,14 +86,9 @@ pub unsafe fn parameter_writes<'a>(writes: &[ParameterWrite<'a>]) -> Vec<Paramet
                 .into()
             }
             ParameterWrite::TextureBuffer(v) => {
-                let inner = &ValidationBuffer::get(&v.buffer).inner;
-                TextureBufferWrite {
-                    buffer: inner,
-                    format: v.format,
-                    offset: v.offset,
-                    len: v.len,
-                }
-                .into()
+                let view = unsafe { ValidationBufferView::get(&v.view) };
+                let view = view.buffer_view;
+                TextureBufferWrite { view }.into()
             }
         };
         new_writes.push(new_write);
