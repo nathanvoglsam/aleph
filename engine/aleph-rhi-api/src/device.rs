@@ -263,6 +263,16 @@ pub trait IDevice: Any + IGetPlatformInterface + Send + Sync {
     /// Unmaps the buffers memory, releasing the associated address space range to be reused.
     fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError>;
 
+    /// Returns a buffer view for the given buffer and view description.
+    ///
+    /// 'BufferViews' represent texel buffer views, which allow interpreting a buffer as a
+    /// texture-like resource for shader access.
+    fn get_buffer_view(
+        &self,
+        buffer: &BufferHandle,
+        desc: &BufferViewDesc,
+    ) -> Result<BufferView, ()>;
+
     /// Flushes any writes to mapped buffer memory for non `HOST_COHERENT` memory.
     ///
     /// Writes to non `HOST_COHERENT` memory will no be made available to the device until the

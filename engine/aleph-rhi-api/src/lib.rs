@@ -30,6 +30,7 @@
 mod adapter;
 mod binding_signature;
 mod buffer;
+mod buffer_view;
 mod command_encoder;
 mod command_list;
 mod common_data;
@@ -56,6 +57,7 @@ mod texture_view;
 pub use adapter::*;
 pub use binding_signature::*;
 pub use buffer::*;
+pub use buffer_view::*;
 pub use command_encoder::*;
 pub use command_list::*;
 pub use common_data::*;

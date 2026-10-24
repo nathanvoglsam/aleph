@@ -73,7 +73,7 @@ pub enum ParameterWrite<'a> {
     Sampler(SamplerWrite<'a>),
     Texture(TextureWrite),
     Buffer(BufferWrite<'a>),
-    TextureBuffer(TextureBufferWrite<'a>),
+    TextureBuffer(TextureBufferWrite),
 }
 
 /// Describes the parameters of a descriptor to write when writing into a sampler binding.
@@ -195,25 +195,14 @@ impl<'a> From<BufferWrite<'a>> for ParameterWrite<'a> {
 
 /// Describes the parameters of a descriptor to write when writing into a texel buffer binding.
 #[derive(Clone)]
-pub struct TextureBufferWrite<'a> {
-    /// The buffer target
-    pub buffer: &'a BufferHandle,
-
-    /// The texel format the buffer should be interpreted as.
-    pub format: Format,
-
-    /// The offset in bytes from the start of buffer. Access to buffer memory via this descriptor
-    /// uses addressing that is relative to this starting offset.
-    pub offset: u64,
-
-    /// The size in bytes that is used for this descriptor update, or [u32::MAX] to use the range
-    /// from offset to the end of the buffer.
-    pub len: u32,
+pub struct TextureBufferWrite {
+    /// The buffer view target
+    pub view: BufferView,
 }
 
-impl<'a> From<TextureBufferWrite<'a>> for ParameterWrite<'a> {
+impl<'a> From<TextureBufferWrite> for ParameterWrite<'a> {
     #[inline(always)]
-    fn from(val: TextureBufferWrite<'a>) -> Self {
+    fn from(val: TextureBufferWrite) -> Self {
         ParameterWrite::TextureBuffer(val)
     }
 }
