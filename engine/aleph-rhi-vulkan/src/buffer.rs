@@ -250,6 +250,8 @@ impl Buffer {
     /// # Safety
     ///
     /// The caller must ensure non_coherent_atom_size is a power of two.
+    ///
+    /// The caller must not issue an offset beyond the end of the buffer.
     unsafe fn get_range_for_flush_or_invalidate(
         &self,
         offset: u64,
