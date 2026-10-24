@@ -329,7 +329,7 @@ impl SwapChain {
                 mip_levels: 1,
                 sample_count: 1,
                 sample_quality: 0,
-                usage: F::COPY_DEST | F::RENDER_TARGET,
+                usage: F::RENDER_TARGET,
                 name: Some(SWAP_NAMES[i].to_str()),
             };
             let out = Texture {
