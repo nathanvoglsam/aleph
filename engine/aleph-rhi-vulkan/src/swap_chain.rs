@@ -180,11 +180,25 @@ impl ISwapChain for SwapChain {
                         Ok(AcquiredImage::Ok(swap_image))
                     }
                 }
-                Err(vk::Result::NOT_READY) => unimplemented!(),
-                Err(vk::Result::TIMEOUT) => unimplemented!(),
-                Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => Err(ImageAcquireError::OutOfDate),
-                Err(vk::Result::ERROR_SURFACE_LOST_KHR) => Err(ImageAcquireError::SurfaceLost),
+                Err(vk::Result::NOT_READY) => {
+                    self.device.swap_semaphore_pool.push(ready_semaphore);
+                    unimplemented!()
+                }
+                Err(vk::Result::TIMEOUT) => {
+                    self.device.swap_semaphore_pool.push(ready_semaphore);
+                    unimplemented!()
+                }
+                Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => {
+                    self.device.swap_semaphore_pool.push(ready_semaphore);
+                    Err(ImageAcquireError::OutOfDate)
+                }
+                Err(vk::Result::ERROR_SURFACE_LOST_KHR) => {
+                    self.device.swap_semaphore_pool.push(ready_semaphore);
+                    Err(ImageAcquireError::SurfaceLost)
+                }
                 Err(e) => {
+                    self.device.swap_semaphore_pool.push(ready_semaphore);
+
                     // Coerce everything we don't explicitly handle to an error.
                     log::error!("Platform Error: {:#?}", e);
                     Err(ImageAcquireError::Platform)
