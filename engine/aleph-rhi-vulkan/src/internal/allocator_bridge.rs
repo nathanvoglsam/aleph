@@ -259,6 +259,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
             let block_info = VulkanBlockInfo {
                 memory,
                 mapped_address,
+                block_size: memory_requirements.layout.size(),
             };
 
             let offset = allocation.block_offset();
@@ -363,6 +364,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
             let block_info = VulkanBlockInfo {
                 memory,
                 mapped_address,
+                block_size: memory_requirements.layout.size(),
             };
 
             let offset = allocation.block_offset();
@@ -407,6 +409,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
             Some(VulkanBlockInfo {
                 memory,
                 mapped_address,
+                block_size: size,
             })
         }
     }
@@ -498,6 +501,7 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
             VulkanAllocationMetadata {
                 memory: block_info.memory,
                 mapped_address: base,
+                block_size: block_info.block_size,
             }
         }
     }
@@ -628,6 +632,7 @@ pub struct VulkanPoolInfo {
 pub struct VulkanBlockInfo {
     memory: vk::DeviceMemory,
     mapped_address: Option<NonNull<u8>>,
+    block_size: u64,
 }
 
 unsafe impl Send for VulkanBlockInfo {}
@@ -635,4 +640,5 @@ unsafe impl Send for VulkanBlockInfo {}
 pub struct VulkanAllocationMetadata {
     pub memory: vk::DeviceMemory,
     pub mapped_address: Option<NonNull<u8>>,
+    pub block_size: u64,
 }

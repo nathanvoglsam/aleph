@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::hint::unreachable_unchecked;
 use std::num::NonZeroU64;
 use std::ptr::NonNull;
 use std::sync::Arc;
@@ -51,6 +52,7 @@ pub struct Buffer {
     pub(crate) allocation: Option<GpuAllocation>,
     pub(crate) map_state: Mutex<MapState>,
     pub(crate) memory: vk::DeviceMemory,
+    pub(crate) block_size: u64,
     pub(crate) views: Mutex<BHashMap<BufferViewDesc, vk::BufferView, RhiRoot>>,
     pub(crate) desc: OwnedBufferDesc,
 }
@@ -201,29 +203,9 @@ impl Buffer {
 
     pub(crate) fn flush_buffer_range(&self, device: &Device, offset: u64, len: u64) {
         unsafe {
-            // Get the offset within the memory block this buffer belongs to.
-            let memory_offset = self
-                .allocation
-                .as_ref()
-                .map(|v| v.block_offset() as u64)
-                .unwrap_or(0);
-
-            // This is the end of the memory region this buffer occupies within the memory block.
-            let memory_end = memory_offset + self.desc().size;
-
-            // The true offset we give to vulkan is the offset within the block, not the offset from
-            // the start of this buffer.
-            let true_offset = memory_offset + offset;
-
-            // We clip the input 'len' to the end of the buffer. This works by extending from
-            // 'true_offset' by the requested length to find the virtual extent of the requested
-            // range. We then clip the virtual range to the actual end of the buffer within the
-            // memory block. The length of the clipped region is simply the difference between the
-            // clipped end and the start of the range.
-            let true_end = true_offset.saturating_add(len);
-            let true_end = true_end.min(memory_end);
-            let true_len = true_end - true_offset;
-
+            let limits = &device.adapter.device_info.properties_10.limits;
+            let (true_offset, true_len) =
+                self.get_range_for_flush_or_invalidate(offset, len, limits.non_coherent_atom_size);
             let ranges = [vk::MappedMemoryRange {
                 memory: self.memory,
                 offset: true_offset,
@@ -236,29 +218,9 @@ impl Buffer {
 
     pub(crate) fn invalidate_buffer_range(&self, device: &Device, offset: u64, len: u64) {
         unsafe {
-            // Get the offset within the memory block this buffer belongs to.
-            let memory_offset = self
-                .allocation
-                .as_ref()
-                .map(|v| v.block_offset() as u64)
-                .unwrap_or(0);
-
-            // This is the end of the memory region this buffer occupies within the memory block.
-            let memory_end = memory_offset + self.desc().size;
-
-            // The true offset we give to vulkan is the offset within the block, not the offset from
-            // the start of this buffer.
-            let true_offset = memory_offset + offset;
-
-            // We clip the input 'len' to the end of the buffer. This works by extending from
-            // 'true_offset' by the requested length to find the virtual extent of the requested
-            // range. We then clip the virtual range to the actual end of the buffer within the
-            // memory block. The length of the clipped region is simply the difference between the
-            // clipped end and the start of the range.
-            let true_end = true_offset.saturating_add(len);
-            let true_end = true_end.min(memory_end);
-            let true_len = true_end - true_offset;
-
+            let limits = &device.adapter.device_info.properties_10.limits;
+            let (true_offset, true_len) =
+                self.get_range_for_flush_or_invalidate(offset, len, limits.non_coherent_atom_size);
             let ranges = [vk::MappedMemoryRange {
                 memory: self.memory,
                 offset: true_offset,
@@ -270,6 +232,65 @@ impl Buffer {
                 .invalidate_mapped_memory_ranges(&ranges)
                 .unwrap();
         }
+    }
+}
+
+impl Buffer {
+    /// Given an offset and length within the buffer, returns a new offset + len pair this is valid
+    /// for use in a [`vk::MappedMemoryRange`].
+    ///
+    /// This will expand the range to satisfy the alignment requirements of the non-coherent atom
+    /// size, and clip the resulting range to the boundaries of the buffer or the memory block if
+    /// the buffer reaches to the end of the block.
+    ///
+    /// This may cause the returned range to be larger than the originally requested range, and the
+    /// range may be larger than the buffer itself. The expected use for flush/invalidate ranges
+    /// means that we may _over_ synchronize, but this is acceptable for the intended use case.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure non_coherent_atom_size is a power of two.
+    unsafe fn get_range_for_flush_or_invalidate(
+        &self,
+        offset: u64,
+        len: u64,
+        non_coherent_atom_size: u64,
+    ) -> (u64, u64) {
+        unsafe {
+            if !non_coherent_atom_size.is_power_of_two() {
+                // Vulkan promises to never give as a NPOT value for nonCoherentAtomSize.
+                // This is optimization should give the compiler enough info to transform the
+                // div/mul operations to bitshifts.
+                unreachable_unchecked()
+            }
+        }
+
+        // Get the offset within the memory block this buffer belongs to.
+        let memory_offset = self
+            .allocation
+            .as_ref()
+            .map(|v| v.block_offset() as u64)
+            .unwrap_or(0);
+
+        // This is the end of the memory region this buffer occupies within the memory block.
+        let memory_end = memory_offset + self.desc().size;
+
+        // The true offset we give to Vulkan is within the memory block, not the buffer. Then we
+        // align down to the nearest multiple of non_coherent_atom_size. This may dilate the range
+        // beyond the buffer's actual range.
+        let true_start = memory_offset + offset;
+        let true_offset = true_start / non_coherent_atom_size * non_coherent_atom_size;
+
+        // Clip the requested range to the buffer, align its end up to the atom size, then clip
+        // the result to the end of the memory block.
+        let true_end = true_start.saturating_add(len).min(memory_end);
+        let true_end = true_end
+            .div_ceil(non_coherent_atom_size)
+            .saturating_mul(non_coherent_atom_size)
+            .min(self.block_size);
+        let true_len = true_end - true_offset;
+
+        (true_offset, true_len)
     }
 }
 

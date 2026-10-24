@@ -694,6 +694,7 @@ impl IDevice for Device {
                 buffer,
                 allocation: Some(allocation),
                 memory: metadata.memory,
+                block_size: metadata.block_size,
                 map_state: Mutex::new(MapState {
                     count: 0,
                     ptr: metadata.mapped_address,
