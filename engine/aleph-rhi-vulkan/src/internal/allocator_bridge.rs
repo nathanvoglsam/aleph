@@ -69,12 +69,14 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
             wanted_mask: vk::MemoryPropertyFlags,
         ) -> u32 {
             let mut bitset = 0;
-            for memory_type in types.iter().rev() {
-                bitset <<= 1; // does nothing on first iteration, post shift would over-shift
+            for (i, memory_type) in types.iter().enumerate() {
+                // Vulkan can't give us more then 32 because there's not enough bits.
+                // But we check anyway to ensure we don't produce too large a bit shift.
+                assert!(i < 32, "Memory type index exceeds 32");
 
                 let type_is_superset = (memory_type.property_flags & wanted_mask) == wanted_mask;
                 if type_is_superset {
-                    bitset |= 1;
+                    bitset |= 1 << i;
                 }
             }
             bitset
