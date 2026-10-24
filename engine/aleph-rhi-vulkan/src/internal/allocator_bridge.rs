@@ -181,16 +181,20 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     ) -> Result<Self::BufferHandle, ()> {
         debug_assert!(pool_info.is_buffer_pool);
         unsafe {
+            let alloc_callbacks = allocator_info.alloc_callbacks.as_ref();
             let memory = block_info.memory;
             let offset = allocation.block_offset();
 
             let buffer = bridge
                 .device
-                .create_buffer(&desc.desc, allocator_info.alloc_callbacks.as_ref())
+                .create_buffer(&desc.desc, alloc_callbacks)
                 .map_err(|_| ())?;
             bridge
                 .device
                 .bind_buffer_memory(buffer, memory, offset.into())
+                .inspect_err(|_| {
+                    bridge.device.destroy_buffer(buffer, alloc_callbacks);
+                })
                 .map_err(|_| ())?;
             Ok(buffer)
         }
@@ -219,9 +223,11 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     ) -> Result<(Self::DedicatedBlockInfo, Self::BufferHandle), ()> {
         debug_assert!(pool_info.is_buffer_pool);
         unsafe {
+            let alloc_callbacks = allocator_info.alloc_callbacks.as_ref();
+
             let buffer = bridge
                 .device
-                .create_buffer(&desc.desc, allocator_info.alloc_callbacks.as_ref())
+                .create_buffer(&desc.desc, alloc_callbacks)
                 .map_err(|_| ())?;
 
             let mut dedicated = vk::MemoryDedicatedAllocateInfo::default().buffer(buffer);
@@ -231,13 +237,20 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
                 .push_next(&mut dedicated);
             let memory = bridge
                 .device
-                .allocate_memory(&info, allocator_info.alloc_callbacks.as_ref())
+                .allocate_memory(&info, alloc_callbacks)
+                .inspect_err(|_| {
+                    bridge.device.destroy_buffer(buffer, alloc_callbacks);
+                })
                 .map_err(|_| ())?;
 
             let mapped_address = if pool_info.mappable {
                 let result = bridge
                     .device
                     .map_memory(memory, 0, vk::WHOLE_SIZE, vk::MemoryMapFlags::empty())
+                    .inspect_err(|_| {
+                        bridge.device.destroy_buffer(buffer, alloc_callbacks);
+                        bridge.device.free_memory(memory, alloc_callbacks);
+                    })
                     .map_err(|_| ())?;
                 NonNull::new(result.cast::<u8>())
             } else {
@@ -252,6 +265,10 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
             bridge
                 .device
                 .bind_buffer_memory(buffer, memory, offset.into())
+                .inspect_err(|_| {
+                    bridge.device.destroy_buffer(buffer, alloc_callbacks);
+                    bridge.device.free_memory(memory, alloc_callbacks);
+                })
                 .map_err(|_| ())?;
 
             Ok((block_info, buffer))
@@ -268,16 +285,20 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     ) -> Result<Self::TextureHandle, ()> {
         debug_assert!(!pool_info.is_buffer_pool);
         unsafe {
+            let alloc_callbacks = allocator_info.alloc_callbacks.as_ref();
             let memory = block_info.memory;
             let offset = allocation.block_offset();
 
             let image = bridge
                 .device
-                .create_image(&desc.desc, allocator_info.alloc_callbacks.as_ref())
+                .create_image(&desc.desc, alloc_callbacks)
                 .map_err(|_| ())?;
             bridge
                 .device
                 .bind_image_memory(image, memory, offset.into())
+                .inspect_err(|_| {
+                    bridge.device.destroy_image(image, alloc_callbacks);
+                })
                 .map_err(|_| ())?;
             Ok(image)
         }
@@ -306,9 +327,11 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
     ) -> Result<(Self::DedicatedBlockInfo, Self::TextureHandle), ()> {
         debug_assert!(!pool_info.is_buffer_pool);
         unsafe {
+            let alloc_callbacks = allocator_info.alloc_callbacks.as_ref();
+
             let image = bridge
                 .device
-                .create_image(&desc.desc, allocator_info.alloc_callbacks.as_ref())
+                .create_image(&desc.desc, alloc_callbacks)
                 .map_err(|_| ())?;
 
             let mut dedicated = vk::MemoryDedicatedAllocateInfo::default().image(image);
@@ -318,13 +341,20 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
                 .push_next(&mut dedicated);
             let memory = bridge
                 .device
-                .allocate_memory(&info, allocator_info.alloc_callbacks.as_ref())
+                .allocate_memory(&info, alloc_callbacks)
+                .inspect_err(|_| {
+                    bridge.device.destroy_image(image, alloc_callbacks);
+                })
                 .map_err(|_| ())?;
 
             let mapped_address = if pool_info.mappable {
                 let result = bridge
                     .device
                     .map_memory(memory, 0, vk::WHOLE_SIZE, vk::MemoryMapFlags::empty())
+                    .inspect_err(|_| {
+                        bridge.device.destroy_image(image, alloc_callbacks);
+                        bridge.device.free_memory(memory, alloc_callbacks);
+                    })
                     .map_err(|_| ())?;
                 NonNull::new(result.cast::<u8>())
             } else {
@@ -339,6 +369,10 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
             bridge
                 .device
                 .bind_image_memory(image, memory, offset.into())
+                .inspect_err(|_| {
+                    bridge.device.destroy_image(image, alloc_callbacks);
+                    bridge.device.free_memory(memory, alloc_callbacks);
+                })
                 .map_err(|_| ())?;
 
             Ok((block_info, image))
@@ -352,18 +386,19 @@ impl<'a> IApiBridge for VulkanAllocatorBridge {
         size: u64,
     ) -> Option<Self::BlockInfo> {
         unsafe {
+            let alloc_callbacks = allocator_info.alloc_callbacks.as_ref();
             let info = vk::MemoryAllocateInfo::default()
                 .allocation_size(size)
                 .memory_type_index(pool_info.memory_type_index);
-            let memory = bridge
-                .device
-                .allocate_memory(&info, allocator_info.alloc_callbacks.as_ref())
-                .ok()?;
+            let memory = bridge.device.allocate_memory(&info, alloc_callbacks).ok()?;
 
             let mapped_address = if pool_info.mappable {
                 let result = bridge
                     .device
                     .map_memory(memory, 0, vk::WHOLE_SIZE, vk::MemoryMapFlags::empty())
+                    .inspect_err(|_| {
+                        bridge.device.free_memory(memory, alloc_callbacks);
+                    })
                     .ok()?;
                 NonNull::new(result.cast::<u8>())
             } else {
