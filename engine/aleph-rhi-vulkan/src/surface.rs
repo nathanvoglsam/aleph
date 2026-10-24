@@ -124,8 +124,15 @@ impl ISurface for Surface {
         abort_on_unwind(|| {
             let device = unwrap::device(device);
 
-            let queue_support =
-                unsafe { Surface::get_queue_support(device, self.surface).unwrap() };
+            let queue_support = unsafe {
+                Surface::get_queue_support(device, self.surface)
+                    .inspect_err(|e| log::error!("Failed to get queue support: {:?}", e))
+                    .map_err(|_| SwapChainCreateError::NoQueueAvailable)?
+            };
+
+            if queue_support.is_empty() {
+                return Err(SwapChainCreateError::NoQueueAvailable);
+            }
 
             let mut semaphore_pools = BVec::with_capacity_in(5, Default::default());
             let iter = std::iter::repeat_n((), 5).map(|_| Arc::new(SemaphorePool::new()));

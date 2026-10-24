@@ -31,16 +31,18 @@ use std::num::NonZeroU64;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
+use aleph_alloc::BHashMap;
 use aleph_gpu_allocator::GpuAllocation;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
+use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
 use ash::vk;
 use parking_lot::Mutex;
 
 use crate::device::Device;
 use crate::internal::allocation_callbacks::GLOBAL;
+use crate::internal::conv;
 
 pub struct Buffer {
     pub(crate) _device: Arc<Device>,
@@ -49,6 +51,7 @@ pub struct Buffer {
     pub(crate) allocation: Option<GpuAllocation>,
     pub(crate) map_state: Mutex<MapState>,
     pub(crate) memory: vk::DeviceMemory,
+    pub(crate) views: Mutex<BHashMap<BufferViewDesc, vk::BufferView, RhiRoot>>,
     pub(crate) desc: OwnedBufferDesc,
 }
 
@@ -80,6 +83,61 @@ impl Buffer {
             );
             size
         }
+    }
+
+    fn create_view_for_usage(
+        &self,
+        device: &Device,
+        desc: &BufferViewDesc,
+    ) -> Result<vk::BufferView, ()> {
+        let format = conv::texture_format_to_vk(desc.format);
+
+        // Caller's responsibility to ensure the offset and range are valid for the buffer.
+        let offset = desc
+            .offset
+            .saturating_mul(desc.format.bytes_per_element() as u64);
+        let range = if desc.num_elements == u64::MAX {
+            vk::WHOLE_SIZE
+        } else {
+            desc.num_elements
+                .saturating_mul(desc.format.bytes_per_element() as u64)
+        };
+
+        let mut create_info = vk::BufferViewCreateInfo {
+            flags: vk::BufferViewCreateFlags::empty(),
+            buffer: self.buffer,
+            format: format,
+            offset: offset,
+            range: range,
+            ..Default::default()
+        };
+
+        // If the device supports maintenance5, we attach a reduced usage scope as an optimization
+        // hint to the driver about the intended usage of the buffer view.
+        //
+        // The 'mutable' flag decides whether the view can be used as a storage texel buffer.
+        let mut usage_info = vk::BufferUsageFlags2CreateInfoKHR {
+            ..Default::default()
+        };
+        let device_info = &device.adapter.device_info;
+        if device_info.maintenance5_features.maintenance5 != vk::FALSE {
+            usage_info.usage = if desc.writable {
+                vk::BufferUsageFlags2KHR::UNIFORM_TEXEL_BUFFER
+                    | vk::BufferUsageFlags2KHR::STORAGE_TEXEL_BUFFER
+            } else {
+                vk::BufferUsageFlags2KHR::UNIFORM_TEXEL_BUFFER
+            };
+            create_info = create_info.push_next(&mut usage_info);
+        }
+
+        let view = unsafe {
+            device
+                .device
+                .create_buffer_view(&create_info, GLOBAL)
+                .map_err(|_| ())? // TODO: error handling
+        };
+
+        Ok(view)
     }
 }
 
@@ -123,19 +181,53 @@ impl Buffer {
         Ok(())
     }
 
+    pub(crate) fn get_buffer_view(
+        &self,
+        device: &Device,
+        desc: &BufferViewDesc,
+    ) -> Result<BufferView, ()> {
+        let mut views = self.views.lock();
+
+        let view = if let Some(view) = views.get(desc) {
+            *view
+        } else {
+            let view = self.create_view_for_usage(device, desc)?;
+            views.insert(desc.clone(), view);
+            view
+        };
+
+        unsafe { Ok(std::mem::transmute::<_, BufferView>(view)) }
+    }
+
     pub(crate) fn flush_buffer_range(&self, device: &Device, offset: u64, len: u64) {
         unsafe {
+            // Get the offset within the memory block this buffer belongs to.
             let memory_offset = self
                 .allocation
                 .as_ref()
                 .map(|v| v.block_offset() as u64)
                 .unwrap_or(0);
-            let offset = memory_offset + offset;
-            let size = len.min(self.desc().size);
+
+            // This is the end of the memory region this buffer occupies within the memory block.
+            let memory_end = memory_offset + self.desc().size;
+
+            // The true offset we give to vulkan is the offset within the block, not the offset from
+            // the start of this buffer.
+            let true_offset = memory_offset + offset;
+
+            // We clip the input 'len' to the end of the buffer. This works by extending from
+            // 'true_offset' by the requested length to find the virtual extent of the requested
+            // range. We then clip the virtual range to the actual end of the buffer within the
+            // memory block. The length of the clipped region is simply the difference between the
+            // clipped end and the start of the range.
+            let true_end = true_offset.saturating_add(len);
+            let true_end = true_end.min(memory_end);
+            let true_len = true_end - true_offset;
+
             let ranges = [vk::MappedMemoryRange {
                 memory: self.memory,
-                offset,
-                size,
+                offset: true_offset,
+                size: true_len,
                 ..Default::default()
             }];
             device.device.flush_mapped_memory_ranges(&ranges).unwrap();
@@ -144,17 +236,33 @@ impl Buffer {
 
     pub(crate) fn invalidate_buffer_range(&self, device: &Device, offset: u64, len: u64) {
         unsafe {
+            // Get the offset within the memory block this buffer belongs to.
             let memory_offset = self
                 .allocation
                 .as_ref()
                 .map(|v| v.block_offset() as u64)
                 .unwrap_or(0);
-            let offset = memory_offset + offset;
-            let size = len.min(self.desc().size);
+
+            // This is the end of the memory region this buffer occupies within the memory block.
+            let memory_end = memory_offset + self.desc().size;
+
+            // The true offset we give to vulkan is the offset within the block, not the offset from
+            // the start of this buffer.
+            let true_offset = memory_offset + offset;
+
+            // We clip the input 'len' to the end of the buffer. This works by extending from
+            // 'true_offset' by the requested length to find the virtual extent of the requested
+            // range. We then clip the virtual range to the actual end of the buffer within the
+            // memory block. The length of the clipped region is simply the difference between the
+            // clipped end and the start of the range.
+            let true_end = true_offset.saturating_add(len);
+            let true_end = true_end.min(memory_end);
+            let true_len = true_end - true_offset;
+
             let ranges = [vk::MappedMemoryRange {
                 memory: self.memory,
-                offset,
-                size,
+                offset: true_offset,
+                size: true_len,
                 ..Default::default()
             }];
             device
@@ -168,6 +276,10 @@ impl Buffer {
 impl Drop for Buffer {
     fn drop(&mut self) {
         abort_on_unwind(|| unsafe {
+            for (_desc, view) in self.views.get_mut().drain() {
+                self._device.device.destroy_buffer_view(view, GLOBAL);
+            }
+
             self._device.device.destroy_buffer(self.buffer, GLOBAL);
             self._device
                 .allocator

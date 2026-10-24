@@ -96,22 +96,33 @@ impl Texture {
     }
 
     pub(crate) fn get_rtv(&self, device: &Device, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        self.get_rtv_or_dsv(device, desc, vk::ImageUsageFlags::COLOR_ATTACHMENT)
+        self.get_rtv_or_dsv(
+            &self.rtvs,
+            device,
+            desc,
+            vk::ImageUsageFlags::COLOR_ATTACHMENT,
+        )
     }
 
     pub(crate) fn get_dsv(&self, device: &Device, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        self.get_rtv_or_dsv(device, desc, vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT)
+        self.get_rtv_or_dsv(
+            &self.dsvs,
+            device,
+            desc,
+            vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT,
+        )
     }
 }
 
 impl Texture {
     fn get_rtv_or_dsv(
         &self,
+        views: &Mutex<BHashMap<ImageViewDesc, vk::ImageView, RhiRoot>>,
         device: &Device,
         desc: &ImageViewDesc,
         usage: vk::ImageUsageFlags,
     ) -> Result<ImageView, ()> {
-        let mut views = self.dsvs.lock();
+        let mut views = views.lock();
 
         let view = if let Some(view) = views.get(desc) {
             *view

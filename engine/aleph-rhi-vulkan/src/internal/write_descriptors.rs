@@ -68,7 +68,16 @@ pub fn translate_descriptor_writes<'a, A: Allocator + Copy + 'a>(
                 let buffer_infos = BVec::leak(buffer_infos);
                 new_write = new_write.buffer_info(buffer_infos);
             }
-            ParameterType::Buffer | ParameterType::RWBuffer => todo!(),
+            ParameterType::Buffer | ParameterType::RWBuffer => {
+                let translator = v
+                    .writes
+                    .iter()
+                    .map(|v| unsafe { texture_buffer_write_mapper(v) });
+                let mut buffer_views = BVec::new_in(a);
+                buffer_views.extend(translator);
+                let buffer_views = BVec::leak(buffer_views);
+                new_write = new_write.texel_buffer_view(buffer_views);
+            }
             ParameterType::Texture1D
             | ParameterType::RWTexture1D
             | ParameterType::Texture2D
@@ -118,6 +127,13 @@ unsafe fn buffer_write_mapper(v: &ParameterWrite) -> vk::DescriptorBufferInfo {
             .buffer(buffer.buffer)
             .offset(v.offset)
             .range(len)
+    } else {
+        unsafe { unreachable_unchecked() }
+    }
+}
+unsafe fn texture_buffer_write_mapper(v: &ParameterWrite) -> vk::BufferView {
+    if let ParameterWrite::TextureBuffer(v) = v {
+        unsafe { std::mem::transmute::<_, vk::BufferView>(v.view) }
     } else {
         unsafe { unreachable_unchecked() }
     }

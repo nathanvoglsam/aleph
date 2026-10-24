@@ -699,6 +699,7 @@ impl IDevice for Device {
                     ptr: metadata.mapped_address,
                 }),
                 desc: OwnedBufferDesc::new(desc.clone()),
+                views: Default::default(),
             };
             let out = Rhi::with(|| Object::new_arc_opaque(out));
             unsafe { Ok(BufferHandle::new(out)) }
@@ -1194,6 +1195,16 @@ impl IDevice for Device {
 
     fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError> {
         abort_on_unwind(|| Buffer::get(buffer).unmap_buffer(self))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+    fn get_buffer_view(
+        &self,
+        buffer: &BufferHandle,
+        desc: &BufferViewDesc,
+    ) -> Result<BufferView, ()> {
+        abort_on_unwind(|| Buffer::get(buffer).get_buffer_view(self, desc))
     }
 
     // ========================================================================================== //
