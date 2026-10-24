@@ -143,13 +143,23 @@ impl VulkanLoader {
             log::warn!("Failed to configure MoltenVK on macOS");
         }
 
+        // We require a Vulkan 1.1+ instance. This ensures the 'api_version' field in
+        // ApplicationInfo has the desired behaviour. Vulkan 1.0 instances would fail if you asked
+        // for an unsupported version in ApplicationInfo. However you couldn't really find out the
+        // supported version until you actually created the instance.
+        //
+        // 1.1 fixed this, and we require it. We may use a higher version when creating the device
+        // later, but the minimum we need to find out what's available is 1.1.
         let instance_version = unsafe {
             entry
                 .try_enumerate_instance_version()
                 .inspect_err(|v| log::error!("Platform Error: {:#?}", v))
                 .map_err(|_| ContextCreateError::Platform)?
         };
-        let instance_version = instance_version.unwrap();
+        let instance_version = instance_version.ok_or_else(|| {
+            log::error!("Vulkan Instance doesn't support Vulkan > 1.0");
+            ContextCreateError::Platform
+        })?;
         if vk::api_version_major(instance_version) < 1 {
             log::error!("Vulkan Instance doesn't support Vulkan 1.x");
             return Err(ContextCreateError::Platform);
@@ -571,6 +581,7 @@ fn diff_lists<'a>(
 }
 
 fn app_and_engine_info<'a>() -> vk::ApplicationInfo<'a> {
+    // Unconditionally ask for api_version 1.3 as that's the version we require for our _device_.
     vk::ApplicationInfo::default()
         .application_name(c"aleph-gpu")
         .application_version(vk::make_api_version(
