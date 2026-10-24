@@ -294,6 +294,8 @@ impl SwapChain {
                 .map_err(|_| SwapChainCreateError::Platform)?
         };
 
+        // We assume the number of swapchain images will not exceed 8, and create a fixed number of
+        // names accordingly.
         const SWAP_NAMES: [&NStr; 8] = [
             nstr!(obj_name!("SwapImage-0")),
             nstr!(obj_name!("SwapImage-1")),

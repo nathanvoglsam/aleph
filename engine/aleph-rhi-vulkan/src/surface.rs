@@ -134,6 +134,8 @@ impl ISurface for Surface {
                 return Err(SwapChainCreateError::NoQueueAvailable);
             }
 
+            // We assume config.buffer_count will not exceed 5, and create a fixed number of
+            // semaphore pools accordingly.
             let mut semaphore_pools = BVec::with_capacity_in(5, Default::default());
             let iter = std::iter::repeat_n((), 5).map(|_| Arc::new(SemaphorePool::new()));
             semaphore_pools.extend(iter);

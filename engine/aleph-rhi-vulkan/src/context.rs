@@ -492,11 +492,14 @@ impl IContext for Context {
                             ..Default::default()
                         };
 
-                        self.surface_loaders
-                            .macos
-                            .as_ref()
-                            .unwrap()
-                            .create_mac_os_surface(&create_info, GLOBAL)
+                        match self.surface_loaders.macos.as_ref() {
+                            None => {
+                                panic!(
+                                    "MacOS surface provided without support for VK_MVK_macos_surface"
+                                );
+                            }
+                            Some(v) => v.create_mac_os_surface(&create_info, GLOBAL),
+                        }
                     }
 
                     #[cfg(target_os = "ios")]
@@ -506,11 +509,14 @@ impl IContext for Context {
                             ..Default::default()
                         };
 
-                        self.surface_loaders
-                            .ios
-                            .as_ref()
-                            .unwrap()
-                            .create_ios_surface(&create_info, GLOBAL)
+                        match self.surface_loaders.ios.as_ref() {
+                            None => {
+                                panic!(
+                                    "iOS surface provided without support for VK_MVK_ios_surface"
+                                );
+                            }
+                            Some(v) => v.create_ios_surface(&create_info, GLOBAL),
+                        }
                     }
 
                     #[cfg(target_os = "windows")]
@@ -521,11 +527,14 @@ impl IContext for Context {
                             ..Default::default()
                         };
 
-                        self.surface_loaders
-                            .win32
-                            .as_ref()
-                            .unwrap()
-                            .create_win32_surface(&create_info, GLOBAL)
+                        match self.surface_loaders.win32.as_ref() {
+                            None => {
+                                panic!(
+                                    "Win32 surface provided without support for VK_KHR_win32_surface"
+                                );
+                            }
+                            Some(v) => v.create_win32_surface(&create_info, GLOBAL),
+                        }
                     }
 
                     _ => {
