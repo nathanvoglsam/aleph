@@ -243,9 +243,45 @@ impl SwapChain {
 
         let image_usage = vk::ImageUsageFlags::COLOR_ATTACHMENT;
         if !capabilities.supported_usage_flags.contains(image_usage) {
-            // TODO: Make this return an error
-            panic!("swap chain doesn't support all required usage flags");
+            return Err(SwapChainCreateError::UnsupportedUsage(()));
         }
+
+        // Prefer identity, but fall back to inherit if it's not available. This is probably not
+        // what you want to happen, but it's a _fallback_ for a reason.
+        //
+        // If we wanted to do this properly we would need to expose this to the client. This is
+        // mostly just a thing for mobile power efficiency.
+        let transform = 'tf: {
+            let supported = capabilities.supported_transforms;
+            if supported.contains(vk::SurfaceTransformFlagsKHR::IDENTITY) {
+                break 'tf vk::SurfaceTransformFlagsKHR::IDENTITY;
+            }
+            if supported.contains(vk::SurfaceTransformFlagsKHR::INHERIT) {
+                break 'tf vk::SurfaceTransformFlagsKHR::INHERIT;
+            }
+            unreachable!("swap chain doesn't support identity or inherit transform")
+        };
+
+        // Prefer opaque, but try other supported composite alpha modes if opaque is not available.
+        let composite_mode = 'cmp: {
+            let supported = capabilities.supported_composite_alpha;
+            if supported.contains(vk::CompositeAlphaFlagsKHR::OPAQUE) {
+                break 'cmp vk::CompositeAlphaFlagsKHR::OPAQUE;
+            }
+            if supported.contains(vk::CompositeAlphaFlagsKHR::INHERIT) {
+                log::warn!("Using non-opaque composite alpha mode");
+                break 'cmp vk::CompositeAlphaFlagsKHR::INHERIT;
+            }
+            if supported.contains(vk::CompositeAlphaFlagsKHR::POST_MULTIPLIED) {
+                log::warn!("Using non-opaque composite alpha mode");
+                break 'cmp vk::CompositeAlphaFlagsKHR::POST_MULTIPLIED;
+            }
+            if supported.contains(vk::CompositeAlphaFlagsKHR::PRE_MULTIPLIED) {
+                log::warn!("Using non-opaque composite alpha mode");
+                break 'cmp vk::CompositeAlphaFlagsKHR::PRE_MULTIPLIED;
+            }
+            unreachable!("swap chain doesn't support any known composite alpha mode");
+        };
 
         let old_swapchain = inner.swap_chain;
 
@@ -269,8 +305,8 @@ impl SwapChain {
             .image_extent(extents)
             .image_array_layers(1)
             .image_usage(image_usage)
-            .pre_transform(vk::SurfaceTransformFlagsKHR::IDENTITY)
-            .composite_alpha(vk::CompositeAlphaFlagsKHR::OPAQUE)
+            .pre_transform(transform)
+            .composite_alpha(composite_mode)
             .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
             .old_swapchain(old_swapchain)
             .clipped(true);
