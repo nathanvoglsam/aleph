@@ -83,13 +83,15 @@ impl Context {
 
             Self::log_device_info(&device_info);
 
+            let mut should_select = true;
             if vk::api_version_major(device_info.properties_10.api_version) < 1 {
                 log::debug!("Device does not support Vulkan 1.x");
-                continue;
+                should_select = false;
             }
 
             if vk::api_version_minor(device_info.properties_10.api_version) < 3 {
                 log::debug!("Device does not support Vulkan 1.3");
+                should_select = false;
             }
 
             // Check if the physical device supports the requested surface
@@ -97,11 +99,15 @@ impl Context {
                 .is_none()
             {
                 log::debug!("Device does not support the target surface");
-                continue;
+                should_select = false;
             }
 
             if Self::check_device_supports_minimum_features(&device_info).is_none() {
                 log::debug!("Device rejected as doesn't support minimum feature requirements");
+                should_select = false;
+            }
+
+            if !should_select {
                 continue;
             }
 
