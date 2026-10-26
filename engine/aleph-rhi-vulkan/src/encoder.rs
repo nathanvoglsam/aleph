@@ -495,7 +495,7 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
                                 self._device.get_queue_family_index(transition.after_queue);
                             (src_family, dst_family)
                         } else {
-                            (0, 0)
+                            (vk::QUEUE_FAMILY_IGNORED, vk::QUEUE_FAMILY_IGNORED)
                         };
 
                     translated_buffer_barriers.push(
@@ -524,7 +524,7 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
                                 self._device.get_queue_family_index(transition.after_queue);
                             (src_family, dst_family)
                         } else {
-                            (0, 0)
+                            (vk::QUEUE_FAMILY_IGNORED, vk::QUEUE_FAMILY_IGNORED)
                         };
 
                     translated_texture_barriers.push(
