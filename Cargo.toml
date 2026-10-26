@@ -76,6 +76,7 @@ members = [
     "engine/aleph-rhi-loader",
     "engine/aleph-rhi-metal",
     "engine/aleph-rhi-null",
+    "engine/aleph-rhi-tests",
     "engine/aleph-rhi-validation",
     "engine/aleph-rhi-vulkan",
     "engine/aleph-scheduler",
@@ -260,6 +261,7 @@ aleph-rhi-impl-utils = { path = "./engine/aleph-rhi-impl-utils", version = "0.1"
 aleph-rhi-loader = { path = "./engine/aleph-rhi-loader", version = "0.1" }
 aleph-rhi-metal = { path = "./engine/aleph-rhi-metal", version = "0.1" }
 aleph-rhi-null = { path = "./engine/aleph-rhi-null", version = "0.1" }
+aleph-rhi-tests = { path = "./engine/aleph-rhi-tests", version = "0.1" }
 aleph-rhi-validation = { path = "./engine/aleph-rhi-validation", version = "0.1" }
 aleph-rhi-vulkan = { path = "./engine/aleph-rhi-vulkan", version = "0.1" }
 aleph-scheduler = { path = "./engine/aleph-scheduler", version = "0.1" }

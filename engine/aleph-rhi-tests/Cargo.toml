@@ -1,0 +1,75 @@
+##
+##
+## This file is a part of Aleph
+##
+## https://github.com/nathanvoglsam/aleph
+##
+## MIT License
+##
+## Copyright (c) 2020 Aleph Engine
+##
+## Permission is hereby granted, free of charge, to any person obtaining a copy
+## of this software and associated documentation files (the "Software"), to deal
+## in the Software without restriction, including without limitation the rights
+## to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+## copies of the Software, and to permit persons to whom the Software is
+## furnished to do so, subject to the following conditions:
+##
+## The above copyright notice and this permission notice shall be included in all
+## copies or substantial portions of the Software.
+##
+## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+## SOFTWARE.
+##
+
+
+[package]
+name = "aleph-rhi-tests"
+version = "0.1.0"
+description = "Tests for aleph-rhi-api and its implementations"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
+
+[badges]
+azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
+
+[dependencies]
+aleph-rhi-api = { workspace = true }
+aleph-rhi-loader = { workspace = true }
+aleph-sdl3-link = { workspace = true }
+aleph-nstr = { workspace = true }
+sdl3 = { workspace = true }
+
+# Each 'binary' is a distinct test case or suite to run. To run the test simply invoke the binary
+# using cargo.
+#
+# The ALEPH_RHI_BACKEND environment variable can be used to select the backend to test (vulkan, d3d12, metal).
+
+[[bin]]
+name = "create_device"
+path = "bin/create_device.rs"
+
+[[bin]]
+name = "swap_chain_acquire_unused_and_present"
+path = "bin/swap_chain_acquire_unused_and_present.rs"
+
+[[bin]]
+name = "swap_chain_acquire_unused_no_present"
+path = "bin/swap_chain_acquire_unused_no_present.rs"
+
+[[bin]]
+name = "swap_chain_acquire_used_and_present"
+path = "bin/swap_chain_acquire_used_and_present.rs"
+
+[[bin]]
+name = "swap_chain_acquire_used_no_present"
+path = "bin/swap_chain_acquire_used_no_present.rs"
