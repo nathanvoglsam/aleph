@@ -29,6 +29,7 @@
 
 use std::any::TypeId;
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::abort_on_unwind;
@@ -44,6 +45,19 @@ pub struct ValidationSwapImage {
 impl IGetPlatformInterface for ValidationSwapImage {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
         None
+    }
+}
+
+impl Drop for ValidationSwapImage {
+    fn drop(&mut self) {
+        if self
+            ._swap_chain
+            .acquired
+            .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            panic!("Attempted to present an image without having first acquired one");
+        }
     }
 }
 

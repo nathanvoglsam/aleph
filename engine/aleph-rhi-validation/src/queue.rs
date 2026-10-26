@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::sync::atomic::Ordering;
 use std::sync::{Arc, Weak};
 
 use aleph_rhi_api::*;
@@ -111,13 +110,6 @@ impl IQueue for ValidationQueue {
                 self.queue_type, swap_chain.queue_support,
                 "Tried to use a swap chain on an unsupported queue"
             );
-            if swap_chain
-                .acquired
-                .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
-                .is_err()
-            {
-                panic!("Attempted to present an image without having first acquired one");
-            }
 
             let inner_swap_image = swap_image.inner.take().unwrap();
 
