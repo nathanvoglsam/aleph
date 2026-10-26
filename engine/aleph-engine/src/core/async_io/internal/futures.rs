@@ -61,6 +61,8 @@ impl<F: Future> std::future::Future for AbortUnwindFuture<F> {
 /// Future wrapper that profiles each poll of the inner future.
 pub struct ProfiledFuture<F> {
     future: F,
+
+    #[allow(dead_code)]
     name: &'static str,
 }
 
