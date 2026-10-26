@@ -34,13 +34,13 @@ use ash::vk;
 use log::{Level, log};
 
 fn message_severity_log_level(severity: vk::DebugUtilsMessageSeverityFlagsEXT) -> Level {
-    if severity == vk::DebugUtilsMessageSeverityFlagsEXT::INFO {
+    if severity.contains(vk::DebugUtilsMessageSeverityFlagsEXT::INFO) {
         Level::Debug
-    } else if severity == vk::DebugUtilsMessageSeverityFlagsEXT::WARNING {
+    } else if severity.contains(vk::DebugUtilsMessageSeverityFlagsEXT::WARNING) {
         Level::Warn
-    } else if severity == vk::DebugUtilsMessageSeverityFlagsEXT::ERROR {
+    } else if severity.contains(vk::DebugUtilsMessageSeverityFlagsEXT::ERROR) {
         Level::Error
-    } else if severity == vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE {
+    } else if severity.contains(vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE) {
         Level::Trace
     } else {
         Level::Debug
@@ -48,11 +48,11 @@ fn message_severity_log_level(severity: vk::DebugUtilsMessageSeverityFlagsEXT) -
 }
 
 fn message_type_string(mtype: vk::DebugUtilsMessageTypeFlagsEXT) -> &'static str {
-    if mtype == vk::DebugUtilsMessageTypeFlagsEXT::GENERAL {
+    if mtype.contains(vk::DebugUtilsMessageTypeFlagsEXT::GENERAL) {
         "GENERAL"
-    } else if mtype == vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION {
+    } else if mtype.contains(vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION) {
         "VALIDATION"
-    } else if mtype == vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE {
+    } else if mtype.contains(vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE) {
         "PERFORMANCE"
     } else {
         "NONE"
