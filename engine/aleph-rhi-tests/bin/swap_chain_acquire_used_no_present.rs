@@ -89,4 +89,8 @@ fn main() {
         }
         drop(image);
     }
+
+    drop(queue);
+    device.wait_idle().expect("Failed to wait for idle");
+    device.garbage_collect().expect("Failed to garbage collect");
 }

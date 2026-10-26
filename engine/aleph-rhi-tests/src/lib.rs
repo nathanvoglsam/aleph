@@ -29,7 +29,8 @@
 
 extern crate aleph_sdl3_link;
 
-mod platform_window;
+pub mod logger;
+pub mod platform_window;
 pub mod swap_chain;
 
 use std::sync::Arc;
@@ -37,6 +38,7 @@ use std::sync::Arc;
 use aleph_rhi_api::*;
 use aleph_rhi_loader::{BackendConfigs, LoaderOptions, RhiLoader};
 
+use crate::logger::LOGGER;
 use crate::platform_window::{PlatformWindow, SdlWindow};
 
 #[derive(Clone, Debug)]
@@ -91,6 +93,11 @@ pub struct TestHarness {
 
 impl TestHarness {
     pub fn new(options: &HarnessOptions) -> Self {
+        sdl3::log::set_log_priority(sdl3::log::Category::Application, sdl3::log::Priority::Trace);
+        log::set_logger(&LOGGER)
+            .map(|()| log::set_max_level(log::LevelFilter::Trace))
+            .unwrap();
+
         let sdl_window = options.swap_chain.as_ref().map(SdlWindow::new);
 
         let loader = RhiLoader::new();

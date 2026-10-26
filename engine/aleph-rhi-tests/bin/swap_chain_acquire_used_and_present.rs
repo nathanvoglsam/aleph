@@ -116,4 +116,8 @@ fn main() {
             present(queue.as_ref(), image, &mut needs_rebuild);
         }
     }
+
+    drop(queue);
+    device.wait_idle().expect("Failed to wait for idle");
+    device.garbage_collect().expect("Failed to garbage collect");
 }

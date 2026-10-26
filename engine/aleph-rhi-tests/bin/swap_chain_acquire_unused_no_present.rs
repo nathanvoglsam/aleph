@@ -62,4 +62,7 @@ fn main() {
         let image = unsafe { acquire_next_image(swap_chain.as_ref(), &mut needs_rebuild) };
         drop(image);
     }
+
+    device.wait_idle().expect("Failed to wait for idle");
+    device.garbage_collect().expect("Failed to garbage collect");
 }

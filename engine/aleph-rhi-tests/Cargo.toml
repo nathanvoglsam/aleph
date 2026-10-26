@@ -47,6 +47,7 @@ aleph-rhi-api = { workspace = true }
 aleph-rhi-loader = { workspace = true }
 aleph-sdl3-link = { workspace = true }
 aleph-nstr = { workspace = true }
+log = { workspace = true }
 sdl3 = { workspace = true }
 
 # Each 'binary' is a distinct test case or suite to run. To run the test simply invoke the binary
@@ -73,3 +74,7 @@ path = "bin/swap_chain_acquire_used_and_present.rs"
 [[bin]]
 name = "swap_chain_acquire_used_no_present"
 path = "bin/swap_chain_acquire_used_no_present.rs"
+
+[[bin]]
+name = "swap_chain_acquire_used_no_present_different_queue"
+path = "bin/swap_chain_acquire_used_no_present_different_queue.rs"
