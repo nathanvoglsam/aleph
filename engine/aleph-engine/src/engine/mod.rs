@@ -118,6 +118,7 @@ impl EngineBuilder {
 
         // This will be one of the earliest pieces of code to run in aleph engine so initialize the
         // logger here. By initializing it here then this plugin remains optional (technically)
+        sdl3::log::set_log_priority(sdl3::log::Category::Application, sdl3::log::Priority::Trace);
         log::set_logger(&LOGGER)
             .map(|()| log::set_max_level(log::LevelFilter::Trace))
             .unwrap();
