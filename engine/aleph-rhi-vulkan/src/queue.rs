@@ -33,7 +33,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
 
 use aleph_alloc::BVec;
-use aleph_alloc::instrumentation::IAllocationCategory;
+use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_nstr::nstr;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{Rhi, RhiRoot, abort_on_unwind, try_clone_value_into_slot};
@@ -48,7 +48,7 @@ use crate::internal::error_mapper::map_error_class;
 use crate::internal::queue_timing_query_manager::QueueTimingQueryManager;
 use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::unwrap;
-use crate::swap_image::SwapImage;
+use crate::swap_image::{SwapImage, WorkSemaphore};
 
 pub struct Queue {
     pub(crate) _this: Weak<Self>,
@@ -153,6 +153,375 @@ impl Queue {
         assert_ne!(old_index, u64::MAX, "last_submitted_index integer overflow");
 
         new_index
+    }
+
+    pub(crate) fn present_internal(
+        &self,
+        swap_image: &mut SwapImage,
+        presented_from_drop: bool,
+    ) -> Result<(), QueuePresentError> {
+        // TODO: swap image is unconditionally consumed by this function, but if this function fails
+        // there's no way to retry with the same image.
+        abort_on_unwind(|| {
+            let device = self._device.upgrade().unwrap();
+            let loader = device.swapchain.as_ref().unwrap();
+
+            // Checks if the queue supports present operations. While this could use a debug_assert
+            // instead like other validation code, the cost of this check compared to the cost of
+            // the present call is tiny.
+            if !swap_image
+                .swap_chain
+                .present_supported_on_queue(self.queue_type)
+            {
+                return Err(QueuePresentError::QueuePresentationNotSupported(
+                    self.queue_type,
+                ));
+            }
+
+            let is_unused = swap_image.ready_semaphore.get_mut() != &0;
+            if is_unused {
+                // This exists for two reasons:
+                // 1. To ensure that the swap image has a valid layout before presenting.
+                // 2. To handle the case where the swap image was never used in a submission,
+                //    preventing potential synchronization issues.
+                //
+                // The need for the layout transition is obvious: the swap image must be in a valid
+                // layout before it can be presented.
+                //
+                // The second reason is more subtle: if the image was never used in a submission,
+                // the 'ready semaphore' that was used with the 'acquire' operation will be unused
+                // and so the present operation won't sync with the acquire.
+                //
+                // We can kill several birds with one stone by issuing a dummy layout transition for
+                // the unused swap image, ensuring it is in a valid layout, and because we use the
+                // RHI machinery to issue the work we ensure the ready semaphore is consumed and
+                // we get a proper chain of synchronization from acquire -> work -> present.
+                //
+                // This also prevents the ready semaphore from being leaked, as without a submission
+                // consuming the semaphore nothing will return it to the pool it came from.
+                if presented_from_drop {
+                    // However, we do need to recover if the swap image was unused and _dropped_.
+                    //
+                    // In this case we do issue the dummy layout transition.
+                    //
+                    // If we did this in general, it's possible we could issue the transition and
+                    // then return from this function because the present operation itself fails.
+                    // That would trash the image, and the client would have no way to recover.
+                    //
+                    // We only do this if the swap image was dropped because it's not legal for the
+                    // client to access the image after dropping it.
+                    unsafe {
+                        self.issue_dummy_layout_transition_for_used_swap_image(swap_image)?;
+                    }
+                } else {
+                    // Strictly speaking, if the swap image was never associated with a queue
+                    // presentation then it's not legal for any GPU commands to have accessed it.
+                    //
+                    // This means nobody could have transitioned the image to the PresentSrc layout,
+                    // meaning it's not legal for it to be presented.
+                    //
+                    // Rather than try and recover internally we just panic (which will abort)
+                    // because the complexity of trying to recover from this situation is high.
+                    panic!("It is illegal to present an unused swap image.");
+                }
+            } else {
+                // If the swap image _has_, in fact, been used in a queue submission at some point
+                // then we need to handle the 'presented_from_drop' case separately.
+                //
+                // We can't just sync with the image acquire operation, we need to synchronize with
+                // all of the work that has been submitted with this image. The operation we need to
+                // do is the same, a transition from undefined -> presentsrc to guarantee the image
+                // is in the PresentSrc layout, but we need to synchronize differently.
+                if presented_from_drop {
+                    unsafe {
+                        self.issue_dummy_layout_transition_for_used_swap_image(swap_image)?;
+                    }
+                }
+            }
+
+            let swap_chain = &swap_image.swap_chain;
+            let swap_chain = swap_chain.inner.lock();
+
+            let swapchains = [swap_chain.swap_chain];
+            let image_indices = [swap_image.index];
+            let mut wait_semaphores: BVec<_, RhiRoot> = BVec::new_in(system());
+            wait_semaphores.extend(
+                swap_image
+                    .work_semaphores
+                    .get_mut()
+                    .iter()
+                    .map(|v| v.handle),
+            );
+            let info = vk::PresentInfoKHR::default()
+                .wait_semaphores(&wait_semaphores)
+                .swapchains(&swapchains)
+                .image_indices(&image_indices);
+
+            let result = unsafe {
+                let _lock = self.in_flight.lock();
+                loader.queue_present(self.handle, &info)
+            };
+
+            match result {
+                Ok(sub_optimal) => {
+                    // The semaphores have been consumed, return them to the semaphore pool.
+                    //
+                    // We don't need to wait on the present operation like with a queue submission
+                    // because the pool is specific to the image index. We implicitly sync with the
+                    // present operation because the image acquire will never give us this same
+                    // image index again until the present op is retied.
+                    let _ = swap_image.texture.take();
+                    let work_semaphores = swap_image.work_semaphores.get_mut().drain(..);
+                    for semaphore in work_semaphores {
+                        swap_image
+                            .work_semaphore_pool
+                            .push_to_recycle_queue(semaphore.handle);
+                    }
+
+                    if sub_optimal {
+                        Err(QueuePresentError::SubOptimal)
+                    } else {
+                        Ok(())
+                    }
+                }
+                Err(vk::Result::ERROR_DEVICE_LOST) => {
+                    // Device lost means the semaphores are left in an undefined state. We will
+                    // defer destruction to be managed by the queue via normal garbage collection.
+                    let _ = swap_image.texture.take();
+                    let work_semaphores = swap_image.work_semaphores.get_mut().drain(..);
+                    defer_abandoned_semapore_destruction(&device, work_semaphores);
+                    Err(QueuePresentError::DeviceLost)
+                }
+                Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => {
+                    // The semaphores have been consumed, return them to the semaphore pool.
+                    let _ = swap_image.texture.take();
+                    let work_semaphores = swap_image.work_semaphores.get_mut().drain(..);
+                    for semaphore in work_semaphores {
+                        swap_image
+                            .work_semaphore_pool
+                            .push_to_recycle_queue(semaphore.handle);
+                    }
+                    Err(QueuePresentError::OutOfDate)
+                }
+                // We don't enable the extension for this error to be possible to return. If we do
+                // enable it, we should do this.
+                // Err(vk::Result::ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT) => {
+                //     // The semaphores have been consumed, return them to the semaphore pool.
+                //     let _ = swap_image.texture.take();
+                //     let work_semaphores = swap_image.work_semaphores.get_mut().drain(..);
+                //     for semaphore in work_semaphores {
+                //         swap_image.semaphore_pool.push(semaphore.handle);
+                //     }
+                //     Err(QueuePresentError::Platform)
+                // }
+                Err(vk::Result::ERROR_SURFACE_LOST_KHR) => {
+                    // The semaphores have been consumed, return them to the semaphore pool.
+                    let _ = swap_image.texture.take();
+                    let work_semaphores = swap_image.work_semaphores.get_mut().drain(..);
+                    for semaphore in work_semaphores {
+                        swap_image
+                            .work_semaphore_pool
+                            .push_to_recycle_queue(semaphore.handle);
+                    }
+                    Err(QueuePresentError::SurfaceLost)
+                }
+                Err(vk::Result::ERROR_OUT_OF_HOST_MEMORY) => {
+                    // The semaphores have _not_ been consumed, so we need to destroy them. We defer
+                    // destruction to the queue via normal garbage collection.
+                    Err(QueuePresentError::Platform)
+                }
+                Err(vk::Result::ERROR_OUT_OF_DEVICE_MEMORY) => {
+                    // The semaphores have _not_ been consumed, so we need to destroy them. We defer
+                    // destruction to the queue via normal garbage collection.
+                    Err(QueuePresentError::Platform)
+                }
+                Err(e) => abort_on_unwind(|| {
+                    log::error!("Platform Error: {:#?}", e);
+                    panic!("Unrecoverable presentation error")
+                }),
+            }
+        })
+    }
+
+    pub(crate) unsafe fn issue_dummy_layout_transition_for_used_swap_image(
+        &self,
+        swap_image: &mut SwapImage,
+    ) -> Result<(), QueuePresentError> {
+        abort_on_unwind(|| {
+            let device = self._device.upgrade().unwrap();
+
+            let desc = CommandListDesc {
+                queue_type: self.queue_type,
+                name: None,
+            };
+            let list = match device.create_command_list(&desc) {
+                Ok(list) => list,
+                Err(CommandListCreateError::NoSuchQueue(_)) => unreachable!(),
+                Err(_) => panic!("Failed to create command list"),
+            };
+            let mut list = {
+                if list.as_ref().type_id() == TypeId::of::<CommandList>() {
+                    let ptr = Box::into_raw(list);
+                    unsafe { Box::from_raw(ptr.cast::<CommandList>()) }
+                } else {
+                    panic!("Unknown ICommandList implementation")
+                }
+            };
+
+            let texture = swap_image.texture();
+            let barrier = TextureBarrier {
+                texture: Some(texture),
+                subresource_range: TextureSubResourceSet::all(device.get_texture_desc(texture)),
+                before_sync: BarrierSync::ALL,
+                after_sync: BarrierSync::ALL,
+                before_access: BarrierAccess::NONE,
+                after_access: BarrierAccess::NONE,
+                before_layout: ImageLayout::Undefined,
+                after_layout: ImageLayout::PresentSrc,
+                queue_transition: None,
+            };
+            let name = nstr!("present-unused-image-transition");
+
+            match self.queue_type {
+                QueueType::General => {
+                    let mut encoder = match list.begin_general() {
+                        Ok(v) => v,
+                        Err(_) => return Err(QueuePresentError::Platform),
+                    };
+                    unsafe {
+                        let mut encoder = encoder.begin_transfer(name);
+                        encoder.resource_barrier(&[], &[], &[barrier]);
+                        drop(encoder);
+                    }
+                }
+                QueueType::Compute => {
+                    let mut encoder = match list.begin_compute() {
+                        Ok(v) => v,
+                        Err(_) => return Err(QueuePresentError::Platform),
+                    };
+                    unsafe {
+                        let mut encoder = encoder.begin_transfer(name);
+                        encoder.resource_barrier(&[], &[], &[barrier]);
+                        drop(encoder);
+                    }
+                }
+                QueueType::Transfer => {
+                    let mut encoder = match list.begin_transfer() {
+                        Ok(v) => v,
+                        Err(_) => return Err(QueuePresentError::Platform),
+                    };
+                    unsafe {
+                        let mut encoder = encoder.begin_transfer(name);
+                        encoder.resource_barrier(&[], &[], &[barrier]);
+                        drop(encoder);
+                    }
+                }
+            }
+
+            unsafe {
+                // These semaphores are associated with queue submissions that _must_ be waited on
+                // before presenting the swap image.
+                //
+                // Or, in this case, before we stomp it with an undefined -> present src layout
+                // transition to make sure it's ready to present on the current queue.
+                let mut work_semaphores = BVec::new_in(RhiRoot::default());
+                work_semaphores.extend(swap_image.work_semaphores.get_mut().drain(..));
+
+                let mut submission = QueueSubmission {
+                    swap_ready_semaphore: vk::Semaphore::null(),
+                    swap_work_semaphores: BVec::new_in(RhiRoot::default()),
+                    swap_work_semaphore_pool: None,
+                    abandoned_semaphores: BVec::new_in(RhiRoot::default()),
+                    index: 0,
+                    lists: BVec::new_in(RhiRoot::default()),
+                };
+
+                let mut manager = SubmissionManager::default();
+                manager
+                    .handle_command_lists_unwrapped([list].into_iter(), &mut submission)
+                    .expect("Internal command submission failure");
+                manager.handle_internal_semaphores(self, &mut submission);
+                manager.handle_swap_semaphores(swap_image, self, &mut submission);
+
+                // We want to consume and wait on all the work semaphores associated with this swap
+                // image before submitting the queue. Normally these would've been waited on
+                // directly by the present operation, but we're in a fallback path that needs to do
+                // some work on a queue before issuing a present.
+                //
+                // Waiting on all the work semaphores ensures all accesses to the swap image are
+                // retired before we do our fallback crimes.
+                //
+                // What should happen is that once this loop is complete, swap_image.work_semaphores
+                // will contain only 1 semaphore, which was placed there by
+                // 'handle_swap_semaphores'. We have _taken_ the old set of work semaphores and we
+                // are adding them so the queue submission waits on them instead of the present
+                // operation they were intended to wait on.
+                for work_semaphore in work_semaphores.iter() {
+                    manager.wait_on_binary_semaphore(work_semaphore.handle);
+                }
+
+                let mut timeline_info = manager.timeline_info();
+                let info = manager.submit_info(&mut timeline_info);
+
+                let mut in_flight = self.in_flight.lock();
+                let submit_result =
+                    device
+                        .device
+                        .queue_submit(self.handle, &[info], vk::Fence::null());
+
+                let out = if let Err(err) = submit_result {
+                    match err {
+                        vk::Result::ERROR_DEVICE_LOST => {
+                            // Make sure we don't leak the work semaphores if the device is lost.
+                            submission
+                                .abandoned_semaphores
+                                .extend(work_semaphores.into_iter().map(|s| s.handle));
+                            Err(QueuePresentError::DeviceLost)
+                        }
+                        _ => {
+                            panic!("Fatal platform error: {:#?}", err);
+                        }
+                    }
+                } else {
+                    // The semaphores have been consumed, but we can't reuse them until the
+                    // submission is complete. This defers the recycling of the semaphores until the
+                    // submission has finished.
+                    submission
+                        .swap_work_semaphores
+                        .extend(work_semaphores.into_iter().map(|s| s.handle));
+
+                    Ok(())
+                };
+
+                Rhi::with(|| in_flight.push_back(submission));
+
+                out
+            }
+        })
+    }
+}
+
+fn defer_abandoned_semapore_destruction(
+    device: &Device,
+    work_semaphores: impl Iterator<Item = WorkSemaphore>,
+) {
+    for semaphore in work_semaphores {
+        let queue = match device.get_queue_internal(semaphore.queue_type) {
+            Some(v) => v,
+            None => unreachable!(),
+        };
+        let mut in_flight = queue.in_flight.lock();
+        let mut abandoned_semaphores = BVec::new_in(RhiRoot::default());
+        abandoned_semaphores.push(semaphore.handle);
+        let submission = QueueSubmission {
+            swap_ready_semaphore: Default::default(),
+            swap_work_semaphores: BVec::new_in(RhiRoot::default()),
+            swap_work_semaphore_pool: None,
+            abandoned_semaphores,
+            index: semaphore.submission_index,
+            lists: BVec::new_in(RhiRoot::default()),
+        };
+        Rhi::with(|| in_flight.push_back(submission));
     }
 }
 
@@ -260,12 +629,21 @@ impl IQueue for Queue {
                     let device = self._device.upgrade().unwrap();
                     device
                         .swap_semaphore_pool
-                        .push(submission.swap_ready_semaphore);
+                        .push_immediately(submission.swap_ready_semaphore);
                 }
 
                 if let Some(pool) = submission.swap_work_semaphore_pool.as_deref() {
-                    assert!(!submission.swap_work_semaphore.is_null());
-                    pool.push(submission.swap_work_semaphore);
+                    for semaphore in submission.swap_work_semaphores {
+                        pool.push_to_recycle_queue(semaphore);
+                    }
+                } else {
+                    // If for some reason there is no pool for the swap work semaphores, we just
+                    // destroy them instead.
+                    for semaphore in submission.swap_work_semaphores {
+                        unsafe {
+                            device.device.destroy_semaphore(semaphore, GLOBAL);
+                        }
+                    }
                 }
 
                 if let Some(timing) = self.timing.as_ref() {
@@ -311,6 +689,12 @@ impl IQueue for Queue {
                         }
                     }
                 }
+
+                for semaphore in submission.abandoned_semaphores {
+                    unsafe {
+                        device.device.destroy_semaphore(semaphore, GLOBAL);
+                    }
+                }
             }
 
             if let Some(timing) = self.timing.as_ref() {
@@ -340,7 +724,7 @@ impl IQueue for Queue {
         abort_on_unwind(|| {
             let device = self._device.upgrade().unwrap();
 
-            let mut manager = SubmissionManager::new(&desc);
+            let mut manager = SubmissionManager::default();
             let submission = manager.prepare_submission(self, &mut desc)?;
 
             let mut timeline_info = manager.timeline_info();
@@ -371,59 +755,13 @@ impl IQueue for Queue {
 
     unsafe fn present(&self, swap_image: Arc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
         abort_on_unwind(|| {
-            let device = self._device.upgrade().unwrap();
-            let loader = device.swapchain.as_ref().unwrap();
-
             let mut swap_image = {
                 let v = swap_image;
                 unwrap::swap_image_owned(v)
             };
             let swap_image = Arc::get_mut(&mut swap_image).unwrap();
 
-            let swap_chain = &swap_image.swap_chain;
-
-            // Checks if the queue supports present operations. While this could use a debug_assert
-            // instead like other validation code, the cost of this check compared to the cost of
-            // the present call is tiny.
-            if !swap_chain.present_supported_on_queue(self.queue_type) {
-                return Err(QueuePresentError::QueuePresentationNotSupported(
-                    self.queue_type,
-                ));
-            }
-
-            let result = unsafe {
-                let swap_chain = swap_chain.inner.lock();
-
-                let mut wait_semaphores = BVec::new_in(Default::default());
-                std::mem::swap(
-                    Mutex::get_mut(&mut swap_image.work_semaphores),
-                    &mut wait_semaphores,
-                );
-                let swapchains = [swap_chain.swap_chain];
-                let image_indices = [swap_image.index];
-                let info = vk::PresentInfoKHR::default()
-                    .wait_semaphores(&wait_semaphores)
-                    .swapchains(&swapchains)
-                    .image_indices(&image_indices);
-
-                {
-                    let _lock = self.in_flight.lock();
-                    loader.queue_present(self.handle, &info)
-                }
-            };
-
-            match result {
-                Ok(false) => Ok(()),
-                Ok(true) => Err(QueuePresentError::SubOptimal),
-                Err(vk::Result::ERROR_DEVICE_LOST) => Err(QueuePresentError::DeviceLost),
-                Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => Err(QueuePresentError::OutOfDate),
-                Err(vk::Result::ERROR_SURFACE_LOST_KHR) => Err(QueuePresentError::SurfaceLost),
-                Err(e) => {
-                    // Coerce everything we don't explicitly handle to an error.
-                    log::error!("Platform Error: {:#?}", e);
-                    Err(QueuePresentError::Platform)
-                }
-            }
+            self.present_internal(swap_image, false)
         })
     }
 }
@@ -459,12 +797,20 @@ pub struct QueueSubmission {
     /// semaphore is known to be signalled we canreturn it to the device's semaphore pool for reuse.
     ///
     /// This semaphore will be signalled when the queue submission is complete.
-    pub swap_work_semaphore: vk::Semaphore,
+    pub swap_work_semaphores: BVec<vk::Semaphore, RhiRoot>,
 
     /// Handle to the semaphore pool we have to place the 'work' semaphores into. These will be
     /// waited by a present call which has some very inconvenient properties so they must be handled
     /// separately than the ready semaphores.
     pub swap_work_semaphore_pool: Option<Arc<SemaphorePool>>,
+
+    /// These are internal _binary_ semaphores that have been abandoned because of error conditions
+    /// leaving them without a way to be waited on. Abandoned semaphores that were signalled by the
+    /// associated submission index are added here, and should be destroyed when the submission is
+    /// retired.
+    ///
+    /// These can not be recycled.
+    pub abandoned_semaphores: BVec<vk::Semaphore, RhiRoot>,
 
     /// The index of the queue submission. Used for tracking when the work has been retired
     pub index: u64,
@@ -474,20 +820,34 @@ pub struct QueueSubmission {
     pub lists: BVec<Box<CommandList>, RhiRoot>,
 }
 
-pub struct SubmissionManager<'a> {
+pub struct SubmissionManager {
     pub wait_semaphores: BVec<vk::Semaphore, RhiRoot>,
     pub wait_values: BVec<u64, RhiRoot>,
     pub wait_dst_stage_masks: BVec<vk::PipelineStageFlags, RhiRoot>,
     pub signal_semaphores: BVec<vk::Semaphore, RhiRoot>,
     pub signal_values: BVec<u64, RhiRoot>,
     pub command_buffers: BVec<vk::CommandBuffer, RhiRoot>,
-    pub swap_image: Option<&'a SwapImage>,
 }
 
-impl<'a> SubmissionManager<'a> {
-    /// Constructs a new [`SubmissionSemaphoreManager`] with space in the internal lists reserved
-    /// based on the given queue submission description
-    pub fn new(desc: &QueueSubmitDesc<'a>) -> Self {
+impl<'a> Default for SubmissionManager {
+    fn default() -> Self {
+        Self {
+            wait_semaphores: BVec::new_in(RhiRoot::default()),
+            wait_values: BVec::new_in(RhiRoot::default()),
+            wait_dst_stage_masks: BVec::new_in(RhiRoot::default()),
+            signal_semaphores: BVec::new_in(RhiRoot::default()),
+            signal_values: BVec::new_in(RhiRoot::default()),
+            command_buffers: BVec::new_in(RhiRoot::default()),
+        }
+    }
+}
+
+impl SubmissionManager {
+    pub fn prepare_submission(
+        &mut self,
+        queue: &Queue,
+        desc: &mut QueueSubmitDesc,
+    ) -> Result<QueueSubmission, QueueSubmitError> {
         assert_eq!(desc.wait_fences.len(), desc.wait_values.len());
         assert_eq!(desc.signal_fences.len(), desc.signal_values.len());
 
@@ -507,34 +867,18 @@ impl<'a> SubmissionManager<'a> {
         let swap_signal_num = if desc.swap_image.is_some() { 1 } else { 0 };
         let signal_num = caller_signal_num + internal_signal_num + swap_signal_num;
 
-        let wait_semaphores = BVec::with_capacity_in(wait_num, RhiRoot::default());
-        let wait_values = BVec::with_capacity_in(wait_num, RhiRoot::default());
-        let wait_dst_stage_masks = BVec::with_capacity_in(wait_num, RhiRoot::default());
-        let signal_semaphores = BVec::with_capacity_in(signal_num, RhiRoot::default());
-        let signal_values = BVec::with_capacity_in(signal_num, RhiRoot::default());
-        let command_buffers = BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
-        let swap_image = desc.swap_image.map(unwrap::swap_image);
+        self.wait_semaphores = BVec::with_capacity_in(wait_num, RhiRoot::default());
+        self.wait_values = BVec::with_capacity_in(wait_num, RhiRoot::default());
+        self.wait_dst_stage_masks = BVec::with_capacity_in(wait_num, RhiRoot::default());
+        self.signal_semaphores = BVec::with_capacity_in(signal_num, RhiRoot::default());
+        self.signal_values = BVec::with_capacity_in(signal_num, RhiRoot::default());
+        self.command_buffers = BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
 
-        Self {
-            wait_semaphores,
-            wait_values,
-            wait_dst_stage_masks,
-            signal_semaphores,
-            signal_values,
-            command_buffers,
-            swap_image,
-        }
-    }
-
-    pub fn prepare_submission(
-        &mut self,
-        queue: &Queue,
-        desc: &mut QueueSubmitDesc,
-    ) -> Result<QueueSubmission, QueueSubmitError> {
         let mut submission = QueueSubmission {
             swap_ready_semaphore: vk::Semaphore::null(),
-            swap_work_semaphore: vk::Semaphore::null(),
+            swap_work_semaphores: BVec::new_in(RhiRoot::default()),
             swap_work_semaphore_pool: None,
+            abandoned_semaphores: BVec::new_in(RhiRoot::default()),
             index: 0,
             lists: BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default()),
         };
@@ -542,7 +886,9 @@ impl<'a> SubmissionManager<'a> {
         self.handle_command_lists(desc, &mut submission)?;
         self.handle_api_fences(desc);
         self.handle_internal_semaphores(queue, &mut submission);
-        self.handle_swap_semaphores(&mut submission);
+        if let Some(swap_image) = desc.swap_image.map(unwrap::swap_image) {
+            self.handle_swap_semaphores(swap_image, queue, &mut submission);
+        }
 
         Ok(submission)
     }
@@ -568,12 +914,12 @@ impl<'a> SubmissionManager<'a> {
     /// Handles adding all the command lists provided in the submission desc into both the
     /// submission tracker object as well as the internal 'vk::CommandBuffer' list that gets passed
     /// to the vk api call.
-    fn handle_command_lists(
+    fn handle_command_lists<'b>(
         &mut self,
         desc: &mut QueueSubmitDesc,
         submission: &mut QueueSubmission,
     ) -> Result<(), QueueSubmitError> {
-        for list in desc.command_lists.iter_mut() {
+        let lists = desc.command_lists.iter_mut().map(|list| {
             let list = list.take().unwrap();
             let list = {
                 if list.as_ref().type_id() == TypeId::of::<CommandList>() {
@@ -583,6 +929,20 @@ impl<'a> SubmissionManager<'a> {
                     panic!("Unknown ICommandList implementation")
                 }
             };
+            list
+        });
+        self.handle_command_lists_unwrapped(lists, submission)
+    }
+
+    /// Handles adding all the command lists provided in the submission desc into both the
+    /// submission tracker object as well as the internal 'vk::CommandBuffer' list that gets passed
+    /// to the vk api call.
+    fn handle_command_lists_unwrapped<'b>(
+        &mut self,
+        lists: impl Iterator<Item = Box<CommandList>>,
+        submission: &mut QueueSubmission,
+    ) -> Result<(), QueueSubmitError> {
+        for list in lists {
             self.command_buffers.push(list.buffer);
             submission.lists.push(list);
         }
@@ -631,26 +991,31 @@ impl<'a> SubmissionManager<'a> {
 
     /// This function handles any semaphores the swap chain system may need to insert. These are not
     /// always inserted as not all submissions will be associated with a swap image.
-    fn handle_swap_semaphores(&mut self, submission: &mut QueueSubmission) {
-        if let Some(swap_image) = self.swap_image {
-            let device = &swap_image.swap_chain.device.device;
+    fn handle_swap_semaphores(
+        &mut self,
+        swap_image: &SwapImage,
+        queue: &Queue,
+        submission: &mut QueueSubmission,
+    ) {
+        let device = &swap_image.swap_chain.device.device;
 
-            let mut wait_semaphores = swap_image.work_semaphores.lock();
+        let mut wait_semaphores = swap_image.work_semaphores.lock();
 
-            // We take the ready semaphore from the swap image, leaving a null semaphore in its
-            // place. This way only the first submission on a queue will wait on the semaphore and
-            // we don't end up waiting multiple times, which is not correct.
-            submission.swap_ready_semaphore = swap_image.take_ready_semaphore();
-            if !submission.swap_ready_semaphore.is_null() {
-                self.wait_on_binary_semaphore(submission.swap_ready_semaphore);
-            }
-
-            submission.swap_work_semaphore = unsafe { swap_image.semaphore_pool.get(device) };
-            self.signal_binary_semaphore(submission.swap_work_semaphore);
-            wait_semaphores.push(submission.swap_work_semaphore);
-
-            submission.swap_work_semaphore_pool = Some(swap_image.semaphore_pool.clone());
+        // We take the ready semaphore from the swap image, leaving a null semaphore in its
+        // place. This way only the first submission on a queue will wait on the semaphore and
+        // we don't end up waiting multiple times, which is not correct.
+        submission.swap_ready_semaphore = swap_image.take_ready_semaphore();
+        if !submission.swap_ready_semaphore.is_null() {
+            self.wait_on_binary_semaphore(submission.swap_ready_semaphore);
         }
+
+        let swap_work_semaphore = unsafe { swap_image.work_semaphore_pool.get(device) };
+        self.signal_binary_semaphore(swap_work_semaphore);
+        wait_semaphores.push(WorkSemaphore {
+            handle: swap_work_semaphore,
+            queue_type: queue.queue_type,
+            submission_index: submission.index,
+        });
     }
 
     fn wait_on_binary_semaphore(&mut self, semaphore: vk::Semaphore) {

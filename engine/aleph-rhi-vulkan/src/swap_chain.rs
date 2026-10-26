@@ -165,14 +165,15 @@ impl ISwapChain for SwapChain {
                     let texture = unsafe { TextureHandle::new(texture) };
 
                     let semaphore_pool = inner.semaphore_pools[i as usize].clone();
+                    semaphore_pool.recycle();
 
                     let swap_image = Arc::new(SwapImage {
                         swap_chain: self._this.upgrade().unwrap(),
                         index: i,
-                        texture,
+                        texture: Some(texture),
                         ready_semaphore: AtomicU64::new(ready_semaphore.as_raw()),
                         work_semaphores: Mutex::new(BVec::new_in(Default::default())),
-                        semaphore_pool,
+                        work_semaphore_pool: semaphore_pool,
                     });
                     if sub_optimal {
                         Ok(AcquiredImage::SubOptimal(swap_image))
@@ -181,23 +182,33 @@ impl ISwapChain for SwapChain {
                     }
                 }
                 Err(vk::Result::NOT_READY) => {
-                    self.device.swap_semaphore_pool.push(ready_semaphore);
+                    self.device
+                        .swap_semaphore_pool
+                        .push_immediately(ready_semaphore);
                     unimplemented!()
                 }
                 Err(vk::Result::TIMEOUT) => {
-                    self.device.swap_semaphore_pool.push(ready_semaphore);
+                    self.device
+                        .swap_semaphore_pool
+                        .push_immediately(ready_semaphore);
                     unimplemented!()
                 }
                 Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => {
-                    self.device.swap_semaphore_pool.push(ready_semaphore);
+                    self.device
+                        .swap_semaphore_pool
+                        .push_immediately(ready_semaphore);
                     Err(ImageAcquireError::OutOfDate)
                 }
                 Err(vk::Result::ERROR_SURFACE_LOST_KHR) => {
-                    self.device.swap_semaphore_pool.push(ready_semaphore);
+                    self.device
+                        .swap_semaphore_pool
+                        .push_immediately(ready_semaphore);
                     Err(ImageAcquireError::SurfaceLost)
                 }
                 Err(e) => {
-                    self.device.swap_semaphore_pool.push(ready_semaphore);
+                    self.device
+                        .swap_semaphore_pool
+                        .push_immediately(ready_semaphore);
 
                     // Coerce everything we don't explicitly handle to an error.
                     log::error!("Platform Error: {:#?}", e);
