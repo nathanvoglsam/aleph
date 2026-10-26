@@ -71,11 +71,7 @@ impl Context {
         surface: Option<vk::SurfaceKHR>,
         options: &AdapterRequestOptions,
     ) -> Option<(String, AdapterVendor, vk::PhysicalDevice)> {
-        let devices = unsafe {
-            instance
-                .enumerate_physical_devices()
-                .expect("Failed to enumerate vulkan devices")
-        };
+        let devices = unsafe { instance.enumerate_physical_devices().ok()? };
         let mut scores: Vec<(String, AdapterVendor, vk::PhysicalDevice, i32)> = Vec::new();
 
         for physical_device in devices.iter().copied() {
