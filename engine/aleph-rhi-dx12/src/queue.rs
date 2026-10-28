@@ -298,7 +298,7 @@ impl IQueue for Queue {
         })
     }
 
-    unsafe fn submit(&self, mut desc: QueueSubmitDesc) -> Result<(), QueueSubmitError> {
+    unsafe fn submit(&self, desc: QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         abort_on_unwind(|| unsafe {
             // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
             // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't

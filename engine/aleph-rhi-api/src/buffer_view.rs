@@ -138,7 +138,7 @@ impl BufferViewDesc {
         BufferViewDesc {
             format: format,
             offset: 0,
-            num_elements: desc.size / format.bytes_per_element() as u64,
+            num_elements: u64::MAX,
             writable: false,
         }
     }

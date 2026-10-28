@@ -582,6 +582,7 @@ impl IDevice for Device {
                 resource: ManuallyDrop::new(resource),
                 base_address,
                 map_state: Mutex::new(Default::default()),
+                views: Default::default(),
                 desc: OwnedBufferDesc::new(desc.clone()),
             };
             let out = Object::new_arc_opaque(out);
@@ -868,16 +869,13 @@ impl IDevice for Device {
                                 }
                             },
                             ParameterWrite::TextureBuffer(write) => unsafe {
-                                let buffer = Buffer::get(write.buffer);
-                                match v.ty {
-                                    ParameterType::Buffer => {
-                                        self.update_texel_buffer_descriptor_srv(buffer, write, dst)
-                                    }
-                                    ParameterType::RWBuffer => {
-                                        self.update_texel_buffer_descriptor_uav(buffer, write, dst)
-                                    }
-                                    _ => unreachable!(),
-                                }
+                                let src: CPUDescriptorHandle = std::mem::transmute(write.view);
+                                self.device.CopyDescriptorsSimple(
+                                    1,
+                                    dst.into(),
+                                    src.into(),
+                                    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+                                );
                             },
                         }
                     }
@@ -1048,6 +1046,17 @@ impl IDevice for Device {
 
     fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError> {
         abort_on_unwind(|| Buffer::get(buffer).unmap())
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_buffer_view(
+        &self,
+        buffer: &BufferHandle,
+        desc: &BufferViewDesc,
+    ) -> Result<BufferView, ()> {
+        abort_on_unwind(|| Buffer::get(buffer).get_view(desc))
     }
 
     // ========================================================================================== //
@@ -1590,75 +1599,6 @@ impl Device {
 
     // ========================================================================================== //
     // ========================================================================================== //
-
-    unsafe fn update_texel_buffer_descriptor_srv(
-        &self,
-        buffer: &Buffer,
-        write: &TextureBufferWrite,
-        dst: CPUDescriptorHandle,
-    ) {
-        unsafe {
-            let len = buffer.clamp_max_size_for_view(write.len);
-
-            let format = texture_format_to_dxgi(write.format);
-            let bytes_per_element = write.format.bytes_per_element();
-            let first_element = write.offset / bytes_per_element as u64;
-            let num_elements = len / bytes_per_element;
-            let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
-                Format: format,
-                ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
-                Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-                Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                    Buffer: D3D12_BUFFER_SRV {
-                        FirstElement: first_element,
-                        NumElements: num_elements,
-                        StructureByteStride: 0,
-                        Flags: Default::default(),
-                    },
-                },
-            };
-            self.device
-                .CreateShaderResourceView(buffer.resource.deref(), Some(&view), dst.into());
-        }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    unsafe fn update_texel_buffer_descriptor_uav(
-        &self,
-        buffer: &Buffer,
-        write: &TextureBufferWrite,
-        dst: CPUDescriptorHandle,
-    ) {
-        unsafe {
-            let len = buffer.clamp_max_size_for_view(write.len);
-
-            let format = texture_format_to_dxgi(write.format);
-            let bytes_per_element = write.format.bytes_per_element();
-            let first_element = write.offset / bytes_per_element as u64;
-            let num_elements = len / bytes_per_element;
-            let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
-                Format: format,
-                ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
-                Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
-                    Buffer: D3D12_BUFFER_UAV {
-                        FirstElement: first_element,
-                        NumElements: num_elements,
-                        StructureByteStride: 0,
-                        CounterOffsetInBytes: 0,
-                        Flags: Default::default(),
-                    },
-                },
-            };
-            self.device.CreateUnorderedAccessView(
-                buffer.resource.deref(),
-                None,
-                Some(&view),
-                dst.into(),
-            );
-        }
-    }
 }
 
 impl Drop for Device {
