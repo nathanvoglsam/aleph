@@ -59,7 +59,7 @@ pub struct Texture {
     pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) desc: OwnedTextureDesc,
     pub(crate) dxgi_format: DXGI_FORMAT,
-    pub(crate) views: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiRoot>>,
+    pub(crate) views: Mutex<BHashMap<ImageViewDesc, CPUDescriptorHandle, RhiRoot>>,
     pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiRoot>>,
     pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiRoot>>,
     pub(crate) image_views: Mutex<Blink>,
@@ -446,7 +446,7 @@ impl Texture {
                 .allocate()
                 .ok_or(())?;
 
-            let format = if desc.writable {
+            if desc.writable {
                 let desc = Self::make_uav_desc_for_view_desc(desc);
                 unsafe {
                     self.device.device.CreateUnorderedAccessView(
@@ -456,7 +456,6 @@ impl Texture {
                         view.into(),
                     );
                 }
-                desc.Format
             } else {
                 let desc = Self::make_srv_desc_for_view_desc(desc);
                 unsafe {
@@ -466,15 +465,14 @@ impl Texture {
                         view.into(),
                     );
                 }
-                desc.Format
-            };
+            }
 
-            let view = self.alloc_image_view(view, format);
             views.insert(desc.clone(), view);
             view
         };
 
-        unsafe { Ok(ImageView::from_raw(view.cast())) }
+        let view = unsafe { ImageView::from_raw_int(view.get_inner().get() as u64).unwrap() };
+        Ok(view)
     }
 
     pub(crate) fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
@@ -561,7 +559,7 @@ impl Drop for Texture {
         abort_on_unwind(|| {
             // Free all RTVs associated with this texture
             for (_, view) in self.views.get_mut().drain() {
-                let view = unsafe { view.as_ref().handle };
+                let view: CPUDescriptorHandle = unsafe { std::mem::transmute(view) };
                 self.device.descriptor_heaps.cpu_view_heap().free(view);
             }
 

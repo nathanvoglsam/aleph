@@ -828,8 +828,8 @@ impl IDevice for Device {
                                 // SAFETY: It is the caller's responsibility to ensure that the view
                                 //         points to a live and valid ImageViewObject. The objects
                                 //         are immutable so parallel access is safe implicitly.
-                                let src = write.image_view.into_raw::<ImageViewObject>().as_ref();
-                                let src = src.handle;
+                                let src = write.image_view;
+                                let src: CPUDescriptorHandle = std::mem::transmute(src);
 
                                 self.device.CopyDescriptorsSimple(
                                     1,
