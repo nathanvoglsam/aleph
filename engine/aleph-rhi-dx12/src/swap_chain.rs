@@ -40,7 +40,7 @@ use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use aleph_rhi_impl_utils::{
     Rhi, RhiRoot, abort_on_unwind, manually_drop, try_clone_value_into_slot,
 };
-use blink_alloc::Blink;
+use blink_alloc::{Blink, BlinkAlloc};
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -102,6 +102,11 @@ impl SwapChain {
                 name: None,
             };
             let dxgi_format = state.dxgi_format;
+            let image_views = BlinkAlloc::with_chunk_size_in(
+                size_of::<ImageViewObject>() * 8,
+                RhiRoot::default(),
+            );
+            let image_views = Blink::new_in(image_views);
             let texture = Texture {
                 device: self.device.clone(),
                 id: self.device.object_counter.next_texture(),
@@ -112,7 +117,7 @@ impl SwapChain {
                 views: Default::default(),
                 rtvs: Default::default(),
                 dsvs: Default::default(),
-                image_views: Mutex::new(Blink::with_chunk_size(size_of::<ImageViewObject>() * 8)),
+                image_views: Mutex::new(image_views),
             };
             let texture = Object::new_arc(texture);
             state.textures.push(texture);

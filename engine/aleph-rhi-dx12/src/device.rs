@@ -45,7 +45,7 @@ use aleph_rhi_impl_utils::owned_desc::{
 };
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
-use aleph_rhi_impl_utils::{Rhi, abort_on_unwind, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::{Rhi, RhiRoot, abort_on_unwind, try_clone_value_into_slot};
 use allocator_api2::alloc::Allocator;
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::{Blink, BlinkAlloc};
@@ -620,6 +620,11 @@ impl IDevice for Device {
                 set_name(&resource, name).unwrap();
             }
 
+            let image_views = BlinkAlloc::with_chunk_size_in(
+                size_of::<ImageViewObject>() * 8,
+                RhiRoot::default(),
+            );
+            let image_views = Blink::new_in(image_views);
             let out = Texture {
                 device: self.this.upgrade().unwrap(),
                 id: self.object_counter.next_texture(),
@@ -630,7 +635,7 @@ impl IDevice for Device {
                 views: Default::default(),
                 rtvs: Default::default(),
                 dsvs: Default::default(),
-                image_views: Mutex::new(Blink::with_chunk_size(size_of::<ImageViewObject>() * 8)),
+                image_views: Mutex::new(image_views),
             };
             let out = Object::new_arc_opaque(out);
             unsafe { Ok(TextureHandle::new(out)) }

@@ -40,7 +40,7 @@ use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind, try_clone_value_into_slot};
-use blink_alloc::Blink;
+use blink_alloc::{Blink, BlinkAlloc};
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -62,7 +62,7 @@ pub struct Texture {
     pub(crate) views: Mutex<BHashMap<ImageViewDesc, CPUDescriptorHandle, RhiRoot>>,
     pub(crate) rtvs: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiRoot>>,
     pub(crate) dsvs: Mutex<BHashMap<ImageViewDesc, NonNull<ImageViewObject>, RhiRoot>>,
-    pub(crate) image_views: Mutex<Blink>,
+    pub(crate) image_views: Mutex<Blink<BlinkAlloc<RhiRoot>>>,
 }
 
 unsafe_impl_iobject!(Texture, "01944eed-1f79-7102-bbe9-d7ecf341fd63");
