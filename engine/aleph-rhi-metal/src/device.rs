@@ -314,7 +314,10 @@ impl IDevice for Device {
                             let addr = src.gpu_addr.get() + v.offset;
                             cpu_handle.add(i).write(addr);
                         },
-                        ParameterWrite::TextureBuffer(_) => unimplemented!(),
+                        ParameterWrite::TextureBuffer(v) => unsafe {
+                            let id = v.view.into_raw_int();
+                            cpu_handle.add(i).write(id);
+                        },
                     }
                 }
             }
@@ -396,6 +399,17 @@ impl IDevice for Device {
 
     fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError> {
         abort_on_unwind(|| Buffer::get(buffer).unmap_buffer())
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_buffer_view(
+        &self,
+        buffer: &BufferHandle,
+        desc: &BufferViewDesc,
+    ) -> Result<BufferView, ()> {
+        abort_on_unwind(|| Buffer::get(buffer).get_buffer_view(desc))
     }
 
     // ========================================================================================== //

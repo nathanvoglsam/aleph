@@ -82,7 +82,32 @@ impl<const NUM_POOLS: usize> ShardedImageViewPool<NUM_POOLS> {
         texture: &ProtocolObject<dyn MTLTexture>,
         descriptor: &MTLTextureViewDescriptor,
     ) -> (MTLResourceID, ImageViewAllocation) {
-        self.pools[shard % NUM_POOLS].alloc(self.handles.device.as_ref(), texture, descriptor)
+        self.pools[shard % NUM_POOLS].alloc(self.handles.device.as_ref(), |pool, index| unsafe {
+            pool.setTextureView_descriptor_atIndex(texture, descriptor, index);
+        })
+    }
+
+    /// Allocate and create a buffer view in the pool for the given buffer + descriptor.
+    ///
+    /// Returns the resource ID + a handle that can be used to free the allocation with
+    /// [`ImageViewPool::free`].
+    pub fn alloc_buffer_view(
+        &self,
+        shard: usize,
+        buffer: &ProtocolObject<dyn MTLBuffer>,
+        descriptor: &MTLTextureDescriptor,
+        offset: usize,
+        bytes_per_row: usize,
+    ) -> (MTLResourceID, ImageViewAllocation) {
+        self.pools[shard % NUM_POOLS].alloc(self.handles.device.as_ref(), |pool, index| unsafe {
+            pool.setTextureViewFromBuffer_descriptor_offset_bytesPerRow_atIndex(
+                buffer,
+                descriptor,
+                offset,
+                bytes_per_row,
+                index,
+            );
+        })
     }
 
     /// Returns the allocation to the pool.
@@ -121,8 +146,7 @@ impl ImageViewPool {
     fn alloc(
         &self,
         device: &ProtocolObject<dyn MTLDevice>,
-        texture: &ProtocolObject<dyn MTLTexture>,
-        descriptor: &MTLTextureViewDescriptor,
+        writer: impl FnOnce(&ProtocolObject<dyn MTLTextureViewPool>, usize),
     ) -> (MTLResourceID, ImageViewAllocation) {
         let mut inner = self.inner.lock();
 
@@ -131,8 +155,8 @@ impl ImageViewPool {
             inner.count += 1;
 
             // Map the object index to the block, and index within that block
-            let block_index = index % BLOCK_SIZE;
-            let index_in_block = index / BLOCK_SIZE;
+            let block_index = index / BLOCK_SIZE;
+            let index_in_block = index % BLOCK_SIZE;
 
             // Get the resource ID for the slot within the block
             let block = &mut inner.blocks[block_index];
@@ -141,11 +165,7 @@ impl ImageViewPool {
             let id = unsafe { MTLResourceID::from_raw(id) };
 
             // Write the view into the pool at the correct index
-            unsafe {
-                block
-                    .pool
-                    .setTextureView_descriptor_atIndex(texture, descriptor, index_in_block);
-            }
+            writer(&block.pool, index_in_block);
 
             (id, ImageViewAllocation(index))
         } else {
@@ -157,8 +177,8 @@ impl ImageViewPool {
             inner.count += 1;
 
             // Map the object index to the block, and index within that block
-            let block_index = index % BLOCK_SIZE;
-            let index_in_block = index / BLOCK_SIZE;
+            let block_index = index / BLOCK_SIZE;
+            let index_in_block = index % BLOCK_SIZE;
 
             if let Some(block) = inner.blocks.get_mut(block_index) {
                 // If we reach here then we still have space in the block list to immediately make
@@ -170,13 +190,7 @@ impl ImageViewPool {
                 let id = unsafe { MTLResourceID::from_raw(id) };
 
                 // Write the view
-                unsafe {
-                    block.pool.setTextureView_descriptor_atIndex(
-                        texture,
-                        descriptor,
-                        index_in_block,
-                    );
-                }
+                writer(&block.pool, index_in_block);
 
                 (id, ImageViewAllocation(index))
             } else {
@@ -192,13 +206,7 @@ impl ImageViewPool {
                 let id = unsafe { MTLResourceID::from_raw(id) };
 
                 // And write the view
-                unsafe {
-                    block.pool.setTextureView_descriptor_atIndex(
-                        texture,
-                        descriptor,
-                        index_in_block,
-                    );
-                }
+                writer(&block.pool, index_in_block);
 
                 (id, ImageViewAllocation(index))
             }

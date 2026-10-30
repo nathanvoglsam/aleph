@@ -152,7 +152,7 @@ impl IQueue for Queue {
         })
     }
 
-    unsafe fn submit(&self, mut desc: QueueSubmitDesc) -> Result<(), QueueSubmitError> {
+    unsafe fn submit(&self, desc: QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         abort_on_unwind(|| {
             autoreleasepool(|_| {
                 let mut in_flight = self.in_flight.lock();
