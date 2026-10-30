@@ -42,10 +42,8 @@ rust-version.workspace = true
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies]
-once_cell = { workspace = true }
-
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-interface = { workspace = true }
 windows = { workspace = true }
+once_cell = { workspace = true }
 
