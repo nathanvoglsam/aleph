@@ -10,11 +10,9 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup-ini
     
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Layer 2 will build only the third party dependencies via into a known location
+# Layer 2 pulls the utils scripts
 FROM aleph-steamrt-base AS aleph-steamrt-workspace
 
 COPY --from=project utils /root/utils
-
-RUN /root/node-v26.12.0-linux-x64/bin/node /root/utils/3rdparty/build.mts --build-root /tmp/build --cmake-dir /root/utils/3rdparty --no-tracy
 
 WORKDIR /aleph

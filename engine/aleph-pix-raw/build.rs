@@ -38,10 +38,12 @@ cfg_select! {
                 return;
             }
 
-            let mut pkg_path = deps_path();
-            pkg_path.extend(["build", "_deps", "win_pix_event_runtime-src"]);
+            println!("cargo::rerun-if-changed=src");
+            println!("cargo::rerun-if-changed=cmake");
+            println!("cargo::rerun-if-changed=cpp");
 
-            println!("cargo::rerun-if-changed={}", pkg_path.display());
+            let mut pkg_path = cmake::Config::new("cmake").build();
+            pkg_path.extend(["build", "_deps", "win_pix_event_runtime-src"]);
 
             let include_dir = pkg_path.join("Include").join("WinPixEventRuntime");
 

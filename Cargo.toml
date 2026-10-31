@@ -125,6 +125,7 @@ uuid = { version = "1", features = ["v7"] }
 ## Build System Integration
 cargo_metadata = "0.23"
 cc = "1"
+cmake = "0.1"
 
 ## Logging and Profiling
 log = "0.4"

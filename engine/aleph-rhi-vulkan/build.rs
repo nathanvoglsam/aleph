@@ -34,11 +34,11 @@ use aleph_target::Platform;
 fn main() {
     let target_platform = Platform::build_target();
     if target_platform.is_ios() {
-        let mut framework_path = compile::deps_path();
-        framework_path.extend(["build", "_deps", "moltenvk_ios-src", "MoltenVK", "static"]);
-
         println!("cargo::rerun-if-changed=src");
-        println!("cargo::rerun-if-changed={}", framework_path.display());
+        println!("cargo::rerun-if-changed=cmake");
+
+        let mut framework_path = cmake::Config::new("cmake").build();
+        framework_path.extend(["build", "_deps", "moltenvk_ios-src", "MoltenVK", "static"]);
 
         println!(
             "cargo:rustc-link-search=framework={}",

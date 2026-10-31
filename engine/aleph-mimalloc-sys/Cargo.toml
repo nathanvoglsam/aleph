@@ -50,3 +50,5 @@ libc = { workspace = true }
 [build-dependencies]
 aleph-compile = { workspace = true }
 aleph-target = { workspace = true }
+
+cmake = { workspace = true }

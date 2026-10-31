@@ -32,17 +32,24 @@ extern crate aleph_compile as compile;
 use aleph_target::Platform;
 
 fn main() {
-    let deps_install_path = compile::deps_path().join("install");
-
     println!("cargo::rerun-if-changed=src");
-    println!("cargo::rerun-if-changed={}", deps_install_path.display());
+    println!("cargo::rerun-if-changed=cmake");
 
-    let mut lib_path = deps_install_path.join("lib");
+    let mut config = cmake::Config::new("cmake");
+    let profile = config.get_profile().to_owned();
+    let dst = config.build();
+
+    let mut lib_path = dst.join("lib");
     if !lib_path.exists() {
         // Because GNU likes to be difficult with their standard paths sometimes we get this
         // rubbish. I love making build logic more complicated!!!!
-        lib_path = deps_install_path.join("lib64");
+        lib_path = dst.join("lib64");
     }
+
+    let link_name = match profile.as_str() {
+        "Debug" | "debug" => "mimalloc-debug",
+        _ => "mimalloc",
+    };
 
     let target_platform = Platform::build_target();
 
@@ -65,7 +72,7 @@ fn main() {
                 "cargo:rustc-link-search=native={}",
                 lib_path.canonicalize().unwrap().display()
             );
-            println!("cargo::rustc-link-lib=static=mimalloc");
+            println!("cargo::rustc-link-lib=static={}", link_name);
         }
         Platform::Unknown => {
             // Do nothing on 'unknown' as a safe default.

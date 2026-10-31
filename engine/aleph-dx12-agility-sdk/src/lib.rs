@@ -29,8 +29,19 @@
 
 use std::path::{Path, PathBuf};
 
-use aleph_compile::deps_path;
 use aleph_target::{Architecture, BuildConfig, Platform};
+
+/// This function will use the cmake script to fetch the Agility SDK from the Nuget package.
+///
+/// This returns the path to the Agility SDK.
+pub fn fetch_agility_sdk() -> PathBuf {
+    println!("cargo::rerun-if-changed=src");
+    println!("cargo::rerun-if-changed=cmake");
+
+    let mut pkg_path = cmake::Config::new("cmake").build();
+    pkg_path.extend(["build", "_deps", "d3d12_agility_sdk-src", "build", "native"]);
+    pkg_path
+}
 
 ///
 /// This function will perform the necessary work to allow rust to export the `D3D12SDKVersion` and
@@ -57,7 +68,7 @@ use aleph_target::{Architecture, BuildConfig, Platform};
 ///
 /// This function will do nothing on non windows platforms.
 ///
-pub fn link_agility_symbol_def() {
+pub fn link_agility_symbol_def(pkg_location: &Path) {
     // Copy the file into a temp directory for the building exe crate so we don't lock on the
     // symbol file if multiple crates are trying to use it simultaneously.
     let out_dir = std::env::var("OUT_DIR").unwrap();
@@ -67,7 +78,7 @@ pub fn link_agility_symbol_def() {
 
     // Add the linker flag
     if Platform::build_target().is_windows() {
-        println!("cargo::rerun-if-changed={}", pkg_location().display());
+        println!("cargo::rerun-if-changed={}", pkg_location.display());
         if Platform::build_target().is_msvc() {
             println!("cargo:rustc-link-arg=/DEF:{}", def_file.display());
         } else {
@@ -81,15 +92,6 @@ pub fn link_agility_symbol_def() {
 ///
 fn def_location() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("symbols.def")
-}
-
-///
-/// Internal function which returns the location of the agility SDK .nupkg file.
-///
-fn pkg_location() -> PathBuf {
-    let mut path = deps_path();
-    path.extend(["build", "_deps", "d3d12_agility_sdk-src", "build", "native"]);
-    path
 }
 
 ///
@@ -156,7 +158,7 @@ macro_rules! export_standard_agility_sdk_symbols {
 ///
 /// - `x86_64-pc-windows-msvc`
 ///
-pub fn extract_agility_sdk_binaries() {
+pub fn extract_agility_sdk_binaries(pkg_location: &Path) {
     if Platform::build_target().is_windows() {
         let arch = match Architecture::build_target() {
             Architecture::X8664 => "x64",
@@ -164,7 +166,7 @@ pub fn extract_agility_sdk_binaries() {
             Architecture::Unknown => panic!("Unknown architecture"),
         };
 
-        let bin_dir = pkg_location().join("bin").join(arch);
+        let bin_dir = pkg_location.join("bin").join(arch);
 
         let core_dll = bin_dir.join("D3D12Core.dll");
         aleph_compile::copy_file_to_artifacts_dir(&core_dll).unwrap();

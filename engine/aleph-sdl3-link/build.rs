@@ -36,21 +36,15 @@ use aleph_target::Platform;
 /// target platforms.
 ///
 fn main() {
-    let deps_install_path = compile::deps_path().join("install");
-
     println!("cargo::rerun-if-changed=src");
-    println!("cargo::rerun-if-changed={}", deps_install_path.display());
+    println!("cargo::rerun-if-changed=cmake");
 
     let target_platform = Platform::build_target();
-
-    let lib_path = deps_install_path.join("lib");
-
     match target_platform {
         Platform::WindowsGNU | Platform::WindowsMSVC => {
-            println!(
-                "cargo:rustc-link-search=native={}",
-                lib_path.canonicalize().unwrap().display()
-            );
+            let dst = cmake::Config::new("cmake").build();
+            let dst = dst.join("lib");
+            println!("cargo:rustc-link-search=native={}", dst.display());
             println!("cargo:rustc-link-lib=static=SDL3-static");
 
             // Hand unrolled from the generated pkg-config. These are the dependencies of
@@ -70,10 +64,11 @@ fn main() {
             println!("cargo:rustc-link-lib=dinput8");
         }
         Platform::MacOS => {
-            println!(
-                "cargo:rustc-link-search=native={}",
-                lib_path.canonicalize().unwrap().display()
-            );
+            let dst = cmake::Config::new("cmake")
+                .define("CMAKE_OSX_DEPLOYMENT_TARGET", "15.0")
+                .build();
+            let dst = dst.join("lib");
+            println!("cargo:rustc-link-search=native={}", dst.display());
             println!("cargo:rustc-link-lib=static=SDL3");
 
             // Hand unrolled from the generated pkg-config. These are the dependencies of
@@ -96,18 +91,15 @@ fn main() {
         }
         Platform::Linux => {
             // Nothing has to be done on linux as the most sane choice is to use the system provided
-            // SDL3 lest we wake the horrible demons of distributing your own libraries on linux.
-            // If it's in the distro repository, get it from there as it will probably play much
-            // nicer than compiling our own.
+            // SDL3.
             println!("cargo:rustc-link-lib=dylib=SDL3");
         }
         Platform::IOS => {
-            // On iOS we link to a framework rather than directly to a binary. We just need to set
-            // the search path, the sdl3 crate handles the linker directives.
-            println!(
-                "cargo:rustc-link-search=framework={}",
-                lib_path.canonicalize().unwrap().display()
-            );
+            let dst = cmake::Config::new("cmake").build();
+            let dst = dst.join("lib");
+
+            println!("cargo:rustc-link-search=native={}", dst.display());
+            println!("cargo:rustc-link-lib=static=SDL3-static");
             todo!();
         }
         Platform::Unknown => {

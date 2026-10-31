@@ -12,10 +12,8 @@ import {spawnSync} from "node:child_process";
 
 const {values} = parseArgs({
     options: {
-        "debug-info": {type: "boolean"},
         "build-root": {type: "string"},
         "cmake-dir": {type: "string"},
-        "no-tracy": {type: "boolean"},
     },
 });
 
@@ -39,12 +37,7 @@ function main(): void {
 
     // Either resolves to the directory referenced by the ${build-root}/.aleph/deps parameter, if
     // present, or it will resolve to ${cwd}/.aleph/deps.
-    const depsDirectory = path.join(values["build-root"] ?? projectDirectory, ".aleph", "deps");
-
-    // Build for "Release" by default, but sometimes you want debug symbols for profiling.
-    const buildType = values["debug-info"] ? "RelWithDebInfo" : "Release";
-
-    const noTracy = values["no-tracy"] ? "ON" : "OFF";
+    const depsDirectory = path.join(values["build-root"] ?? projectDirectory, "build", "tools");
 
     // These are always placed in the 'deps' directory, where ever that has been configured
     const installDirectory = path.resolve(path.join(depsDirectory, "install"));
@@ -60,17 +53,14 @@ function main(): void {
     const args = [
         "-G",
         "Ninja",
-        `-DALEPH_NO_TRACY=${noTracy}`,
         `-DCMAKE_INSTALL_PREFIX=${installDirectory}`,
-        `-DCMAKE_BUILD_TYPE=${buildType}`,
-        "-DCMAKE_POSITION_INDEPENDENT_CODE=TRUE",
+        `-DCMAKE_BUILD_TYPE=Release`,
         "-DCMAKE_OSX_DEPLOYMENT_TARGET=15.0",
-        "-DCOMPILER_SUPPORTS_Werror=FALSE",
         listDir,
     ];
     run_cmake(buildDirectory, args);
-    run_cmake(buildDirectory, ["--build", "./", "--config", buildType, "--parallel"]);
-    run_cmake(buildDirectory, ["--install", "./", "--config", buildType]);
+    run_cmake(buildDirectory, ["--build", "./", "--config", "Release", "--parallel"]);
+    run_cmake(buildDirectory, ["--install", "./", "--config", "Release"]);
 }
 
 main();

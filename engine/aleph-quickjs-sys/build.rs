@@ -36,16 +36,16 @@ use aleph_target::Platform;
 /// target platforms.
 ///
 fn main() {
-    let deps_install_path = compile::deps_path().join("install");
-
     println!("cargo::rerun-if-changed=src");
-    println!("cargo::rerun-if-changed={}", deps_install_path.display());
+    println!("cargo::rerun-if-changed=cmake");
 
-    let mut lib_path = deps_install_path.join("lib");
+    let dst = cmake::Config::new("cmake").build();
+
+    let mut lib_path = dst.join("lib");
     if !lib_path.exists() {
         // Because GNU likes to be difficult with their standard paths sometimes we get this
         // rubbish. I love making build logic more complicated!!!!
-        lib_path = deps_install_path.join("lib64");
+        lib_path = dst.join("lib64");
     }
 
     let target_platform = Platform::build_target();
