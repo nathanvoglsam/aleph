@@ -179,7 +179,7 @@ pub type ShaderProjectContext<'a> = SubprojectProjectContext<'a, ShaderSubprojec
 
 #[derive(Clone, Debug)]
 pub struct ShaderProjectMeta<'a> {
-    /// Path to '.aleph/shaders'
+    /// Path to 'build/shaders'
     pub output_root: &'a Utf8Path,
 
     /// Path to the shader build system's root ninja file

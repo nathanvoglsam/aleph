@@ -135,36 +135,3 @@ pub fn copy_file_to_target_dir_with_name(source: &Path, name: &str) -> std::io::
 
     Ok(())
 }
-
-/// Attempt to locate the root '.aleph' directory for the aleph project we are building.
-///
-/// Recursively searches from [`cargo_out_dir`] all the way to the root directory.
-///
-/// # Panic
-///
-/// Will panic if no '.aleph' is found.
-pub fn dot_aleph_path() -> PathBuf {
-    let mut cursor = cargo_out_dir();
-    loop {
-        // Did we find a .aleph?
-        let maybe_dot_aleph = cursor.join(".aleph");
-        if maybe_dot_aleph.is_dir() {
-            // Yes, return it!
-            return maybe_dot_aleph;
-        }
-
-        // Otherwise try and go to a parent directory and look there instead
-        if let Some(parent) = cursor.parent() {
-            cursor = parent.to_owned();
-            continue;
-        }
-
-        // We reach this if we've gone all the way
-        panic!("Could not find '.aleph' directory");
-    }
-}
-
-/// Gets the path to the '.aleph/deps' folder that the aleph project is being built in the scope of.
-pub fn deps_path() -> PathBuf {
-    dot_aleph_path().join("deps")
-}

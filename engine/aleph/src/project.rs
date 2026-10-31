@@ -66,13 +66,16 @@ pub struct AlephProject<'a> {
     /// The path to the '.aleph' folder for this project
     dot_aleph_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/shaders' folder for this project
+    /// The path to the 'build' folder for this project
+    build_root_path: Utf8PathBuf,
+
+    /// The path to the 'build/shaders' folder for this project
     shader_build_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/assets' folder for this project
+    /// The path to the 'build/data/assets' folder for this project
     _assets_build_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/configs' folder for this project
+    /// The path to the 'build/configs' folder for this project
     configs_build_path: Utf8PathBuf,
 
     /// The path to the '.aleph/sdk/{platform}/{arch}' folder appropriate for the host system,
@@ -137,13 +140,14 @@ impl<'a> AlephProject<'a> {
         let project_file = Utf8PathBuf::try_from(project_file)?;
         let project_root = project_file.parent().unwrap().to_path_buf();
         let dot_aleph_path = project_root.join(".aleph");
+        let build_root_path = project_root.join("build");
         let cargo_toml_file = project_root.join("Cargo.toml");
         let vscode_workspace_file = project_root.join("aleph.code-workspace");
-        let cargo_target_dir = project_root.join("target");
+        let cargo_target_dir = build_root_path.join("rs").join("bin");
 
-        let shader_build_path = dot_aleph_path.join("shaders");
-        let assets_build_path = dot_aleph_path.join("data").join("assets");
-        let configs_build_path = dot_aleph_path.join("configs");
+        let shader_build_path = build_root_path.join("shaders");
+        let assets_build_path = build_root_path.join("data").join("assets");
+        let configs_build_path = build_root_path.join("configs");
 
         let mut sdk_path = dot_aleph_path.clone();
         sdk_path.push("sdk");
@@ -201,6 +205,7 @@ impl<'a> AlephProject<'a> {
             project_file,
             project_root,
             dot_aleph_path,
+            build_root_path,
             shader_build_path,
             _assets_build_path: assets_build_path,
             configs_build_path,
@@ -241,6 +246,12 @@ impl<'a> AlephProject<'a> {
     /// in the same directory as the 'aleph-project.toml' file.
     pub fn _dot_aleph_path(&self) -> &Utf8Path {
         &self.dot_aleph_path
+    }
+
+    /// The path to the 'build' directory for the current project. The build directory will be
+    /// in the same directory as the 'aleph-project.toml' file.
+    pub fn _build_root_path(&self) -> &Utf8Path {
+        &self.build_root_path
     }
 
     /// Returns the path to the folder that contains the `shaders` directory that will be used as
@@ -656,6 +667,10 @@ impl<'a> AlephProject<'a> {
         // Create the .aleph folder if it doesn't already exist
         std::fs::create_dir_all(&self.dot_aleph_path)
             .context("Creating .aleph directory if missing")?;
+
+        // Create the build folder if it doesn't already exist
+        std::fs::create_dir_all(&self.build_root_path)
+            .context("Creating 'build' directory if missing")?;
 
         Ok(())
     }

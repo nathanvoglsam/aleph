@@ -35,13 +35,13 @@ function run_cmake(cwd: string, args: string[]) {
 function main(): void {
     const projectDirectory = process.cwd();
 
-    // Either resolves to the directory referenced by the ${build-root}/.aleph/deps parameter, if
-    // present, or it will resolve to ${cwd}/.aleph/deps.
-    const depsDirectory = path.join(values["build-root"] ?? projectDirectory, "build", "tools");
+    // Either resolves to the directory referenced by the ${build-root}/build/tools parameter, if
+    // present, or it will resolve to ${cwd}/build/tools.
+    const toolsDirectory = path.join(values["build-root"] ?? projectDirectory, "build", "tools");
 
     // These are always placed in the 'deps' directory, where ever that has been configured
-    const installDirectory = path.resolve(path.join(depsDirectory, "install"));
-    const buildDirectory = path.resolve(path.join(depsDirectory, "build"));
+    const installDirectory = path.resolve(path.join(toolsDirectory, "install"));
+    const buildDirectory = path.resolve(path.join(toolsDirectory, "build"));
 
     // However, we do need to find the CMakeLists.txt. We still assume we're running from the root
     // of an aleph workspace!

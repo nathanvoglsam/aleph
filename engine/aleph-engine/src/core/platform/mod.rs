@@ -515,11 +515,11 @@ fn select_shaders_mount(
             shader_candidate.push(Utf8PathBuf::from(override_dir));
         }
         None => {
-            // First guess we're running from an aleph workspace, and try .aleph/shaders
-            shader_candidate.push(Utf8PathBuf::from(".aleph/shaders"));
+            // First guess we're running from an aleph workspace, and try build/shaders
+            shader_candidate.push(Utf8PathBuf::from("build/shaders"));
 
             // Otherwise assume we're in a packaged build and try the ./shaders folder
-            shader_candidate.push(Utf8PathBuf::from("./shaders"));
+            shader_candidate.push(Utf8PathBuf::from("shaders"));
         }
     }
     for candidate in shader_candidate {
@@ -544,7 +544,7 @@ fn select_assets_mount(
         }
         None => {
             // Assume we're in a packaged build and try the ./shaders folder
-            shader_candidate.push(Utf8PathBuf::from("./assets"));
+            shader_candidate.push(Utf8PathBuf::from("assets"));
         }
     }
     for candidate in shader_candidate {

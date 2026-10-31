@@ -327,12 +327,12 @@ impl<'a> From<qjs::Exception<'a>> for RunConfigError {
 ///
 /// - `${CWD}/{folder}`
 /// - `${EXE_DIR}/{folder}`
-/// - `${CWD}/.aleph/{folder}`
+/// - `${CWD}/build/{folder}`
 ///
 /// # Info
 ///
 /// This function will search in the 'cwd' and adjacent to the game executable first before guessing
-/// we're running in a development environment and trying the '.aleph/data' folder directory. This
+/// we're running in a development environment and trying the 'build/data' folder directory. This
 /// does bake our project layout in as an expectation but it's good enough.
 ///
 fn find_folder_in_search_path(folder: &str) -> io::Result<Utf8PathBuf> {
@@ -353,9 +353,9 @@ fn find_folder_in_search_path(folder: &str) -> io::Result<Utf8PathBuf> {
         return Ok(exe_dir_config);
     }
 
-    let dot_aleph_dir_config = cwd.join(".aleph").join(folder);
-    if dot_aleph_dir_config.is_dir() {
-        return Ok(dot_aleph_dir_config);
+    let build_root_dir_config = cwd.join("build").join(folder);
+    if build_root_dir_config.is_dir() {
+        return Ok(build_root_dir_config);
     }
 
     Err(io::Error::new(
