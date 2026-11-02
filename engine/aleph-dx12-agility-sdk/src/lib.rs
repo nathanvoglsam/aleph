@@ -119,7 +119,7 @@ fn def_location() -> PathBuf {
 /// #[no_mangle]
 /// #[allow(non_upper_case_globals)]
 /// /// Replace b".\\\0" with your directory to search for D3D12Core.dll
-/// pub static D3D12SDKPath: &[u8; 3] = b".\\\0";
+/// pub static D3D12SDKPath: &[u8; 3] = b".\\D3D12\\\0";
 /// ```
 ///
 /// See the D3D12 Agility SDK documentation for information on what these values mean and can be
@@ -136,7 +136,7 @@ macro_rules! export_standard_agility_sdk_symbols {
         #[used]
         #[unsafe(no_mangle)]
         #[allow(non_upper_case_globals)]
-        pub static D3D12SDKPath: &[u8; 3] = b".\\\0";
+        pub static D3D12SDKPath: &[u8; 3] = b".\\D3D12\\\0";
     };
 }
 
@@ -160,30 +160,39 @@ macro_rules! export_standard_agility_sdk_symbols {
 ///
 pub fn extract_agility_sdk_binaries(pkg_location: &Path) {
     if Platform::build_target().is_windows() {
+        let build_root = if let Some(v) = aleph_compile::build_root() {
+            v
+        } else {
+            return;
+        };
+
         let arch = match Architecture::build_target() {
             Architecture::X8664 => "x64",
             Architecture::AARCH64 => "arm64",
             Architecture::Unknown => panic!("Unknown architecture"),
         };
 
+        let dst_dir = build_root.join("D3D12").join(arch);
+        std::fs::create_dir_all(&dst_dir).unwrap();
+
         let bin_dir = pkg_location.join("bin").join(arch);
 
-        let core_dll = bin_dir.join("D3D12Core.dll");
-        aleph_compile::copy_file_to_artifacts_dir(&core_dll).unwrap();
-        aleph_compile::copy_file_to_target_dir(&core_dll).unwrap();
+        let src = bin_dir.join("D3D12Core.dll");
+        let dst = dst_dir.join("D3D12Core.dll");
+        std::fs::copy(&src, &dst).unwrap();
 
-        let layers_dll = bin_dir.join("d3d12SDKLayers.dll");
-        aleph_compile::copy_file_to_artifacts_dir(&layers_dll).unwrap();
-        aleph_compile::copy_file_to_target_dir(&layers_dll).unwrap();
+        let src = bin_dir.join("d3d12SDKLayers.dll");
+        let dst = dst_dir.join("d3d12SDKLayers.dll");
+        std::fs::copy(&src, &dst).unwrap();
 
         if BuildConfig::build_target().is_debug() {
-            let core_pdb = bin_dir.join("D3D12Core.pdb");
-            aleph_compile::copy_file_to_artifacts_dir(&core_pdb).unwrap();
-            aleph_compile::copy_file_to_target_dir(&core_pdb).unwrap();
+            let src = bin_dir.join("D3D12Core.pdb");
+            let dst = dst_dir.join("D3D12Core.pdb");
+            std::fs::copy(&src, &dst).unwrap();
 
-            let layers_pdb = bin_dir.join("d3d12SDKLayers.pdb");
-            aleph_compile::copy_file_to_artifacts_dir(&layers_pdb).unwrap();
-            aleph_compile::copy_file_to_target_dir(&layers_pdb).unwrap();
+            let src = bin_dir.join("d3d12SDKLayers.pdb");
+            let dst = dst_dir.join("d3d12SDKLayers.pdb");
+            std::fs::copy(&src, &dst).unwrap();
         }
     }
 }

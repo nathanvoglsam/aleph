@@ -37,3 +37,6 @@ git-fetch-with-cli = true
 [build]
 target-dir = "build/rs/bin"
 build-dir = "build/rs/obj"
+
+[env]
+ALEPH_BUILD_ROOT = { value = "../build", relative = true }
