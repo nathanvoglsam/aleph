@@ -27,12 +27,69 @@
 // SOFTWARE.
 //
 
+use std::path::{Path, PathBuf};
+
+use aleph_target::{Architecture, Platform};
+
 pub fn main() {
-    if aleph_target::Platform::build_target().is_windows() {
+    if Platform::build_target().is_windows() {
         println!("cargo::rerun-if-changed=src");
         println!("cargo::rerun-if-changed=cmake");
 
-        let _ = cmake::Config::new("cmake").no_build_target(true).build();
-        // pkg_path.extend(["build", "_deps", "d3d12_agility_sdk-src", "build", "native"]);
+        let mut pkg_location = cmake::Config::new("cmake").no_build_target(true).build();
+        pkg_location.extend(["build", "_deps", "d3d12_agility_sdk-src", "build", "native"]);
+
+        if let Some(build_root) = aleph_compile::build_root() {
+            let arch = match Architecture::build_target() {
+                Architecture::X8664 => "x64",
+                Architecture::AARCH64 => "arm64",
+                Architecture::Unknown => panic!("Unknown architecture"),
+            };
+
+            let dst_dir = build_root.join("D3D12").join(arch);
+            std::fs::create_dir_all(&dst_dir).unwrap();
+
+            let bin_dir = pkg_location.join("bin").join(arch);
+
+            let src = bin_dir.join("D3D12Core.dll");
+            let dst = dst_dir.join("D3D12Core.dll");
+            std::fs::copy(&src, &dst).unwrap();
+
+            let src = bin_dir.join("d3d12SDKLayers.dll");
+            let dst = dst_dir.join("d3d12SDKLayers.dll");
+            std::fs::copy(&src, &dst).unwrap();
+
+            let src = bin_dir.join("D3D12Core.pdb");
+            let dst = dst_dir.join("D3D12Core.pdb");
+            std::fs::copy(&src, &dst).unwrap();
+
+            let src = bin_dir.join("d3d12SDKLayers.pdb");
+            let dst = dst_dir.join("d3d12SDKLayers.pdb");
+            std::fs::copy(&src, &dst).unwrap();
+        }
+
+        // Copy the file into a temp directory for the building exe crate so we don't lock on the
+        // symbol file if multiple crates are trying to use it simultaneously.
+        let out_dir = std::env::var("OUT_DIR").unwrap();
+        let out_dir = Path::new(&out_dir);
+        let def_file = out_dir.join("symbols.def");
+        std::fs::copy(def_location().unwrap(), &def_file).unwrap();
+
+        // Add the linker flag
+        if Platform::build_target().is_msvc() {
+            println!("cargo:rustc-link-arg=/DEF:{}", def_file.display());
+        } else {
+            println!("cargo:rustc-link-arg={}", def_file.display());
+        }
     }
+}
+
+///
+/// Internal function which returns the location of the .def file for giving to the linker
+///
+fn def_location() -> Option<PathBuf> {
+    std::env::var_os("CARGO_MANIFEST_DIR")
+        .as_deref()
+        .map(Path::new)
+        .map(|v| v.join("symbols.def"))
 }
