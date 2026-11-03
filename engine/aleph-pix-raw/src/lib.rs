@@ -29,10 +29,9 @@
 
 #![cfg(windows)]
 
-use std::env;
 use std::ffi::{CStr, OsStr};
 use std::os::windows::ffi::OsStrExt;
-use std::path::PathBuf;
+use std::{env, io};
 
 use aleph_windows::Win32::Foundation::{E_FAIL, FARPROC, HMODULE};
 use aleph_windows::Win32::System::LibraryLoader::{
@@ -78,9 +77,10 @@ pub struct PixShimFunctions {
 impl PixShimFunctions {
     /// Loads the shim DLL and resolves every exported function.
     ///
-    /// The DLL is first loaded by name from the OS DLL search path. If that fails, we look for the
-    /// well known location relative to the 'ALEPH_BUILD_ROOT' env var. This fallback is for
-    /// development builds in a cargo workspace to work.
+    /// The DLL is first loaded by name from the OS DLL search path. If that fails, we walk up the
+    /// directory tree from the exe dir looking for 'pix/<arch>/aleph_pix_shim.dll'. This assumes
+    /// we're running in an aleph cargo workspace. Terminates if we reach the root and fail to find
+    /// the library.
     ///
     /// # Safety
     ///
@@ -128,7 +128,13 @@ unsafe fn load_shim_library() -> aleph_windows::core::Result<HMODULE> {
             return module;
         }
 
-        if let Some(build_root) = env::var_os("ALEPH_BUILD_ROOT") {
+        let exe_dir = env::current_exe()?;
+        let exe_dir = exe_dir
+            .parent()
+            .ok_or(io::Error::from(io::ErrorKind::Other))?;
+
+        let mut candidate_folder = exe_dir.to_path_buf();
+        loop {
             let arch = if cfg!(target_arch = "x86_64") {
                 "x64"
             } else if cfg!(target_arch = "aarch64") {
@@ -137,7 +143,7 @@ unsafe fn load_shim_library() -> aleph_windows::core::Result<HMODULE> {
                 panic!("Unsupported architecture")
             };
 
-            let mut path = PathBuf::from(build_root);
+            let mut path = candidate_folder.clone();
             path.extend(["pix", arch, SHIM_LIBRARY_FILE_NAME]);
 
             let path = to_wide_null(path.as_os_str());
@@ -146,9 +152,14 @@ unsafe fn load_shim_library() -> aleph_windows::core::Result<HMODULE> {
                 None,
                 LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR,
             );
-        }
 
-        module
+            if module.is_ok() {
+                return module;
+            }
+            if !candidate_folder.pop() {
+                return module;
+            }
+        }
     }
 }
 
