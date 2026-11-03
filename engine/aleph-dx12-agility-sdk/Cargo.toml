@@ -42,10 +42,6 @@ rust-version.workspace = true
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies]
-aleph-compile = { workspace = true }
-aleph-target = { workspace = true }
-
 [build-dependencies]
 aleph-compile = { workspace = true }
 aleph-target = { workspace = true }
