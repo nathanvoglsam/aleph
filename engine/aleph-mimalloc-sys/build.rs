@@ -29,13 +29,21 @@
 
 extern crate aleph_compile as compile;
 
-use aleph_target::Platform;
+use aleph_target::{BuildConfig, Platform};
 
 fn main() {
     println!("cargo::rerun-if-changed=src");
     println!("cargo::rerun-if-changed=cmake");
 
     let mut config = cmake::Config::new("cmake");
+
+    // We can't build 'Debug' on Windows because we can't link with the debug C runtime
+    if Platform::build_target().is_windows() && BuildConfig::build_target().is_debug() {
+        config.profile("RelWithDebInfo");
+    } else {
+        config.profile("Release");
+    }
+
     let profile = config.get_profile().to_owned();
     let dst = config.build();
 

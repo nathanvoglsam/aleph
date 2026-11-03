@@ -29,7 +29,7 @@
 
 extern crate aleph_compile as compile;
 
-use aleph_target::Platform;
+use aleph_target::{BuildConfig, Platform};
 
 ///
 /// Main driver for compiling SDL3, handles switching between w/e implementation is needed for the
@@ -42,7 +42,16 @@ fn main() {
     let target_platform = Platform::build_target();
     match target_platform {
         Platform::WindowsGNU | Platform::WindowsMSVC => {
-            let dst = cmake::Config::new("cmake").build();
+            let mut config = cmake::Config::new("cmake");
+
+            // We can't build 'Debug' on Windows because we can't link with the debug C runtime
+            if BuildConfig::build_target().is_debug() {
+                config.profile("RelWithDebInfo");
+            } else {
+                config.profile("Release");
+            }
+
+            let dst = config.build();
             let dst = dst.join("lib");
             println!("cargo:rustc-link-search=native={}", dst.display());
             println!("cargo:rustc-link-lib=static=SDL3-static");
