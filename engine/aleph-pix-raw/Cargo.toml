@@ -43,6 +43,9 @@ build = "build.rs"
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
+[target.'cfg(windows)'.dependencies]
+aleph-windows = { workspace = true }
+
 [target.'cfg(windows)'.build-dependencies]
 cc = { workspace = true }
 cmake = { workspace = true }

@@ -30,7 +30,6 @@
 cfg_select! {
     windows => {
         fn main() {
-            use aleph_compile::deps_path;
             use aleph_target::{Architecture, Platform};
 
             if !Platform::build_target().is_windows() {
@@ -42,7 +41,10 @@ cfg_select! {
             println!("cargo::rerun-if-changed=cmake");
             println!("cargo::rerun-if-changed=cpp");
 
-            let mut pkg_path = cmake::Config::new("cmake").build();
+            let mut config = cmake::Config::new("cmake");
+            config.no_build_target(true);
+
+            let mut pkg_path = config.build();
             pkg_path.extend(["build", "_deps", "win_pix_event_runtime-src"]);
 
             let include_dir = pkg_path.join("Include").join("WinPixEventRuntime");
@@ -68,7 +70,9 @@ cfg_select! {
                 true
             };
 
-            if should_link {
+            if let Some(build_root) = aleph_compile::build_root()
+                && should_link
+            {
                 let arch = match Architecture::build_target() {
                     Architecture::X8664 => "x64",
                     Architecture::AARCH64 => "ARM64",
@@ -76,10 +80,13 @@ cfg_select! {
                 };
 
                 let bin_dir = pkg_path.join("bin").join(arch);
+                let dst_dir = build_root.join("pix").join(arch);
 
-                let dll_path = bin_dir.join("WinPixEventRuntime.dll");
-                aleph_compile::copy_file_to_artifacts_dir(&dll_path).unwrap();
-                aleph_compile::copy_file_to_target_dir(&dll_path).unwrap();
+                std::fs::create_dir_all(&dst_dir).unwrap();
+
+                let src = dbg!(bin_dir.join("WinPixEventRuntime.dll"));
+                let dst = dbg!(dst_dir.join("WinPixEventRuntime.dll"));
+                std::fs::copy(&src, &dst).unwrap();
 
                 let link_path_full = bin_dir.canonicalize().unwrap();
                 println!(
