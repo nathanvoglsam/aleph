@@ -31,14 +31,9 @@ use std::path::{Path, PathBuf};
 
 use aleph_target::{Architecture, BuildConfig, Platform};
 
-/// This function will use the cmake script to fetch the Agility SDK from the Nuget package.
-///
 /// This returns the path to the Agility SDK.
-pub fn fetch_agility_sdk() -> PathBuf {
-    println!("cargo::rerun-if-changed=src");
-    println!("cargo::rerun-if-changed=cmake");
-
-    let mut pkg_path = cmake::Config::new("cmake").build();
+pub fn agility_sdk_path() -> PathBuf {
+    let mut pkg_path = PathBuf::from(env!("OUT_DIR"));
     pkg_path.extend(["build", "_deps", "d3d12_agility_sdk-src", "build", "native"]);
     pkg_path
 }
@@ -119,7 +114,7 @@ fn def_location() -> PathBuf {
 /// #[no_mangle]
 /// #[allow(non_upper_case_globals)]
 /// /// Replace b".\\\0" with your directory to search for D3D12Core.dll
-/// pub static D3D12SDKPath: &[u8; 3] = b".\\D3D12\\\0";
+/// pub static D3D12SDKPath: &[u8; 9] = b".\\D3D12\\\0";
 /// ```
 ///
 /// See the D3D12 Agility SDK documentation for information on what these values mean and can be
@@ -136,7 +131,7 @@ macro_rules! export_standard_agility_sdk_symbols {
         #[used]
         #[unsafe(no_mangle)]
         #[allow(non_upper_case_globals)]
-        pub static D3D12SDKPath: &[u8; 3] = b".\\D3D12\\\0";
+        pub static D3D12SDKPath: &[u8; 9] = b".\\D3D12\\\0";
     };
 }
 

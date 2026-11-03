@@ -32,7 +32,7 @@ use aleph_target::Platform;
 pub fn add_platform_flags() {
     if Platform::build_target().is_windows() {
         compile_and_link_windows_resource_file();
-        let pkg_location = aleph_dx12_agility_sdk::fetch_agility_sdk();
+        let pkg_location = aleph_dx12_agility_sdk::agility_sdk_path();
         aleph_dx12_agility_sdk::link_agility_symbol_def(&pkg_location);
         aleph_dx12_agility_sdk::extract_agility_sdk_binaries(&pkg_location);
     }

@@ -46,4 +46,8 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-compile = { workspace = true }
 aleph-target = { workspace = true }
 
+[build-dependencies]
+aleph-compile = { workspace = true }
+aleph-target = { workspace = true }
+
 cmake = { workspace = true }
