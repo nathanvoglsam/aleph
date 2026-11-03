@@ -44,7 +44,7 @@ rust-version.workspace = true
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies]
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 aleph-alloc = { workspace = true }
 aleph-gpu-allocator = { workspace = true }
 aleph-object-system = { workspace = true }
@@ -53,17 +53,16 @@ aleph-rhi-api = { workspace = true }
 aleph-profile = { workspace = true }
 aleph-nstr = { workspace = true }
 
-log = { workspace = true }
-crossbeam = { workspace = true }
-parking_lot = { workspace = true }
-raw-window-handle = { workspace = true }
-blink-alloc = { workspace = true }
-allocator-api2 = { workspace = true }
-
-[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 objc2 = { workspace = true }
 objc2-metal = { workspace = true }
 objc2-quartz-core = { workspace = true }
 objc2-core-foundation = { workspace = true }
 objc2-foundation = { workspace = true }
 block2 = { workspace = true }
+
+log = { workspace = true }
+crossbeam = { workspace = true }
+parking_lot = { workspace = true }
+raw-window-handle = { workspace = true }
+blink-alloc = { workspace = true }
+allocator-api2 = { workspace = true }

@@ -53,7 +53,6 @@ raw-cpuid = { workspace = true }
 ## Pull system info directly with windows APIs to minimize dependencies (and handle UWP)
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }
-utf16_lit = { workspace = true }
 
 ## Use the sys-info crate on anything that isn't windows or x86 as ain't nobody got time for that
 [target.'cfg(any(unix, not(target_arch = "x86_64")))'.dependencies]
