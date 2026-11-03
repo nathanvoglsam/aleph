@@ -128,8 +128,6 @@ pub unsafe fn emit_free_n(_ptr: *mut u8, _name: &'static std::ffi::CStr) {
 pub mod detail {
     use core::ffi::CStr;
 
-    use aleph_pix::raw;
-
     use crate::ProfileDataParam;
 
     pub struct Guard;
@@ -138,7 +136,7 @@ pub mod detail {
         #[inline(always)]
         pub fn new(name: &'static CStr) -> Self {
             unsafe {
-                raw::SHIM_PIXBeginEvent_N(aleph_pix::Colour::MAGENTA.into(), name.as_ptr());
+                aleph_pix::begin_event_on_thread(aleph_pix::Colour::MAGENTA, name);
             }
             Guard
         }
@@ -148,11 +146,7 @@ pub mod detail {
             if let Some(data) = data.get_cstr() {
                 // If we can cheaply get the input as a cstr we're golden
                 unsafe {
-                    raw::SHIM_PIXBeginEvent_N_D(
-                        aleph_pix::Colour::MAGENTA.into(),
-                        name.as_ptr(),
-                        data.as_ptr(),
-                    );
+                    aleph_pix::begin_event_data_on_thread(aleph_pix::Colour::MAGENTA, name, data);
                 }
                 Guard
             } else {
@@ -160,10 +154,10 @@ pub mod detail {
                 //              heap? Ideal for less overhead when profiling
                 let data = data.get_cstring();
                 unsafe {
-                    raw::SHIM_PIXBeginEvent_N_D(
-                        aleph_pix::Colour::MAGENTA.into(),
-                        name.as_ptr(),
-                        data.as_ptr(),
+                    aleph_pix::begin_event_data_on_thread(
+                        aleph_pix::Colour::MAGENTA,
+                        name,
+                        data.as_c_str(),
                     );
                 }
                 Guard
@@ -175,7 +169,7 @@ pub mod detail {
         #[inline(always)]
         fn drop(&mut self) {
             unsafe {
-                raw::SHIM_PIXEndEvent_N();
+                aleph_pix::end_event_on_thread();
             }
         }
     }

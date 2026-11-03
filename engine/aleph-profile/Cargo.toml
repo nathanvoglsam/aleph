@@ -29,6 +29,7 @@ profile-with-tracy = [
 ]
 profile-with-pix = [
     "aleph-pix",
+    "aleph-pix?/enabled",
     "aleph-profile-procmacros?/profile-with-pix",
 ]
 memory-callsites = []

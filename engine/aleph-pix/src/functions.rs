@@ -29,136 +29,244 @@
 
 #![allow(clippy::missing_safety_doc)]
 
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 
-use raw::*;
+#[cfg(feature = "enabled")]
+use raw::PixShimFunctions;
 use windows::Win32::Graphics::Direct3D12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
 
 use crate::Colour;
 
 ///
-/// Returns whether the PIX library is linked and ready to use.
+/// The PIX shim DLL, loaded on first use. `None` if the DLL could not be loaded, in which case
+/// every marker function is a no-op.
 ///
-/// If this function returns true, then the binary has linked to PIX3 and the functionality should
-/// be available. If this function returns false, the binary is not linked to PIX3 and all functions
-/// simply call no-op stubs that do nothing.
-///
-/// This function should be used to avoid calling the functions this library exposes when PIX3 is
-/// not available.
-///
-#[inline(always)]
-pub fn is_library_available() -> bool {
-    // Safety: Function is pure and has no safety requirements to meet
-    unsafe { SHIM_IsLibraryAvailable() == 1 }
-}
+#[cfg(feature = "enabled")]
+static PIX: std::sync::LazyLock<Option<PixShimFunctions>> =
+    std::sync::LazyLock::new(|| unsafe { PixShimFunctions::load().ok() });
 
-///
-/// # Safety
-///
-/// FFI Call to `PIXBeginEvent`
-///
 #[inline(always)]
-pub unsafe fn begin_event(colour: Colour, text: &str) {
+pub unsafe fn begin_event_on_thread(colour: Colour, text: &CStr) {
+    #[cfg(feature = "enabled")]
     unsafe {
-        let text = CString::new(text).unwrap();
-        SHIM_PIXBeginEvent_N(colour.into(), text.as_ptr())
+        if let Some(pix) = PIX.as_ref() {
+            (pix.begin_event_on_thread)(colour.into(), text.as_ptr())
+        }
     }
+    #[cfg(not(feature = "enabled"))]
+    let _ = (colour, text);
 }
 
-///
-/// # Safety
-///
-/// FFI Call to `PIXBeginEvent`
-///
-#[inline(always)]
-pub unsafe fn begin_event_cstr(colour: Colour, text: &CStr) {
-    unsafe { SHIM_PIXBeginEvent_N(colour.into(), text.as_ptr()) }
-}
-
-///
-/// # Safety
-///
-/// FFI Call to `PIXBeginEvent`
-///
-#[inline(always)]
-pub unsafe fn begin_event_on_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
-    context: T,
-    colour: Colour,
-    text: &str,
-) {
-    unsafe {
-        let context = context.into();
-        let text = CString::new(text).unwrap();
-        SHIM_PIXBeginEvent_CQ(
-            std::mem::transmute_copy(context),
-            colour.into(),
-            text.as_ptr(),
-        )
-    }
-}
-
-///
-/// # Safety
-///
-/// FFI Call to `PIXBeginEvent`
-///
-#[inline(always)]
-pub unsafe fn begin_event_cstr_on_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
-    context: T,
-    colour: Colour,
-    text: &CStr,
-) {
-    unsafe {
-        let context = context.into();
-        SHIM_PIXBeginEvent_CQ(
-            std::mem::transmute_copy(context),
-            colour.into(),
-            text.as_ptr(),
-        )
-    }
-}
-
-///
-/// # Safety
-///
-/// FFI Call to `PIXBeginEvent`
-///
 #[inline(always)]
 pub unsafe fn begin_event_on_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
     context: T,
     colour: Colour,
-    text: &str,
+    text: &CStr,
 ) {
+    #[cfg(feature = "enabled")]
     unsafe {
         let context = context.into();
-        let text = CString::new(text).unwrap();
-        SHIM_PIXBeginEvent_CL(
-            std::mem::transmute_copy(context),
-            colour.into(),
-            text.as_ptr(),
-        )
+        if let Some(pix) = PIX.as_ref() {
+            (pix.begin_event_on_command_list)(
+                std::mem::transmute_copy(context),
+                colour.into(),
+                text.as_ptr(),
+            )
+        }
     }
+    #[cfg(not(feature = "enabled"))]
+    let _ = (context, colour, text);
 }
 
-///
-/// # Safety
-///
-/// FFI Call to `PIXBeginEvent`
-///
 #[inline(always)]
-pub unsafe fn begin_event_cstr_on_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
+pub unsafe fn begin_event_on_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
     context: T,
     colour: Colour,
     text: &CStr,
 ) {
+    #[cfg(feature = "enabled")]
     unsafe {
         let context = context.into();
-        SHIM_PIXBeginEvent_CL(
-            std::mem::transmute_copy(context),
-            colour.into(),
-            text.as_ptr(),
-        )
+        if let Some(pix) = PIX.as_ref() {
+            (pix.begin_event_on_command_queue)(
+                std::mem::transmute_copy(context),
+                colour.into(),
+                text.as_ptr(),
+            )
+        }
     }
+    #[cfg(not(feature = "enabled"))]
+    let _ = (context, colour, text);
+}
+
+#[inline(always)]
+pub unsafe fn begin_event_data_on_thread(colour: Colour, text: &CStr, data: &CStr) {
+    #[cfg(feature = "enabled")]
+    unsafe {
+        if let Some(pix) = PIX.as_ref() {
+            (pix.begin_event_data_on_thread)(colour.into(), text.as_ptr(), data.as_ptr())
+        }
+    }
+    #[cfg(not(feature = "enabled"))]
+    let _ = (colour, text, data);
+}
+
+#[inline(always)]
+pub unsafe fn begin_event_data_on_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
+    context: T,
+    colour: Colour,
+    text: &CStr,
+    data: &CStr,
+) {
+    #[cfg(feature = "enabled")]
+    unsafe {
+        let context = context.into();
+        if let Some(pix) = PIX.as_ref() {
+            (pix.begin_event_data_on_command_list)(
+                std::mem::transmute_copy(context),
+                colour.into(),
+                text.as_ptr(),
+                data.as_ptr(),
+            )
+        }
+    }
+    #[cfg(not(feature = "enabled"))]
+    let _ = (context, colour, text, data);
+}
+
+#[inline(always)]
+pub unsafe fn begin_event_data_on_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
+    context: T,
+    colour: Colour,
+    text: &CStr,
+    data: &CStr,
+) {
+    #[cfg(feature = "enabled")]
+    unsafe {
+        let context = context.into();
+        if let Some(pix) = PIX.as_ref() {
+            (pix.begin_event_data_on_command_queue)(
+                std::mem::transmute_copy(context),
+                colour.into(),
+                text.as_ptr(),
+                data.as_ptr(),
+            )
+        }
+    }
+    #[cfg(not(feature = "enabled"))]
+    let _ = (context, colour, text, data);
+}
+
+#[inline(always)]
+pub unsafe fn set_marker_on_thread(colour: Colour, text: &CStr) {
+    #[cfg(feature = "enabled")]
+    unsafe {
+        if let Some(pix) = PIX.as_ref() {
+            (pix.set_marker_on_thread)(colour.into(), text.as_ptr())
+        }
+    }
+    #[cfg(not(feature = "enabled"))]
+    let _ = (colour, text);
+}
+
+#[inline(always)]
+pub unsafe fn set_marker_on_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
+    context: T,
+    colour: Colour,
+    text: &CStr,
+) {
+    #[cfg(feature = "enabled")]
+    unsafe {
+        let context = context.into();
+        if let Some(pix) = PIX.as_ref() {
+            (pix.set_marker_on_command_list)(
+                std::mem::transmute_copy(context),
+                colour.into(),
+                text.as_ptr(),
+            )
+        }
+    }
+    #[cfg(not(feature = "enabled"))]
+    let _ = (context, colour, text);
+}
+
+#[inline(always)]
+pub unsafe fn set_marker_on_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
+    context: T,
+    colour: Colour,
+    text: &CStr,
+) {
+    #[cfg(feature = "enabled")]
+    unsafe {
+        let context = context.into();
+        if let Some(pix) = PIX.as_ref() {
+            (pix.set_marker_on_command_queue)(
+                std::mem::transmute_copy(context),
+                colour.into(),
+                text.as_ptr(),
+            )
+        }
+    }
+    #[cfg(not(feature = "enabled"))]
+    let _ = (context, colour, text);
+}
+
+#[inline(always)]
+pub unsafe fn set_marker_data_on_thread(colour: Colour, text: &CStr, data: &CStr) {
+    #[cfg(feature = "enabled")]
+    unsafe {
+        if let Some(pix) = PIX.as_ref() {
+            (pix.set_marker_data_on_thread)(colour.into(), text.as_ptr(), data.as_ptr())
+        }
+    }
+    #[cfg(not(feature = "enabled"))]
+    let _ = (colour, text, data);
+}
+
+#[inline(always)]
+pub unsafe fn set_marker_data_on_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
+    context: T,
+    colour: Colour,
+    text: &CStr,
+    data: &CStr,
+) {
+    #[cfg(feature = "enabled")]
+    unsafe {
+        let context = context.into();
+        if let Some(pix) = PIX.as_ref() {
+            (pix.set_marker_data_on_command_list)(
+                std::mem::transmute_copy(context),
+                colour.into(),
+                text.as_ptr(),
+                data.as_ptr(),
+            )
+        }
+    }
+    #[cfg(not(feature = "enabled"))]
+    let _ = (context, colour, text, data);
+}
+
+#[inline(always)]
+pub unsafe fn set_marker_data_on_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
+    context: T,
+    colour: Colour,
+    text: &CStr,
+    data: &CStr,
+) {
+    #[cfg(feature = "enabled")]
+    unsafe {
+        let context = context.into();
+        if let Some(pix) = PIX.as_ref() {
+            (pix.set_marker_data_on_command_queue)(
+                std::mem::transmute_copy(context),
+                colour.into(),
+                text.as_ptr(),
+                data.as_ptr(),
+            )
+        }
+    }
+    #[cfg(not(feature = "enabled"))]
+    let _ = (context, colour, text, data);
 }
 
 ///
@@ -167,9 +275,12 @@ pub unsafe fn begin_event_cstr_on_list<'a, T: Into<&'a ID3D12GraphicsCommandList
 /// FFI Call to `PIXEndEvent`
 ///
 #[inline(always)]
-pub unsafe fn end_event() {
+pub unsafe fn end_event_on_thread() {
+    #[cfg(feature = "enabled")]
     unsafe {
-        SHIM_PIXEndEvent_N();
+        if let Some(pix) = PIX.as_ref() {
+            (pix.end_event_on_thread)()
+        }
     }
 }
 
@@ -180,9 +291,14 @@ pub unsafe fn end_event() {
 ///
 #[inline(always)]
 pub unsafe fn end_event_on_queue<'a, T: Into<&'a ID3D12CommandQueue>>(context: T) {
+    #[cfg(feature = "enabled")]
     unsafe {
-        SHIM_PIXEndEvent_CQ(std::mem::transmute_copy(context.into()));
+        if let Some(pix) = PIX.as_ref() {
+            (pix.end_event_on_command_queue)(std::mem::transmute_copy(context.into()))
+        }
     }
+    #[cfg(not(feature = "enabled"))]
+    let _ = context;
 }
 
 ///
@@ -192,118 +308,12 @@ pub unsafe fn end_event_on_queue<'a, T: Into<&'a ID3D12CommandQueue>>(context: T
 ///
 #[inline(always)]
 pub unsafe fn end_event_on_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(context: T) {
+    #[cfg(feature = "enabled")]
     unsafe {
-        SHIM_PIXEndEvent_CL(std::mem::transmute_copy(context.into()));
+        if let Some(pix) = PIX.as_ref() {
+            (pix.end_event_on_command_list)(std::mem::transmute_copy(context.into()))
+        }
     }
-}
-
-///
-/// # Safety
-///
-/// FFI Call to `PIXSetMarker`
-///
-#[inline(always)]
-pub unsafe fn set_marker(colour: Colour, text: &str) {
-    unsafe {
-        let text = CString::new(text).unwrap();
-        SHIM_PIXSetMarker_N(colour.into(), text.as_ptr());
-    }
-}
-
-///
-/// # Safety
-///
-/// FFI Call to `PIXSetMarker`
-///
-#[inline(always)]
-pub unsafe fn set_marker_cstr(colour: Colour, text: &CStr) {
-    unsafe {
-        SHIM_PIXSetMarker_N(colour.into(), text.as_ptr());
-    }
-}
-
-///
-/// # Safety
-///
-/// FFI Call to `PIXSetMarker`
-///
-#[inline(always)]
-pub unsafe fn set_marker_on_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
-    context: T,
-    colour: Colour,
-    text: &str,
-) {
-    unsafe {
-        let context = context.into();
-        let text = CString::new(text).unwrap();
-        SHIM_PIXSetMarker_CQ(
-            std::mem::transmute_copy(context),
-            colour.into(),
-            text.as_ptr(),
-        );
-    }
-}
-
-///
-/// # Safety
-///
-/// FFI Call to `PIXSetMarker`
-///
-#[inline(always)]
-pub unsafe fn set_marker_cstr_on_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
-    context: T,
-    colour: Colour,
-    text: &CStr,
-) {
-    unsafe {
-        let context = context.into();
-        SHIM_PIXSetMarker_CQ(
-            std::mem::transmute_copy(context),
-            colour.into(),
-            text.as_ptr(),
-        );
-    }
-}
-
-///
-/// # Safety
-///
-/// FFI Call to `PIXSetMarker`
-///
-#[inline(always)]
-pub unsafe fn set_marker_on_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
-    context: T,
-    colour: Colour,
-    text: &str,
-) {
-    unsafe {
-        let context = context.into();
-        let text = CString::new(text).unwrap();
-        SHIM_PIXSetMarker_CL(
-            std::mem::transmute_copy(context),
-            colour.into(),
-            text.as_ptr(),
-        );
-    }
-}
-
-///
-/// # Safety
-///
-/// FFI Call to `PIXSetMarker`
-///
-#[inline(always)]
-pub unsafe fn set_marker_cstr_on_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
-    context: T,
-    colour: Colour,
-    text: &CStr,
-) {
-    unsafe {
-        let context = context.into();
-        SHIM_PIXSetMarker_CL(
-            std::mem::transmute_copy(context),
-            colour.into(),
-            text.as_ptr(),
-        );
-    }
+    #[cfg(not(feature = "enabled"))]
+    let _ = context;
 }

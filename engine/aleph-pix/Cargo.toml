@@ -42,6 +42,10 @@ rust-version.workspace = true
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
+[features]
+default = []
+enabled = ["dep:aleph-pix-raw"]
+
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }
-aleph-pix-raw = { workspace = true }
+aleph-pix-raw = { workspace = true, optional = true }

@@ -33,73 +33,70 @@
 
 #include <stdint.h>
 
-extern "C" {
-    /**
-     * This is an internal utility provided to allow the rust code to query whether it's linked to the actual PIX
-     * library or the dummy noop implementation. Useful for disabling the marker code when it won't do anything.
-     * @return 1 if PIX is available, 0 if NOOP implementation
-     */
-    uint32_t SHIM_IsLibraryAvailable() {
-        return 1;
-    }
+#if defined(_MSC_VER) || defined(__MINGW32__)
+#define SHIM_API __declspec(dllexport)
+#else
+#define SHIM_API
+#endif
 
-    void SHIM_PIXBeginEvent_N(uint64_t color, const char* string) {
+extern "C" {
+    SHIM_API void SHIM_PIXBeginEventOnThread(uint64_t color, const char* string) {
         PIXBeginEvent((UINT64)color, "%s", (PCSTR)string);
     }
 
-    void SHIM_PIXSetMarker_N(uint64_t color, const char* string) {
+    SHIM_API void SHIM_PIXSetMarkerOnThread(uint64_t color, const char* string) {
         PIXSetMarker((UINT64)color, "%s", (PCSTR)string);
     }
 
-    void SHIM_PIXBeginEvent_N_D(uint64_t color, const char* string, const char* data) {
+    SHIM_API void SHIM_PIXBeginEventDataOnThread(uint64_t color, const char* string, const char* data) {
         PIXBeginEvent((UINT64)color, "%s - %s", (PCSTR)string, (PCSTR)data);
     }
 
-    void SHIM_PIXSetMarker_N_D(uint64_t color, const char* string, const char* data) {
+    SHIM_API void SHIM_PIXSetMarkerDataOnThread(uint64_t color, const char* string, const char* data) {
         PIXSetMarker((UINT64)color, "%s - %s", (PCSTR)string, (PCSTR)data);
     }
 
-    void SHIM_PIXBeginEvent_CL(void* context, uint64_t color, const char* string) {
+    SHIM_API void SHIM_PIXBeginEventOnCommandList(void* context, uint64_t color, const char* string) {
         PIXBeginEvent((ID3D12GraphicsCommandList*)context, (UINT64)color, "%s", (PCSTR)string);
     }
 
-    void SHIM_PIXBeginEvent_CQ(void* context, uint64_t color, const char* string) {
+    SHIM_API void SHIM_PIXBeginEventOnCommandQueue(void* context, uint64_t color, const char* string) {
         PIXBeginEvent((ID3D12CommandQueue*)context, (UINT64)color, "%s", (PCSTR)string);
     }
 
-    void SHIM_PIXBeginEvent_CL_D(void* context, uint64_t color, const char* string, const char* data) {
+    SHIM_API void SHIM_PIXBeginEventDataOnCommandList(void* context, uint64_t color, const char* string, const char* data) {
         PIXBeginEvent((ID3D12GraphicsCommandList*)context, (UINT64)color, "%s - %s", (PCSTR)string, (PCSTR)data);
     }
 
-    void SHIM_PIXBeginEvent_CQ_D(void* context, uint64_t color, const char* string, const char* data) {
+    SHIM_API void SHIM_PIXBeginEventDataOnCommandQueue(void* context, uint64_t color, const char* string, const char* data) {
         PIXBeginEvent((ID3D12CommandQueue*)context, (UINT64)color, "%s - %s", (PCSTR)string, (PCSTR)data);
     }
 
-    void SHIM_PIXSetMarker_CL(void* context, uint64_t color, const char* string) {
+    SHIM_API void SHIM_PIXSetMarkerOnCommandList(void* context, uint64_t color, const char* string) {
         PIXSetMarker((ID3D12GraphicsCommandList*)context, (UINT64)color, "%s", (PCSTR)string);
     }
 
-    void SHIM_PIXSetMarker_CQ(void* context, uint64_t color, const char* string) {
+    SHIM_API void SHIM_PIXSetMarkerOnCommandQueue(void* context, uint64_t color, const char* string) {
         PIXSetMarker((ID3D12CommandQueue*)context, (UINT64)color, "%s", (PCSTR)string);
     }
 
-    void SHIM_PIXSetMarker_CL_D(void* context, uint64_t color, const char* string, const char* data) {
+    SHIM_API void SHIM_PIXSetMarkerDataOnCommandList(void* context, uint64_t color, const char* string, const char* data) {
         PIXSetMarker((ID3D12GraphicsCommandList*)context, (UINT64)color, "%s - %s", (PCSTR)string, (PCSTR)data);
     }
 
-    void SHIM_PIXSetMarker_CQ_D(void* context, uint64_t color, const char* string, const char* data) {
+    SHIM_API void SHIM_PIXSetMarkerDataOnCommandQueue(void* context, uint64_t color, const char* string, const char* data) {
         PIXSetMarker((ID3D12CommandQueue*)context, (UINT64)color, "%s - %s", (PCSTR)string, (PCSTR)data);
     }
 
-    void SHIM_PIXEndEvent_N() {
+    SHIM_API void SHIM_PIXEndEventOnThread() {
         PIXEndEvent();
     }
 
-    void SHIM_PIXEndEvent_CL(void* context) {
+    SHIM_API void SHIM_PIXEndEventOnCommandList(void* context) {
         PIXEndEvent((ID3D12GraphicsCommandList*)context);
     }
 
-    void SHIM_PIXEndEvent_CQ(void* context) {
+    SHIM_API void SHIM_PIXEndEventOnCommandQueue(void* context) {
         PIXEndEvent((ID3D12CommandQueue*)context);
     }
 }

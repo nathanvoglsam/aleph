@@ -38,7 +38,6 @@ use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVi
 use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind, try_clone_value_into_slot};
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::{Blink, BlinkAlloc};
-use pix::{begin_event_cstr_on_list, end_event_on_list, set_marker_cstr_on_list};
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -805,19 +804,19 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
 
     unsafe fn __set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
         abort_on_unwind(|| unsafe {
-            set_marker_cstr_on_list(&self._list, color.0.into(), message.to_cstr());
+            pix::set_marker_on_list(&self._list, color.0.into(), message.to_cstr());
         })
     }
 
     unsafe fn __begin_event(&mut self, color: Color, message: &aleph_nstr::NStr) {
         abort_on_unwind(|| unsafe {
-            begin_event_cstr_on_list(&self._list, color.0.into(), message.to_cstr());
+            pix::begin_event_on_list(&self._list, color.0.into(), message.to_cstr());
         })
     }
 
     unsafe fn __end_event(&mut self) {
         abort_on_unwind(|| unsafe {
-            end_event_on_list(&self._list);
+            pix::end_event_on_list(&self._list);
         })
     }
 }

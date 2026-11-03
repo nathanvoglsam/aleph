@@ -29,6 +29,7 @@
 
 #![cfg(windows)]
 
+#[cfg(feature = "enabled")]
 pub extern crate aleph_pix_raw as raw;
 extern crate aleph_windows as windows;
 
@@ -36,9 +37,4 @@ mod colour;
 mod functions;
 
 pub use crate::colour::Colour;
-pub use crate::functions::{
-    begin_event, begin_event_cstr, begin_event_cstr_on_list, begin_event_cstr_on_queue,
-    begin_event_on_list, begin_event_on_queue, end_event, end_event_on_list, end_event_on_queue,
-    is_library_available, set_marker, set_marker_cstr, set_marker_cstr_on_list,
-    set_marker_cstr_on_queue, set_marker_on_list, set_marker_on_queue,
-};
+pub use crate::functions::*;

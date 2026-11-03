@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use aleph_target::BuildConfig;
+
 cfg_select! {
     windows => {
         fn main() {
@@ -39,40 +41,22 @@ cfg_select! {
 
             println!("cargo::rerun-if-changed=src");
             println!("cargo::rerun-if-changed=cmake");
-            println!("cargo::rerun-if-changed=cpp");
 
             let mut config = cmake::Config::new("cmake");
-            config.no_build_target(true);
 
-            let mut pkg_path = config.build();
+            // We can't build 'Debug' on Windows because we can't link with the debug C runtime
+            if BuildConfig::build_target().is_debug() {
+                config.profile("RelWithDebInfo");
+            } else {
+                config.profile("Release");
+            }
+
+            let cmake_path = config.build();
+
+            let mut pkg_path = cmake_path.clone();
             pkg_path.extend(["build", "_deps", "win_pix_event_runtime-src"]);
 
-            let include_dir = pkg_path.join("Include").join("WinPixEventRuntime");
-
-            // Whether we should link to WinPixEventRuntime depends on whether we used the no-op
-            // shim or not
-            let should_link = if Platform::build_target().is_gnu() {
-                cc::Build::new()
-                    .cpp(true)
-                    .link_lib_modifier("-bundle")
-                    .file("cpp/shim_noop.cpp")
-                    .flag("-w")
-                    .include(&include_dir)
-                    .compile("winpix_shim");
-                false
-            } else {
-                cc::Build::new()
-                    .cpp(true)
-                    .link_lib_modifier("-bundle")
-                    .file("cpp/shim.cpp")
-                    .include(&include_dir)
-                    .compile("winpix_shim");
-                true
-            };
-
-            if let Some(build_root) = aleph_compile::build_root()
-                && should_link
-            {
+            if let Some(build_root) = aleph_compile::build_root() {
                 let arch = match Architecture::build_target() {
                     Architecture::X8664 => "x64",
                     Architecture::AARCH64 => "ARM64",
@@ -84,16 +68,13 @@ cfg_select! {
 
                 std::fs::create_dir_all(&dst_dir).unwrap();
 
-                let src = dbg!(bin_dir.join("WinPixEventRuntime.dll"));
-                let dst = dbg!(dst_dir.join("WinPixEventRuntime.dll"));
+                let src = bin_dir.join("WinPixEventRuntime.dll");
+                let dst = dst_dir.join("WinPixEventRuntime.dll");
                 std::fs::copy(&src, &dst).unwrap();
 
-                let link_path_full = bin_dir.canonicalize().unwrap();
-                println!(
-                    "cargo:rustc-link-search=native={}",
-                    link_path_full.display()
-                );
-                println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime");
+                let src = cmake_path.join("bin").join("aleph_pix_shim.dll");
+                let dst = dst_dir.join("aleph_pix_shim.dll");
+                std::fs::copy(&src, &dst).unwrap();
             }
         }
     }
