@@ -104,6 +104,7 @@ impl ISubcommand for Bundle {
             BuildPlatform::MacOS => self.macos(project, profile, &target),
             BuildPlatform::Linux => self.linux(project, profile, &target),
             BuildPlatform::IOS => self.ios(project, profile, &target),
+            BuildPlatform::Android => unimplemented!(),
         }
     }
 }

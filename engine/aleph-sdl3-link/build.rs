@@ -111,6 +111,34 @@ fn main() {
             println!("cargo:rustc-link-lib=static=SDL3-static");
             todo!();
         }
+        Platform::Android => {
+            let android_config = compile::get_android_build_config_from_env();
+
+            let dst = cmake::Config::new("cmake")
+                .define("CMAKE_TOOLCHAIN_FILE", android_config.toolchain)
+                .define("ANDROID_ABI", android_config.abi)
+                .define(
+                    "ANDROID_PLATFORM",
+                    format!("android-{}", android_config.api),
+                )
+                .build();
+            let dst = dst.join("lib");
+            println!("cargo:rustc-link-search=native={}", dst.display());
+            println!("cargo:rustc-link-lib=static=SDL3-static");
+
+            println!("cargo:rustc-link-lib=android");
+            println!("cargo:rustc-link-lib=log");
+            println!("cargo:rustc-link-lib=dl");
+            println!("cargo:rustc-link-lib=m");
+            println!("cargo:rustc-link-lib=EGL");
+            println!("cargo:rustc-link-lib=GLESv1_CM");
+            println!("cargo:rustc-link-lib=GLESv2");
+            println!("cargo:rustc-link-lib=OpenSLES");
+
+            if android_config.api >= 26 {
+                println!("cargo:rustc-link-lib=aaudio");
+            }
+        }
         Platform::Unknown => {
             // Do nothing on 'unknown' as a safe default.
         }

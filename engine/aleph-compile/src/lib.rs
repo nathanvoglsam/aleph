@@ -34,3 +34,63 @@ pub fn build_root() -> Option<PathBuf> {
         .map(PathBuf::from)
         .inspect(|_| println!("cargo:rerun-if-env-changed=ALEPH_BUILD_ROOT"))
 }
+
+pub fn rerun_if_android_env_changed() {
+    println!("cargo::rerun-if-env-changed=ANDROID_NDK_HOME");
+    println!("cargo::rerun-if-env-changed=ANDROID_NDK_ROOT");
+    println!("cargo::rerun-if-env-changed=ANDROID_NDK");
+    println!("cargo::rerun-if-env-changed=CARGO_NDK_ANDROID_PLATFORM");
+    println!("cargo::rerun-if-env-changed=ANDROID_PLATFORM");
+}
+
+pub struct AndroidBuildConfig {
+    pub api: u32,
+    pub abi: &'static str,
+    pub toolchain: PathBuf,
+}
+
+pub fn get_android_build_config_from_env() -> AndroidBuildConfig {
+    use std::env;
+
+    use aleph_target::Architecture;
+
+    rerun_if_android_env_changed();
+
+    let (abi, default_api) = match Architecture::build_target() {
+        Architecture::X8664 => ("x86_64", 21),
+        Architecture::AARCH64 => ("arm64-v8a", 21),
+        Architecture::Unknown => panic!("Unknown architecture"),
+    };
+
+    let ndk = ["ANDROID_NDK_HOME", "ANDROID_NDK_ROOT", "ANDROID_NDK"]
+        .into_iter()
+        .find_map(|name| env::var_os(name))
+        .map(PathBuf::from)
+        .expect(
+            "Android SDL3 build requires the Android NDK; set ANDROID_NDK_HOME or ANDROID_NDK_ROOT",
+        );
+    let toolchain = ndk.join("build/cmake/android.toolchain.cmake");
+    assert!(
+        toolchain.is_file(),
+        "Android NDK toolchain not found at '{}'",
+        toolchain.display()
+    );
+
+    let api = ["CARGO_NDK_ANDROID_PLATFORM", "ANDROID_PLATFORM"]
+        .into_iter()
+        .find_map(|name| env::var(name).ok())
+        .map(|value| {
+            value
+                .strip_prefix("android-")
+                .unwrap_or(&value)
+                .parse::<u32>()
+                .unwrap_or_else(|_| panic!("Invalid Android API level: {value}"))
+        })
+        .unwrap_or(default_api);
+
+    AndroidBuildConfig {
+        api,
+        abi,
+        toolchain,
+    }
+}

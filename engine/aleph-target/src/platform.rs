@@ -39,6 +39,7 @@ pub enum Platform {
     Linux,
     MacOS,
     IOS,
+    Android,
     Unknown,
 }
 
@@ -60,6 +61,8 @@ impl Platform {
             } else {
                 Platform::Unknown
             }
+        } else if target.contains("android") {
+            Platform::Android
         } else if target.contains("linux") {
             Platform::Linux
         } else if target.contains("apple-darwin") {
@@ -98,6 +101,7 @@ impl Platform {
             Platform::Linux => "linux",
             Platform::MacOS => "macos",
             Platform::IOS => "ios",
+            Platform::Android => "android",
             Platform::Unknown => "unknown",
         }
     }
@@ -109,6 +113,7 @@ impl Platform {
             Platform::Linux => "Linux",
             Platform::MacOS => "macOS",
             Platform::IOS => "iOS",
+            Platform::Android => "Android",
             Platform::Unknown => "Unknown",
         }
     }
@@ -143,6 +148,10 @@ impl Platform {
     /// Is this platform the 'gnu' based windows platform
     pub const fn is_gnu(self) -> bool {
         matches!(self, Platform::WindowsGNU)
+    }
+
+    pub const fn is_android(self) -> bool {
+        matches!(self, Platform::Android)
     }
 
     pub const fn is_unknown(self) -> bool {

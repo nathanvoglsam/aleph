@@ -528,6 +528,7 @@ fn dxcompiler_library() -> &'static Utf8Path {
         Platform::Linux => Utf8Path::new("libdxcompiler.so"),
         Platform::MacOS => Utf8Path::new("libdxcompiler.dylib"),
         Platform::IOS => panic!("How did we get here?"),
+        Platform::Android => panic!("How did we get here?"),
         Platform::Unknown => panic!("Unknown host platform"),
     }
 }
@@ -539,6 +540,7 @@ fn slang_executable() -> &'static Utf8Path {
         Platform::Linux => Utf8Path::new("slangc"),
         Platform::MacOS => Utf8Path::new("slangc"),
         Platform::IOS => panic!("How did we get here?"),
+        Platform::Android => panic!("How did we get here?"),
         Platform::Unknown => panic!("Unknown host platform"),
     }
 }

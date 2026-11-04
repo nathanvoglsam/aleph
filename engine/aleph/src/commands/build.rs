@@ -112,6 +112,7 @@ impl ISubcommand for Build {
             BuildPlatform::MacOS => self.macos(project, profile, &target, build_std),
             BuildPlatform::Linux => self.linux(project, profile, &target, build_std),
             BuildPlatform::IOS => self.ios(project, profile, &target, build_std),
+            BuildPlatform::Android => unimplemented!(),
         }
     }
 }

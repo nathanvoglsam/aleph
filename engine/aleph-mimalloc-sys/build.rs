@@ -44,6 +44,16 @@ fn main() {
         config.profile("Release");
     }
 
+    if let Platform::Android = Platform::build_target() {
+        let android_config = compile::get_android_build_config_from_env();
+        config.define("CMAKE_TOOLCHAIN_FILE", android_config.toolchain);
+        config.define("ANDROID_ABI", android_config.abi);
+        config.define(
+            "ANDROID_PLATFORM",
+            format!("android-{}", android_config.api),
+        );
+    }
+
     let profile = config.get_profile().to_owned();
     let dst = config.build();
 
@@ -75,6 +85,7 @@ fn main() {
         | Platform::WindowsMSVC
         | Platform::MacOS
         | Platform::IOS
+        | Platform::Android
         | Platform::Linux => {
             println!(
                 "cargo:rustc-link-search=native={}",
