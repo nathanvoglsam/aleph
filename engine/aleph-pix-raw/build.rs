@@ -27,12 +27,10 @@
 // SOFTWARE.
 //
 
-use aleph_target::BuildConfig;
-
 cfg_select! {
     windows => {
         fn main() {
-            use aleph_target::{Architecture, Platform};
+            use aleph_target::{Architecture, BuildConfig, Platform};
 
             if !Platform::build_target().is_windows() {
                 // This script should do nothing if we're not building for windows

@@ -15,6 +15,8 @@ rust-version.workspace = true
 tracy-client = { workspace = true }
 aleph-superluminal-sys = { workspace = true, optional = true }
 aleph-profile-procmacros = { workspace = true, optional = true }
+
+[target.'cfg(windows)'.dependencies]
 aleph-pix = { workspace = true, optional = true }
 
 [features]
@@ -29,7 +31,7 @@ profile-with-tracy = [
 ]
 profile-with-pix = [
     "aleph-pix",
-    "aleph-pix?/enabled",
+    "aleph-pix/enabled",
     "aleph-profile-procmacros?/profile-with-pix",
 ]
 memory-callsites = []

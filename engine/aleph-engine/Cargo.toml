@@ -76,7 +76,7 @@ aleph-nstr = { workspace = true }
 aleph-magnesium = { workspace = true }
 aleph-gen-arena = { workspace = true }
 aleph-vfs = { workspace = true }
-aleph-ktx = { workspace = true }
+## aleph-ktx = { workspace = true }
 aleph-mikktspace = { workspace = true }
 aleph-sdl3-link = { workspace = true }
 
@@ -86,7 +86,6 @@ bytemuck = { workspace = true }
 camino = { workspace = true }
 crossbeam = { workspace = true }
 log = { workspace = true }
-utf16_lit = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 rayon = { workspace = true }
@@ -115,6 +114,7 @@ features = [
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }
+utf16_lit = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = { workspace = true }
