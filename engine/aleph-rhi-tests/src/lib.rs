@@ -181,7 +181,7 @@ fn platform_default_backend() -> BackendAPI {
     cfg_select! {
         target_os = "windows" => BackendAPI::D3D12,
         any(target_os = "ios", target_os = "macos") => BackendAPI::Metal,
-        target_os = "linux" => BackendAPI::Vulkan,
+        any(target_os = "linux", target_os = "android") => BackendAPI::Vulkan,
         _ => BackendAPI::Vulkan,
     }
 }

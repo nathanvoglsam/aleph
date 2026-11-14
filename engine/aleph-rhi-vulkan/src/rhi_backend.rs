@@ -318,6 +318,11 @@ impl VulkanLoader {
         } else {
             None
         };
+        let android_loader = if supported_extensions.contains(&ash::khr::android_surface::NAME) {
+            Some(ash::khr::android_surface::Instance::new(entry, instance))
+        } else {
+            None
+        };
 
         Extensions {
             debug_loader,
@@ -329,6 +334,7 @@ impl VulkanLoader {
             metal_surface_loader,
             macos_loader,
             ios_loader,
+            android_loader,
         }
     }
 
@@ -635,6 +641,7 @@ struct Extensions {
     metal_surface_loader: Option<ash::ext::metal_surface::Instance>,
     macos_loader: Option<ash::mvk::macos_surface::Instance>,
     ios_loader: Option<ash::mvk::ios_surface::Instance>,
+    android_loader: Option<ash::khr::android_surface::Instance>,
 }
 
 impl Extensions {
@@ -648,6 +655,7 @@ impl Extensions {
             metal: self.metal_surface_loader.clone(),
             macos: self.macos_loader.clone(),
             ios: self.ios_loader.clone(),
+            android: self.android_loader.clone(),
         }
     }
 }
