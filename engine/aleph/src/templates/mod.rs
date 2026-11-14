@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
-pub const SHADER_NINJA_RULES: &str = include_str!("../templates/shader_rules.ninja");
+pub mod android_project;
+
+pub const SHADER_NINJA_RULES: &str = include_str!("../../templates/shader_rules.ninja");
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
