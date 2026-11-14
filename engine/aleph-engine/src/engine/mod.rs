@@ -34,7 +34,7 @@ use std::sync::LazyLock;
 use target::{Architecture, BuildConfig, BuildType, Platform};
 
 use crate::api::plugin::IPlugin;
-use crate::core::logger::LOGGER;
+use crate::core::logger::{LOGGER, log_panic};
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 
 pub struct EngineBuilder {
@@ -122,6 +122,7 @@ impl EngineBuilder {
         log::set_logger(&LOGGER)
             .map(|()| log::set_max_level(log::LevelFilter::Trace))
             .unwrap();
+        std::panic::set_hook(Box::new(log_panic));
 
         Self {
             registry: PluginRegistry::builder(),

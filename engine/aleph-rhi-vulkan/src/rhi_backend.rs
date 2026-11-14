@@ -466,6 +466,10 @@ fn get_wsi_extensions() -> Vec<&'static CStr> {
         extensions.push(ash::ext::metal_surface::NAME);
         extensions.push(ash::khr::portability_enumeration::NAME);
     }
+    if cfg!(target_os = "android") {
+        // Android requires the VK_KHR_android_surface extension
+        extensions.push(ash::khr::android_surface::NAME);
+    }
     if cfg!(target_os = "ios") {
         // We need the molten vk surface extension as well as VK_KHR_portability_enumeration in
         // order for the loader to give us our mvk device.

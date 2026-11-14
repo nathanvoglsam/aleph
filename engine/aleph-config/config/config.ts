@@ -67,6 +67,7 @@ declare const enum Platform {
     Windows = "windows",
     Linux = "linux",
     Macos = "macos",
+    Android = "android",
     iOS = "ios",
 }
 

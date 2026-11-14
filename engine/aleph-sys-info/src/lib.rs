@@ -46,12 +46,10 @@ mod unix_memory;
 mod null_memory;
 
 ///
-/// Gets the vendor string for the current CPU
+/// Gets the vendor string for the current CPU.
 ///
-/// # Warning
-///
-/// At the moment this only works on x86 and x86_64. Otherwise it will just return an "Unknown CPU
-/// Vendor" string.
+/// On AArch64, reports the first CPU's vendor. On x86_64 and AArch64, returns
+/// "Unknown CPU Vendor" when it is unavailable.
 ///
 #[allow(unreachable_code)]
 pub fn cpu_vendor() -> &'static str {
@@ -62,24 +60,17 @@ pub fn cpu_vendor() -> &'static str {
 
     #[cfg(target_arch = "aarch64")]
     {
-        // Just assume the info is the same for all CPUs. CPUs may be a list of all the cores in
-        // a system, we just assume they will all have the same brand and vendor id.
-        //
-        // Heterogeneous systems should still have the same info, and multi-socket systems will just
-        // have multiple of the same CPU so this assumption is probable fine for what we use it for.
-        return sys_info::SYSTEM_INFO.cpus()[0].vendor_id();
+        return sys_info::cpu_vendor(&sys_info::SYSTEM_INFO);
     }
 
     unimplemented!()
 }
 
 ///
-/// Gets the brand string for the current CPU
+/// Gets the brand string for the current CPU.
 ///
-/// # Warning
-///
-/// At the moment this only works on x86 and x86_64 that support an extended part of the __cpuid
-/// instruction. Otherwise it will just return an "Unknown CPU" string.
+/// On AArch64, reports the first CPU's brand. On x86_64 and AArch64, returns
+/// "Unknown CPU" when it is unavailable.
 ///
 #[allow(unreachable_code)]
 pub fn cpu_brand() -> &'static str {
@@ -90,12 +81,7 @@ pub fn cpu_brand() -> &'static str {
 
     #[cfg(target_arch = "aarch64")]
     {
-        // Just assume the info is the same for all CPUs. CPUs may be a list of all the cores in
-        // a system, we just assume they will all have the same brand and vendor id.
-        //
-        // Heterogeneous systems should still have the same info, and multi-socket systems will just
-        // have multiple of the same CPU so this assumption is probable fine for what we use it for.
-        return sys_info::SYSTEM_INFO.cpus()[0].brand();
+        return sys_info::cpu_brand(&sys_info::SYSTEM_INFO);
     }
 
     unimplemented!()

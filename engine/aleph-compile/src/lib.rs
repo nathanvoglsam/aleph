@@ -90,8 +90,7 @@ pub fn get_android_build_config_from_env() -> AndroidBuildConfig {
         })
         .unwrap_or(default_api);
 
-    let stl = env::var("ANDROID_STL")
-        .expect("ANDROID_STL environment variable not set");
+    let stl = env::var("ANDROID_STL").expect("ANDROID_STL environment variable not set");
 
     AndroidBuildConfig {
         api,

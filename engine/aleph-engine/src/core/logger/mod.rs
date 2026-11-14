@@ -61,3 +61,8 @@ impl log::Log for Logger {
         // no-op
     }
 }
+
+pub fn log_panic(info: &std::panic::PanicHookInfo<'_>) {
+    log::error!("Panic: {info}");
+    log::error!("Backtrace: {}", std::backtrace::Backtrace::force_capture());
+}

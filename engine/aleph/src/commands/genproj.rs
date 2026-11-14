@@ -98,19 +98,11 @@ impl GenProj {
             .as_ref()
             .ok_or(anyhow!("Android manifest info missing!"))?;
 
-        // Check if we have the empty string, which is not a valid App ID
-        if android.app_id.is_empty() {
-            return Err(anyhow!("An empty string is not a valid app ID"));
-        }
-
-        // Check if we have something other than a sequence of path.segments.like.this with only
-        // alpha numeric ascii characters.
-        if android
-            .app_id
-            .contains(|v: char| !v.is_ascii_alphanumeric() && v != '.')
-        {
+        if !is_valid_android_app_id(&android.app_id) {
             return Err(anyhow!(
-                "App ID '{}' is invalid. Must only be alpha-numeric or . characters",
+                "App ID '{}' is invalid. It must contain at least two dot-separated segments; \
+                 each segment must start with an ASCII letter and contain only ASCII letters, \
+                 digits, or underscores",
                 &android.app_id
             ));
         }
@@ -166,6 +158,48 @@ impl GenProj {
         }
 
         Ok(())
+    }
+}
+
+fn is_valid_android_app_id(app_id: &str) -> bool {
+    let segments: Vec<_> = app_id.split('.').collect();
+    segments.len() >= 2
+        && segments.iter().all(|segment| {
+            let mut chars = segment.chars();
+            chars
+                .next()
+                .is_some_and(|first| first.is_ascii_alphabetic())
+                && chars.all(|ch| ch.is_ascii_alphanumeric() || ch == '_')
+        })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_valid_android_app_id;
+
+    #[test]
+    fn validates_android_app_ids() {
+        for app_id in [
+            "com.example.game",
+            "com.example_1.game_2",
+            "Com.Example.Game",
+        ] {
+            assert!(is_valid_android_app_id(app_id), "{app_id}");
+        }
+
+        for app_id in [
+            "",
+            "com",
+            ".com.example",
+            "com..example",
+            "com.example.",
+            "com.1example.game",
+            "com._example.game",
+            "com.exämple.game",
+            "com.example-game",
+        ] {
+            assert!(!is_valid_android_app_id(app_id), "{app_id}");
+        }
     }
 }
 

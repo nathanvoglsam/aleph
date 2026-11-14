@@ -93,6 +93,7 @@ declare interface Configs {
         [Platform.Windows]: rhi.Backend.D3D12,
         [Platform.Linux]: rhi.Backend.Vulkan,
         [Platform.Macos]: rhi.Backend.Metal,
+        [Platform.Android]: rhi.Backend.Vulkan,
         [Platform.iOS]: rhi.Backend.Metal,
     };
 
