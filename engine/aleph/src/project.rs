@@ -38,7 +38,7 @@ use cargo_metadata::{DependencyKind, Package, TargetKind};
 use once_cell::sync::OnceCell;
 
 use crate::project_schema::ProjectSchema;
-use crate::utils::{Profile, Target, find_project_file};
+use crate::utils::{BuildPlatform, Profile, Target, find_project_file};
 
 /// A tuple of [`Version`] and an unwrapped [cargo_metadata::PackageId]. Unrapping the type to a str
 /// instead of a String allows avoiding extra .clone calls when building the table.
@@ -69,6 +69,9 @@ pub struct AlephProject<'a> {
     /// The path to the 'build' folder for this project
     build_root_path: Utf8PathBuf,
 
+    /// The path to the 'build/android' folder for this project
+    android_project_root: Utf8PathBuf,
+
     /// The path to the 'build/shaders' folder for this project
     shader_build_path: Utf8PathBuf,
 
@@ -78,8 +81,14 @@ pub struct AlephProject<'a> {
     /// The path to the 'build/configs' folder for this project
     configs_build_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/{platform}/{arch}' folder appropriate for the host system,
+    /// The path to the '.aleph/sdk/{platform}' folder appropriate for the host system,
     _sdk_path: Utf8PathBuf,
+
+    /// The path to the '.aleph/sdk/{android-sdk}' folder appropriate for the host system,
+    android_sdk_path: Utf8PathBuf,
+
+    /// The path to the '.aleph/sdk/{ndk}' folder appropriate for the host system,
+    android_ndk_path: Utf8PathBuf,
 
     /// The path to the '.aleph/sdk/dxc/bin/{platform}/dxc' executable for this project
     dxc_path: Utf8PathBuf,
@@ -141,6 +150,7 @@ impl<'a> AlephProject<'a> {
         let project_root = project_file.parent().unwrap().to_path_buf();
         let dot_aleph_path = project_root.join(".aleph");
         let build_root_path = project_root.join("build");
+        let android_project_root = build_root_path.join("android");
         let cargo_toml_file = project_root.join("Cargo.toml");
         let vscode_workspace_file = project_root.join("aleph.code-workspace");
         let cargo_target_dir = build_root_path.join("rs").join("bin");
@@ -151,6 +161,12 @@ impl<'a> AlephProject<'a> {
 
         let mut sdk_path = dot_aleph_path.clone();
         sdk_path.push("sdk");
+
+        let mut android_sdk_path = sdk_path.clone();
+        android_sdk_path.push("android-sdk");
+
+        let mut android_ndk_path = sdk_path.clone();
+        android_ndk_path.push("android-ndk-r30");
 
         let mut dxc_path = sdk_path.clone();
         dxc_path.push("dxc");
@@ -206,10 +222,13 @@ impl<'a> AlephProject<'a> {
             project_root,
             dot_aleph_path,
             build_root_path,
+            android_project_root,
             shader_build_path,
             _assets_build_path: assets_build_path,
             configs_build_path,
             _sdk_path: sdk_path,
+            android_sdk_path,
+            android_ndk_path,
             dxc_path,
             slang_path,
             ninja_path,
@@ -291,6 +310,7 @@ impl<'a> AlephProject<'a> {
     /// All other targets will return Err()
     pub fn target_project_root(&self, target: &Target) -> anyhow::Result<&Utf8Path> {
         match target.platform {
+            BuildPlatform::Android => Ok(&self.android_project_root),
             _ => Err(anyhow!(
                 "Platform \"{}\" does not have a target specific sub-project.",
                 target.platform.name()
@@ -320,6 +340,18 @@ impl<'a> AlephProject<'a> {
     /// exist so check before using!
     pub fn _sdk_path(&self) -> &Utf8Path {
         &self._sdk_path
+    }
+
+    /// Returns the path to the project's bundled ndk, in '.aleph/sdk/{android-sdk}'. This path may
+    /// not exist so check before using!
+    pub fn android_sdk_path(&self) -> &Utf8Path {
+        &self.android_sdk_path
+    }
+
+    /// Returns the path to the project's bundled ndk, in '.aleph/sdk/{ndk}'. This path may not
+    /// exist so check before using!
+    pub fn android_ndk_path(&self) -> &Utf8Path {
+        &self.android_ndk_path
     }
 
     /// Returns the path to the project's bundled dxc, in '.aleph/sdk/dxc/bin/{platform}/dxc'.
@@ -555,7 +587,7 @@ impl<'a> AlephProject<'a> {
         }
     }
 
-    pub fn _get_game_crate_and_target(
+    pub fn get_game_crate_and_target(
         &self,
     ) -> anyhow::Result<(&Package, Option<&cargo_metadata::Target>)> {
         let cargo_metadata = self.get_cargo_metadata()?;
@@ -595,7 +627,7 @@ impl<'a> AlephProject<'a> {
     pub fn _get_game_crate_dependencu_set(&self) -> anyhow::Result<&HashSet<usize>> {
         self._game_crate_dependency_set.get_or_try_init(|| {
             let cargo_metadata = self.get_cargo_metadata()?;
-            let (package, _) = self._get_game_crate_and_target()?;
+            let (package, _) = self.get_game_crate_and_target()?;
             let mut package_indices = HashSet::new();
 
             let mut package_stack = Vec::new();

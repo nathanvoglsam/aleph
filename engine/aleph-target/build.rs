@@ -64,6 +64,8 @@ fn main() {
         } else {
             "Unknown"
         }
+    } else if target.contains("android") {
+        "Android"
     } else if target.contains("linux") {
         "Linux"
     } else if target.contains("apple-darwin") {

@@ -10,7 +10,9 @@ public class ${{ANDROID_GAME_NAME}}Activity extends SDLActivity {
     @Override
     protected String[] getLibraries() {
         return new String[] {
-            "${{ANDROID_SHARED_OBJECT_NAME}}" // Only load libmain.so; omit "SDL3"
+            "SDL3",
+            "${{ANDROID_GAME_TARGET}}",
+            "main"
         };
     }
 }

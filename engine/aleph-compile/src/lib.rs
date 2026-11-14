@@ -41,12 +41,14 @@ pub fn rerun_if_android_env_changed() {
     println!("cargo::rerun-if-env-changed=ANDROID_NDK");
     println!("cargo::rerun-if-env-changed=CARGO_NDK_ANDROID_PLATFORM");
     println!("cargo::rerun-if-env-changed=ANDROID_PLATFORM");
+    println!("cargo::rerun-if-env-changed=ANDROID_STL");
 }
 
 pub struct AndroidBuildConfig {
     pub api: u32,
     pub abi: &'static str,
     pub toolchain: PathBuf,
+    pub stl: String,
 }
 
 pub fn get_android_build_config_from_env() -> AndroidBuildConfig {
@@ -88,9 +90,13 @@ pub fn get_android_build_config_from_env() -> AndroidBuildConfig {
         })
         .unwrap_or(default_api);
 
+    let stl = env::var("ANDROID_STL")
+        .expect("ANDROID_STL environment variable not set");
+
     AndroidBuildConfig {
         api,
         abi,
         toolchain,
+        stl,
     }
 }

@@ -27,12 +27,20 @@
 // SOFTWARE.
 //
 
+use std::collections::HashMap;
+
 use anyhow::anyhow;
+use camino::Utf8Path;
 use clap::{ArgMatches, Command};
 
 use crate::commands::{ISubcommand, arch_arg, platform_arg};
 use crate::project::AlephProject;
-use crate::utils::{BuildPlatform, Target, architecture_from_arg};
+use crate::project_schema::{AndroidBrandingSchema, AndroidSchema, GameSchema};
+use crate::templates;
+use crate::templates::android_project::ANDROID_ACTIVITY_SOURCE_TEMPLATE;
+use crate::utils::{
+    BuildPlatform, Target, architecture_from_arg, resolve_absolute_or_root_relative_path,
+};
 
 pub struct GenProj {}
 
@@ -68,10 +76,172 @@ impl ISubcommand for GenProj {
 
         let target = Target { arch, platform };
 
-        let _root = project.ensure_target_project_root(&target)?;
+        let root = project.ensure_target_project_root(&target)?;
 
         match target.platform {
+            BuildPlatform::Android => self.android(project, root, &target),
             _ => Err(anyhow!("Unsupported genproj platform '{platform_arg}'")),
         }
     }
+}
+
+impl GenProj {
+    fn android(
+        &self,
+        project: &AlephProject,
+        root: &Utf8Path,
+        _target: &Target,
+    ) -> anyhow::Result<()> {
+        let project_schema = project.get_project_schema()?;
+        let android = project_schema
+            .android
+            .as_ref()
+            .ok_or(anyhow!("Android manifest info missing!"))?;
+
+        // Check if we have the empty string, which is not a valid App ID
+        if android.app_id.is_empty() {
+            return Err(anyhow!("An empty string is not a valid app ID"));
+        }
+
+        // Check if we have something other than a sequence of path.segments.like.this with only
+        // alpha numeric ascii characters.
+        if android
+            .app_id
+            .contains(|v: char| !v.is_ascii_alphanumeric() && v != '.')
+        {
+            return Err(anyhow!(
+                "App ID '{}' is invalid. Must only be alpha-numeric or . characters",
+                &android.app_id
+            ));
+        }
+
+        let context = build_android_template_context(project)?;
+        templates::android_project::write_android_project(root, &context)?;
+
+        {
+            // Create the path chain for the main AlephActivity
+            let java_path = root.join("app/src/main/java");
+            let package_path = android.app_id.replace('.', "/");
+            let package_path = java_path.join(package_path);
+            std::fs::create_dir_all(&package_path)?;
+
+            let rendered =
+                templates::android_project::render(ANDROID_ACTIVITY_SOURCE_TEMPLATE, &context)?;
+            let java_file_name = templates::android_project::render(
+                "${{ANDROID_GAME_NAME}}Activity.java",
+                &context,
+            )?;
+            let java_file_path = package_path.join(java_file_name.as_ref());
+            std::fs::write(java_file_path, rendered.as_ref())?;
+        }
+
+        if let Some(branding) = android.branding.as_ref() {
+            let AndroidBrandingSchema {
+                icon_mdpi,
+                icon_hdpi,
+                icon_xhdpi,
+                icon_xxhdpi,
+                icon_xxxhdpi,
+            } = branding;
+
+            let project_root = project.project_root();
+
+            // Ensure the mipmap directories exists within the Android project folder
+            let res_dir = root.join("app/src/main/res");
+            std::fs::create_dir_all(res_dir.join("mipmap-mdpi"))?;
+            std::fs::create_dir_all(res_dir.join("mipmap-hdpi"))?;
+            std::fs::create_dir_all(res_dir.join("mipmap-xhdpi"))?;
+            std::fs::create_dir_all(res_dir.join("mipmap-xxhdpi"))?;
+            std::fs::create_dir_all(res_dir.join("mipmap-xxxhdpi"))?;
+
+            let pairs = [
+                (icon_mdpi.as_ref(), "mipmap-mdpi/ic_launcher.png"),
+                (icon_hdpi.as_ref(), "mipmap-hdpi/ic_launcher.png"),
+                (icon_xhdpi.as_ref(), "mipmap-xhdpi/ic_launcher.png"),
+                (icon_xxhdpi.as_ref(), "mipmap-xxhdpi/ic_launcher.png"),
+                (icon_xxxhdpi.as_ref(), "mipmap-xxxhdpi/ic_launcher.png"),
+            ];
+            let copy_branding_files = make_branding_file_copier(project_root, &res_dir);
+            copy_branding_files(&pairs)?;
+        }
+
+        Ok(())
+    }
+}
+
+fn make_branding_file_copier<'a>(
+    project_root: &'a Utf8Path,
+    root: &'a Utf8Path,
+) -> impl (FnOnce(&[(&str, &str)]) -> anyhow::Result<()>) + 'a {
+    let copy_branding_file = |src: &Utf8Path, dst: &str| -> anyhow::Result<()> {
+        match src.extension() {
+            None => return Err(anyhow!("Branding file \"{}\" is not a .png file", src)),
+            Some(v) => {
+                if v != "png" {
+                    return Err(anyhow!("Branding file \"{}\" is not a .png file", src));
+                }
+            }
+        }
+
+        let from = resolve_absolute_or_root_relative_path(project_root, src);
+        let to = root.join(dst);
+        log::trace!("Copying '{} -> {}'", from, to);
+        std::fs::copy(from, to)?;
+        Ok(())
+    };
+
+    move |pairs: &[(&str, &str)]| -> anyhow::Result<()> {
+        for (src, dst) in pairs {
+            copy_branding_file(Utf8Path::new(src), dst)?
+        }
+        Ok(())
+    }
+}
+
+fn build_android_template_context(
+    project: &AlephProject,
+) -> anyhow::Result<HashMap<String, String>> {
+    let project_schema = project.get_project_schema()?;
+
+    // Grab needed info from the project schema
+    let AndroidSchema {
+        app_id, version_id, ..
+    } = project_schema.android.as_ref().ok_or(anyhow!(
+        "Trying to generate an android project with missing android table in project.toml"
+    ))?;
+    let GameSchema {
+        name,
+        internal_name,
+        ..
+    } = &project_schema.game;
+
+    // Fetch the cargo metadata from the current cargo workspace
+    let (package, library_target) = project.get_game_crate_and_target()?;
+    let library_target = library_target.unwrap();
+
+    let app_version = format!(
+        "{}.{}.{}",
+        package.version.major, package.version.minor, package.version.patch
+    );
+
+    // Prepare our template context with information from the schema
+    let mut context = HashMap::new();
+    let mut set_var = |key: &str, val: &str| {
+        log::info!("{key} = {val}");
+        context.insert(key.to_string(), val.to_string());
+    };
+
+    log::info!("Project Template Variable Settings");
+    set_var("ANDROID_GAME_PACKAGE", app_id);
+    set_var("ANDROID_GAME_PRETTY_NAME", name);
+    set_var("ANDROID_GAME_NAME", internal_name);
+    set_var("ANDROID_GAME_CRATE", &package.name);
+    set_var("ANDROID_GAME_TARGET", &library_target.name);
+    set_var("ANDROID_GAME_VERSION_CODE", &version_id.to_string());
+    set_var("ANDROID_GAME_VERSION_NAME", &app_version);
+    set_var("ALEPH_WORKSPACE_ROOT", project.project_root().as_str());
+    set_var("ANDROID_SDK_DIR", project.android_sdk_path().as_str());
+    set_var("ANDROID_NDK_DIR", project.android_ndk_path().as_str());
+
+    Ok(context)
 }

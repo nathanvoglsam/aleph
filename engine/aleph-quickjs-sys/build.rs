@@ -56,6 +56,7 @@ fn main() {
             "ANDROID_PLATFORM",
             format!("android-{}", android_config.api),
         );
+        config.define("ANDROID_STL", android_config.stl);
     }
 
     let dst = config.build();

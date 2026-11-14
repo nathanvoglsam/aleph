@@ -37,7 +37,7 @@ extern crate aleph_rhi_api as rhi;
 mod game;
 
 #[unsafe(no_mangle)]
-pub extern "C" fn SDL_main(
+pub extern "C" fn Aleph_main(
     _argc: std::ffi::c_int,
     _argv: *const *const std::ffi::c_char,
 ) -> std::ffi::c_int {

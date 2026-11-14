@@ -5,15 +5,16 @@ plugins {
 android {
     namespace = "${{ANDROID_GAME_PACKAGE}}"
     compileSdkVersion 35
-    ndkVersion = "28.2.13676358"
+    // ndkPath = "${{ANDROID_NDK_DIR}}"
+    ndkVersion = "30.0.16248370"
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 35
-        versionCode 1
-        versionName "1.0"
+        versionCode ${{ANDROID_GAME_VERSION_CODE}}
+        versionName "${{ANDROID_GAME_VERSION_NAME}}"
         externalNativeBuild {
             cmake {
-                arguments "-DANDROID_PLATFORM=android-21", "-DANDROID_STL=c++_static"
+                arguments "-DANDROID_PLATFORM=android-21", "-DANDROID_STL=c++_shared"
                 // abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
                 abiFilters 'arm64-v8a'
             }
@@ -29,17 +30,11 @@ android {
         tasks["merge${variant.name.capitalize()}Assets"]
             .dependsOn("externalNativeBuild${variant.name.capitalize()}")
     }
-    if (!project.hasProperty('EXCLUDE_NATIVE_LIBS')) {
-        sourceSets.main {
-            jniLibs.srcDir 'libs'
-        }
-        externalNativeBuild {
-            cmake {
-                path 'jni/CMakeLists.txt'
-            }
-        }
-
+    externalNativeBuild {
+    cmake {
+        path 'jni/CMakeLists.txt'
     }
+        }
     lint {
         abortOnError = false
     }

@@ -5,13 +5,30 @@ crate_name = "aleph-test"
 # The name of the game, as should appear as a pretty string like an app title
 name = "Aleph Test"
 
+# The name of the game, as will be used internally for identifiers and build scripts. This should
+# only contain alphabetic characters, with no spaces or special characters.
+internal_name = "AlephTest"
+
 # The name of the publisher/author of the game.
 author = "Nathan Voglsam"
 
 # The list of allowed platforms that the game is designed to target
-# Current possible values: "windows", "macos", "linux"
-target_platforms = ["windows", "macos", "linux"]
+# Current possible values: "android", "windows", "macos", "linux"
+target_platforms = ["android", "windows", "macos", "linux"]
+
+# Information needed to generate a valid android project/bundle
+[android]
+app_id = "com.alephengine.alephtest.game"
+version_id = 1
 
 # Specification of app branding for Windows
 [windows.branding]
-icon = "branding/windows/app_icon.ico"
+icon = "game/branding/windows/app_icon.ico"
+
+# Specification of app branding for Android
+[android.branding]
+icon_mdpi = "game/branding/android/mipmap-mdpi/ic_launcher.png"
+icon_hdpi = "game/branding/android/mipmap-hdpi/ic_launcher.png"
+icon_xhdpi = "game/branding/android/mipmap-xhdpi/ic_launcher.png"
+icon_xxhdpi = "game/branding/android/mipmap-xxhdpi/ic_launcher.png"
+icon_xxxhdpi = "game/branding/android/mipmap-xxxhdpi/ic_launcher.png"
