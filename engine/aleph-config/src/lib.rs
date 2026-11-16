@@ -29,7 +29,6 @@
 
 extern crate aleph_quickjs as qjs;
 
-use std::env::{current_dir, current_exe};
 use std::io;
 use std::str::FromStr;
 
@@ -38,7 +37,7 @@ use aleph_alloc::instrumentation::{
 };
 use aleph_nstr::NStr;
 use aleph_target::{Architecture, BuildType, Platform};
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8PathBuf;
 use thiserror::Error;
 
 pub struct ConfigRunner {
@@ -46,15 +45,15 @@ pub struct ConfigRunner {
 
     context: Option<qjs::Context>,
 
-    /// The directory we will load config scripts from
-    config_dir: Utf8PathBuf,
+    /// The provider we will load config scripts from
+    config_provider: Box<dyn IConfigProvider>,
 
     /// A reference to the quickjs object that stores the config
     config_object: Option<qjs::RefValue>,
 }
 
 impl ConfigRunner {
-    pub fn new() -> io::Result<Self> {
+    pub fn new(mut providers: impl Iterator<Item = Box<dyn IConfigProvider>>) -> io::Result<Self> {
         Config::with(|| {
             let runtime = if is_instrumentation_enabled() {
                 static ALLOC: Instrumented<JavaScript> = system();
@@ -64,12 +63,16 @@ impl ConfigRunner {
             };
             let context = runtime.new_context().unwrap();
             let config_object = context.new_object().unwrap();
-            let config_dir = find_folder_in_search_path("configs")?;
+
+            let config_provider = providers.find(|p| p.is_available()).ok_or(io::Error::new(
+                io::ErrorKind::NotFound,
+                "No available config provider",
+            ))?;
 
             let out = Self {
                 runtime,
                 context: Some(context),
-                config_dir,
+                config_provider,
                 config_object: Some(config_object),
             };
             Ok(out)
@@ -79,22 +82,7 @@ impl ConfigRunner {
     pub fn run_all_configs(&mut self) -> Result<(), RunConfigError> {
         Config::with(|| {
             // Collect all .js config files in the config directory into a list
-            let mut items = Vec::new();
-            for item in self.config_dir.read_dir_utf8()? {
-                let item = item?;
-
-                // Skip non js files
-                if !item.file_name().ends_with(".js") {
-                    continue;
-                }
-
-                let file_type = item.file_type()?;
-                if !file_type.is_file() && !file_type.is_symlink() {
-                    continue;
-                }
-
-                items.push(item.file_name().to_string());
-            }
+            let mut items = self.config_provider.enumerate_configs()?;
 
             // Sort in alphabetical order to get a stable config run order
             items.sort();
@@ -110,11 +98,13 @@ impl ConfigRunner {
 
     pub fn run_config_by_name(&mut self, name: &str) -> Result<(), RunConfigError> {
         Config::with(|| {
-            let script = self.load_config_script(name)?;
-            let script_nstr = NStr::from_str(&script).unwrap();
+            let script = self.config_provider.get_config(name)?;
+            let script_nstr =
+                NStr::from_str(&script).ok_or(io::Error::from(io::ErrorKind::InvalidData))?;
 
             let filename = format!("{name}\0");
-            let filename = NStr::from_str(&filename).unwrap();
+            let filename =
+                NStr::from_str(&filename).ok_or(io::Error::from(io::ErrorKind::InvalidData))?;
 
             // We create a new context for every script so they don't polute eachother's global
             // state.
@@ -135,9 +125,7 @@ impl ConfigRunner {
             // And finally we evaluate the script. The script is expected to write the config into
             // the 'Configs' global.
             log::trace!("Running {filename}");
-            let _ = context
-                .eval(script_nstr, filename, qjs::raw::JSEvalFlags::STRICT)
-                .unwrap();
+            let _ = context.eval(script_nstr, filename, qjs::raw::JSEvalFlags::STRICT)?;
 
             Ok(())
         })
@@ -280,22 +268,6 @@ impl ConfigRunner {
     }
 }
 
-impl ConfigRunner {
-    /// Internal function for loading the config script under the given name from the script folder.
-    fn load_config_script(&self, name: &str) -> Result<String, RunConfigError> {
-        let config = self.config_dir.join(name);
-
-        // Check if the config file exists
-        if !config.is_file() {
-            return Err(RunConfigError::NoConfig);
-        }
-
-        let mut string = std::fs::read_to_string(config)?;
-        string.push('\0');
-        Ok(string)
-    }
-}
-
 #[derive(Error, Debug)]
 pub enum RunConfigError {
     #[error("IO error: {0}")]
@@ -320,51 +292,94 @@ impl<'a> From<qjs::Exception<'a>> for RunConfigError {
     }
 }
 
-///
-/// Attempts to find a folder by the given name in the standard aleph search path for 'data'.
-///
-/// Will search the following locations in the given order:
-///
-/// - `${CWD}/{folder}`
-/// - `${EXE_DIR}/{folder}`
-/// - `${CWD}/build/{folder}`
-///
-/// # Info
-///
-/// This function will search in the 'cwd' and adjacent to the game executable first before guessing
-/// we're running in a development environment and trying the 'build/data' folder directory. This
-/// does bake our project layout in as an expectation but it's good enough.
-///
-fn find_folder_in_search_path(folder: &str) -> io::Result<Utf8PathBuf> {
-    let cwd = current_dir()?;
-    let cwd = Utf8Path::from_path(cwd.as_path()).unwrap();
-    let cwd_config = cwd.join(folder);
+/// Abstract config provider interface. Used for injecting custom logic for resolving the search
+/// path and providing access to configuration scripts.
+pub trait IConfigProvider {
+    /// Checks if the configuration provider is available and can be used.
+    ///
+    /// Typically this would check the presence of a folder at a known location, but could be any
+    /// other criteria that determines if the configuration provider is usable.
+    fn is_available(&self) -> bool;
 
-    if cwd_config.is_dir() {
-        return Ok(cwd_config);
-    }
+    /// Provides a list of config names that are available through this configuration provider.
+    fn enumerate_configs(&self) -> io::Result<Vec<String>>;
 
-    let exe_dir = current_exe()?;
-    let exe_dir = exe_dir.parent().unwrap();
-    let exe_dir = Utf8Path::from_path(exe_dir).unwrap();
-    let exe_dir_config = exe_dir.join(folder);
-
-    if exe_dir_config.is_dir() {
-        return Ok(exe_dir_config);
-    }
-
-    let build_root_dir_config = cwd.join("build").join(folder);
-    if build_root_dir_config.is_dir() {
-        return Ok(build_root_dir_config);
-    }
-
-    Err(io::Error::new(
-        io::ErrorKind::NotFound,
-        format!("Failed to find a '{folder}' directory in our search paths."),
-    ))
+    /// Retrieves the configuration with the given name, if it exists. This will contain the config
+    /// script as a string.
+    fn get_config(&self, name: &str) -> Result<String, RunConfigError>;
 }
 
-struct Config;
+/// Directory-based configuration provider. This provider looks for configuration scripts in a
+/// specific folder on the filesystem.
+pub struct DirectoryConfigProvider {
+    folder: Utf8PathBuf,
+}
+
+impl DirectoryConfigProvider {
+    /// Creates a new directory-based configuration provider for the given folder.
+    ///
+    /// Does not verify the existence of the folder until 'is_available' is called.
+    pub fn new(folder: Utf8PathBuf) -> Self {
+        Self { folder }
+    }
+
+    /// Creates a new directory-based configuration provider from a generic path.
+    ///
+    /// Returns `None` if the path cannot be converted to a valid UTF-8 path.
+    pub fn from_path<P: AsRef<std::path::Path>>(path: P) -> Option<Self> {
+        let folder = Utf8PathBuf::from_path_buf(path.as_ref().to_path_buf()).ok()?;
+        Some(Self { folder })
+    }
+}
+
+impl IConfigProvider for DirectoryConfigProvider {
+    fn is_available(&self) -> bool {
+        let available = self.folder.is_dir();
+        if !available {
+            log::warn!("Config folder {:?} does not exist", self.folder);
+        }
+        available
+    }
+
+    fn enumerate_configs(&self) -> io::Result<Vec<String>> {
+        if !self.is_available() {
+            return Ok(Vec::new());
+        }
+
+        // Collect all .js config files in the config directory into a list
+        let mut items = Vec::new();
+        for item in self.folder.read_dir_utf8()? {
+            let item = item?;
+
+            // Skip non js files
+            if !item.file_name().ends_with(".js") {
+                continue;
+            }
+
+            let file_type = item.file_type()?;
+            if !file_type.is_file() && !file_type.is_symlink() {
+                continue;
+            }
+
+            items.push(item.file_name().to_string());
+        }
+        Ok(items)
+    }
+
+    fn get_config(&self, name: &str) -> Result<String, RunConfigError> {
+        let config = self.folder.join(name);
+
+        if !config.is_file() {
+            return Err(RunConfigError::NoConfig);
+        }
+
+        let mut string = std::fs::read_to_string(config)?;
+        string.push('\0');
+        Ok(string)
+    }
+}
+
+pub struct Config;
 aleph_alloc::new_alloc_category!(Config, "01996b38-bed1-78a3-8b78-03cb717d5bb0");
 
 struct JavaScript;

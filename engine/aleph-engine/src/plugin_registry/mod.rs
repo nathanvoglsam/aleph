@@ -27,11 +27,12 @@
 // SOFTWARE.
 //
 
-use aleph_config::{ConfigRunner, RunConfigError};
+use aleph_config::{ConfigRunner, DirectoryConfigProvider, IConfigProvider, RunConfigError};
 use api::ecs::world::World;
 use api::plugin::CoreRefs;
 use api::schedule::WorldResource;
 use api::scheduler::{Schedule, Stage, TypedTable};
+use sdl3::filesystem::EnumerationResult;
 
 mod builder;
 mod quit_handle;
@@ -39,9 +40,13 @@ mod registrar;
 
 use std::any::{Any, TypeId};
 use std::collections::{BTreeMap, BTreeSet};
+use std::env::{current_dir, current_exe};
+use std::io::{self, Read};
 use std::ops::Deref;
+use std::path::Path;
 use std::sync::Arc;
 
+use aleph_alloc::instrumentation::IAllocationCategory;
 pub use builder::PluginRegistryBuilder;
 
 use crate::api::plugin::{IPlugin, IQuitHandle, IRegistryAccessor};
@@ -170,8 +175,47 @@ impl PluginRegistry {
     }
 
     fn load_configs() -> serde_json::Map<String, serde_json::Value> {
+        let sources = aleph_config::Config::with(|| {
+            let mut sources: Vec<Box<dyn IConfigProvider>> = Vec::new();
+
+            // First check ${CWD}/configs
+            || -> Option<()> {
+                let path = current_dir().ok()?;
+                let path = path.join("configs");
+                sources.push(Box::new(DirectoryConfigProvider::from_path(path)?));
+                Some(())
+            }();
+
+            // Then check ${EXE_DIR}/configs
+            || -> Option<()> {
+                let path = current_exe().ok()?;
+                let path = path.parent()?;
+                let path = path.join("configs");
+                sources.push(Box::new(DirectoryConfigProvider::from_path(path)?));
+                Some(())
+            }();
+
+            // Then check ${CWD}/build/configs
+            || -> Option<()> {
+                let path = current_dir().ok()?;
+                let path = path.join("build");
+                let path = path.join("configs");
+                sources.push(Box::new(DirectoryConfigProvider::from_path(path)?));
+                Some(())
+            }();
+
+            if cfg!(target_os = "android") {
+                // Final provider for android that looks for a 'configs' folder in the bundled
+                // assets.
+                sources.push(Box::new(AssetsConfigProvider));
+            }
+
+            sources
+        });
+
         log::info!("Initializing config JS runtime");
-        let mut configs = ConfigRunner::new().expect("Failed to init config runner");
+        let mut configs =
+            ConfigRunner::new(sources.into_iter()).expect("Failed to init config runner");
 
         match configs.run_all_configs() {
             Ok(_) => {}
@@ -332,4 +376,57 @@ impl IRegistryAccessor for RegistryAccessor {
 pub(crate) struct PluginEntry {
     pub(crate) v: Box<dyn IPlugin>,
     pub(crate) config: Option<serde_json::Value>,
+}
+
+struct AssetsConfigProvider;
+
+impl IConfigProvider for AssetsConfigProvider {
+    fn is_available(&self) -> bool {
+        let result = sdl3::filesystem::enumerate_directory("assets://configs/", |_, _| {
+            EnumerationResult::CONTINUE
+        });
+        let available = result.is_ok();
+        if !available {
+            log::warn!("Config folder \'assets://configs/\' does not exist");
+        }
+        available
+    }
+
+    fn enumerate_configs(&self) -> io::Result<Vec<String>> {
+        if !self.is_available() {
+            return Ok(Vec::new());
+        }
+
+        // Collect all .js config files in the config directory into a list
+        let mut items = Vec::new();
+
+        sdl3::filesystem::enumerate_directory("assets://configs/", |_, f| {
+            // Skip non js files
+            if !f.ends_with(".js") {
+                return EnumerationResult::CONTINUE;
+            }
+
+            if let Some(v) = f.to_str() {
+                items.push(v.to_string());
+            }
+
+            EnumerationResult::CONTINUE
+        })
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+
+        Ok(items)
+    }
+
+    fn get_config(&self, name: &str) -> Result<String, RunConfigError> {
+        let config = Path::new("assets://configs").join(name);
+
+        let mut stream = sdl3::iostream::IOStream::from_file(&config, "rb")
+            .map_err(|_| RunConfigError::NoConfig)?;
+
+        let mut string = String::new();
+        stream.read_to_string(&mut string)?;
+
+        string.push('\0');
+        Ok(string)
+    }
 }
