@@ -61,15 +61,10 @@ impl ISubcommand for GenShaderProj {
     }
 
     fn exec(&mut self, project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
-        let platform_arg: String = matches
-            .remove_one("platform")
-            .expect("platform should have a default");
         let profile_arg: String = matches
             .remove_one("profile")
             .expect("profile should have a default");
 
-        let platform = BuildPlatform::from_arg(&platform_arg)
-            .ok_or(anyhow!("Unknown platform \"{}\"", &platform_arg))?;
         let _profile = Profile::from_name(&profile_arg.to_lowercase())
             .ok_or(anyhow!("Unknown profile \"{}\"", &profile_arg))?;
 
@@ -81,7 +76,7 @@ impl ISubcommand for GenShaderProj {
 
         let tool_paths = ToolPaths::new(project)?;
 
-        generate_shader_module_ninja_files(platform, &project_ctx, &tool_paths)?;
+        generate_shader_module_ninja_files(&tool_paths, &project_ctx)?;
         generate_shader_name_bindings(&project_ctx)?;
 
         Ok(())
@@ -124,12 +119,6 @@ impl ToolPaths {
             return Err(anyhow!("Failed to find Slang tool!"));
         };
 
-        // DXC is only needed on windows
-        if Platform::host().is_windows() && dxcompiler_path.is_none() {
-            log::error!("Failed to find DXC tool!");
-            return Err(anyhow!("Failed to find DXC tool!"));
-        }
-
         Ok(Self {
             dxcompiler_path,
             slang_path,
@@ -138,9 +127,8 @@ impl ToolPaths {
 }
 
 fn generate_shader_module_ninja_files(
-    platform: BuildPlatform,
-    project_ctx: &ShaderProjectContext,
     tool_paths: &ToolPaths,
+    project_ctx: &ShaderProjectContext,
 ) -> anyhow::Result<()> {
     // Walk through all the dependency packages that have shaders and create a build.ninja
     // file for them so we can compile the shaders using ninja
@@ -150,7 +138,7 @@ fn generate_shader_module_ninja_files(
         .par_iter()
         .for_each_with(error_send, |error_channel, crate_ctx| {
             log::info!("Generating Ninja Files For: {}", crate_ctx.meta.output_name,);
-            match build_shader_ninja_file_for_package(platform, crate_ctx) {
+            match build_shader_ninja_file_for_package(tool_paths, crate_ctx) {
                 Ok(_) => {}
                 Err(v) => error_channel.send(v).unwrap(),
             }
@@ -203,7 +191,7 @@ fn generate_shader_module_ninja_files(
 }
 
 fn build_shader_ninja_file_for_package(
-    platform: BuildPlatform,
+    tool_paths: &ToolPaths,
     crate_ctx: &ShaderCrateContext,
 ) -> anyhow::Result<()> {
     let mut modules = Vec::new();
@@ -219,14 +207,14 @@ fn build_shader_ninja_file_for_package(
             crate_ctx.meta.output_name,
             module_ctx.module_name
         );
-        build_shader_ninja_file_for_shader_module(platform, module_ctx, &module)?;
+        build_shader_ninja_file_for_shader_module(tool_paths, module_ctx, &module)?;
     }
 
     Ok(())
 }
 
 fn build_shader_ninja_file_for_shader_module(
-    platform: BuildPlatform,
+    tool_paths: &ToolPaths,
     module_ctx: &ShaderModuleContext,
     module: &ShaderModuleDefinition,
 ) -> anyhow::Result<()> {
@@ -266,8 +254,8 @@ fn build_shader_ninja_file_for_shader_module(
                 None => continue,
             };
 
-            // Only build dxil on windows, where the full dxil pipeline will be available.
-            if platform == BuildPlatform::Windows {
+            // Only build dxil when dxc is available.
+            if let Some(_) = tool_paths.dxcompiler_path.as_deref() {
                 output_build_statement_for_shader(
                     &mut ninja_file,
                     module_ctx,

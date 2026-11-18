@@ -90,7 +90,7 @@ pub struct AlephProject<'a> {
     /// The path to the '.aleph/sdk/{ndk}' folder appropriate for the host system,
     android_ndk_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/dxc/bin/{platform}/dxc' executable for this project
+    /// The path to the '.aleph/sdk/dxc/.../libdxcompiler' library for this project
     dxc_path: Utf8PathBuf,
 
     /// The path to the '.aleph/sdk/slang/bin/{platform}/release/slangc' executable for this
@@ -168,20 +168,26 @@ impl<'a> AlephProject<'a> {
         let mut android_ndk_path = sdk_path.clone();
         android_ndk_path.push("android-ndk-r30");
 
-        let mut dxc_path = sdk_path.clone();
-        dxc_path.push("dxc");
-        dxc_path.push("bin");
+        let mut dxc_bin_path = sdk_path.clone();
+        dxc_bin_path.push("dxc");
+        dxc_bin_path.push("bin");
         if Platform::host().is_windows() {
             let arch = match Architecture::host() {
                 Architecture::X8664 => "x64",
                 Architecture::AARCH64 => "arm64",
                 Architecture::Unknown => unreachable!(),
             };
-            dxc_path.push(arch);
-            dxc_path.push("dxc.exe");
-        } else {
-            dxc_path.push("dxc");
+            dxc_bin_path.push(arch);
         }
+
+        let dxc_path = match Platform::host() {
+            Platform::WindowsGNU | Platform::WindowsMSVC => dxc_bin_path.join("dxc.exe"),
+            Platform::Linux => sdk_path.join("dxc").join("lib").join("libdxcompiler.so"),
+            Platform::MacOS => sdk_path.join("dxc").join("lib").join("libdxcompiler.dylib"),
+            Platform::IOS => unreachable!(),
+            Platform::Android => unreachable!(),
+            Platform::Unknown => unreachable!(),
+        };
 
         let mut slang_path = sdk_path.clone();
         slang_path.push("slang");
@@ -354,7 +360,7 @@ impl<'a> AlephProject<'a> {
         &self.android_ndk_path
     }
 
-    /// Returns the path to the project's bundled dxc, in '.aleph/sdk/dxc/bin/{platform}/dxc'.
+    /// Returns the path to the project's bundled dxc, in '.aleph/sdk/dxc/.../libdxcompiler'.
     /// This path may not exist so check before using!
     pub fn dxc_path(&self) -> &Utf8Path {
         &self.dxc_path
