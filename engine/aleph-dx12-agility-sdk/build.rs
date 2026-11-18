@@ -36,7 +36,12 @@ pub fn main() {
         println!("cargo::rerun-if-changed=src");
         println!("cargo::rerun-if-changed=cmake");
 
-        let mut pkg_location = cmake::Config::new("cmake").no_build_target(true).build();
+        let mut config = cmake::Config::new("cmake");
+        config.no_build_target(true);
+        if let Some(toolchain) = aleph_compile::mingw_cross_toolchain_file() {
+            config.define("CMAKE_TOOLCHAIN_FILE", toolchain);
+        }
+        let mut pkg_location = config.build();
         pkg_location.extend(["build", "_deps", "d3d12_agility_sdk-src", "build", "native"]);
 
         if let Some(build_root) = aleph_compile::build_root() {

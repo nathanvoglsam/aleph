@@ -94,6 +94,25 @@ impl Platform {
         Self::from_triple(&target)
     }
 
+    /// Returns the host platform that we're currently building a rust crate in.
+    ///
+    /// When called inside a `build.rs` script this will yield the host platform for the
+    /// current build. This _will_ return the platform for the build machine itself.
+    ///
+    /// Under cross compilation [`Platform::build_host`] and [`Platform::build_target`] will _not_
+    /// match inside a build script.
+    ///
+    /// # Build Script
+    ///
+    /// This is only sane to use within the `build.rs` script. Use outside of build script is likely
+    /// to panic, but may return if someone defines the appropriate env vars to mimic how cargo
+    /// invokes build scripts.
+    #[inline(always)]
+    pub fn build_host() -> Platform {
+        let target = std::env::var("HOST").unwrap();
+        Self::from_triple(&target)
+    }
+
     pub const fn name(self) -> &'static str {
         match self {
             Platform::WindowsGNU => "windows-gnu",

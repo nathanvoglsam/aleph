@@ -43,6 +43,9 @@ fn main() {
     match target_platform {
         Platform::WindowsGNU | Platform::WindowsMSVC => {
             let mut config = cmake::Config::new("cmake");
+            if let Some(toolchain) = compile::mingw_cross_toolchain_file() {
+                config.define("CMAKE_TOOLCHAIN_FILE", toolchain);
+            }
 
             // We can't build 'Debug' on Windows because we can't link with the debug C runtime
             if BuildConfig::build_target().is_debug() {
@@ -54,7 +57,13 @@ fn main() {
             let dst = config.build();
             let dst = dst.join("lib");
             println!("cargo:rustc-link-search=native={}", dst.display());
-            println!("cargo:rustc-link-lib=static=SDL3-static");
+            // The MSVC build of SDL3 produces 'SDL3-static.lib' while the mingw build produces
+            // 'libSDL3.a'
+            if target_platform.is_msvc() {
+                println!("cargo:rustc-link-lib=static=SDL3-static");
+            } else {
+                println!("cargo:rustc-link-lib=static=SDL3");
+            }
 
             // Hand unrolled from the generated pkg-config. These are the dependencies of
             // SDL3 that we must link to as well.

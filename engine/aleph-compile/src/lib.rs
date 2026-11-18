@@ -35,6 +35,22 @@ pub fn build_root() -> Option<PathBuf> {
         .inspect(|_| println!("cargo:rerun-if-env-changed=ALEPH_BUILD_ROOT"))
 }
 
+/// Returns a path to a CMAKE toolchain file for cross-compiling with MinGW on Windows.
+///
+/// This will return `Some(PathBuf)` if cross-compiling with MinGW on a non-windows host, otherwise
+/// it will return `None`.
+pub fn mingw_cross_toolchain_file() -> Option<PathBuf> {
+    use aleph_target::Platform;
+    if Platform::build_target().is_windows() && !Platform::build_host().is_windows() {
+        let toolchain =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("cmake/mingw-w64-x86_64.cmake");
+        println!("cargo::rerun-if-changed={}", toolchain.display());
+        Some(toolchain)
+    } else {
+        None
+    }
+}
+
 pub fn rerun_if_android_env_changed() {
     println!("cargo::rerun-if-env-changed=ANDROID_NDK_HOME");
     println!("cargo::rerun-if-env-changed=ANDROID_NDK_ROOT");

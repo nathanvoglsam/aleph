@@ -35,7 +35,6 @@ pub fn add_platform_flags() {
     }
 }
 
-#[cfg(windows)]
 fn compile_and_link_windows_resource_file() {
     use std::path::{Path, PathBuf};
 
@@ -56,6 +55,3 @@ fn compile_and_link_windows_resource_file() {
         .manifest_required()
         .unwrap();
 }
-
-#[cfg(not(windows))]
-fn compile_and_link_windows_resource_file() {}

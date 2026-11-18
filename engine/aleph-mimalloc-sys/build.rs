@@ -36,6 +36,9 @@ fn main() {
     println!("cargo::rerun-if-changed=cmake");
 
     let mut config = cmake::Config::new("cmake");
+    if let Some(toolchain) = aleph_compile::mingw_cross_toolchain_file() {
+        config.define("CMAKE_TOOLCHAIN_FILE", toolchain);
+    }
 
     // We can't build 'Debug' on Windows because we can't link with the debug C runtime
     if Platform::build_target().is_windows() && BuildConfig::build_target().is_debug() {
