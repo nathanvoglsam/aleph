@@ -181,7 +181,7 @@ impl<'a> AlephProject<'a> {
         }
 
         let dxc_path = match Platform::host() {
-            Platform::WindowsGNU | Platform::WindowsMSVC => dxc_bin_path.join("dxc.exe"),
+            Platform::WindowsGNU | Platform::WindowsMSVC => dxc_bin_path.join("dxcompiler.dll"),
             Platform::Linux => sdk_path.join("dxc").join("lib").join("libdxcompiler.so"),
             Platform::MacOS => sdk_path.join("dxc").join("lib").join("libdxcompiler.dylib"),
             Platform::IOS => unreachable!(),
