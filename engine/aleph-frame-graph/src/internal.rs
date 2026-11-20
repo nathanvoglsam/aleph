@@ -34,7 +34,7 @@
 
 use std::ptr::NonNull;
 
-use aleph_alloc::{BBox, BVec, Blink, BlinkAlloc};
+use aleph_alloc::blink_alloc::{Blink, BlinkAlloc};
 use aleph_nstr::NStr;
 use aleph_rhi_api::*;
 
@@ -43,7 +43,7 @@ use crate::resource::ResourceId;
 use crate::{IRenderPass, ResourceVariant, Result};
 
 pub(crate) struct RenderPass<A: PassArgs> {
-    pub pass: BBox<dyn IRenderPass<A>, FgRoot>,
+    pub pass: Box<dyn IRenderPass<A>, FgRoot>,
     pub name: NonNull<NStr>,
     pub skip: bool,
 }
@@ -136,8 +136,8 @@ impl ResourceVersion {
         &'a self,
         format: Format,
         bump: &'b Blink<BlinkAlloc<FgRoot>>,
-    ) -> BVec<(&'a VersionReaderLink, ImageLayout), &'b BlinkAlloc<FgRoot>> {
-        let mut reads = BVec::with_capacity_in(self.read_count, bump.allocator());
+    ) -> Vec<(&'a VersionReaderLink, ImageLayout), &'b BlinkAlloc<FgRoot>> {
+        let mut reads = Vec::with_capacity_in(self.read_count, bump.allocator());
         reads.extend(
             self.reads_iter()
                 .map(|v| (v, v.access.image_layout(true, format))),
