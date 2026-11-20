@@ -28,3 +28,4 @@
 //
 
 pub mod drain;
+pub mod into_iter;

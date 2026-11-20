@@ -31,7 +31,7 @@ use std::alloc::{Allocator, Global};
 use std::collections::Bound;
 use std::fmt;
 use std::iter::FusedIterator;
-use std::mem::{self, size_of, ManuallyDrop};
+use std::mem::{self, ManuallyDrop, size_of};
 use std::ops::RangeBounds;
 use std::ptr::{self, NonNull};
 use std::slice::{self};
