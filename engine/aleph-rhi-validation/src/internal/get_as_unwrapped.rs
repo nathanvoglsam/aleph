@@ -34,7 +34,6 @@
 
 use std::any::TypeId;
 
-use aleph_alloc::BVec;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiRoot;
 
@@ -101,7 +100,7 @@ pub fn queue_submit_desc<Return>(
     desc: QueueSubmitDesc,
     f: impl FnOnce(QueueSubmitDesc) -> Return,
 ) -> Return {
-    let mut command_lists = BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
+    let mut command_lists = Vec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
     command_lists.extend(desc.command_lists.iter_mut().map(|v| {
         let v = v.take().unwrap();
         let v = {
@@ -116,7 +115,7 @@ pub fn queue_submit_desc<Return>(
         Some(v)
     }));
 
-    let mut wait_fences = BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
+    let mut wait_fences = Vec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
     wait_fences.extend(
         desc.wait_fences
             .iter()
@@ -125,7 +124,7 @@ pub fn queue_submit_desc<Return>(
             .map(|v| &v.inner),
     );
 
-    let mut signal_fences = BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
+    let mut signal_fences = Vec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
     signal_fences.extend(
         desc.signal_fences
             .iter()

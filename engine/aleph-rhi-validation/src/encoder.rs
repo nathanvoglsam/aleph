@@ -31,7 +31,6 @@ use std::any::TypeId;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use aleph_alloc::BVec;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
@@ -85,7 +84,7 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
                 "Called a general command on a non-general capable command list"
             );
 
-            let mut new_bindings = BVec::with_capacity_in(bindings.len(), RhiRoot::default());
+            let mut new_bindings = Vec::with_capacity_in(bindings.len(), RhiRoot::default());
             new_bindings.extend(
                 bindings
                     .iter()
@@ -177,7 +176,7 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
             Self::validate_rendering_attachments(info);
 
             let mut new_color_attachments =
-                BVec::with_capacity_in(info.color_attachments.len(), RhiRoot::default());
+                Vec::with_capacity_in(info.color_attachments.len(), RhiRoot::default());
             new_color_attachments.extend(
                 info.color_attachments
                     .iter()
@@ -301,7 +300,7 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
             let binding_signature = unwrap::binding_signature(binding_signature).inner.as_ref();
 
             unsafe {
-                let mut new_blocks = BVec::with_capacity_in(blocks.len(), RhiRoot::default());
+                let mut new_blocks = Vec::with_capacity_in(blocks.len(), RhiRoot::default());
                 new_blocks.extend(
                     blocks
                         .iter()
@@ -390,12 +389,12 @@ impl<'a, T: ICommandEncoderAbi + ?Sized + 'a> ICommandEncoderAbi for ValidationE
             });
 
             let mut new_buffer_barriers =
-                BVec::with_capacity_in(buffer_barriers.len(), RhiRoot::default());
+                Vec::with_capacity_in(buffer_barriers.len(), RhiRoot::default());
             new_buffer_barriers
                 .extend(buffer_barriers.iter().map(get_as_unwrapped::buffer_barrier));
 
             let mut new_texture_barriers =
-                BVec::with_capacity_in(texture_barriers.len(), RhiRoot::default());
+                Vec::with_capacity_in(texture_barriers.len(), RhiRoot::default());
             new_texture_barriers.extend(
                 texture_barriers
                     .iter()

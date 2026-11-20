@@ -31,7 +31,8 @@ use std::collections::HashSet;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::{BBox, BVec};
+use aleph_alloc::instrumentation::system;
+use aleph_alloc::polyfills::box_str_in;
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
@@ -176,14 +177,14 @@ impl IDevice for ValidationDevice {
             }
 
             let mut parameter_block_layouts =
-                BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiRoot::default());
+                Vec::with_capacity_in(desc.parameter_block_layouts.len(), RhiRoot::default());
             parameter_block_layouts.extend(
                 desc.parameter_block_layouts
                     .iter()
                     .map(|v| unwrap::parameter_block_layout_d(v)._this.upgrade().unwrap()),
             );
             let mut parameter_block_layouts_inner =
-                BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiRoot::default());
+                Vec::with_capacity_in(desc.parameter_block_layouts.len(), RhiRoot::default());
             parameter_block_layouts_inner.extend(
                 desc.parameter_block_layouts
                     .iter()
@@ -359,7 +360,7 @@ impl IDevice for ValidationDevice {
                     _device: self._this.upgrade().unwrap(),
                     size: desc.size,
                     usage: desc.usage,
-                    name: desc.name.map(|v| BBox::from(v)),
+                    name: desc.name.map(|v| box_str_in(v, system())),
                     inner,
                     views: Default::default(),
                 })

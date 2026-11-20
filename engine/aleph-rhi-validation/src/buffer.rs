@@ -29,7 +29,7 @@
 
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::{BBox, BHashMap};
+use aleph_alloc::BHashMap;
 use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiRoot;
@@ -42,7 +42,7 @@ pub struct ValidationBuffer {
     pub(crate) _device: Arc<ValidationDevice>,
     pub(crate) size: u64,
     pub(crate) usage: ResourceUsageFlags,
-    pub(crate) name: Option<BBox<str, RhiRoot>>,
+    pub(crate) name: Option<Box<str, RhiRoot>>,
     pub(crate) inner: BufferHandle,
     pub(crate) views: Mutex<BHashMap<BufferViewDesc, Box<ValidationBufferView>, RhiRoot>>,
 }
