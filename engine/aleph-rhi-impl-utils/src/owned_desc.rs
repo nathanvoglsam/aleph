@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_alloc::{BBox, BVec};
+use std::alloc::Allocator;
+
 use aleph_rhi_api::*;
 
 use crate::RhiRoot;
@@ -48,8 +49,8 @@ impl OwnedBufferDesc {
         // Allocate the name on the heap and update the desc with the new allocated name ptr
         let name: Option<&str> = match desc.name {
             Some(name) => {
-                let v = BBox::<_, RhiRoot>::from(name);
-                let v = BBox::leak(v);
+                let v = box_str_in(name, RhiRoot::default());
+                let v = unsafe { Box::into_raw_with_allocator(v).0.as_ref_unchecked() };
                 Some(v)
             }
             None => None,
@@ -82,7 +83,7 @@ impl Drop for OwnedBufferDesc {
             //         is really a Box<str> so we reconstitute the box and drop it here.
             unsafe {
                 let v = v as *const str as *mut str;
-                let v: BBox<str, RhiRoot> = BBox::from_raw_in(v, RhiRoot::default());
+                let v: Box<str, RhiRoot> = Box::from_raw_in(v, RhiRoot::default());
                 drop(v);
             }
         }
@@ -105,8 +106,8 @@ impl OwnedTextureDesc {
         // Allocate the name on the heap and update the desc with the new allocated name ptr
         let name: Option<&str> = match desc.name {
             Some(name) => {
-                let v = BBox::<_, RhiRoot>::from(name);
-                let v = BBox::leak(v);
+                let v = box_str_in(name, RhiRoot::default());
+                let v = unsafe { Box::into_raw_with_allocator(v).0.as_ref_unchecked() };
                 Some(v)
             }
             None => None,
@@ -138,7 +139,7 @@ impl Drop for OwnedTextureDesc {
             //         is really a Box<str> so we reconstitute the box and drop it here.
             unsafe {
                 let v = v as *const str as *mut str;
-                let v = BBox::from_raw_in(v, RhiRoot::default());
+                let v = Box::from_raw_in(v, RhiRoot::default());
                 drop(v);
             }
         }
@@ -161,8 +162,8 @@ impl OwnedSamplerDesc {
         // Allocate the name on the heap and update the desc with the new allocated name ptr
         let name: Option<&str> = match desc.name {
             Some(name) => {
-                let v = BBox::<_, RhiRoot>::from(name);
-                let v = BBox::leak(v);
+                let v = box_str_in(name, RhiRoot::default());
+                let v = unsafe { Box::into_raw_with_allocator(v).0.as_ref_unchecked() };
                 Some(v)
             }
             None => None,
@@ -194,7 +195,7 @@ impl Drop for OwnedSamplerDesc {
             //         is really a Box<str> so we reconstitute the box and drop it here.
             unsafe {
                 let v = v as *const str as *mut str;
-                let v = BBox::from_raw_in(v, RhiRoot::default());
+                let v = Box::from_raw_in(v, RhiRoot::default());
                 drop(v);
             }
         }
@@ -215,18 +216,18 @@ impl OwnedParameterBlockDesc {
     /// desc getter functions.
     pub fn new(desc: &ParameterBlockDesc) -> Self {
         let params = {
-            let mut params = BVec::with_capacity_in(desc.params.len(), RhiRoot::default());
+            let mut params = Vec::with_capacity_in(desc.params.len(), RhiRoot::default());
             params.extend_from_slice(desc.params);
             params.shrink_to_fit();
             let params = params.into_boxed_slice();
-            BBox::leak(params)
+            Box::leak(params)
         };
 
         // Allocate the name on the heap and update the desc with the new allocated name ptr
         let name: Option<&str> = match desc.name {
             Some(name) => {
-                let v = BBox::<_, RhiRoot>::from(name);
-                let v = BBox::leak(v);
+                let v = box_str_in(name, RhiRoot::default());
+                let v = unsafe { Box::into_raw_with_allocator(v).0.as_ref_unchecked() };
                 Some(v)
             }
             None => None,
@@ -261,7 +262,7 @@ impl Drop for OwnedParameterBlockDesc {
         //         is really a Box<[]> so we reconstitute the box and drop it here.
         unsafe {
             let v = self.desc.params as *const [ParameterDesc] as *mut [ParameterDesc];
-            let v = BBox::from_raw_in(v, RhiRoot::default());
+            let v = Box::from_raw_in(v, RhiRoot::default());
             drop(v);
         }
         if let Some(v) = self.desc.name {
@@ -269,9 +270,20 @@ impl Drop for OwnedParameterBlockDesc {
             //         is really a Box<str> so we reconstitute the box and drop it here.
             unsafe {
                 let v = v as *const str as *mut str;
-                let v = BBox::from_raw_in(v, RhiRoot::default());
+                let v = Box::from_raw_in(v, RhiRoot::default());
                 drop(v);
             }
         }
     }
+}
+
+// TODO: Remove this function once `Box::from` is stable with a custom allocator.
+/// Copies `s` into a new `Box<str, A>` allocated with `alloc`.
+fn box_str_in<A: Allocator>(s: &str, alloc: A) -> Box<str, A> {
+    let mut bytes = Vec::with_capacity_in(s.len(), alloc);
+    bytes.extend_from_slice(s.as_bytes());
+    let boxed: Box<[u8], A> = bytes.into_boxed_slice();
+    let (ptr, alloc) = Box::into_raw_with_allocator(boxed);
+    // Safety: the bytes were copied from a `&str`, so they are valid UTF-8.
+    unsafe { Box::from_raw_in(ptr as *mut str, alloc) }
 }

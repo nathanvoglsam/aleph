@@ -30,7 +30,7 @@
 use std::cell::Cell;
 use std::ops::{Deref, DerefMut};
 
-use aleph_alloc::{Blink, BlinkAlloc};
+use aleph_alloc::blink_alloc::{Blink, BlinkAlloc};
 
 use crate::RhiRoot;
 

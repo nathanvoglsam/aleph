@@ -31,7 +31,6 @@ use std::cell::{Cell, RefCell};
 use std::mem::{MaybeUninit, needs_drop};
 use std::ptr::NonNull;
 
-use aleph_alloc::{BBox, BVec};
 use aleph_rhi_api::{DescriptorAllocateError, ParameterBlockHandle};
 
 use crate::RhiRoot;
@@ -62,7 +61,7 @@ pub struct ParameterBlockPool<I: IBlockFactory> {
     num_blocks: Cell<usize>,
 
     /// Free list of descriptors
-    free_list: RefCell<BVec<ParameterBlockHandle, RhiRoot>>,
+    free_list: RefCell<Vec<ParameterBlockHandle, RhiRoot>>,
 
     /// Generic initializer object that handles creating the underlying parameter block objects
     /// once they have been allocated
@@ -71,14 +70,21 @@ pub struct ParameterBlockPool<I: IBlockFactory> {
 
 impl<I: IBlockFactory> ParameterBlockPool<I> {
     pub fn new(factory: I, capacity: usize) -> Self {
-        let pool = BBox::new_uninit_slice_in(capacity, RhiRoot::default());
+        // TODO: Use BBox::new_uninit_slice_in(capacity, RhiRoot::default()) when stable
+        let pool = {
+            let mut buf: Vec<MaybeUninit<I::T>, RhiRoot> =
+                Vec::with_capacity_in(capacity, RhiRoot::default());
+            // Safety: MaybeUninit elements don't need to be initialized
+            unsafe { buf.set_len(capacity) };
+            buf.into_boxed_slice()
+        };
         let num_allocated = Cell::new(0);
         let num_blocks = Cell::new(0);
-        let free_list = RefCell::new(BVec::with_capacity_in(64, RhiRoot::default()));
+        let free_list = RefCell::new(Vec::with_capacity_in(64, RhiRoot::default()));
         let factory = RefCell::new(factory);
         Self {
             pool: PoolStorage {
-                buf: NonNull::from(BBox::leak(pool)),
+                buf: NonNull::from(Box::leak(pool)),
             },
             num_allocated,
             num_blocks,
@@ -256,10 +262,7 @@ impl<I: IBlockFactory> Drop for ParameterBlockPool<I> {
             }
 
             // Now we can free the backing pool allocation.
-            drop(BBox::from_raw_in(
-                self.pool.buf.as_ptr(),
-                RhiRoot::default(),
-            ));
+            drop(Box::from_raw_in(self.pool.buf.as_ptr(), RhiRoot::default()));
         }
     }
 }
