@@ -27,11 +27,9 @@
 // SOFTWARE.
 //
 
-use std::alloc::{Layout, LayoutError, handle_alloc_error};
+use std::alloc::{Allocator, Global, Layout, LayoutError, handle_alloc_error};
 use std::cmp::Ordering;
 use std::ptr::NonNull;
-
-use aleph_alloc::alloc::{Allocator, Global};
 
 /// Basic 'stretchy buffer' data structure. Provides an aligned buffer allocated in multiples of
 /// some element type.

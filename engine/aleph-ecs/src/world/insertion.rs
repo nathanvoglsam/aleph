@@ -27,11 +27,9 @@
 // SOFTWARE.
 //
 
+use std::alloc::Allocator;
 use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
-
-use aleph_alloc::BVec;
-use aleph_alloc::alloc::Allocator;
 
 use crate::component::{Component, ComponentId};
 use crate::world::World;
@@ -232,7 +230,7 @@ impl<T: Component, const LEN: usize> ComponentColumn for [T; LEN] {
     }
 }
 
-impl<T: Component> ComponentColumn for Vec<T> {
+impl<T: Component, A: Allocator> ComponentColumn for Vec<T, A> {
     fn id() -> ComponentId {
         T::DESC.id
     }
@@ -245,37 +243,8 @@ impl<T: Component> ComponentColumn for Vec<T> {
         debug_assert_eq!(count, self.len());
         unsafe {
             // Transform the vec so it contains ManuallyDrop<T> so it won't drop the components
-            let (ptr, length, capacity) = Vec::into_raw_parts(self);
-            let this = Vec::from_raw_parts(ptr as *mut ManuallyDrop<T>, length, capacity);
-
-            // And do the copy. The vec still gets dropped to clean up the memory, but won't drop
-            // the components
-            let this_ptr = NonNull::from_ref(this.as_slice());
-            if !this_ptr.is_empty() {
-                let this_ptr = this_ptr.cast::<T>();
-                let dst_ptr = dst_ptr.cast::<T>();
-                dst_ptr.copy_from_nonoverlapping(this_ptr, count);
-            }
-        }
-    }
-}
-
-impl<T: Component, A: Allocator> ComponentColumn for BVec<T, A> {
-    fn id() -> ComponentId {
-        T::DESC.id
-    }
-
-    fn len(&self) -> usize {
-        self.len()
-    }
-
-    unsafe fn copy_into_column(self, dst_ptr: NonNull<u8>, _component_size: usize, count: usize) {
-        debug_assert_eq!(count, self.len());
-        unsafe {
-            // Transform the vec so it contains ManuallyDrop<T> so it won't drop the components
-            let (ptr, length, capacity, alloc) = BVec::into_raw_parts_with_alloc(self);
-            let this =
-                BVec::from_raw_parts_in(ptr as *mut ManuallyDrop<T>, length, capacity, alloc);
+            let (ptr, length, capacity, alloc) = Vec::into_raw_parts_with_allocator(self);
+            let this = Vec::from_raw_parts_in(ptr as *mut ManuallyDrop<T>, length, capacity, alloc);
 
             // And do the copy. The vec still gets dropped to clean up the memory, but won't drop
             // the components

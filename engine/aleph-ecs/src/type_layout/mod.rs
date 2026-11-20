@@ -27,14 +27,13 @@
 // SOFTWARE.
 //
 
+use std::alloc::{Allocator, Global};
 use std::borrow::Borrow;
 use std::convert::TryFrom;
 use std::iter::FromIterator;
 use std::ops::Deref;
 
-use aleph_alloc::alloc::{Allocator, Global};
-use aleph_alloc::vec::IntoIter as BIntoIter;
-use aleph_alloc::{BBox, BVec};
+use aleph_alloc::polyfills::into_iter::{IntoIter, vec_into_iter};
 
 use crate::component::ComponentId;
 
@@ -63,13 +62,13 @@ use crate::component::ComponentId;
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct TypeLayoutBuf<A: Allocator = Global> {
-    components: BVec<ComponentId, A>,
+    components: Vec<ComponentId, A>,
 }
 
 impl<A: Allocator + Default> Default for TypeLayoutBuf<A> {
     fn default() -> Self {
         Self {
-            components: BVec::new_in(Default::default()),
+            components: Vec::new_in(Default::default()),
         }
     }
 }
@@ -79,7 +78,7 @@ impl TypeLayoutBuf<Global> {
     #[inline]
     pub const fn new() -> TypeLayoutBuf {
         Self {
-            components: BVec::new(),
+            components: Vec::new(),
         }
     }
 
@@ -87,7 +86,7 @@ impl TypeLayoutBuf<Global> {
     #[inline]
     pub fn with_capacity(capacity: usize) -> TypeLayoutBuf {
         Self {
-            components: BVec::with_capacity(capacity),
+            components: Vec::with_capacity(capacity),
         }
     }
 }
@@ -95,9 +94,9 @@ impl TypeLayoutBuf<Global> {
 impl<A: Allocator> TypeLayoutBuf<A> {
     /// Constructs a new, empty `TypeLayoutBuf`.
     #[inline]
-    pub const fn new_in(alloc: A) -> Self {
+    pub fn new_in(alloc: A) -> Self {
         Self {
-            components: BVec::new_in(alloc),
+            components: Vec::new_in(alloc),
         }
     }
 
@@ -105,14 +104,14 @@ impl<A: Allocator> TypeLayoutBuf<A> {
     #[inline]
     pub fn with_capacity_in(capacity: usize, alloc: A) -> Self {
         Self {
-            components: BVec::with_capacity_in(capacity, alloc),
+            components: Vec::with_capacity_in(capacity, alloc),
         }
     }
 
     /// Constructs a new [`TypeLayoutBuf`] from the given 'layout' using the given allocator.
     #[inline]
     pub fn from_layout_in(layout: &TypeLayout, alloc: A) -> Self {
-        let mut components = BVec::with_capacity_in(layout.components.len(), alloc);
+        let mut components = Vec::with_capacity_in(layout.components.len(), alloc);
         components.extend(layout.components.iter().copied());
         Self { components }
     }
@@ -151,11 +150,11 @@ impl<A: Allocator> TypeLayoutBuf<A> {
     /// If the buffer has excess capacity, its items will be moved into a
     /// newly-allocated buffer with exactly the right capacity.
     #[inline]
-    pub fn into_boxed_slice(self) -> BBox<TypeLayout, A> {
+    pub fn into_boxed_slice(self) -> Box<TypeLayout, A> {
         let v = self.components.into_boxed_slice();
-        let (v, a) = BBox::<[ComponentId], A>::into_raw_with_allocator(v);
+        let (v, a) = Box::<[ComponentId], A>::into_raw_with_allocator(v);
         let v = v as *mut TypeLayout;
-        unsafe { BBox::<_, A>::from_raw_in(v, a) }
+        unsafe { Box::<_, A>::from_raw_in(v, a) }
     }
 }
 
@@ -188,27 +187,27 @@ impl<A: Allocator> Borrow<TypeLayout> for TypeLayoutBuf<A> {
 impl<A: Allocator> IntoIterator for TypeLayoutBuf<A> {
     type Item = ComponentId;
 
-    type IntoIter = BIntoIter<ComponentId, A>;
+    type IntoIter = IntoIter<ComponentId, A>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        self.components.into_iter()
+        vec_into_iter(self.components)
     }
 }
 
 impl FromIterator<ComponentId> for TypeLayoutBuf<Global> {
     #[inline]
     fn from_iter<T: IntoIterator<Item = ComponentId>>(iter: T) -> Self {
-        let mut components = BVec::from_iter(iter);
+        let mut components = Vec::from_iter(iter);
         components.sort();
         Self { components }
     }
 }
 
-impl<A: Allocator> TryFrom<BVec<ComponentId, A>> for TypeLayoutBuf<A> {
+impl<A: Allocator> TryFrom<Vec<ComponentId, A>> for TypeLayoutBuf<A> {
     type Error = ();
 
-    fn try_from(components: BVec<ComponentId, A>) -> Result<Self, Self::Error> {
+    fn try_from(components: Vec<ComponentId, A>) -> Result<Self, Self::Error> {
         if TypeLayout::from_inner(&components).is_some() {
             Ok(Self { components })
         } else {

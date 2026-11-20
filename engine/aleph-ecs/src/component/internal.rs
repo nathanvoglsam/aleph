@@ -29,8 +29,8 @@
 
 use std::sync::LazyLock;
 
+use aleph_alloc::BHashMap;
 use aleph_alloc::instrumentation::system;
-use aleph_alloc::{BHashMap, BVec};
 use init_list::{InitList, ListItem};
 
 use crate::EcsRoot;
@@ -42,13 +42,13 @@ use crate::component::{ComponentDescription, ComponentId};
 pub type ComponentIdMap<T> = BHashMap<ComponentId, T, EcsRoot>;
 
 /// A lazily initialized table of all types registered into the object system.
-pub static COMPONENTS: LazyLock<BVec<&'static ComponentDescription, EcsRoot>> =
+pub static COMPONENTS: LazyLock<Vec<&'static ComponentDescription, EcsRoot>> =
     LazyLock::new(|| {
         // We don't care if someone's sealed the list before, only that it has been sealed.
         let _ = __UNSAFE_COMPONENT_REGISTRY_HEAD.seal();
 
         // Pull all the type descriptions into a list
-        let mut list = BVec::new_in(system());
+        let mut list = Vec::new_in(system());
         for t in __UNSAFE_COMPONENT_REGISTRY_HEAD.iter().copied() {
             list.push(LazyLock::force(t));
         }

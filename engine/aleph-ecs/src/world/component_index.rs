@@ -29,8 +29,8 @@
 
 use std::ops::{Index, IndexMut};
 
+use aleph_alloc::BHashMap;
 use aleph_alloc::instrumentation::system;
-use aleph_alloc::{BHashMap, BVec};
 
 use crate::component::{ComponentDescription, ComponentId};
 use crate::entity::EntityHandle;
@@ -42,14 +42,14 @@ use crate::world::component_index::alloc::ComponentIndexRoot;
 /// This is basically just an append only `Vec`.
 pub struct ComponentIndex {
     /// The list of all component types registered with some ECS world.
-    components: BVec<ComponentEntry, ComponentIndexRoot>,
+    components: Vec<ComponentEntry, ComponentIndexRoot>,
 }
 
 impl ComponentIndex {
     /// Construct a new, empty Self
     pub fn new() -> Self {
         Self {
-            components: BVec::new_in(system()),
+            components: Vec::new_in(system()),
         }
     }
 

@@ -37,7 +37,7 @@ use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
 use aleph_alloc::instrumentation::system;
-use aleph_alloc::{BBox, BHashMap, BHashSet, BVec};
+use aleph_alloc::{BHashMap, BHashSet};
 
 use crate::EcsRoot;
 use crate::archetype::Archetype;
@@ -185,16 +185,16 @@ pub struct World {
     pub(crate) entities: EntityHandleArena,
 
     /// The list of all archetypes in the ECS world
-    pub(crate) archetypes: BVec<Archetype, EcsRoot>,
+    pub(crate) archetypes: Vec<Archetype, EcsRoot>,
 
     /// Map that maps an entity layout to the index inside the archetypes list
-    pub(crate) archetype_map: BHashMap<BBox<TypeLayout, EcsRoot>, usize, EcsRoot>,
+    pub(crate) archetype_map: BHashMap<Box<TypeLayout, EcsRoot>, usize, EcsRoot>,
 
     /// Holds the edges of the archetype graph. Maps component ID to the links.
-    pub(crate) archetype_add_edges: BVec<ComponentIdMap<usize>, EcsRoot>,
+    pub(crate) archetype_add_edges: Vec<ComponentIdMap<usize>, EcsRoot>,
 
     /// Holds the edges of the archetype graph. Maps component ID to the links.
-    pub(crate) archetype_del_edges: BVec<ComponentIdMap<usize>, EcsRoot>,
+    pub(crate) archetype_del_edges: Vec<ComponentIdMap<usize>, EcsRoot>,
 }
 
 impl World {
@@ -212,10 +212,10 @@ impl World {
 
         let entities = EntityHandleArena::new_in();
 
-        let mut archetypes = BVec::with_capacity_in(1, system());
+        let mut archetypes = Vec::with_capacity_in(1, system());
         let mut archetype_map = BHashMap::new_in(system());
-        let mut archetype_add_edges = BVec::with_capacity_in(1, system());
-        let mut archetype_del_edges = BVec::with_capacity_in(1, system());
+        let mut archetype_add_edges = Vec::with_capacity_in(1, system());
+        let mut archetype_del_edges = Vec::with_capacity_in(1, system());
 
         archetypes.push(Archetype::new(&components, TypeLayout::empty()));
         archetype_map.insert(TypeLayoutBuf::new_in(system()).into_boxed_slice(), 0);
@@ -1092,7 +1092,7 @@ impl World {
 
         // If there's too many component types we fall back to a heap allocation for our
         // layout scratch space.
-        let mut indices_heap: BVec<_, EcsRoot> = BVec::new_in(system());
+        let mut indices_heap: Vec<_, EcsRoot> = Vec::new_in(system());
 
         let indices = if types.len() <= indices_stack.len() {
             // Take a sub-slice of the stack space to use as scratch space.

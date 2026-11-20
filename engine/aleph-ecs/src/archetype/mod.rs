@@ -30,7 +30,6 @@
 pub mod column;
 
 use aleph_alloc::instrumentation::system;
-use aleph_alloc::{BBox, BVec};
 use aleph_gen_arena::HandleType;
 
 use crate::EcsRoot;
@@ -77,17 +76,17 @@ use crate::world::component_index::ComponentIndex;
 /// responsible for implementing the ECS semantics.
 pub struct Archetype {
     /// The layout of this archetype
-    pub(crate) type_layout: BBox<TypeLayout, EcsRoot>,
+    pub(crate) type_layout: Box<TypeLayout, EcsRoot>,
 
     /// A list that maps an entity's index in the archetype storage back to the ID it was allocated
     /// with.
     ///
     /// Typically used by iterators that yield an `EntityID` alongside the components.
-    pub(crate) entity_handles: BVec<EntityHandle, EcsRoot>,
+    pub(crate) entity_handles: Vec<EntityHandle, EcsRoot>,
 
     /// A list of all the storages of each component type in the entity layout, indexed by the
     /// storage index.
-    pub(crate) columns: BVec<Column<EcsRoot>, EcsRoot>,
+    pub(crate) columns: Vec<Column<EcsRoot>, EcsRoot>,
 
     /// The number of live entities currently stored in this archetype
     len: usize,
@@ -123,9 +122,9 @@ impl Archetype {
         let components = components.into_boxed_slice();
 
         // Create the buffer for mapping entity indices back to an entity id
-        let entity_handles = BVec::new_in(system());
+        let entity_handles = Vec::new_in(system());
 
-        let mut columns = BVec::new_in(system());
+        let mut columns = Vec::new_in(system());
         columns.extend(layout.iter().map(|&v| {
             let v = &component_index[v].desc;
             Column::new_in(v.type_layout().unwrap(), system())
