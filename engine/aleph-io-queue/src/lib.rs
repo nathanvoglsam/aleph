@@ -40,7 +40,6 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use crossbeam::channel::{Receiver, SendError, Sender, unbounded};
 
@@ -50,7 +49,7 @@ use crate::top_level_handle_cache::TopLevelHandleCache;
 
 pub struct IoQueue {
     top_level_handle_cache: Arc<TopLevelHandleCache>,
-    threads: BVec<JoinHandle<()>, AsyncIoRoot>,
+    threads: Vec<JoinHandle<()>, AsyncIoRoot>,
     sender: Option<Sender<AsyncRequest>>,
 }
 
@@ -58,7 +57,7 @@ impl IoQueue {
     pub fn new(top_level_handle_cache: Arc<TopLevelHandleCache>) -> Arc<IoQueue> {
         let (sender, receiver) = AsyncIo::with(|| unbounded());
 
-        let mut threads = BVec::with_capacity_in(top_level_handle_cache.num_threads(), system());
+        let mut threads = Vec::with_capacity_in(top_level_handle_cache.num_threads(), system());
         for thread_id in 0..top_level_handle_cache.num_threads() {
             AsyncIo::with(|| {
                 let recv = receiver.clone();
@@ -246,7 +245,9 @@ impl Drop for IoQueue {
         self.sender = None;
 
         // Wait for all the worker threads to close.
-        self.threads.drain(..).for_each(|t| t.join().unwrap());
+        while let Some(t) = self.threads.pop() {
+            t.join().unwrap();
+        }
     }
 }
 
