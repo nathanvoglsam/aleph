@@ -27,13 +27,12 @@
 // SOFTWARE.
 //
 
-use std::alloc::Layout;
+use std::alloc::{Allocator, Layout};
 use std::cell::OnceCell;
 use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::rc::Rc;
 
-use aleph_alloc::alloc::Allocator;
 use aleph_alloc::mallocator::Mallocator;
 
 use crate::{Context, WeakContext};

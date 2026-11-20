@@ -34,7 +34,6 @@ use std::ptr::NonNull;
 use std::rc::Rc;
 use std::thread::LocalKey;
 
-use aleph_alloc::BBox;
 use aleph_alloc::allocator_global_handle::AllocatorGlobalHandle;
 use aleph_nstr::NStr;
 
@@ -228,46 +227,26 @@ pub unsafe fn get_or_init_class_id_for(
 
 // ============================================================================================== //
 
-unsafe impl<T: Sized + 'static> ClassOpaque for Box<T> {
+unsafe impl<T: Sized + 'static, A: AllocatorGlobalHandle + 'static> ClassOpaque for Box<T, A> {
     unsafe fn drop_opaque(ptr: NonNull<c_void>) {
         unsafe { drop(Box::<T>::from_raw(ptr.cast().as_ptr())) }
     }
 
     fn into_raw(self) -> NonNull<c_void> {
-        unsafe { NonNull::new(Box::into_raw(self)).unwrap_unchecked().cast() }
+        unsafe {
+            NonNull::new(Box::<T, A>::into_raw_with_allocator(self).0)
+                .unwrap_unchecked()
+                .cast()
+        }
     }
 
     unsafe fn from_raw(ptr: NonNull<c_void>) -> Self {
-        unsafe { Box::<T>::from_raw(ptr.cast().as_ptr()) }
-    }
-}
-
-unsafe impl<T: Sized + 'static> ClassOpaqueContainer for Box<T> {
-    type Inner = T;
-
-    unsafe fn ptr_to_inner(ptr: NonNull<c_void>) -> NonNull<Self::Inner> {
-        ptr.cast()
-    }
-}
-
-// ============================================================================================== //
-
-unsafe impl<T: Sized + 'static, A: AllocatorGlobalHandle + 'static> ClassOpaque for BBox<T, A> {
-    unsafe fn drop_opaque(ptr: NonNull<c_void>) {
-        unsafe { drop(BBox::<T>::from_raw(ptr.cast().as_ptr())) }
-    }
-
-    fn into_raw(self) -> NonNull<c_void> {
-        unsafe { NonNull::new(BBox::into_raw(self)).unwrap_unchecked().cast() }
-    }
-
-    unsafe fn from_raw(ptr: NonNull<c_void>) -> Self {
-        unsafe { BBox::<T, A>::from_raw_in(ptr.cast().as_ptr(), A::HANDLE) }
+        unsafe { Box::<T, A>::from_raw_in(ptr.cast().as_ptr(), A::HANDLE) }
     }
 }
 
 unsafe impl<T: Sized + 'static, A: AllocatorGlobalHandle + 'static> ClassOpaqueContainer
-    for BBox<T, A>
+    for Box<T, A>
 {
     type Inner = T;
 
