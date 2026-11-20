@@ -29,7 +29,7 @@
 
 use std::collections::hash_map::Entry;
 
-use aleph_alloc::Blink;
+use aleph_alloc::blink_alloc::Blink;
 use aleph_shader_db::{ParameterBlockDesc, ShaderDatabase, ShaderEntry};
 use anyhow::anyhow;
 use camino::{Utf8Path, Utf8PathBuf};

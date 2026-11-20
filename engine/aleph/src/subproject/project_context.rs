@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_alloc::Blink;
+use aleph_alloc::blink_alloc::Blink;
 
 use crate::crate_metadata::ProjectCrateMetadata;
 use crate::project::AlephProject;

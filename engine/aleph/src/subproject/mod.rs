@@ -31,11 +31,10 @@ mod crate_context;
 mod module_context;
 mod project_context;
 
+use std::alloc::Global;
 use std::fmt::Debug;
 
-use aleph_alloc::alloc::Global;
-use aleph_alloc::vec::Vec as BVec;
-use aleph_alloc::{Blink, BlinkAlloc};
+use aleph_alloc::blink_alloc::{Blink, BlinkAlloc};
 use cargo_metadata::Package;
 pub use crate_context::SubprojectCrateContext;
 pub use module_context::SubprojectModuleContext;
@@ -65,7 +64,7 @@ pub trait ISubproject<'a>: Sized {
         arena: &'a Blink,
         package: &Package,
         metadata: &AlephCrateMetadata,
-    ) -> anyhow::Result<BVec<&'a str, &'a BlinkAlloc<Global>>>;
+    ) -> anyhow::Result<Vec<&'a str, &'a BlinkAlloc<Global>>>;
 
     fn load_module(
         arena: &'a Blink,

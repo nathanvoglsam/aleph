@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use aleph_alloc::alloc::Global;
-use aleph_alloc::vec::Vec as BVec;
-use aleph_alloc::{Blink, BlinkAlloc};
+use std::alloc::Global;
+
+use aleph_alloc::blink_alloc::{Blink, BlinkAlloc};
 use camino::Utf8Path;
 use cargo_metadata::Package;
 
@@ -69,10 +69,10 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
     ) -> anyhow::Result<Self::CrateMeta> {
         let config_dir = package.manifest_path.parent().unwrap().join("config");
 
-        let mut config_names = BVec::with_capacity_in(metadata.configs.len(), arena.allocator());
-        let mut configs = BVec::with_capacity_in(metadata.configs.len(), arena.allocator());
-        let mut override_names = BVec::with_capacity_in(metadata.configs.len(), arena.allocator());
-        let mut overrides = BVec::with_capacity_in(metadata.configs.len(), arena.allocator());
+        let mut config_names = Vec::with_capacity_in(metadata.configs.len(), arena.allocator());
+        let mut configs = Vec::with_capacity_in(metadata.configs.len(), arena.allocator());
+        let mut override_names = Vec::with_capacity_in(metadata.configs.len(), arena.allocator());
+        let mut overrides = Vec::with_capacity_in(metadata.configs.len(), arena.allocator());
 
         for name in metadata.configs.iter() {
             let name = &*arena.copy_str(name);
@@ -90,10 +90,10 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
             }
         }
 
-        let config_names: &'a [&'a str] = BVec::leak(config_names);
-        let configs: &'a [&'a Utf8Path] = BVec::leak(configs);
-        let override_names: &'a [&'a str] = BVec::leak(override_names);
-        let overrides: &'a [&'a Utf8Path] = BVec::leak(overrides);
+        let config_names: &'a [&'a str] = Vec::leak(config_names);
+        let configs: &'a [&'a Utf8Path] = Vec::leak(configs);
+        let override_names: &'a [&'a str] = Vec::leak(override_names);
+        let overrides: &'a [&'a Utf8Path] = Vec::leak(overrides);
 
         Ok(ConfigCrateMeta {
             config_names,
@@ -107,8 +107,8 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
         arena: &'a Blink,
         _package: &Package,
         _metadata: &AlephCrateMetadata,
-    ) -> anyhow::Result<BVec<&'a str, &'a BlinkAlloc<Global>>> {
-        Ok(BVec::new_in(arena.allocator()))
+    ) -> anyhow::Result<Vec<&'a str, &'a BlinkAlloc<Global>>> {
+        Ok(Vec::new_in(arena.allocator()))
     }
 
     fn load_module(

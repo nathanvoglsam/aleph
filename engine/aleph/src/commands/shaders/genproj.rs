@@ -29,7 +29,7 @@
 
 use std::io::Write;
 
-use aleph_alloc::Blink;
+use aleph_alloc::blink_alloc::Blink;
 use aleph_target::Platform;
 use anyhow::anyhow;
 use camino::{Utf8Path, Utf8PathBuf};

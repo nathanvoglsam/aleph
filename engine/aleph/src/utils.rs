@@ -29,7 +29,7 @@
 
 use std::fmt::{Display, Formatter};
 
-use aleph_alloc::Blink;
+use aleph_alloc::blink_alloc::Blink;
 use aleph_target::{Architecture, Platform};
 use camino::{Utf8Path, Utf8PathBuf};
 

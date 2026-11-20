@@ -29,7 +29,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use aleph_alloc::{BVec, Blink};
+use aleph_alloc::blink_alloc::Blink;
 use aleph_target::{Architecture, Platform};
 use anyhow::{Context, anyhow};
 use camino::{Utf8Path, Utf8PathBuf};
@@ -512,7 +512,7 @@ impl<'a> AlephProject<'a> {
                 // 'Arrayify' our linked list
                 let mut link = Some(list);
                 let mut out_list =
-                    BVec::with_capacity_in(num_links as usize, self._arena.allocator());
+                    Vec::with_capacity_in(num_links as usize, self._arena.allocator());
                 for _ in 0..num_links {
                     let l = link.unwrap();
                     link = list.next;

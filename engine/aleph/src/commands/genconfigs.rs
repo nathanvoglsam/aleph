@@ -30,7 +30,7 @@
 use std::collections::HashSet;
 use std::process::Command;
 
-use aleph_alloc::{BVec, Blink};
+use aleph_alloc::blink_alloc::Blink;
 use anyhow::anyhow;
 use camino::Utf8Path;
 use clap::ArgMatches;
@@ -169,8 +169,8 @@ fn generate_tsconfigs(
 
     // Collect the plain configs and sorted configs into separate groups as they must be
     // arranged in a specific order in the output tsconfig
-    let mut plain_configs = BVec::with_capacity_in(16, arena.allocator());
-    let mut sorted_overrides = BVec::with_capacity_in(16, arena.allocator());
+    let mut plain_configs = Vec::with_capacity_in(16, arena.allocator());
+    let mut sorted_overrides = Vec::with_capacity_in(16, arena.allocator());
     for c in project_ctx.crates.iter() {
         let src = c
             .meta

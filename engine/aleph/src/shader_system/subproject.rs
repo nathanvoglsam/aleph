@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use aleph_alloc::alloc::Global;
-use aleph_alloc::vec::Vec as BVec;
-use aleph_alloc::{Blink, BlinkAlloc};
+use std::alloc::Global;
+
+use aleph_alloc::blink_alloc::{Blink, BlinkAlloc};
 use camino::Utf8Path;
 use cargo_metadata::Package;
 
@@ -100,14 +100,14 @@ impl<'a> ISubproject<'a> for ShaderSubproject {
         arena: &'a Blink,
         _package: &Package,
         metadata: &AlephCrateMetadata,
-    ) -> anyhow::Result<BVec<&'a str, &'a BlinkAlloc<Global>>> {
+    ) -> anyhow::Result<Vec<&'a str, &'a BlinkAlloc<Global>>> {
         let out = if let Some(shaders) = &metadata.shaders {
             let iter = shaders.modules.iter().map(|v| &*arena.copy_str(v.as_ref()));
-            let mut out = BVec::with_capacity_in(shaders.modules.len(), arena.allocator());
+            let mut out = Vec::with_capacity_in(shaders.modules.len(), arena.allocator());
             out.extend(iter);
             out
         } else {
-            BVec::new_in(arena.allocator())
+            Vec::new_in(arena.allocator())
         };
         Ok(out)
     }

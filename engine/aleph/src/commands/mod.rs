@@ -38,7 +38,7 @@ mod node;
 pub mod shaders;
 mod uuid;
 
-use aleph_alloc::Blink;
+use aleph_alloc::blink_alloc::Blink;
 pub use build::Build;
 pub use bundle::Bundle;
 use clap::{Arg, ArgMatches, Command};
