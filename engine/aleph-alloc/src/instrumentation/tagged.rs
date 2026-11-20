@@ -32,9 +32,7 @@ use std::ptr::NonNull;
 
 use crate::Root;
 use crate::allocator_global_handle::AllocatorGlobalHandle;
-use crate::instrumentation::{
-    CategoryInfo, IAllocationCategory, emit_alloc, emit_free,
-};
+use crate::instrumentation::{CategoryInfo, IAllocationCategory, emit_alloc, emit_free};
 
 /// An allocator wrapper that uses a dynamic, thread-local category stack for attributing
 /// allocations to a category.
