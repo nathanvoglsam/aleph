@@ -30,7 +30,7 @@
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 use aleph_alloc::instrumentation::{IAllocationCategory, Instrumented, system};
-use aleph_alloc::{BVec, offset_allocator};
+use aleph_alloc::offset_allocator;
 use parking_lot::Mutex;
 
 use crate::{
@@ -38,7 +38,7 @@ use crate::{
 };
 
 pub struct GpuAllocator<T: IApiBridge> {
-    memory_pools: BVec<MemoryPool<T>, GpuAllocatorHostRoot>,
+    memory_pools: Vec<MemoryPool<T>, GpuAllocatorHostRoot>,
     info: T::AllocatorInfo,
 }
 
@@ -47,7 +47,7 @@ impl<T: IApiBridge> GpuAllocator<T> {
         let config = AllocatorConfig::default();
         let info = T::get_allocator_info(bridge);
         let in_memory_pools = T::get_memory_pools(bridge, &info, &AllocatorConfig::default());
-        let mut memory_pools = BVec::with_capacity_in(in_memory_pools.len(), system());
+        let mut memory_pools = Vec::with_capacity_in(in_memory_pools.len(), system());
         for (pool_index, mut memory_pool) in in_memory_pools.into_iter().enumerate() {
             memory_pool.pool_index = pool_index as u16;
             if memory_pool.pool_config.is_mappable {
@@ -619,19 +619,19 @@ pub struct PoolConfig {
 
 struct PoolBlocks<T: IApiBridge + ?Sized> {
     /// Set of all sub-allocated memory blocks in this pool.
-    memory_blocks: BVec<MemoryBlock<T>, GpuAllocatorHostRoot>,
+    memory_blocks: Vec<MemoryBlock<T>, GpuAllocatorHostRoot>,
 
     /// Associated table that provides a sorted view of 'memory_blocks'. This table stores indices
     /// into the 'memory_blocks' list and will be incrementally sorted to provide an index of blocks
     /// from least to most free space.
-    sorted_blocks: BVec<usize, GpuAllocatorHostRoot>,
+    sorted_blocks: Vec<usize, GpuAllocatorHostRoot>,
 }
 
 impl<T: IApiBridge + ?Sized> Default for PoolBlocks<T> {
     fn default() -> Self {
         Self {
-            memory_blocks: BVec::new_in(system()),
-            sorted_blocks: BVec::new_in(system()),
+            memory_blocks: Vec::new_in(system()),
+            sorted_blocks: Vec::new_in(system()),
         }
     }
 }
@@ -666,21 +666,21 @@ impl<T: IApiBridge + ?Sized> PoolBlocks<T> {
 struct DedicatedBlocks<T: IApiBridge + ?Sized> {
     /// Backing storage for each dedicated memory block. This will contain a mix of live and dead
     /// memory blocks, which is required to keep indices into this array stable.
-    memory_blocks: BVec<T::DedicatedBlockInfo, GpuAllocatorHostRoot>,
+    memory_blocks: Vec<T::DedicatedBlockInfo, GpuAllocatorHostRoot>,
 
     /// A list of indices into 'memory_blocks' that are free to reuse.
     ///
     /// This _could_ use a union based linked list, stored in the space of free block entries. It
     /// would save memory. However, the memory overhead is small compared to the average size of a
     /// dedicated block. I think the simplicity of two arrays is worth the memory cost.
-    free_blocks: BVec<u16, GpuAllocatorHostRoot>,
+    free_blocks: Vec<u16, GpuAllocatorHostRoot>,
 }
 
 impl<T: IApiBridge + ?Sized> Default for DedicatedBlocks<T> {
     fn default() -> Self {
         Self {
-            memory_blocks: BVec::new_in(system()),
-            free_blocks: BVec::new_in(system()),
+            memory_blocks: Vec::new_in(system()),
+            free_blocks: Vec::new_in(system()),
         }
     }
 }
