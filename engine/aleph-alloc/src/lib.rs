@@ -58,6 +58,7 @@ pub mod blink_alloc;
 pub mod instrumentation;
 pub mod mallocator;
 pub mod offset_allocator;
+pub mod polyfills;
 
 pub use hashbrown::*;
 
