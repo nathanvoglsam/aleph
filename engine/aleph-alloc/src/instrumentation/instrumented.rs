@@ -27,11 +27,9 @@
 // SOFTWARE.
 //
 
-use std::alloc::{GlobalAlloc, Layout};
+use std::alloc::{AllocError, Allocator, GlobalAlloc, Layout};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-
-use allocator_api2::alloc::{AllocError, Allocator};
 
 use crate::Root;
 use crate::allocator_global_handle::AllocatorGlobalHandle;
@@ -193,6 +191,61 @@ unsafe impl<T: IAllocationCategory, A: Allocator> Allocator for Instrumented<T, 
             let out = self.inner.shrink(ptr, old_layout, new_layout);
             handle_resized(CategoryInfo::get::<T>(), out, ptr, old_layout, new_layout)
         }
+    }
+}
+
+unsafe impl<T: IAllocationCategory, A: Allocator> allocator_api2::alloc::Allocator
+    for Instrumented<T, A>
+{
+    #[inline]
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+        Allocator::allocate(self, layout).map_err(|_| allocator_api2::alloc::AllocError)
+    }
+
+    #[inline]
+    fn allocate_zeroed(
+        &self,
+        layout: Layout,
+    ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+        Allocator::allocate_zeroed(self, layout).map_err(|_| allocator_api2::alloc::AllocError)
+    }
+
+    #[inline]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        unsafe { Allocator::deallocate(self, ptr, layout) }
+    }
+
+    #[inline]
+    unsafe fn grow(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+        unsafe { Allocator::grow(self, ptr, old_layout, new_layout) }
+            .map_err(|_| allocator_api2::alloc::AllocError)
+    }
+
+    #[inline]
+    unsafe fn grow_zeroed(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+        unsafe { Allocator::grow_zeroed(self, ptr, old_layout, new_layout) }
+            .map_err(|_| allocator_api2::alloc::AllocError)
+    }
+
+    #[inline]
+    unsafe fn shrink(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+        unsafe { Allocator::shrink(self, ptr, old_layout, new_layout) }
+            .map_err(|_| allocator_api2::alloc::AllocError)
     }
 }
 

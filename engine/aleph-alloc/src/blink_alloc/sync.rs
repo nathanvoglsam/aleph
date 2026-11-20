@@ -1,0 +1,579 @@
+//
+//
+// This file is a part of Aleph
+//
+// https://github.com/nathanvoglsam/aleph
+//
+// MIT License
+//
+// Copyright (c) 2020 Aleph Engine
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+//! This module provides single-threaded blink allocator.
+
+use std::alloc::{AllocError, Allocator, Global, Layout};
+use std::mem::ManuallyDrop;
+use std::ptr::NonNull;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+use crate::blink_alloc::api::BlinkAllocator;
+use crate::blink_alloc::arena::{ArenaLocal, ArenaSync};
+
+/// Multi-threaded blink allocator.
+///
+/// Blink-allocator is arena-based allocator that
+/// allocates memory in growing chunks and serve allocations from them.
+/// When chunk is exhausted a new larger chunk is allocated.
+///
+/// Deallocation is no-op. [`BlinkAllocator`] can be reset
+/// to free all chunks except the last one, that will be reused.
+///
+/// Blink allocator aims to allocate a chunk large enough to
+/// serve all allocations between resets.
+///
+/// A shared and mutable reference to the [`SyncBlinkAlloc`] implement
+/// [`Allocator`] trait.
+/// [`Allocator`] trait is [`std::alloc::Allocator`].
+///
+/// Resetting blink allocator requires mutable borrow, so it is not possible
+/// to do while shared borrow is alive. That matches requirement of
+/// [`Allocator`] trait - while [`Allocator`] instance
+/// (a shared reference to `BlinkAlloc`) or any of its clones are alive,
+/// allocated memory must be valid.
+///
+/// This version of blink-allocator is multi-threaded.
+/// It can be used from multiple threads concurrently to allocate memory.
+/// As mutable borrow is required to reset the allocator,
+/// it is not possible to do when shared.
+/// Internally it uses [`RwLock`] and [`AtomicUsize`] for synchronized
+/// interior mutability. [`RwLock`] is only write-locked when new chunk
+/// must be allocated. The arena allocation is performed using lock-free
+/// algorithm.
+///
+/// Still it is slower than single-threaded version [`BlinkAlloc`].
+///
+/// For best of both worlds [`LocalBlinkAlloc`] can be created from
+/// this allocator. [`LocalBlinkAlloc`] will allocate chunks from this
+/// allocator, but is single-threaded by itself.
+///
+/// [`RwLock`]: parking_lot::RwLock
+/// [`AtomicUsize`]: std::sync::atomic::AtomicUsize
+/// [`BlinkAlloc`]: crate::blink_alloc::local::BlinkAlloc
+/// [`LocalBlinkAlloc`]: crate::blink_alloc::sync::LocalBlinkAlloc
+///
+/// # Example
+///
+/// ```
+/// # use blink_alloc::SyncBlinkAlloc;
+/// # use std::ptr::NonNull;
+///
+/// let mut blink = SyncBlinkAlloc::new();
+/// let layout = std::alloc::Layout::new::<[u32; 8]>();
+/// let ptr = blink.allocate(layout).unwrap();
+/// let ptr = NonNull::new(ptr.as_ptr() as *mut u8).unwrap(); // Method for this is unstable.
+///
+/// unsafe {
+///     std::ptr::write(ptr.as_ptr().cast(), [1, 2, 3, 4, 5, 6, 7, 8]);
+/// }
+///
+/// blink.reset();
+/// ```
+///
+/// # Example that uses nightly's `allocator_api`
+///
+/// ```
+/// # use blink_alloc::SyncBlinkAlloc;
+/// # fn main() {
+/// let mut blink = SyncBlinkAlloc::new();
+/// let mut vec = Vec::new_in(&blink);
+/// vec.push(1);
+/// vec.extend(1..3);
+/// vec.extend(3..10);
+/// drop(vec);
+/// blink.reset();
+/// # }
+/// ```
+pub struct SyncBlinkAlloc<A: Allocator = Global> {
+    arena: ArenaSync,
+    allocator: A,
+    max_local_alloc: AtomicUsize,
+}
+
+impl<A: Allocator> Drop for SyncBlinkAlloc<A> {
+    fn drop(&mut self) {
+        unsafe {
+            self.arena.reset(false, &self.allocator);
+        }
+    }
+}
+
+#[test]
+fn check_sync() {
+    fn for_sync_alloc<A: Allocator + Sync>() {
+        fn is_sink<T: Sync>() {}
+        is_sink::<SyncBlinkAlloc<A>>();
+    }
+    for_sync_alloc::<Global>();
+}
+
+impl<A> Default for SyncBlinkAlloc<A>
+where
+    A: Allocator + Default,
+{
+    #[inline(always)]
+    fn default() -> Self {
+        Self::new_in(Default::default())
+    }
+}
+
+impl SyncBlinkAlloc<Global> {
+    /// Creates new blink allocator that uses global allocator
+    /// to allocate memory chunks.
+    ///
+    /// See [`SyncBlinkAlloc::new_in`] for using custom allocator.
+    #[inline(always)]
+    pub const fn new() -> Self {
+        SyncBlinkAlloc::new_in(Global)
+    }
+}
+
+impl<A> SyncBlinkAlloc<A>
+where
+    A: Allocator,
+{
+    /// Creates new blink allocator that uses provided allocator
+    /// to allocate memory chunks.
+    ///
+    /// See [`SyncBlinkAlloc::new`] for using global allocator.
+    #[inline(always)]
+    pub const fn new_in(allocator: A) -> Self {
+        SyncBlinkAlloc {
+            arena: ArenaSync::new(),
+            allocator,
+            max_local_alloc: AtomicUsize::new(0),
+        }
+    }
+
+    /// Returns reference to the underlying allocator used by this blink allocator.
+    #[inline(always)]
+    pub const fn inner(&self) -> &A {
+        &self.allocator
+    }
+
+    /// Creates new blink allocator that uses global allocator
+    /// to allocate memory chunks.
+    /// With this method you can specify initial chunk size.
+    ///
+    /// See [`SyncBlinkAlloc::new_in`] for using custom allocator.
+    #[inline(always)]
+    pub const fn with_chunk_size_in(chunk_size: usize, allocator: A) -> Self {
+        SyncBlinkAlloc {
+            arena: ArenaSync::with_chunk_size(chunk_size),
+            allocator,
+            max_local_alloc: AtomicUsize::new(0),
+        }
+    }
+
+    /// Creates a new thread-local blink allocator proxy
+    /// that borrows from this multi-threaded allocator.
+    ///
+    /// The local proxy allocator works faster and
+    /// allows more consistent memory reuse.
+    /// It can be recreated without resetting the multi-threaded allocator,
+    /// allowing [`SyncBlinkAlloc`] to be warm-up and serve all allocations
+    /// from a single chunk without ever blocking.
+    ///
+    /// Best works for fork-join style of parallelism.
+    /// Create a local allocator for each thread/task.
+    /// Reset after all threads/tasks are finished.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use blink_alloc::SyncBlinkAlloc;
+    /// # fn main() {
+    /// let mut blink = SyncBlinkAlloc::new();
+    /// for _ in 0..3 {
+    ///     for i in 0..16 {
+    ///         std::thread::scope(|_| {
+    ///             let blink = blink.local();
+    ///             let mut vec = Vec::new_in(&blink);
+    ///             vec.push(i);
+    ///             for j in i*2..i*30 {
+    ///                 vec.push(j); // Proxy will allocate enough memory to grow vec without reallocating on 2nd iteration and later.
+    ///             }
+    ///         });
+    ///     }
+    ///     blink.reset();
+    /// }
+    /// # }
+    /// ```
+    #[inline(always)]
+    pub fn local(&self) -> LocalBlinkAlloc<'_, A> {
+        LocalBlinkAlloc {
+            arena: ArenaLocal::with_chunk_size(self.max_local_alloc.load(Ordering::Relaxed)),
+            shared: self,
+        }
+    }
+
+    /// Allocates memory with specified layout from this allocator.
+    /// If needed it will allocate new chunk using underlying allocator.
+    /// If chunk allocation fails, it will return `Err`.
+    #[inline(always)]
+    pub fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        // Safety:
+        // Same instance is used for all allocations and resets.
+        if let Some(ptr) = unsafe { self.arena.alloc_fast(layout) } {
+            return Ok(ptr);
+        }
+        unsafe { self.arena.alloc_slow(layout, &self.allocator) }
+    }
+
+    /// Resizes memory allocation.
+    /// Potentially happens in-place.
+    ///
+    /// # Safety
+    ///
+    /// `ptr` must be a pointer previously returned by [`allocate`](SyncBlinkAlloc::allocate).
+    /// `old_size` must be in range `layout.size()..=slice.len()`
+    /// where `layout` is the layout used in the call to [`allocate`](SyncBlinkAlloc::allocate).
+    /// and `slice` is the slice pointer returned by [`allocate`](SyncBlinkAlloc::allocate).
+    ///
+    /// On success, the old pointer is invalidated and the new pointer is returned.
+    /// On error old allocation is still valid.
+    #[inline(always)]
+    pub unsafe fn resize(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        if let Some(ptr) = unsafe { self.arena.resize_fast(ptr, old_layout, new_layout) } {
+            return Ok(ptr);
+        }
+
+        // Safety:
+        // Same instance is used for all allocations and resets.
+        // `ptr` was allocated by this allocator.
+        unsafe {
+            self.arena
+                .resize_slow(ptr, old_layout, new_layout, &self.allocator)
+        }
+    }
+
+    /// Deallocates memory previously allocated from this allocator.
+    ///
+    /// This call may not actually free memory.
+    /// All memory is guaranteed to be freed on [`reset`](SyncBlinkAlloc::reset) call.
+    ///
+    /// # Safety
+    ///
+    /// `ptr` must be a pointer previously returned by [`allocate`](SyncBlinkAlloc::allocate).
+    /// `size` must be in range `layout.size()..=slice.len()`
+    /// where `layout` is the layout used in the call to [`allocate`](SyncBlinkAlloc::allocate).
+    /// and `slice` is the slice pointer returned by [`allocate`](SyncBlinkAlloc::allocate).
+    #[inline(always)]
+    pub unsafe fn deallocate(&self, ptr: NonNull<u8>, size: usize) {
+        // Safety:
+        // `ptr` was allocated by this allocator.
+        unsafe {
+            self.arena.dealloc(ptr, size);
+        }
+    }
+
+    /// Resets this allocator, deallocating all chunks except the last one.
+    /// Last chunk will be reused.
+    /// With steady memory usage after few iterations
+    /// one chunk should be sufficient for all allocations between resets.
+    #[inline(always)]
+    pub fn reset(&mut self) {
+        // Safety:
+        // Same instance is used for all allocations and resets.
+        unsafe {
+            self.arena.reset(true, &self.allocator);
+        }
+    }
+
+    /// Resets this allocator, deallocating all chunks.
+    #[inline(always)]
+    pub fn reset_final(&mut self) {
+        // Safety:
+        // Same instance is used for all allocations and resets.
+        unsafe {
+            self.arena.reset(false, &self.allocator);
+        }
+    }
+
+    /// Resets this allocator, deallocating all chunks except the last one.
+    /// Last chunk will be reused.
+    /// With steady memory usage after few iterations
+    /// one chunk should be sufficient for all allocations between resets.
+    ///
+    /// # Safety
+    ///
+    /// Blink-allocators guarantee that memory can be used while shared
+    /// borrow to the allocator is held, preventing safe `fn reset` call.
+    ///
+    /// With this method it becomes caller responsibility to ensure
+    /// that allocated memory won't be used after reset.
+    #[inline(always)]
+    pub unsafe fn reset_unchecked(&self) {
+        // Safety:
+        // Same instance is used for all allocations and resets.
+        unsafe {
+            self.arena.reset_unchecked(true, &self.allocator);
+        }
+    }
+
+    /// Unwrap this allocator, returning the underlying allocator.
+    /// Leaks allocated chunks.
+    ///
+    /// To deallocate all chunks call [`reset_final`](BlinkAlloc::reset_final) first.
+    ///
+    /// The second returned value will use global allocator, so
+    /// use with care if this method is used inside global allocator.
+    pub fn into_inner(self) -> A {
+        let me = ManuallyDrop::new(self);
+        unsafe { std::ptr::read(&me.allocator) }
+    }
+
+    /// Update maximum local allocation size.
+    /// Can be used by thread-local blink-allocators that use
+    /// this shared blink-allocator.
+    #[inline(always)]
+    pub fn update_max_local_alloc(&self, max_local_alloc: usize) {
+        self.max_local_alloc
+            .fetch_max(max_local_alloc, Ordering::Relaxed);
+    }
+}
+
+unsafe impl<A> Allocator for SyncBlinkAlloc<A>
+where
+    A: Allocator,
+{
+    #[inline(always)]
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        SyncBlinkAlloc::allocate(self, layout)
+    }
+
+    #[inline(always)]
+    unsafe fn shrink(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        unsafe { SyncBlinkAlloc::resize(self, ptr, old_layout, new_layout) }
+    }
+
+    #[inline(always)]
+    unsafe fn grow(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        unsafe { SyncBlinkAlloc::resize(self, ptr, old_layout, new_layout) }
+    }
+
+    #[inline(always)]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        unsafe { SyncBlinkAlloc::deallocate(self, ptr, layout.size()) };
+    }
+}
+
+unsafe impl<A> BlinkAllocator for SyncBlinkAlloc<A>
+where
+    A: Allocator,
+{
+    #[inline(always)]
+    fn reset(&mut self) {
+        SyncBlinkAlloc::reset(self)
+    }
+}
+
+/// Thread-local proxy for [`SyncBlinkAlloc`].
+///
+/// Using proxy can yield better performance when
+/// it is possible to create proxy once to use for many allocations.
+///
+/// See [`SyncBlinkAlloc::local`] for more details.
+pub struct LocalBlinkAlloc<'a, A: Allocator = Global> {
+    arena: ArenaLocal,
+    shared: &'a SyncBlinkAlloc<A>,
+}
+
+impl<A> Drop for LocalBlinkAlloc<'_, A>
+where
+    A: Allocator,
+{
+    fn drop(&mut self) {
+        self.shared
+            .update_max_local_alloc(self.arena.last_chunk_size());
+        self.arena.reset_leak(false);
+    }
+}
+
+impl<A> LocalBlinkAlloc<'_, A>
+where
+    A: Allocator,
+{
+    /// Allocates memory with specified layout from this allocator.
+    /// If needed it will allocate new chunk using underlying allocator.
+    /// If chunk allocation fails, it will return `Err`.
+    #[inline(always)]
+    pub fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        // Safety:
+        // Same instance is used for all allocations and resets.
+        if let Some(ptr) = unsafe { self.arena.alloc_fast(layout) } {
+            return Ok(ptr);
+        }
+        unsafe { self.arena.alloc_slow(layout, self.shared) }
+    }
+
+    /// Resizes memory allocation.
+    /// Potentially happens in-place.
+    ///
+    /// # Safety
+    ///
+    /// `ptr` must be a pointer previously returned by [`allocate`](LocalBlinkAlloc::allocate).
+    /// `old_size` must be in range `layout.size()..=slice.len()`
+    /// where `layout` is the layout used in the call to [`allocate`](LocalBlinkAlloc::allocate).
+    /// and `slice` is the slice pointer returned by [`allocate`](LocalBlinkAlloc::allocate).
+    ///
+    /// On success, the old pointer is invalidated and the new pointer is returned.
+    /// On error old allocation is still valid.
+    #[inline(always)]
+    pub unsafe fn resize(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        if let Some(ptr) = unsafe { self.arena.resize_fast(ptr, old_layout, new_layout) } {
+            return Ok(ptr);
+        }
+
+        // Safety:
+        // Same instance is used for all allocations and resets.
+        // `ptr` was allocated by this allocator.
+        unsafe {
+            self.arena
+                .resize_slow(ptr, old_layout, new_layout, self.shared)
+        }
+    }
+
+    /// Deallocates memory previously allocated from this allocator.
+    ///
+    /// This call may not actually free memory.
+    /// All memory is guaranteed to be freed on [`reset`](LocalBlinkAlloc::reset) call.
+    ///
+    /// # Safety
+    ///
+    /// `ptr` must be a pointer previously returned by [`allocate`](LocalBlinkAlloc::allocate).
+    /// `size` must be in range `layout.size()..=slice.len()`
+    /// where `layout` is the layout used in the call to [`allocate`](LocalBlinkAlloc::allocate).
+    /// and `slice` is the slice pointer returned by [`allocate`](LocalBlinkAlloc::allocate).
+    #[inline(always)]
+    pub unsafe fn deallocate(&self, ptr: NonNull<u8>, size: usize) {
+        // Safety:
+        // `ptr` was allocated by this allocator.
+        unsafe {
+            self.arena.dealloc(ptr, size);
+        }
+    }
+
+    /// Resets this allocator, deallocating all chunks except the last one.
+    /// Last chunk will be reused.
+    /// With steady memory usage after few iterations
+    /// one chunk should be sufficient for all allocations between resets.
+    #[inline(always)]
+    pub fn reset(&mut self) {
+        self.shared
+            .update_max_local_alloc(self.arena.last_chunk_size());
+        self.arena.reset_leak(true);
+    }
+
+    /// Resets this allocator, deallocating all chunks except the last one.
+    /// Last chunk will be reused.
+    /// With steady memory usage after few iterations
+    /// one chunk should be sufficient for all allocations between resets.
+    ///
+    /// # Safety
+    ///
+    /// Blink-allocators guarantee that memory can be used while shared
+    /// borrow to the allocator is held, preventing safe `fn reset` call.
+    ///
+    /// With this method it becomes caller responsibility to ensure
+    /// that allocated memory won't be used after reset.
+    #[inline(always)]
+    pub unsafe fn reset_unchecked(&self) {
+        // Safety:
+        // Same instance is used for all allocations and resets.
+        unsafe {
+            self.arena.reset_unchecked(true, self.shared);
+        }
+    }
+}
+
+unsafe impl<A> Allocator for LocalBlinkAlloc<'_, A>
+where
+    A: Allocator,
+{
+    #[inline(always)]
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        LocalBlinkAlloc::allocate(self, layout)
+    }
+
+    #[inline(always)]
+    unsafe fn shrink(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        unsafe { LocalBlinkAlloc::resize(self, ptr, old_layout, new_layout) }
+    }
+
+    #[inline(always)]
+    unsafe fn grow(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        unsafe { LocalBlinkAlloc::resize(self, ptr, old_layout, new_layout) }
+    }
+
+    #[inline(always)]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        unsafe { LocalBlinkAlloc::deallocate(self, ptr, layout.size()) }
+    }
+}
+
+unsafe impl<A> BlinkAllocator for LocalBlinkAlloc<'_, A>
+where
+    A: Allocator,
+{
+    #[inline(always)]
+    fn reset(&mut self) {
+        LocalBlinkAlloc::reset(self)
+    }
+}

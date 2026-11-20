@@ -27,11 +27,9 @@
 // SOFTWARE.
 //
 
-use std::alloc::{Layout, handle_alloc_error};
+use std::alloc::{Allocator, Layout, handle_alloc_error};
 use std::ffi::c_void;
 use std::ptr::NonNull;
-
-use allocator_api2::alloc::Allocator;
 
 /// Allocator wrapper that provides a malloc like interface that redirects into the inner allocator
 /// instance.

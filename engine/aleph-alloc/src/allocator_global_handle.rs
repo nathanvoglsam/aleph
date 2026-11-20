@@ -27,9 +27,7 @@
 // SOFTWARE.
 //
 
-use std::alloc::System;
-
-use allocator_api2::alloc::Allocator;
+use std::alloc::{Allocator, Global, System};
 
 /// A trait implemented by [`Allocator`] types which are simply zero sized handles to some global
 /// allocator.
@@ -42,6 +40,10 @@ use allocator_api2::alloc::Allocator;
 /// allocator. Any [`System`] instance is the same, so this trait is correct to implement on it.
 pub unsafe trait AllocatorGlobalHandle: Allocator {
     const HANDLE: Self;
+}
+
+unsafe impl AllocatorGlobalHandle for Global {
+    const HANDLE: Self = Self;
 }
 
 unsafe impl AllocatorGlobalHandle for System {

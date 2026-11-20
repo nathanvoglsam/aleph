@@ -35,9 +35,9 @@ pub extern crate aleph_mimalloc_sys as ffi;
 
 use core::alloc::{GlobalAlloc, Layout};
 use core::ffi::c_void;
+use std::alloc::{AllocError, Allocator};
 use std::ptr::NonNull;
 
-use allocator_api2::alloc::{AllocError, Allocator};
 use ffi::*;
 
 /// Drop-in mimalloc global allocator.
@@ -93,9 +93,7 @@ impl MiMalloc {
             Err(AllocError)
         }
     }
-}
 
-unsafe impl Allocator for MiMalloc {
     #[inline]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         match layout.size() {
@@ -201,6 +199,106 @@ unsafe impl Allocator for MiMalloc {
                 ))
             },
         }
+    }
+}
+
+unsafe impl Allocator for MiMalloc {
+    #[inline]
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        MiMalloc::allocate(self, layout)
+    }
+
+    #[inline]
+    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        MiMalloc::allocate_zeroed(self, layout)
+    }
+
+    #[inline]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        unsafe { MiMalloc::deallocate(self, ptr, layout) }
+    }
+
+    #[inline]
+    unsafe fn grow(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        unsafe { MiMalloc::grow(self, ptr, old_layout, new_layout) }
+    }
+
+    #[inline]
+    unsafe fn grow_zeroed(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        unsafe { MiMalloc::grow_zeroed(self, ptr, old_layout, new_layout) }
+    }
+
+    #[inline]
+    unsafe fn shrink(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        unsafe { MiMalloc::shrink(self, ptr, old_layout, new_layout) }
+    }
+}
+
+unsafe impl allocator_api2::alloc::Allocator for MiMalloc {
+    #[inline]
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+        MiMalloc::allocate(self, layout).map_err(|_| allocator_api2::alloc::AllocError)
+    }
+
+    #[inline]
+    fn allocate_zeroed(
+        &self,
+        layout: Layout,
+    ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+        MiMalloc::allocate_zeroed(self, layout).map_err(|_| allocator_api2::alloc::AllocError)
+    }
+
+    #[inline]
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        unsafe { MiMalloc::deallocate(self, ptr, layout) }
+    }
+
+    #[inline]
+    unsafe fn grow(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+        unsafe { MiMalloc::grow(self, ptr, old_layout, new_layout) }
+            .map_err(|_| allocator_api2::alloc::AllocError)
+    }
+
+    #[inline]
+    unsafe fn grow_zeroed(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+        unsafe { MiMalloc::grow_zeroed(self, ptr, old_layout, new_layout) }
+            .map_err(|_| allocator_api2::alloc::AllocError)
+    }
+
+    #[inline]
+    unsafe fn shrink(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, allocator_api2::alloc::AllocError> {
+        unsafe { MiMalloc::shrink(self, ptr, old_layout, new_layout) }
+            .map_err(|_| allocator_api2::alloc::AllocError)
     }
 }
 
