@@ -34,7 +34,6 @@ use std::io;
 use std::path::Path;
 use std::sync::Arc;
 
-use aleph_alloc::BBox;
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_gen_arena::HandleType;
 use aleph_io_queue::IoQueue;
@@ -59,7 +58,7 @@ pub struct DirectoryLayer {
 }
 
 impl DirectoryLayer {
-    pub fn new(mounted_path: Utf8PathBuf) -> BBox<dyn ILayer, VfsRoot> {
+    pub fn new(mounted_path: Utf8PathBuf) -> Box<dyn ILayer, VfsRoot> {
         box_layer(Self {
             mounted_path,
             io_queue: None,
@@ -69,7 +68,7 @@ impl DirectoryLayer {
     pub fn new_with_io_queue(
         mounted_path: Utf8PathBuf,
         io_queue: Arc<IoQueue>,
-    ) -> BBox<dyn ILayer, VfsRoot> {
+    ) -> Box<dyn ILayer, VfsRoot> {
         box_layer(Self {
             mounted_path,
             io_queue: Some(io_queue),

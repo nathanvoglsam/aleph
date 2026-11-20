@@ -94,7 +94,8 @@ pub struct PooledFile {
     pub len: u64,
 }
 
+// TODO: Can be made const init when Vec::new_in becomes const stable
 type Pool = RefCell<GenArena<PooledFile, Handle<LocalVFile>, VfsRoot>>;
 thread_local! {
-    pub static POOL: Pool = const { RefCell::new(GenArena::new_in()) };
+    pub static POOL: Pool = RefCell::new(GenArena::new_in());
 }
