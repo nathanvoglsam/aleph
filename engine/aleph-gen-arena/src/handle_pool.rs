@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_alloc::BVec;
-use aleph_alloc::alloc::{Allocator, Global};
+use std::alloc::{Allocator, Global};
+
 use thiserror::Error;
 
 use super::handle::{Generation, HandleFields, RawHandle};
@@ -41,7 +41,7 @@ use super::handle::{Generation, HandleFields, RawHandle};
 /// generation handles.
 pub struct HandlePool<A: Allocator = Global> {
     /// The backing storage for the handles
-    slots: BVec<HandleData, A>,
+    slots: Vec<HandleData, A>,
 }
 
 impl HandlePool<Global> {
@@ -49,7 +49,7 @@ impl HandlePool<Global> {
     pub fn new() -> Self {
         // Construct the pool storage, with the zeroeth element containing the head of the free list
         // linked list. It's default initialized to empty (by pointing to itself)
-        let mut slots = BVec::with_capacity(1);
+        let mut slots = Vec::with_capacity(1);
         slots.push(HandleData {
             generation: Generation::new_dead(),
             data: 0,
@@ -61,10 +61,10 @@ impl HandlePool<Global> {
 
 impl<A: Allocator> HandlePool<A> {
     /// Constructs a new, empty [`HandlePool`].
-    pub const fn new_in(a: A) -> Self {
+    pub fn new_in(a: A) -> Self {
         // Construct the pool storage, with the zeroeth element containing the head of the free list
         // linked list. It's default initialized to empty (by pointing to itself)
-        let slots = BVec::new_in(a);
+        let slots = Vec::new_in(a);
         Self { slots }
     }
 

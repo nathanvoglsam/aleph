@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use aleph_alloc::BVec;
-use aleph_alloc::alloc::{Allocator, Global};
-use aleph_alloc::allocator_global_handle::AllocatorGlobalHandle;
+use std::alloc::{Allocator, Global};
 
+use aleph_alloc::allocator_global_handle::AllocatorGlobalHandle;
+use aleph_alloc::polyfills::drain::drain_vec;
 use crate::handle::{HandleType, RawHandle};
 use crate::handle_pool::HandlePool;
 
@@ -48,12 +48,12 @@ use crate::handle_pool::HandlePool;
 pub struct GenArena<T, H = RawHandle, A: Allocator = Global> {
     /// Backing storage for the object pool. Uses a swap'n'pop scheme for allocating and freeing
     /// new objects as they are needed.
-    objects: BVec<T, A>,
+    objects: Vec<T, A>,
 
     /// SoA storage associated with `Self::objects` that holds whatever handle is currently pointing
     /// at the object in the slot. Enables patching the handles when we move objects around in the
     /// pool.
-    back_references: BVec<H, A>,
+    back_references: Vec<H, A>,
 
     /// The handle pool, which we use for allocating the handles themselves. These add an extra
     /// indirection to accessing the object pool items, but it allows us to move the objects
@@ -67,8 +67,8 @@ impl<T, H: HandleType> GenArena<T, H, Global> {
     #[allow(unused)]
     pub fn new() -> Self {
         Self {
-            objects: BVec::new(),
-            back_references: BVec::new(),
+            objects: Vec::new(),
+            back_references: Vec::new(),
             handles: HandlePool::new(),
         }
     }
@@ -80,10 +80,10 @@ impl<T, H: HandleType, A: AllocatorGlobalHandle> GenArena<T, H, A> {
     ///
     /// This interface is intended for use with allocator instrumentation to track memory
     /// consumption of different object pools.
-    pub const fn new_in() -> Self {
+    pub fn new_in() -> Self {
         Self {
-            objects: BVec::new_in(A::HANDLE),
-            back_references: BVec::new_in(A::HANDLE),
+            objects: Vec::new_in(A::HANDLE),
+            back_references: Vec::new_in(A::HANDLE),
             handles: HandlePool::new_in(A::HANDLE),
         }
     }
@@ -267,8 +267,8 @@ impl<T, H: HandleType, A: Allocator> GenArena<T, H, A> {
         self.handles.clear();
 
         // Drain our back_references and objects storage, yielding the appropriate iterator
-        let back_references = self.back_references.drain(..);
-        let objects = self.objects.drain(..);
+        let back_references = drain_vec(&mut self.back_references, ..);
+        let objects = drain_vec(&mut self.objects, ..);
         back_references.zip(objects)
     }
 
