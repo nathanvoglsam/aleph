@@ -32,12 +32,12 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 
 use aleph_alloc::BHashMap;
+use aleph_alloc::blink_alloc::{Blink, BlinkAlloc};
 use aleph_gpu_allocator::{AllocationDesc, GpuAllocation, MemoryLocation};
 use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::RhiRoot;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use blink_alloc::{Blink, BlinkAlloc};
 use objc2::rc::{Retained, autoreleasepool};
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::{NSRange, NSString};

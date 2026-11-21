@@ -30,7 +30,6 @@
 use std::num::NonZero;
 use std::ptr::NonNull;
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 use aleph_rhi_impl_utils::RhiRoot;
 
@@ -54,7 +53,7 @@ const BLOCK_SIZE: usize = 1024 * 32;
 /// geometrically.
 pub struct UploadBumpAllocator {
     active_block: MemoryBlock,
-    full_blocks: BVec<MemoryBlock, RhiRoot>,
+    full_blocks: Vec<MemoryBlock, RhiRoot>,
     cursor: usize,
 }
 
@@ -65,7 +64,7 @@ impl UploadBumpAllocator {
     pub fn new(device: &Device) -> Option<Self> {
         let out = Self {
             active_block: MemoryBlock::new(device, BLOCK_SIZE)?,
-            full_blocks: BVec::new_in(system()),
+            full_blocks: Vec::new_in(system()),
             cursor: 0,
         };
         Some(out)

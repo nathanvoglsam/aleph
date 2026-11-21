@@ -32,11 +32,11 @@ use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
+use aleph_alloc::blink_alloc::BlinkAlloc;
 use aleph_alloc::instrumentation::system;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
-use blink_alloc::BlinkAlloc;
 
 use crate::descriptor_arena::LinearBlockFactory;
 use crate::device::Device;

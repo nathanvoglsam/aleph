@@ -33,13 +33,12 @@ use std::num::NonZero;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
+use aleph_alloc::blink_alloc::Blink;
 use aleph_alloc::instrumentation::system;
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
-use allocator_api2::vec::Vec as BVec;
-use blink_alloc::Blink;
 use objc2::rc::{Retained, autoreleasepool};
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::NSString;
@@ -163,7 +162,7 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
             } else {
                 unsafe {
                     let mut mtl_viewports =
-                        BVec::with_capacity_in(viewports.len(), self.arena.allocator());
+                        Vec::with_capacity_in(viewports.len(), self.arena.allocator());
                     mtl_viewports.extend(viewports.iter().map(conv::viewport_to_mtl));
 
                     let ptr = NonNull::new_unchecked(mtl_viewports.as_mut_ptr());
@@ -187,7 +186,7 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
                 encoder.setScissorRect(rect);
             } else {
                 unsafe {
-                    let mut mtl_rects = BVec::with_capacity_in(rects.len(), self.arena.allocator());
+                    let mut mtl_rects = Vec::with_capacity_in(rects.len(), self.arena.allocator());
                     mtl_rects.extend(rects.iter().map(conv::rect_to_mtl_scissor_rect));
 
                     let ptr = NonNull::new_unchecked(mtl_rects.as_mut_ptr());
@@ -1033,9 +1032,9 @@ unsafe impl Send for BoundIndexBuffer {}
 
 pub struct BoundPipelineState {
     primitive_type: MTLPrimitiveType,
-    push_params: [BVec<u64, RhiRoot>; 8],
+    push_params: [Vec<u64, RhiRoot>; 8],
     push_params_dirty: bool,
-    push_constant_block: BVec<u8, RhiRoot>,
+    push_constant_block: Vec<u8, RhiRoot>,
 }
 
 impl BoundPipelineState {
@@ -1090,11 +1089,13 @@ impl BoundPipelineState {
 
 impl Default for BoundPipelineState {
     fn default() -> Self {
+        let mut push_constant_block = Vec::new_in(system());
+        push_constant_block.resize(256, 0u8);
         Self {
             primitive_type: MTLPrimitiveType::Point,
-            push_params: [const { BVec::new_in(system()) }; 8],
+            push_params: std::array::from_fn(|_| Vec::new_in(system())),
             push_params_dirty: false,
-            push_constant_block: aleph_alloc::vec![in system(); 0u8; 256],
+            push_constant_block,
         }
     }
 }

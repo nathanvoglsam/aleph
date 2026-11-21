@@ -30,7 +30,6 @@
 use std::num::NonZeroU64;
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::BVec;
 use aleph_rhi_api::{
     BindingSignatureCreateError, BindingSignatureDesc, IBindingSignature, PushConstantBlock,
 };
@@ -44,7 +43,7 @@ pub struct BindingSignature {
     pub(crate) this: Weak<Self>,
     pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
-    pub(crate) _parameter_block_layouts: BVec<Arc<ParameterBlockLayout>, RhiRoot>,
+    pub(crate) _parameter_block_layouts: Vec<Arc<ParameterBlockLayout>, RhiRoot>,
     pub(crate) push_constant_block: Option<PushConstantBlock>,
 }
 
@@ -72,7 +71,7 @@ impl BindingSignature {
         desc: &BindingSignatureDesc,
     ) -> Result<Arc<dyn IBindingSignature>, BindingSignatureCreateError> {
         let mut block_layouts =
-            BVec::with_capacity_in(desc.parameter_block_layouts.len(), Default::default());
+            Vec::with_capacity_in(desc.parameter_block_layouts.len(), Default::default());
         block_layouts.extend(
             desc.parameter_block_layouts
                 .iter()

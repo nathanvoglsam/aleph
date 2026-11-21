@@ -30,9 +30,9 @@
 use std::any::TypeId;
 use std::sync::Arc;
 
+use aleph_alloc::blink_alloc::Blink;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::abort_on_unwind;
-use blink_alloc::Blink;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::NSString;

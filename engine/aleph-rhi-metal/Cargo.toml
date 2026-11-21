@@ -64,5 +64,3 @@ log = { workspace = true }
 crossbeam = { workspace = true }
 parking_lot = { workspace = true }
 raw-window-handle = { workspace = true }
-blink-alloc = { workspace = true }
-allocator-api2 = { workspace = true }

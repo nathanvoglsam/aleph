@@ -44,8 +44,4 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 objc2 = { workspace = true }
-objc2-metal = { workspace = true }
-objc2-quartz-core = { workspace = true }
-objc2-core-foundation = { workspace = true }
-objc2-foundation = { workspace = true }
 

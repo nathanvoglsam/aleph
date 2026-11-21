@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_alloc::BVec;
 use aleph_alloc::allocator_global_handle::AllocatorGlobalHandle;
 use aleph_alloc::instrumentation::system;
 use aleph_rhi_impl_utils::RhiRoot;
@@ -51,7 +50,7 @@ use parking_lot::Mutex;
 ///
 /// Otherwise, the interface is just a standard pool allocator.
 pub struct ShardedImageViewPool<const NUM_POOLS: usize> {
-    pools: BVec<ImageViewPool, RhiRoot>,
+    pools: Vec<ImageViewPool, RhiRoot>,
     handles: Handles,
 }
 
@@ -60,7 +59,7 @@ impl<const NUM_POOLS: usize> ShardedImageViewPool<NUM_POOLS> {
     ///
     /// Needs to retain a reference to the device for creating new image view pools.
     pub fn new(device: Retained<ProtocolObject<dyn MTLDevice>>) -> Self {
-        let mut pools = BVec::new_in(RhiRoot::HANDLE);
+        let mut pools = Vec::new_in(RhiRoot::HANDLE);
         for _ in 0..NUM_POOLS {
             let pool = ImageViewPool::new();
             pools.push(pool);
@@ -137,8 +136,8 @@ impl ImageViewPool {
         Self {
             inner: Mutex::new(Inner {
                 count: 0,
-                blocks: BVec::new_in(system()),
-                free_list: BVec::new_in(system()),
+                blocks: Vec::new_in(system()),
+                free_list: Vec::new_in(system()),
             }),
         }
     }
@@ -245,8 +244,8 @@ impl ImageViewPool {
 
 struct Inner {
     count: usize,
-    blocks: BVec<Block, RhiRoot>,
-    free_list: BVec<usize, RhiRoot>,
+    blocks: Vec<Block, RhiRoot>,
+    free_list: Vec<usize, RhiRoot>,
 }
 
 struct Block {

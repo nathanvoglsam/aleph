@@ -36,7 +36,7 @@ use aleph_object_system::{ArcObject, Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
 use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
-use objc2::rc::{Retained, autoreleasepool};
+use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::NSString;
 use objc2_metal::*;

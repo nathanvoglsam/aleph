@@ -39,7 +39,6 @@ use aleph_rhi_impl_utils::abort_on_unwind;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
-use allocator_api2::vec::Vec as BVec;
 use block2::RcBlock;
 use crossbeam::queue::ArrayQueue;
 use objc2::rc::{Retained, autoreleasepool};
@@ -538,7 +537,7 @@ impl Device {
                 DEVICE_BUMP.with(|bump| -> Result<FenceWaitResult, FenceWaitError> {
                     let bump = bump.scope();
 
-                    let mut inner_fences = BVec::with_capacity_in(fences.len(), bump.allocator());
+                    let mut inner_fences = Vec::with_capacity_in(fences.len(), bump.allocator());
                     inner_fences.extend(fences.iter().map(|v| Fence::get(v)));
 
                     // We do a speculative poll of the fences to see if we can exit without having
