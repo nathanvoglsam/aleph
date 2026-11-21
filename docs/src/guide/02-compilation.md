@@ -15,7 +15,7 @@ Run the following to generate an Android Studio project
 aleph genrpoj android
 ```
 
-The project can be found under `build/android`.
+The project can be found under `local/android`.
 
 ### Windows
 
@@ -26,7 +26,7 @@ We support cross compiling for a Windows target via MinGW-w64 from a Linux host.
 cargo build --target x86_64-pc-windows-gnu -p aleph-test
 ```
 
-The Windows executable is written to `build/rs/bin/x86_64-pc-windows-gnu/debug/aleph-test.exe`.
+The Windows executable is written to `local/rs/bin/x86_64-pc-windows-gnu/debug/aleph-test.exe`.
 
 The CLI also accepts the Windows platform on a Linux host:
 

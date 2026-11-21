@@ -35,8 +35,8 @@ index = "https://gitea.hmmr-cloud.com.au/MindSpunk/_cargo-index.git"
 git-fetch-with-cli = true
 
 [build]
-target-dir = "build/rs/bin"
-build-dir = "build/rs/obj"
+target-dir = "local/rs/bin"
+build-dir = "local/rs/obj"
 
 [env]
-ALEPH_BUILD_ROOT = { value = "build", relative = true }
+ALEPH_LOCAL_ROOT = { value = "local", relative = true }

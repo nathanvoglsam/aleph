@@ -195,10 +195,10 @@ impl PluginRegistry {
                 Some(())
             }();
 
-            // Then check ${CWD}/build/configs
+            // Then check ${CWD}/local/configs
             || -> Option<()> {
                 let path = current_dir().ok()?;
-                let path = path.join("build");
+                let path = path.join("local");
                 let path = path.join("configs");
                 sources.push(Box::new(DirectoryConfigProvider::from_path(path)?));
                 Some(())

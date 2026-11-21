@@ -4,7 +4,7 @@ project(${{ANDROID_GAME_NAME}} C CXX)
 
 include(FetchContent)
 
-set(CORROSION_CARGO_TARGET_DIR "${{ALEPH_WORKSPACE_ROOT}}/build/andrs" CACHE PATH "Cargo target directory" FORCE)
+set(CORROSION_CARGO_TARGET_DIR "${{ALEPH_WORKSPACE_ROOT}}/rs/and" CACHE PATH "Cargo target directory" FORCE)
 
 FetchContent_Declare(
     Corrosion

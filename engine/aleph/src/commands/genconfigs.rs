@@ -51,14 +51,14 @@ impl ISubcommand for GenConfigs {
     fn description(&mut self) -> clap::Command {
         clap::Command::new(self.name())
             .about("Generates the configs into the output format the engine can consume")
-            .long_about("Generates the configs into the output format the engine can consume. Prepares each crate's config.js into a specific folder and file structure inside 'build'")
+            .long_about("Generates the configs into the output format the engine can consume. Prepares each crate's config.js into a specific folder and file structure inside 'local'")
     }
 
     fn exec(&mut self, project: &AlephProject, _matches: ArgMatches) -> anyhow::Result<()> {
         let arena = Blink::new();
         let project_ctx = ConfigSubproject::load(&arena, project)?;
 
-        // Generate tsconfig.json files (root config referencing generated configs in 'build')
+        // Generate tsconfig.json files (root config referencing generated configs in 'local')
         generate_tsconfigs(&arena, project, &project_ctx)?;
 
         // Build everything with tsc

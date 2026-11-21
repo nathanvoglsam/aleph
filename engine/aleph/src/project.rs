@@ -63,47 +63,44 @@ pub struct AlephProject<'a> {
     /// form of `project_file.parent()`
     project_root: Utf8PathBuf,
 
-    /// The path to the '.aleph' folder for this project
-    dot_aleph_path: Utf8PathBuf,
+    /// The path to the 'local' folder for this project
+    local_root_path: Utf8PathBuf,
 
-    /// The path to the 'build' folder for this project
-    build_root_path: Utf8PathBuf,
-
-    /// The path to the 'build/android' folder for this project
+    /// The path to the 'local/android' folder for this project
     android_project_root: Utf8PathBuf,
 
-    /// The path to the 'build/shaders' folder for this project
+    /// The path to the 'local/shaders' folder for this project
     shader_build_path: Utf8PathBuf,
 
-    /// The path to the 'build/data/assets' folder for this project
+    /// The path to the 'local/data/assets' folder for this project
     _assets_build_path: Utf8PathBuf,
 
-    /// The path to the 'build/configs' folder for this project
+    /// The path to the 'local/configs' folder for this project
     configs_build_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/{platform}' folder appropriate for the host system,
+    /// The path to the 'local/sdk/{platform}' folder appropriate for the host system,
     _sdk_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/{android-sdk}' folder appropriate for the host system,
+    /// The path to the 'local/sdk/{android-sdk}' folder appropriate for the host system,
     android_sdk_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/{ndk}' folder appropriate for the host system,
+    /// The path to the 'local/sdk/{ndk}' folder appropriate for the host system,
     android_ndk_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/dxc/.../libdxcompiler' library for this project
+    /// The path to the 'local/sdk/dxc/.../libdxcompiler' library for this project
     dxc_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/slang/bin/{platform}/release/slangc' executable for this
+    /// The path to the 'local/sdk/slang/bin/{platform}/release/slangc' executable for this
     /// project
     slang_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/ninja/ninja' executable for this project
+    /// The path to the 'local/sdk/ninja/ninja' executable for this project
     ninja_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/node' executable for this project
+    /// The path to the 'local/sdk/node' executable for this project
     node_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdk/tsc' executable for this project
+    /// The path to the 'local/sdk/tsc' executable for this project
     tsc_path: Utf8PathBuf,
 
     /// The path to the Cargo.toml file adjacent to the aleph-project.toml
@@ -148,18 +145,17 @@ impl<'a> AlephProject<'a> {
             .context("Canonicalizing aleph-project.toml path")?;
         let project_file = Utf8PathBuf::try_from(project_file)?;
         let project_root = project_file.parent().unwrap().to_path_buf();
-        let dot_aleph_path = project_root.join(".aleph");
-        let build_root_path = project_root.join("build");
-        let android_project_root = build_root_path.join("android");
+        let local_root_path = project_root.join("local");
+        let android_project_root = local_root_path.join("android");
         let cargo_toml_file = project_root.join("Cargo.toml");
         let vscode_workspace_file = project_root.join("aleph.code-workspace");
-        let cargo_target_dir = build_root_path.join("rs").join("bin");
+        let cargo_target_dir = local_root_path.join("rs").join("bin");
 
-        let shader_build_path = build_root_path.join("shaders");
-        let assets_build_path = build_root_path.join("data").join("assets");
-        let configs_build_path = build_root_path.join("configs");
+        let shader_build_path = local_root_path.join("shaders");
+        let assets_build_path = local_root_path.join("data").join("assets");
+        let configs_build_path = local_root_path.join("configs");
 
-        let mut sdk_path = dot_aleph_path.clone();
+        let mut sdk_path = local_root_path.clone();
         sdk_path.push("sdk");
 
         let mut android_sdk_path = sdk_path.clone();
@@ -226,8 +222,7 @@ impl<'a> AlephProject<'a> {
             _arena: arena,
             project_file,
             project_root,
-            dot_aleph_path,
-            build_root_path,
+            local_root_path,
             android_project_root,
             shader_build_path,
             _assets_build_path: assets_build_path,
@@ -267,16 +262,10 @@ impl<'a> AlephProject<'a> {
         &self.project_root
     }
 
-    /// The path to the '.aleph' directory for the current project. The .aleph directory will be
+    /// The path to the 'local' directory for the current project. The local directory will be
     /// in the same directory as the 'aleph-project.toml' file.
-    pub fn _dot_aleph_path(&self) -> &Utf8Path {
-        &self.dot_aleph_path
-    }
-
-    /// The path to the 'build' directory for the current project. The build directory will be
-    /// in the same directory as the 'aleph-project.toml' file.
-    pub fn _build_root_path(&self) -> &Utf8Path {
-        &self.build_root_path
+    pub fn _local_root_path(&self) -> &Utf8Path {
+        &self.local_root_path
     }
 
     /// Returns the path to the folder that contains the `shaders` directory that will be used as
@@ -342,50 +331,50 @@ impl<'a> AlephProject<'a> {
         &self._cargo_target_dir
     }
 
-    /// Returns the path to the project's bundled SDK, in '.aleph/sdk'. This path may not
+    /// Returns the path to the project's bundled SDK, in 'local/sdk'. This path may not
     /// exist so check before using!
     pub fn _sdk_path(&self) -> &Utf8Path {
         &self._sdk_path
     }
 
-    /// Returns the path to the project's bundled ndk, in '.aleph/sdk/{android-sdk}'. This path may
+    /// Returns the path to the project's bundled ndk, in 'local/sdk/{android-sdk}'. This path may
     /// not exist so check before using!
     pub fn android_sdk_path(&self) -> &Utf8Path {
         &self.android_sdk_path
     }
 
-    /// Returns the path to the project's bundled ndk, in '.aleph/sdk/{ndk}'. This path may not
+    /// Returns the path to the project's bundled ndk, in 'local/sdk/{ndk}'. This path may not
     /// exist so check before using!
     pub fn android_ndk_path(&self) -> &Utf8Path {
         &self.android_ndk_path
     }
 
-    /// Returns the path to the project's bundled dxc, in '.aleph/sdk/dxc/.../libdxcompiler'.
+    /// Returns the path to the project's bundled dxc, in 'local/sdk/dxc/.../libdxcompiler'.
     /// This path may not exist so check before using!
     pub fn dxc_path(&self) -> &Utf8Path {
         &self.dxc_path
     }
 
     /// Returns the path to the project's bundled slang, in
-    /// '.aleph/sdk/slang/bin/{platform}/release/slang'. This path may not exist so check before
+    /// 'local/sdk/slang/bin/{platform}/release/slang'. This path may not exist so check before
     /// using!
     pub fn slang_path(&self) -> &Utf8Path {
         &self.slang_path
     }
 
-    /// Returns the path to the project's bundled ninja, in '.aleph/sdk/ninja/ninja'. This path
+    /// Returns the path to the project's bundled ninja, in 'local/sdk/ninja/ninja'. This path
     /// may not exist so check before using!
     pub fn ninja_path(&self) -> &Utf8Path {
         &self.ninja_path
     }
 
-    /// Returns the path to the project's bundled node, in '.aleph/sdk/node'. This path
+    /// Returns the path to the project's bundled node, in 'local/sdk/node'. This path
     /// may not exist so check before using!
     pub fn node_path(&self) -> &Utf8Path {
         &self.node_path
     }
 
-    /// Returns the path to the project's bundled tsc, in '.aleph/sdk/tsc'. This path
+    /// Returns the path to the project's bundled tsc, in 'local/sdk/tsc'. This path
     /// may not exist so check before using!
     pub fn tsc_path(&self) -> &Utf8Path {
         &self.tsc_path
@@ -702,13 +691,9 @@ impl<'a> AlephProject<'a> {
             return Err(anyhow!("{:?} is not a file", self.project_file));
         }
 
-        // Create the .aleph folder if it doesn't already exist
-        std::fs::create_dir_all(&self.dot_aleph_path)
-            .context("Creating .aleph directory if missing")?;
-
-        // Create the build folder if it doesn't already exist
-        std::fs::create_dir_all(&self.build_root_path)
-            .context("Creating 'build' directory if missing")?;
+        // Create the local folder if it doesn't already exist
+        std::fs::create_dir_all(&self.local_root_path)
+            .context("Creating 'local' directory if missing")?;
 
         Ok(())
     }

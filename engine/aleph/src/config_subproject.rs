@@ -144,7 +144,7 @@ pub type ConfigProjectContext<'a> = SubprojectProjectContext<'a, ConfigSubprojec
 
 #[derive(Clone, Debug)]
 pub struct ConfigProjectMeta<'a> {
-    /// Path to 'build/configs'
+    /// Path to 'local/configs'
     pub configs_root: &'a Utf8Path,
 }
 

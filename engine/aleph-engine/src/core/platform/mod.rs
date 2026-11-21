@@ -514,8 +514,8 @@ fn select_shaders_mount(
             shader_candidate.push(Utf8PathBuf::from(override_dir));
         }
         None => {
-            // First guess we're running from an aleph workspace, and try build/shaders
-            shader_candidate.push(Utf8PathBuf::from("build/shaders"));
+            // First guess we're running from an aleph workspace, and try local/shaders
+            shader_candidate.push(Utf8PathBuf::from("local/shaders"));
 
             // Otherwise assume we're in a packaged build and try the ./shaders folder
             shader_candidate.push(Utf8PathBuf::from("shaders"));

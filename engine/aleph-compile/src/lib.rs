@@ -29,10 +29,10 @@
 
 use std::path::PathBuf;
 
-pub fn build_root() -> Option<PathBuf> {
-    std::env::var_os("ALEPH_BUILD_ROOT")
+pub fn local_root() -> Option<PathBuf> {
+    std::env::var_os("ALEPH_LOCAL_ROOT")
         .map(PathBuf::from)
-        .inspect(|_| println!("cargo:rerun-if-env-changed=ALEPH_BUILD_ROOT"))
+        .inspect(|_| println!("cargo:rerun-if-env-changed=ALEPH_LOCAL_ROOT"))
 }
 
 /// Returns a path to a CMAKE toolchain file for cross-compiling with MinGW on Windows.

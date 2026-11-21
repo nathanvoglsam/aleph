@@ -44,14 +44,14 @@ pub fn main() {
         let mut pkg_location = config.build();
         pkg_location.extend(["build", "_deps", "d3d12_agility_sdk-src", "build", "native"]);
 
-        if let Some(build_root) = aleph_compile::build_root() {
+        if let Some(local_root) = aleph_compile::local_root() {
             let arch = match Architecture::build_target() {
                 Architecture::X8664 => "x64",
                 Architecture::AARCH64 => "arm64",
                 Architecture::Unknown => panic!("Unknown architecture"),
             };
 
-            let dst_dir = build_root.join("D3D12").join(arch);
+            let dst_dir = local_root.join("D3D12").join(arch);
             std::fs::create_dir_all(&dst_dir).unwrap();
 
             let bin_dir = pkg_location.join("bin").join(arch);

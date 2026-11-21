@@ -7,15 +7,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import {parseArgs} from "node:util";
 import {spawnSync} from "node:child_process";
-
-const {values} = parseArgs({
-    options: {
-        "build-root": {type: "string"},
-        "cmake-dir": {type: "string"},
-    },
-});
 
 function run_cmake(cwd: string, args: string[]) {
     const result = spawnSync("cmake", args, {
@@ -34,18 +26,10 @@ function run_cmake(cwd: string, args: string[]) {
 
 function main(): void {
     const projectDirectory = process.cwd();
-
-    // Either resolves to the directory referenced by the ${build-root}/build/tools parameter, if
-    // present, or it will resolve to ${cwd}/build/tools.
-    const toolsDirectory = path.join(values["build-root"] ?? projectDirectory, "build", "tools");
-
-    // These are always placed in the 'deps' directory, where ever that has been configured
+    const toolsDirectory = path.join(projectDirectory, "local", "tools");
     const installDirectory = path.resolve(path.join(toolsDirectory, "install"));
     const buildDirectory = path.resolve(path.join(toolsDirectory, "build"));
-
-    // However, we do need to find the CMakeLists.txt. We still assume we're running from the root
-    // of an aleph workspace!
-    const listDir = values["cmake-dir"] ?? path.join(projectDirectory, "utils", "3rdparty");
+    const listDir = path.join(projectDirectory, "utils", "3rdparty");
 
     fs.mkdirSync(installDirectory, {recursive: true});
     fs.mkdirSync(buildDirectory, {recursive: true});

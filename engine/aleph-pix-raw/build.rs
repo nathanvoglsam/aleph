@@ -54,7 +54,7 @@ cfg_select! {
             let mut pkg_path = cmake_path.clone();
             pkg_path.extend(["build", "_deps", "win_pix_event_runtime-src"]);
 
-            if let Some(build_root) = aleph_compile::build_root() {
+            if let Some(local_root) = aleph_compile::local_root() {
                 let arch = match Architecture::build_target() {
                     Architecture::X8664 => "x64",
                     Architecture::AARCH64 => "ARM64",
@@ -62,7 +62,7 @@ cfg_select! {
                 };
 
                 let bin_dir = pkg_path.join("bin").join(arch);
-                let dst_dir = build_root.join("pix").join(arch);
+                let dst_dir = local_root.join("pix").join(arch);
 
                 std::fs::create_dir_all(&dst_dir).unwrap();
 
