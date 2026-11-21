@@ -29,7 +29,6 @@
 
 use std::sync::Arc;
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 use aleph_gen_arena::GenArena;
 
@@ -85,7 +84,7 @@ pub struct MaterialInstanceObject {
 
     /// Indexed list of material bindings. The layout of this list is defined by the material we are
     /// instancing.
-    pub bindings: BVec<MaterialBinding, MgMatInstRoot>,
+    pub bindings: Vec<MaterialBinding, MgMatInstRoot>,
 }
 
 impl MaterialInstanceObject {
@@ -99,7 +98,7 @@ impl MaterialInstanceObject {
     ///
     /// Other flags and options will in general be default initialized.
     pub fn new(material: Arc<Material>) -> Self {
-        let mut bindings = BVec::new_in(system());
+        let mut bindings = Vec::new_in(system());
         bindings.extend_from_slice(material.material.binding_template());
         Self {
             material,

@@ -29,7 +29,6 @@
 
 use std::sync::Arc;
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 use aleph_pin_board::PinBoard;
 use parking_lot::Mutex;
@@ -120,7 +119,7 @@ impl RendererBuilder {
 
         let frame_manager = FrameManager::new(device.clone(), self.render_ahead_frames);
 
-        let async_loader_dispatchers = BVec::new_in(system());
+        let async_loader_dispatchers = Vec::new_in(system());
 
         let surface = self.surface.unwrap();
         let swap_config = rhi::SwapChainConfiguration {

@@ -41,7 +41,7 @@ pub mod surface_notify;
 use std::sync::Arc;
 
 use aleph_alloc::instrumentation::system;
-use aleph_alloc::{BBox, BVec};
+use aleph_alloc::polyfills::drain::drain_vec;
 use aleph_ecs::entity::EntityHandle;
 use aleph_ecs::world::World;
 use aleph_frame_graph::ImportBundle;
@@ -87,7 +87,7 @@ pub struct Renderer {
     pub(crate) device: Arc<dyn rhi::IDevice>,
     pub(crate) queue: Arc<dyn rhi::IQueue>,
     pub(crate) frame_fence: rhi::FenceHandle,
-    pub(crate) async_loader_dispatchers: BVec<BBox<dyn LoaderMessageDispatcher, MgRoot>, MgRoot>,
+    pub(crate) async_loader_dispatchers: Vec<Box<dyn LoaderMessageDispatcher, MgRoot>, MgRoot>,
     pub(crate) graph_manager: GraphManager,
     pub(crate) frame_manager: FrameManager,
     pub(crate) swap_manager: SwapManager,
@@ -199,9 +199,8 @@ impl Renderer {
             queue_type: queue.get_queue_type(),
             renderer_receiver,
         };
-        let dispatcher = BBox::new_in(generic_dispatcher, system());
-        self.async_loader_dispatchers
-            .push(aleph_alloc::unsize_bbox!(dispatcher));
+        let dispatcher = Box::new_in(generic_dispatcher, system());
+        self.async_loader_dispatchers.push(dispatcher);
 
         let loader = AsyncResourceLoader::<C>::new(device, queue, fence, loader_sender, config)?;
 
@@ -447,7 +446,7 @@ impl Renderer {
             self.swap_manager
                 .present(self.queue.as_ref(), acquired_image);
 
-            for buffer in self.object_delete_queue.buffer.drain(..) {
+            for buffer in drain_vec(&mut self.object_delete_queue.buffer, ..) {
                 if let Some(object) = self.buffer_object_store.pool.free(buffer) {
                     if let Some(handle) = object.object {
                         delete_bundle.buffers.push(handle)
@@ -455,7 +454,7 @@ impl Renderer {
                 }
             }
 
-            for texture in self.object_delete_queue.texture.drain(..) {
+            for texture in drain_vec(&mut self.object_delete_queue.texture, ..) {
                 if let Some(object) = self.texture_object_store.pool.free(texture) {
                     if let Some(handle) = object.object {
                         delete_bundle.textures.push(handle)

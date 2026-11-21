@@ -29,8 +29,8 @@
 
 use std::sync::Arc;
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
+use aleph_alloc::polyfills::drain::drain_vec;
 
 use crate::internal::MgRoot;
 use crate::internal::utils::abort_on_unwind;
@@ -56,7 +56,7 @@ pub struct DeferredDeletionManager {
 
     /// Collection of deletion bundles. These will be destroyed when their associated fence is
     /// found to be signaled.
-    bundles: BVec<DeletionBundle, MgRoot>,
+    bundles: Vec<DeletionBundle, MgRoot>,
 }
 
 impl DeferredDeletionManager {
@@ -64,7 +64,7 @@ impl DeferredDeletionManager {
     pub fn new(device: Arc<dyn rhi::IDevice>) -> Self {
         Self {
             device,
-            bundles: BVec::new_in(system()),
+            bundles: Vec::new_in(system()),
         }
     }
 
@@ -129,7 +129,7 @@ impl DeferredDeletionManager {
     ///
     /// This will panic if any of the fences in the active bundles fail to complete when waited on.
     pub fn assert_delete_all(&mut self) {
-        for bundle in self.bundles.drain(..) {
+        for bundle in drain_vec(&mut self.bundles, ..) {
             // Wait for the fence to be signaled so we know for sure the work is done
             match self
                 .device
@@ -183,20 +183,21 @@ pub struct DeletionBundle {
     value: u64,
 
     /// List of buffer handles to be kept alive in a deletion manager
-    pub buffers: BVec<rhi::BufferHandle, MgRoot>,
+    pub buffers: Vec<rhi::BufferHandle, MgRoot>,
 
     /// List of texture handles to be kept alive in a deletion manager
-    pub textures: BVec<rhi::TextureHandle, MgRoot>,
+    pub textures: Vec<rhi::TextureHandle, MgRoot>,
 }
 
 impl DeletionBundle {
     /// Constructs a new, empty bundle that as associated with the given fence.
-    pub const fn new(fence: rhi::FenceHandle, value: u64) -> DeletionBundle {
+    pub fn new(fence: rhi::FenceHandle, value: u64) -> DeletionBundle {
+        // TODO: can be made const when new_in is const stable
         DeletionBundle {
             fence,
             value,
-            buffers: BVec::new_in(system()),
-            textures: BVec::new_in(system()),
+            buffers: Vec::new_in(system()),
+            textures: Vec::new_in(system()),
         }
     }
 }

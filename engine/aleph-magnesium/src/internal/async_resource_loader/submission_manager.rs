@@ -29,9 +29,9 @@
 
 use std::cell::{Cell, RefCell};
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 use aleph_alloc::offset_allocator::Allocation;
+use aleph_alloc::polyfills::drain::drain_vec;
 use crossbeam::channel::SendError;
 
 use crate::async_resource_loader::{BufferLoadHandle, RetireError, TextureLoadHandle};
@@ -50,17 +50,17 @@ pub struct Submission {
 
     /// All the upload memory allocations that should be released to the allocator once this
     /// submission is retired on the copy queue.
-    pub retired_allocations: BVec<Allocation, MgAsyncLdrRoot>,
+    pub retired_allocations: Vec<Allocation, MgAsyncLdrRoot>,
 
     /// Collection of resource handles that are in use on the GPU in this submission, resources that
     /// must be kept alive while the submission is in-flight. Without this canceling a request may
     /// drop the resource while it's still in use.
-    pub live_resources: BVec<LiveResource, MgAsyncLdrRoot>,
+    pub live_resources: Vec<LiveResource, MgAsyncLdrRoot>,
 
     /// Handles to all the resource upload requests that will become fully complete once this
     /// submission is retired on the copy queue. As soon as these are observed to be retired they
     /// should be dispatched to the render thread to be made available to the renderer.
-    pub completed_uploads: BVec<CompletedResource, MgAsyncLdrRoot>,
+    pub completed_uploads: Vec<CompletedResource, MgAsyncLdrRoot>,
 
     /// The number of bytes uploaded across all commands recorded in this submission.
     pub bytes: u64,
@@ -80,7 +80,7 @@ impl Submission {
         let mut completed_buffers = 0usize;
         let mut completed_textures = 0usize;
         let mut maybe_failed = Ok(());
-        for completed in self.completed_uploads.drain(..) {
+        for completed in drain_vec(&mut self.completed_uploads, ..) {
             // Instead of immediately returning if the renderer has disconnected (discovered when we
             // try and send a message) we simply flag the error in 'maybe_failed' and continue.
             //
@@ -139,7 +139,7 @@ impl Submission {
 
         // The allocations that were being read from by the GPU are now free to be reused
         // so we return them to the allocator, freeing the memory for other uses.
-        for allocation in self.retired_allocations.drain(..) {
+        for allocation in drain_vec(&mut self.retired_allocations, ..) {
             upload_memory_manager.free_upload_range(allocation);
         }
 
@@ -182,23 +182,23 @@ pub struct SubmissionManager {
 
     /// The set of all live submissions, and any resources they currently own that should be retired
     /// once the submission is observed to be complete on the copy queue.
-    pub live: RefCell<BVec<Submission, MgAsyncLdrRoot>>,
+    pub live: RefCell<Vec<Submission, MgAsyncLdrRoot>>,
 }
 
 impl SubmissionManager {
     pub fn new() -> Self {
         Self {
             next_submission_index: Cell::new(1),
-            live: RefCell::new(BVec::new_in(system())),
+            live: RefCell::new(Vec::new_in(system())),
         }
     }
 
     pub fn new_submission(&self) -> Submission {
         Submission {
             signal_value: self.prepare_next_submission_index(),
-            retired_allocations: BVec::new_in(system()),
-            live_resources: BVec::new_in(system()),
-            completed_uploads: BVec::new_in(system()),
+            retired_allocations: Vec::new_in(system()),
+            live_resources: Vec::new_in(system()),
+            completed_uploads: Vec::new_in(system()),
             bytes: 0,
         }
     }

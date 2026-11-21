@@ -29,8 +29,8 @@
 
 use std::sync::Arc;
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
+use aleph_alloc::polyfills::drain::drain_vec;
 use aleph_nstr::nstr;
 use smallbox::SmallBox;
 use smallbox::space::S8;
@@ -50,16 +50,17 @@ use crate::resource_loader::upload_buffer::IUploadBuffer;
 
 pub struct ImmediateUploadQueue {
     pub device: Arc<dyn rhi::IDevice>,
-    pub textures: BVec<ImmediateTextureUpload, MgRoot>,
-    pub buffers: BVec<ImmediateBufferUpload, MgRoot>,
+    pub textures: Vec<ImmediateTextureUpload, MgRoot>,
+    pub buffers: Vec<ImmediateBufferUpload, MgRoot>,
 }
 
 impl ImmediateUploadQueue {
-    pub const fn new(device: Arc<dyn rhi::IDevice>) -> Self {
+    pub fn new(device: Arc<dyn rhi::IDevice>) -> Self {
+        // TODO: can be made const when new_in is const stable
         Self {
             device,
-            textures: BVec::new_in(system()),
-            buffers: BVec::new_in(system()),
+            textures: Vec::new_in(system()),
+            buffers: Vec::new_in(system()),
         }
     }
 
@@ -144,7 +145,7 @@ impl ImmediateUploadQueue {
         // upload source as will fit into the destination buffer, then push the src buffer into
         // the deletion bundle. As a result it remains alive long enough for the command to execute
         // on the GPU timeline.
-        for buffer_upload in self.buffers.drain(..) {
+        for buffer_upload in drain_vec(&mut self.buffers, ..) {
             let src = buffer_upload.data.handle();
             let dst = match bpool.pool.get_ref(buffer_upload.target) {
                 None => continue,
@@ -191,7 +192,7 @@ impl ImmediateUploadQueue {
 
         // This is where we perform our actual upload copies... for textures.
         let mut regions = Vec::new();
-        for (i, texture_upload) in self.textures.drain(..).enumerate() {
+        for (i, texture_upload) in drain_vec(&mut self.textures, ..).enumerate() {
             let src = texture_upload.mips.buffer.handle();
             let dst = fetched_rhi_textures[i];
             match dst.as_ref() {

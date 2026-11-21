@@ -29,7 +29,6 @@
 
 use std::cell::{Cell, RefCell};
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 use aleph_alloc::offset_allocator::Allocation;
 
@@ -41,7 +40,7 @@ use crate::internal::async_resource_loader::MgAsyncLdrRoot;
 pub struct QueuedCopyManager {
     /// Queue of submitted upload ranges that should have upload commands recorded for in the next
     /// flush operation.
-    pub queue: RefCell<BVec<SubmittedCopy, MgAsyncLdrRoot>>,
+    pub queue: RefCell<Vec<SubmittedCopy, MgAsyncLdrRoot>>,
 
     /// Sum total of the sizes of all upload ranges currently queued.
     pub queued_bytes: Cell<u64>,
@@ -50,7 +49,7 @@ pub struct QueuedCopyManager {
 impl QueuedCopyManager {
     pub fn new() -> Self {
         Self {
-            queue: RefCell::new(BVec::new_in(system())),
+            queue: RefCell::new(Vec::new_in(system())),
             queued_bytes: Cell::new(0),
         }
     }
@@ -90,13 +89,13 @@ impl QueuedCopyManager {
     ) {
         let mut submitted_queue = self.queue.borrow_mut();
 
-        let mut regions = BVec::new_in(system());
+        let mut regions = Vec::new_in(system());
         regions.extend(range.wanted.iter().map(|v| v.copy_region()));
 
         // We _must_ use mem::take() on the allocation field to leave it in the 'is_fail' state.
         // This sentinel signals that the upload has been submitted and prevents the drop
         // implementation from freeing the allocation too early.
-        let mut allocations = BVec::new_in(system());
+        let mut allocations = Vec::new_in(system());
         allocations.extend(
             range
                 .wanted
@@ -146,10 +145,10 @@ pub struct SubmittedTextureCopy {
 
     /// A list of dst copy regions, typically one for each target mip level, this upload block is
     /// trying to copy into.
-    pub regions: BVec<rhi::BufferToTextureCopyRegion, MgAsyncLdrRoot>,
+    pub regions: Vec<rhi::BufferToTextureCopyRegion, MgAsyncLdrRoot>,
 
     /// Allocation handles that hold ownership over the regions we're using in the upload block
-    pub allocations: BVec<Allocation, MgAsyncLdrRoot>,
+    pub allocations: Vec<Allocation, MgAsyncLdrRoot>,
 
     /// 'true' if this is the first copy into the texture. Requires issuing a discard barrier if
     /// 'true'.

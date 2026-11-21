@@ -29,7 +29,6 @@
 
 use std::sync::Arc;
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 
 use crate::internal::MgRoot;
@@ -47,7 +46,7 @@ pub struct FrameManager {
     render_ahead_frames: usize,
 
     /// Fences used for frame submissions, maintained in frame submission order as a ring buffer.
-    frame_fences: BVec<Option<FenceEntry>, MgRoot>,
+    frame_fences: Vec<Option<FenceEntry>, MgRoot>,
 
     /// The index of the _next_ frame. This will be what is returned on the next call to
     /// 'get_next_frame'.
@@ -56,10 +55,12 @@ pub struct FrameManager {
 
 impl FrameManager {
     pub fn new(device: Arc<dyn rhi::IDevice>, render_ahead_frames: usize) -> Self {
+        let mut frame_fences = Vec::new_in(system());
+        frame_fences.resize_with(render_ahead_frames + 1, || None);
         Self {
             device,
             render_ahead_frames,
-            frame_fences: aleph_alloc::vec![in system(); None; render_ahead_frames + 1],
+            frame_fences,
             next_frame_index: 0,
         }
     }

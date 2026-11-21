@@ -33,8 +33,8 @@ pub mod texture_upload_range;
 use std::cell::RefCell;
 use std::sync::Arc;
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
+use aleph_alloc::polyfills::drain::drain_vec;
 use aleph_gen_arena::{Handle, make_handle_id};
 use aleph_nstr::nstr;
 use thiserror::Error;
@@ -244,7 +244,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         let load = TextureLoadState {
             texture,
             layout: desc.as_simple_layout(),
-            levels: BVec::new_in(system()), // TODO: this
+            levels: Vec::new_in(system()), // TODO: this
             cookie,
             sender,
         };
@@ -613,7 +613,7 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
         let mut live = self.submission_manager.live.borrow_mut();
         let mut retire_maybe_failed = Ok(());
         let mut request_states = self.request_states.borrow_mut();
-        for submission in live.drain(..) {
+        for submission in drain_vec(&mut live, ..) {
             let result = submission.retire(
                 &self.stats,
                 &mut request_states,
@@ -692,8 +692,8 @@ impl<C: Send + 'static> AsyncResourceLoader<C> {
 
             let mut transfer = encoder.begin_transfer(nstr!("AsyncResourceLoader::flush"));
 
-            let mut buffer_barriers: BVec<_, MgAsyncLdrRoot> = BVec::new_in(system());
-            let mut texture_barriers: BVec<_, MgAsyncLdrRoot> = BVec::new_in(system());
+            let mut buffer_barriers: Vec<_, MgAsyncLdrRoot> = Vec::new_in(system());
+            let mut texture_barriers: Vec<_, MgAsyncLdrRoot> = Vec::new_in(system());
 
             // Record copy commands for all the submitted upload ranges.
             for block in queue.iter() {

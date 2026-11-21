@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 
 use crate::internal::MgRoot;
@@ -36,17 +35,18 @@ use crate::resource::texture::TextureHandle;
 
 pub struct ObjectDeleteQueue {
     /// List of texture objects that should be deleted
-    pub texture: BVec<TextureHandle, MgRoot>,
+    pub texture: Vec<TextureHandle, MgRoot>,
 
     /// List of buffer objects that should be deleted
-    pub buffer: BVec<BufferHandle, MgRoot>,
+    pub buffer: Vec<BufferHandle, MgRoot>,
 }
 
 impl ObjectDeleteQueue {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
+        // TODO: can be made const when new_in is const stable
         Self {
-            texture: BVec::new_in(system()),
-            buffer: BVec::new_in(system()),
+            texture: Vec::new_in(system()),
+            buffer: Vec::new_in(system()),
         }
     }
 

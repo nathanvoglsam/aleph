@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
 use rhi::TextureDimension;
 
@@ -48,7 +47,7 @@ pub struct TextureLoadState<C> {
 
     /// Tracks the state associated with loading each mip level the caller should provide for the
     /// texture.
-    pub levels: BVec<TextureLevelLoadState, MgAsyncLdrRoot>,
+    pub levels: Vec<TextureLevelLoadState, MgAsyncLdrRoot>,
 
     /// Caller provided cookie that will be sent alongside messages on the loader's notification
     /// channel to identify the associated request.
@@ -92,12 +91,12 @@ impl<C> TextureLoadState<C> {
         pitch_align: u32,
         mut num_bytes: u64,
         granularity: rhi::Extent3D,
-    ) -> BVec<WantedTextureRows, MgAsyncLdrRoot> {
+    ) -> Vec<WantedTextureRows, MgAsyncLdrRoot> {
         assert!(!self.has_outstanding_range());
 
         let texture_dimension = self.layout.texture_dimension().unwrap();
 
-        let mut wanted_rows = BVec::new_in(system());
+        let mut wanted_rows = Vec::new_in(system());
         for (mip_i, level_state) in self.levels.iter_mut().enumerate().rev() {
             // If we've hit the requested soft cap on the number of bytes to upload then we bail.
             if num_bytes == 0 {
