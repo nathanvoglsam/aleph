@@ -29,7 +29,7 @@
 
 use std::process::Command;
 
-use aleph_target::Platform;
+use aleph_target::{Architecture, Platform};
 use anyhow::{anyhow, bail};
 use clap::{Arg, ArgAction, ArgMatches};
 
@@ -90,8 +90,8 @@ impl ISubcommand for Build {
 
         match target.platform {
             BuildPlatform::Windows => self.windows(project, profile, &target, build_std),
-            BuildPlatform::MacOS => self.macos(project, profile, build_std),
-            BuildPlatform::Linux => self.linux(project, profile, build_std),
+            BuildPlatform::MacOS => self.macos(project, profile, &target, build_std),
+            BuildPlatform::Linux => self.linux(project, profile, &target, build_std),
             BuildPlatform::IOS => self.ios(project, profile, &target, build_std),
             BuildPlatform::Android => unimplemented!(),
         }
@@ -108,8 +108,11 @@ impl Build {
     ) -> anyhow::Result<()> {
         match BuildPlatform::from(Platform::host()) {
             BuildPlatform::Windows => self.plain_cargo_build(project, None, profile, build_std),
-            BuildPlatform::MacOS => bail!("Cross-compiling for windows is not supported on MacOS."),
+            BuildPlatform::MacOS => bail!("Cross-compiling for Windows is not supported on MacOS."),
             BuildPlatform::Linux => {
+                if target.arch != Architecture::X8664 {
+                    bail!("Cross-compiling for Windows is only supported for x86-64 targets.");
+                }
                 let target_str =
                     aleph_target::recreate_triple(Platform::WindowsGNU, target.arch).unwrap();
                 self.plain_cargo_build(project, Some(target_str), profile, build_std)
@@ -123,10 +126,15 @@ impl Build {
         &self,
         project: &AlephProject,
         profile: Profile,
+        target: &Target,
         build_std: bool,
     ) -> anyhow::Result<()> {
+        assert_eq!(target.platform, BuildPlatform::MacOS);
         if BuildPlatform::from(Platform::host()) != BuildPlatform::MacOS {
             bail!("Cross-compiling for MacOS is not supported.");
+        }
+        if target.arch != Architecture::host() {
+            bail!("Cross-compiling for MacOS is not supported. Wrong host architecture.");
         }
         self.plain_cargo_build(project, None, profile, build_std)
     }
@@ -135,16 +143,16 @@ impl Build {
         &self,
         project: &AlephProject,
         profile: Profile,
+        target: &Target,
         build_std: bool,
     ) -> anyhow::Result<()> {
+        assert_eq!(target.platform, BuildPlatform::Linux);
         if BuildPlatform::from(Platform::host()) != BuildPlatform::Linux {
-            bail!("Cross-compiling for Linux is not supported.");
+            bail!("Cross-compiling for Linux is not supported. Wrong host platform.");
         }
-        assert_eq!(
-            BuildPlatform::from(Platform::host()),
-            BuildPlatform::Linux,
-            "It is only valid to build linux on linux"
-        );
+        if target.arch != Architecture::host() {
+            bail!("Cross-compiling for Linux is not supported. Wrong host architecture.");
+        }
         self.plain_cargo_build(project, None, profile, build_std)
     }
 
@@ -201,7 +209,6 @@ impl Build {
     ) -> anyhow::Result<()> {
         let project_schema = project.get_project_schema()?;
 
-        // For windows we need to add an environment var for configuring the executable icon
         if let Some(branding) = project_schema
             .windows
             .as_ref()
