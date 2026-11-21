@@ -35,7 +35,7 @@ use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
 use allocator_api2::alloc::Allocator;
-use allocator_api2::vec::Vec as BVec;
+use allocator_api2::vec::Vec;
 use windows::Win32::Graphics::Direct3D12::*;
 
 use crate::device::Device;
@@ -46,7 +46,7 @@ pub struct BindingSignature {
     pub(crate) this: Weak<Self>,
     pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
-    pub(crate) _parameter_block_layouts: BVec<Arc<ParameterBlockLayout>, RhiRoot>,
+    pub(crate) _parameter_block_layouts: Vec<Arc<ParameterBlockLayout>, RhiRoot>,
     pub(crate) root_signature: ID3D12RootSignature,
     pub(crate) compiled: CompiledBindingSignature,
 }
@@ -86,7 +86,7 @@ impl BindingSignature {
         allocator: A,
     ) -> D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
         let mut parameters =
-            BVec::with_capacity_in(compiled.root_parameter_count as usize, allocator);
+            Vec::with_capacity_in(compiled.root_parameter_count as usize, allocator);
 
         // Push the root constants as the first parameter. They're always the first.
         if let Some(block) = compiled.push_constant_block.as_ref() {
@@ -105,9 +105,9 @@ impl BindingSignature {
 
             // Take a copy of the template descriptor ranges from the compiled block layout
             let sampler_templates = layout.compiled.samplers.ranges();
-            let mut samplers = BVec::with_capacity_in(sampler_templates.len(), allocator);
+            let mut samplers = Vec::with_capacity_in(sampler_templates.len(), allocator);
             samplers.extend(sampler_templates.iter().cloned());
-            let samplers = BVec::leak(samplers);
+            let samplers = Vec::leak(samplers);
 
             // Patch the register space in the copied templates
             for sampler in samplers.iter_mut() {
@@ -121,7 +121,7 @@ impl BindingSignature {
             }
         }
 
-        let parameters = BVec::leak(parameters);
+        let parameters = Vec::leak(parameters);
         D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
             Version: D3D_ROOT_SIGNATURE_VERSION_1_1,
             Anonymous: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
@@ -137,16 +137,15 @@ impl BindingSignature {
     }
 
     pub fn push_resource_descriptor_table<A: Allocator + Copy>(
-        parameters: &mut BVec<D3D12_ROOT_PARAMETER1, A>,
+        parameters: &mut Vec<D3D12_ROOT_PARAMETER1, A>,
         block_i: usize,
         layout: &ParameterBlockLayout,
     ) {
         // Copy the descriptor ranges template from the block layout
         let resource_templates = layout.compiled.resources.ranges();
-        let mut resources =
-            BVec::with_capacity_in(resource_templates.len(), parameters.allocator());
+        let mut resources = Vec::with_capacity_in(resource_templates.len(), parameters.allocator());
         resources.extend(resource_templates.iter().cloned());
-        let resources = BVec::leak(resources);
+        let resources = Vec::leak(resources);
 
         // Patch the register space in the copied templates
         for resource in resources.iter_mut() {
@@ -158,7 +157,7 @@ impl BindingSignature {
     }
 
     pub fn push_resource_push_descriptors<A: Allocator + Copy>(
-        parameters: &mut BVec<D3D12_ROOT_PARAMETER1, A>,
+        parameters: &mut Vec<D3D12_ROOT_PARAMETER1, A>,
         block_i: usize,
         layout: &ParameterBlockLayout,
     ) {
@@ -180,7 +179,7 @@ pub struct CompiledBindingSignature {
     /// Table that associates with the index of each [`IParameterBlockLayout`] given in
     /// [`BindingSignatureDesc`] that is used to look up the base index in the root signature the
     /// block should be bound to.
-    pub block_offsets: BVec<CompiledBlockOffset, RhiRoot>,
+    pub block_offsets: Vec<CompiledBlockOffset, RhiRoot>,
 
     /// Table that is present when a push constant block was defined in [`BindingSignatureDesc`].
     /// Stores the root parameter index and the number of DWORDs the block consumes.
@@ -203,7 +202,7 @@ impl CompiledBindingSignature {
             num_parameters += 1;
         }
 
-        let mut block_offsets = BVec::with_capacity_in(block_layouts.len(), system());
+        let mut block_offsets = Vec::with_capacity_in(block_layouts.len(), system());
         for layout in block_layouts {
             block_offsets.push(CompiledBlockOffset {
                 root_parameter_index: num_parameters,

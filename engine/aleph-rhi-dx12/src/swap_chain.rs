@@ -32,8 +32,8 @@ use std::mem::{ManuallyDrop, size_of};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
+use aleph_alloc::polyfills::drain::drain_vec;
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
@@ -71,7 +71,7 @@ impl IGetPlatformInterface for SwapChain {
 
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
-    pub textures: BVec<Arc<Object<Texture>>, RhiRoot>,
+    pub textures: Vec<Arc<Object<Texture>>, RhiRoot>,
     pub dxgi_format: DXGI_FORMAT,
     pub dxgi_flags: DXGI_SWAP_CHAIN_FLAG,
 }
@@ -242,18 +242,17 @@ impl ISwapChain for SwapChain {
                 // will hold the only remaining references to the swap chain images.
                 //
                 // This also handles creating the list of queues we pass to ResizeBuffers
-                let queues_list: Vec<ManuallyDrop<ID3D12CommandQueue>> = inner
-                    .textures
-                    .drain(..)
-                    .map(|_| {
-                        // Take a shadow copy queue into ManuallyDrop so we don't increment the
-                        // reference count just to pack it into the array.
-                        //
-                        // This is sound so long as 'queue' always outlives the array and our shadow
-                        // copies.
-                        core::mem::transmute_copy(&queue)
-                    })
-                    .collect();
+                let queues_list: Vec<ManuallyDrop<ID3D12CommandQueue>> =
+                    drain_vec(&mut inner.textures, ..)
+                        .map(|_| {
+                            // Take a shadow copy queue into ManuallyDrop so we don't increment the
+                            // reference count just to pack it into the array.
+                            //
+                            // This is sound so long as 'queue' always outlives the array and our shadow
+                            // copies.
+                            core::mem::transmute_copy(&queue)
+                        })
+                        .collect();
                 let queues = manually_drop::view_list_as_inner(&queues_list);
 
                 self.resize_buffers(

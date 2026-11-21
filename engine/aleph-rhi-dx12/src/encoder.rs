@@ -36,7 +36,7 @@ use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind, try_clone_value_into_slot};
-use allocator_api2::vec::Vec as BVec;
+use allocator_api2::vec::Vec;
 use blink_alloc::{Blink, BlinkAlloc};
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -113,8 +113,8 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         bindings: &[InputAssemblyBufferBinding],
     ) {
         abort_on_unwind(|| {
-            let mut views: BVec<D3D12_VERTEX_BUFFER_VIEW, _> =
-                BVec::with_capacity_in(bindings.len(), self.arena.allocator());
+            let mut views: Vec<D3D12_VERTEX_BUFFER_VIEW, _> =
+                Vec::with_capacity_in(bindings.len(), self.arena.allocator());
             for (i, v) in bindings.iter().enumerate() {
                 let buffer = Buffer::get(v.buffer);
 
@@ -167,8 +167,8 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
 
     unsafe fn __set_viewports(&mut self, viewports: &[Viewport]) {
         abort_on_unwind(|| {
-            let mut new_viewports: BVec<D3D12_VIEWPORT, _> =
-                BVec::with_capacity_in(viewports.len(), self.arena.allocator());
+            let mut new_viewports: Vec<D3D12_VIEWPORT, _> =
+                Vec::with_capacity_in(viewports.len(), self.arena.allocator());
             for v in viewports {
                 new_viewports.push(D3D12_VIEWPORT {
                     TopLeftX: v.x,
@@ -188,8 +188,8 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
 
     unsafe fn __set_scissor_rects(&mut self, rects: &[Rect]) {
         abort_on_unwind(|| {
-            let mut new_rects: BVec<RECT, _> =
-                BVec::with_capacity_in(rects.len(), self.arena.allocator());
+            let mut new_rects: Vec<RECT, _> =
+                Vec::with_capacity_in(rects.len(), self.arena.allocator());
             for v in rects {
                 new_rects.push(RECT {
                     left: v.x as i32,
@@ -237,7 +237,7 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
     unsafe fn __begin_rendering(&mut self, info: &BeginRenderingInfo) {
         abort_on_unwind(|| {
             let mut color_attachments =
-                BVec::with_capacity_in(info.color_attachments.len(), self.arena.allocator());
+                Vec::with_capacity_in(info.color_attachments.len(), self.arena.allocator());
 
             for attachment in info.color_attachments {
                 unsafe {
@@ -492,12 +492,12 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
             }
 
             let mut translated_global_barriers =
-                BVec::with_capacity_in(global_barriers.len(), self.arena.allocator());
+                Vec::with_capacity_in(global_barriers.len(), self.arena.allocator());
             let mut translated_buffer_barriers =
-                BVec::with_capacity_in(buffer_barriers.len(), self.arena.allocator());
+                Vec::with_capacity_in(buffer_barriers.len(), self.arena.allocator());
             let mut translated_texture_barriers =
-                BVec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
-            let mut barrier_groups = BVec::with_capacity_in(3, self.arena.allocator());
+                Vec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
+            let mut barrier_groups = Vec::with_capacity_in(3, self.arena.allocator());
 
             if !global_barriers.is_empty() {
                 for barrier in global_barriers {

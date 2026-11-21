@@ -33,7 +33,6 @@ use std::ptr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{Rhi, RhiRoot, abort_on_unwind, try_clone_value_into_slot};
@@ -322,10 +321,10 @@ impl IQueue for Queue {
                     .map_err(|_| QueueSubmitError::Platform)?;
             }
 
-            let mut lists: BVec<Box<CommandList>, RhiRoot> =
-                BVec::with_capacity_in(desc.command_lists.len(), system());
-            let mut handles: BVec<Option<ID3D12CommandList>, RhiRoot> =
-                BVec::with_capacity_in(desc.command_lists.len(), system());
+            let mut lists: Vec<Box<CommandList>, RhiRoot> =
+                Vec::with_capacity_in(desc.command_lists.len(), system());
+            let mut handles: Vec<Option<ID3D12CommandList>, RhiRoot> =
+                Vec::with_capacity_in(desc.command_lists.len(), system());
             for list in desc.command_lists.iter_mut() {
                 let list = list.take().unwrap();
                 let list = {
@@ -444,5 +443,5 @@ pub struct QueueSubmission {
 
     /// A list of command lists that are in flight in this submission. These lists will eventually
     /// be recycled!
-    pub lists: BVec<Box<CommandList>, RhiRoot>,
+    pub lists: Vec<Box<CommandList>, RhiRoot>,
 }

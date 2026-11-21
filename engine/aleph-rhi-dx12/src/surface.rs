@@ -30,7 +30,6 @@
 use std::any::TypeId;
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{Rhi, abort_on_unwind};
@@ -164,7 +163,7 @@ impl Surface {
 
         let inner = SwapChainState {
             config: config.clone(),
-            textures: BVec::with_capacity_in(desc.BufferCount as usize, system()),
+            textures: Vec::with_capacity_in(desc.BufferCount as usize, system()),
             dxgi_format: in_memory_format,
             dxgi_flags: flags,
         };

@@ -47,7 +47,7 @@ use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVi
 use aleph_rhi_impl_utils::parameter_block_pool::ParameterBlockPool;
 use aleph_rhi_impl_utils::{Rhi, RhiRoot, abort_on_unwind, try_clone_value_into_slot};
 use allocator_api2::alloc::Allocator;
-use allocator_api2::vec::Vec as BVec;
+use allocator_api2::vec::Vec;
 use blink_alloc::{Blink, BlinkAlloc};
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
@@ -230,7 +230,7 @@ impl IDevice for Device {
                     let bump = bump_cell.scope();
 
                     let mut parameter_block_layouts =
-                        BVec::with_capacity_in(desc.parameter_block_layouts.len(), system());
+                        Vec::with_capacity_in(desc.parameter_block_layouts.len(), system());
                     for layout in desc.parameter_block_layouts {
                         let layout = unwrap::parameter_block_layout_d(layout);
                         parameter_block_layouts.push(layout.this.upgrade().unwrap());
@@ -318,7 +318,7 @@ impl IDevice for Device {
 
                 // Render target format translation is straight forward, just convert the formats and add
                 let mut rtv_formats =
-                    BVec::with_capacity_in(desc.render_target_formats.len(), bump.allocator());
+                    Vec::with_capacity_in(desc.render_target_formats.len(), bump.allocator());
                 for v in desc.render_target_formats.iter().copied() {
                     rtv_formats.push(texture_format_to_dxgi(v))
                 }
@@ -960,8 +960,8 @@ impl IDevice for Device {
                         // Unwrap the fences into the form accepted by D3D12, and produce a matching array
                         // of values filled with the expected value for a signalled fence.
                         assert_eq!(fences.len(), values.len());
-                        let mut inner_fences: BVec<Option<ID3D12Fence>, _> =
-                            BVec::with_capacity_in(fences.len(), bump.allocator());
+                        let mut inner_fences: Vec<Option<ID3D12Fence>, _> =
+                            Vec::with_capacity_in(fences.len(), bump.allocator());
                         for fence in fences.iter().copied().map(Fence::get) {
                             inner_fences.push(Some(fence.fence.clone()));
                         }
@@ -1194,7 +1194,7 @@ impl Device {
     fn translate_vertex_input_state_desc<'a, A: Allocator + 'a>(
         allocator: A,
         desc: &VertexInputStateDesc,
-    ) -> ([u32; 16], BVec<D3D12_INPUT_ELEMENT_DESC, A>) {
+    ) -> ([u32; 16], Vec<D3D12_INPUT_ELEMENT_DESC, A>) {
         // Copy the input binding strides into a buffer the pipeline will hold on to so it can be
         // used in the command encoders. Vulkan bakes these in the pipeline, d3d12 gets the values
         // when the input bindings are bound
@@ -1204,7 +1204,7 @@ impl Device {
         }
 
         // Translate the vertex input description
-        let mut input_layout = BVec::with_capacity_in(desc.input_attributes.len(), allocator);
+        let mut input_layout = Vec::with_capacity_in(desc.input_attributes.len(), allocator);
         for attribute in desc.input_attributes {
             // DX12 describes vertex attributes differently. The RHI exposes the Vulkan way as it
             // is easier to map vulkan->dx12 here than the other way around, and is more robust.
