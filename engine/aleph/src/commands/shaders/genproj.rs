@@ -43,7 +43,7 @@ use crate::shader_system::{
     ShaderModuleDefinition, ShaderModuleDefinitionFile, ShaderProjectContext, ShaderSubproject,
     ShaderTargetLanguage,
 };
-use crate::utils::{BuildPlatform, Profile, dunce_utf8, ninja};
+use crate::utils::{Profile, dunce_utf8, ninja};
 
 pub struct GenShaderProj {}
 

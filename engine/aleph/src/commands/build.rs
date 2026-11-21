@@ -29,8 +29,8 @@
 
 use std::process::Command;
 
-use aleph_target::{Architecture, Platform};
-use anyhow::anyhow;
+use aleph_target::Platform;
+use anyhow::{anyhow, bail};
 use clap::{Arg, ArgAction, ArgMatches};
 
 use crate::commands::{ISubcommand, arch_arg, config_arg, platform_arg};
@@ -84,33 +84,14 @@ impl ISubcommand for Build {
             return Err(anyhow!("Invalid native platform \"{}\"", platform.name()));
         }
 
-        let native_build_platform = BuildPlatform::from(Platform::host());
-        match platform {
-            p @ (BuildPlatform::Windows | BuildPlatform::MacOS | BuildPlatform::Linux)
-                if p != native_build_platform =>
-            {
-                log::error!(
-                    "Trying to build platform '{}' on host '{}'. This platform does not support cross-compiling",
-                    p,
-                    native_build_platform
-                );
-                return Err(anyhow!(
-                    "Trying to build platform '{}' on host '{}'.",
-                    p,
-                    native_build_platform
-                ));
-            }
-            _ => {}
-        }
-
         let target = Target { arch, platform };
 
         let build_std = matches.get_flag("build-std");
 
         match target.platform {
             BuildPlatform::Windows => self.windows(project, profile, &target, build_std),
-            BuildPlatform::MacOS => self.macos(project, profile, &target, build_std),
-            BuildPlatform::Linux => self.linux(project, profile, &target, build_std),
+            BuildPlatform::MacOS => self.macos(project, profile, build_std),
+            BuildPlatform::Linux => self.linux(project, profile, build_std),
             BuildPlatform::IOS => self.ios(project, profile, &target, build_std),
             BuildPlatform::Android => unimplemented!(),
         }
@@ -125,42 +106,46 @@ impl Build {
         target: &Target,
         build_std: bool,
     ) -> anyhow::Result<()> {
-        assert_eq!(
-            BuildPlatform::from(Platform::host()),
-            BuildPlatform::Windows,
-            "It is only valid to build windows on windows"
-        );
-        self.plain_cargo_build(project, profile, target, build_std)
+        match BuildPlatform::from(Platform::host()) {
+            BuildPlatform::Windows => self.plain_cargo_build(project, None, profile, build_std),
+            BuildPlatform::MacOS => bail!("Cross-compiling for windows is not supported on MacOS."),
+            BuildPlatform::Linux => {
+                let target_str =
+                    aleph_target::recreate_triple(Platform::WindowsGNU, target.arch).unwrap();
+                self.plain_cargo_build(project, Some(target_str), profile, build_std)
+            }
+            BuildPlatform::IOS => unreachable!("How?"),
+            BuildPlatform::Android => unreachable!("How?"),
+        }
     }
 
     fn macos(
         &self,
         project: &AlephProject,
         profile: Profile,
-        target: &Target,
         build_std: bool,
     ) -> anyhow::Result<()> {
-        assert_eq!(
-            BuildPlatform::from(Platform::host()),
-            BuildPlatform::MacOS,
-            "It is only valid to build macos on macos"
-        );
-        self.plain_cargo_build(project, profile, target, build_std)
+        if BuildPlatform::from(Platform::host()) != BuildPlatform::MacOS {
+            bail!("Cross-compiling for MacOS is not supported.");
+        }
+        self.plain_cargo_build(project, None, profile, build_std)
     }
 
     fn linux(
         &self,
         project: &AlephProject,
         profile: Profile,
-        target: &Target,
         build_std: bool,
     ) -> anyhow::Result<()> {
+        if BuildPlatform::from(Platform::host()) != BuildPlatform::Linux {
+            bail!("Cross-compiling for Linux is not supported.");
+        }
         assert_eq!(
             BuildPlatform::from(Platform::host()),
             BuildPlatform::Linux,
             "It is only valid to build linux on linux"
         );
-        self.plain_cargo_build(project, profile, target, build_std)
+        self.plain_cargo_build(project, None, profile, build_std)
     }
 
     fn ios(
@@ -189,14 +174,14 @@ impl Build {
     fn plain_cargo_build(
         &self,
         project: &AlephProject,
+        target: Option<&str>,
         profile: Profile,
-        target: &Target,
         build_std: bool,
     ) -> anyhow::Result<()> {
         let project_schema = project.get_project_schema()?;
 
-        let mut command = native_build(profile, &project_schema.game.crate_name, build_std);
-        self.add_win32_branding_env_vars(project, target, &mut command)?;
+        let mut command = bin_build(profile, target, &project_schema.game.crate_name, build_std);
+        self.add_win32_branding_env_vars(project, &mut command)?;
 
         log::info!("{:?}", &command);
         let status = command.status()?;
@@ -212,23 +197,20 @@ impl Build {
     fn add_win32_branding_env_vars(
         &self,
         project: &AlephProject,
-        target: &Target,
         command: &mut Command,
     ) -> anyhow::Result<()> {
         let project_schema = project.get_project_schema()?;
 
         // For windows we need to add an environment var for configuring the executable icon
-        if matches!(target.platform, BuildPlatform::Windows) {
-            if let Some(branding) = project_schema
-                .windows
-                .as_ref()
-                .and_then(|v| v.branding.as_ref())
-            {
-                let icon = branding.icon.as_ref();
-                let icon = resolve_absolute_or_root_relative_path(project.project_root(), icon);
-                log::info!("ALEPH_WIN32_ICON_FILE = {:#?}", &icon);
-                command.env("ALEPH_WIN32_ICON_FILE", icon);
-            }
+        if let Some(branding) = project_schema
+            .windows
+            .as_ref()
+            .and_then(|v| v.branding.as_ref())
+        {
+            let icon = branding.icon.as_ref();
+            let icon = resolve_absolute_or_root_relative_path(project.project_root(), icon);
+            log::info!("ALEPH_WIN32_ICON_FILE = {:#?}", &icon);
+            command.env("ALEPH_WIN32_ICON_FILE", icon);
         }
         Ok(())
     }
@@ -261,12 +243,6 @@ fn bin_build(profile: Profile, target: Option<&str>, package: &str, build_std: b
     profile_args(&mut cmd, profile);
 
     cmd
-}
-
-fn native_build(profile: Profile, package: &str, build_std: bool) -> Command {
-    let target = build_std
-        .then(|| aleph_target::recreate_triple(Platform::host(), Architecture::host()).unwrap());
-    bin_build(profile, target, package, build_std)
 }
 
 fn ios_build(target: &Target, profile: Profile, package: &str, build_std: bool) -> Command {

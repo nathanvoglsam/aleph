@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_target::Platform;
 use anyhow::anyhow;
 use clap::ArgMatches;
 
@@ -76,25 +75,6 @@ impl ISubcommand for Bundle {
 
         if platform_arg == "native" && !platform.is_valid_native_platform() {
             return Err(anyhow!("Invalid native platform \"{}\"", platform.name()));
-        }
-
-        let native_build_platform = BuildPlatform::from(Platform::host());
-        match platform {
-            p @ (BuildPlatform::Windows | BuildPlatform::MacOS | BuildPlatform::Linux)
-                if p != native_build_platform =>
-            {
-                log::error!(
-                    "Trying to build platform '{}' on host '{}'. This platform does not support cross-compiling",
-                    p,
-                    native_build_platform
-                );
-                return Err(anyhow!(
-                    "Trying to build platform '{}' on host '{}'.",
-                    p,
-                    native_build_platform
-                ));
-            }
-            _ => {}
         }
 
         let target = Target { arch, platform };
