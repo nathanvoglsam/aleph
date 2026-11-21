@@ -43,7 +43,6 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use aleph_alloc::instrumentation::{Instrumented, system};
-use aleph_alloc::{BBox, BVec};
 use aleph_io_queue::IoQueue;
 use aleph_io_queue::top_level_handle_cache::TopLevelHandleCache;
 use aleph_vfs::directory_layer::DirectoryLayer;
@@ -205,7 +204,7 @@ impl IPlugin for CorePlatform {
 
         let io_queue = IoQueue::new(TopLevelHandleCache::new(2));
 
-        let mut layers: BVec<_, EngineRoot> = BVec::new_in(system());
+        let mut layers: Vec<_, EngineRoot> = Vec::new_in(system());
 
         {
             let layer = select_shaders_mount(&render_config, &io_queue);
@@ -507,8 +506,8 @@ fn init_cursor_map() -> HashMap<Cursor, sdl3::mouse::Cursor> {
 fn select_shaders_mount(
     config: &crate::render::config::Config,
     io_queue: &Arc<IoQueue>,
-) -> BBox<dyn aleph_vfs::ILayer, aleph_vfs::VfsRoot> {
-    let mut shader_candidate: BVec<_, EngineRoot> = BVec::new_in(system());
+) -> Box<dyn aleph_vfs::ILayer, aleph_vfs::VfsRoot> {
+    let mut shader_candidate: Vec<_, EngineRoot> = Vec::new_in(system());
     match config.shaders.as_deref() {
         Some(override_dir) => {
             // Only try the specified override directory
@@ -535,8 +534,8 @@ fn select_shaders_mount(
 fn select_assets_mount(
     config: &crate::core::config::Config,
     io_queue: &Arc<IoQueue>,
-) -> BBox<dyn aleph_vfs::ILayer, aleph_vfs::VfsRoot> {
-    let mut shader_candidate: BVec<_, EngineRoot> = BVec::new_in(system());
+) -> Box<dyn aleph_vfs::ILayer, aleph_vfs::VfsRoot> {
+    let mut shader_candidate: Vec<_, EngineRoot> = Vec::new_in(system());
     match config.assets.as_deref() {
         Some(override_dir) => {
             // Only try the specified override directory

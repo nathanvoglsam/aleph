@@ -31,7 +31,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 
-use aleph_alloc::{BVec, Blink};
+use aleph_alloc::blink_alloc::Blink;
 use crossbeam::channel::{Receiver, SendError, Sender, TryRecvError, unbounded};
 use tokio::sync::oneshot;
 
@@ -195,9 +195,9 @@ impl AsyncFenceWaiter {
         &mut self,
         timeout_ms: u32,
     ) -> Result<rhi::FenceWaitResult, rhi::FenceWaitError> {
-        let mut fences = BVec::with_capacity_in(self.pending.len(), self.wait_arena.allocator());
+        let mut fences = Vec::with_capacity_in(self.pending.len(), self.wait_arena.allocator());
         fences.extend(self.pending.iter().map(|entry| &entry.fence));
-        let mut values = BVec::with_capacity_in(self.pending.len(), self.wait_arena.allocator());
+        let mut values = Vec::with_capacity_in(self.pending.len(), self.wait_arena.allocator());
         values.extend(self.pending.iter().map(|entry| entry.value));
 
         let out = self.device.wait_fences(&fences, &values, false, timeout_ms);
@@ -210,7 +210,7 @@ impl AsyncFenceWaiter {
     }
 
     fn poll_pending(&mut self) -> Result<(), rhi::FenceWaitError> {
-        let mut temp = BVec::with_capacity_in(self.pending.len(), self.wait_arena.allocator());
+        let mut temp = Vec::with_capacity_in(self.pending.len(), self.wait_arena.allocator());
 
         while let Some(entry) = self.pending.pop_front() {
             match self.device.get_fence_signaled_value(&entry.fence) {

@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::Instrumented;
 use aleph_egui::Egui;
 use aleph_magnesium::renderer::{Renderer, SimpleTextureOptions};
@@ -129,15 +128,17 @@ pub struct FontTexture {
     pub height: usize,
 
     /// Raw data for the texture
-    pub bytes: BVec<u8, Instrumented<Font>>,
+    pub bytes: Vec<u8, Instrumented<Font>>,
 }
 
 impl FontTexture {
     pub fn new() -> Self {
+        let mut bytes = Vec::new_in(Default::default());
+        bytes.resize(8192 * 8192 * 4, 0);
         Self {
             width: 8192,
             height: 8192,
-            bytes: aleph_alloc::vec![in Default::default(); 0u8; 8192 * 8192 * 4],
+            bytes,
         }
     }
 
