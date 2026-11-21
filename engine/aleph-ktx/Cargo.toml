@@ -48,6 +48,3 @@ bytemuck = { workspace = true }
 num-integer = { workspace = true }
 bitflags = { workspace = true }
 thiserror = { workspace = true }
-
-[badges]
-azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

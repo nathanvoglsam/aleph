@@ -44,6 +44,3 @@ aleph-alloc = { workspace = true }
 aleph-engine-api = { workspace = true }
 egui = { workspace = true }
 egui_plot = { workspace = true }
-
-[badges]
-azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

@@ -42,9 +42,6 @@ rust-version.workspace = true
 [package.metadata.aleph]
 shaders = { modules = ["aleph-magnesium"] }
 
-[badges]
-azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
-
 [dependencies]
 aleph-alloc = { workspace = true }
 aleph-device-allocators = { workspace = true }

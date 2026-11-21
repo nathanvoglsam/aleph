@@ -1,1 +1,7 @@
-[![Build Status](https://dev.azure.com/nathanvoglsam420/Aleph/_apis/build/status%2Faleph-ci?branchName=master)](https://dev.azure.com/nathanvoglsam420/Aleph/_build/latest?definitionId=7&branchName=master)
+# Aleph Engine
+
+Aleph is a 3D game engine written in Rust.
+
+## Documentation
+
+The 'docs' folder contains the mdbook documentation for Aleph.

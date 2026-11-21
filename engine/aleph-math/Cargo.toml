@@ -39,9 +39,6 @@ edition.workspace = true
 documentation.workspace = true
 rust-version.workspace = true
 
-[badges]
-azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
-
 [dependencies]
 ultraviolet = { workspace = true }
 bytemuck = { workspace = true }

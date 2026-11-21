@@ -39,9 +39,6 @@ edition.workspace = true
 documentation.workspace = true
 rust-version.workspace = true
 
-[badges]
-azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
-
 [target.'cfg(target_os = "windows")'.dependencies]
 aleph-windows = { workspace = true }
 allocator-api2 = { workspace = true }

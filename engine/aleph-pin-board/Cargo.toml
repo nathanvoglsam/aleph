@@ -39,9 +39,6 @@ edition = "2021"
 documentation.workspace = true
 rust-version.workspace = true
 
-[badges]
-azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
-
 [dependencies]
 aleph-identity-hasher = { workspace = true }
 blink-alloc = { workspace = true }

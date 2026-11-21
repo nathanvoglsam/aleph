@@ -40,9 +40,6 @@ documentation.workspace = true
 rust-version.workspace = true
 build = "build.rs"
 
-[badges]
-azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
-
 [features]
 default = []
 development-build = []
