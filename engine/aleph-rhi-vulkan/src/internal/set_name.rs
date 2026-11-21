@@ -27,11 +27,10 @@
 // SOFTWARE.
 //
 
+use std::alloc::Allocator;
 use std::ffi::CStr;
 use std::iter;
 
-use aleph_alloc::BVec;
-use aleph_alloc::alloc::Allocator;
 use aleph_nstr::NStr;
 use ash::vk;
 
@@ -46,7 +45,7 @@ pub fn set_name<A: Allocator, T: vk::Handle>(
         // Can only set a name if one is provided
         if let Some(name) = name {
             let iter = name.bytes().chain(iter::once(0u8));
-            let mut name = BVec::new_in(bump);
+            let mut name = Vec::new_in(bump);
             name.extend(iter);
             let name = unsafe { CStr::from_bytes_with_nul_unchecked(&name) };
 

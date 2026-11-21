@@ -29,7 +29,6 @@
 
 use std::ptr::NonNull;
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_gpu_allocator::{AllocationDesc, GpuAllocation, MemoryLocation};
 use aleph_nstr::NStr;
@@ -43,7 +42,7 @@ use crate::internal::allocation_callbacks::GLOBAL;
 
 pub struct SharedState {
     /// A free-list where retired pool ranges are placed, ready for re-use.
-    range_free_list: BVec<QueryPoolBlock, RhiRoot>,
+    range_free_list: Vec<QueryPoolBlock, RhiRoot>,
 
     /// The CPU timestamp of the last calibration event.
     previous_calibration: u64,
@@ -238,7 +237,7 @@ impl QueueTimingQueryManager {
         // reclaimed. Regular calls to IDevice::garbage_collect are important for this to work.
         let chunks = pool_size / QueryPoolBlock::SIZE as usize;
         let chunks = chunks as u16;
-        let mut range_free_list = BVec::with_capacity_in(chunks as usize, system());
+        let mut range_free_list = Vec::with_capacity_in(chunks as usize, system());
         for i in 0..chunks {
             range_free_list.push(QueryPoolBlock {
                 begin: i * QueryPoolBlock::SIZE,

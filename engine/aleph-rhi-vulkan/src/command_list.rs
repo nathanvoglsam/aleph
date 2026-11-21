@@ -30,7 +30,8 @@
 use std::any::TypeId;
 use std::sync::Arc;
 
-use aleph_alloc::{BVec, Blink, BlinkAlloc};
+use aleph_alloc::blink_alloc::{Blink, BlinkAlloc};
+use aleph_alloc::polyfills::drain::drain_vec;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind, try_clone_value_into_slot};
 use ash::vk;
@@ -46,7 +47,7 @@ pub struct CommandList {
     pub(crate) buffer: vk::CommandBuffer,
     pub(crate) list_type: QueueType,
     pub(crate) state: ListState,
-    pub(crate) retired_timing_blocks: BVec<RetiredTimingQueryBlock, RhiRoot>,
+    pub(crate) retired_timing_blocks: Vec<RetiredTimingQueryBlock, RhiRoot>,
 }
 
 impl IGetPlatformInterface for CommandList {
@@ -160,7 +161,8 @@ impl Drop for CommandList {
             };
             let queue = queue.unwrap_unchecked();
             if let Some(timing) = queue.timing.as_ref() {
-                timing.return_blocks(self.retired_timing_blocks.drain(..).map(|v| v.block));
+                timing
+                    .return_blocks(drain_vec(&mut self.retired_timing_blocks, ..).map(|v| v.block));
             }
         })
     }

@@ -29,8 +29,8 @@
 
 use std::ops::DerefMut;
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::system;
+use aleph_alloc::polyfills::drain::drain_vec;
 use aleph_rhi_impl_utils::RhiRoot;
 use ash::vk;
 use parking_lot::Mutex;
@@ -83,11 +83,12 @@ pub struct SemaphorePool {
 }
 
 impl SemaphorePool {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
+        // TODO: can be made const when new_in is const stable
         Self {
             semaphores: Mutex::new(SemaphorePoolInner {
-                semaphores: BVec::new_in(system()),
-                to_recycle: BVec::new_in(system()),
+                semaphores: Vec::new_in(system()),
+                to_recycle: Vec::new_in(system()),
             }),
         }
     }
@@ -109,7 +110,7 @@ impl SemaphorePool {
         let semaphores = semaphores.deref_mut();
         semaphores
             .semaphores
-            .extend(semaphores.to_recycle.drain(..));
+            .extend(drain_vec(&mut semaphores.to_recycle, ..));
     }
 
     pub fn push_immediately(&self, semaphore: vk::Semaphore) {
@@ -124,12 +125,12 @@ impl SemaphorePool {
 
     pub unsafe fn destroy(&mut self, device: &ash::Device) {
         let semaphores = Mutex::get_mut(&mut self.semaphores);
-        for semaphore in semaphores.semaphores.drain(..) {
+        for semaphore in drain_vec(&mut semaphores.semaphores, ..) {
             unsafe {
                 device.destroy_semaphore(semaphore, GLOBAL);
             }
         }
-        for semaphore in semaphores.to_recycle.drain(..) {
+        for semaphore in drain_vec(&mut semaphores.to_recycle, ..) {
             unsafe {
                 device.destroy_semaphore(semaphore, GLOBAL);
             }
@@ -139,8 +140,8 @@ impl SemaphorePool {
 
 struct SemaphorePoolInner {
     /// The set of immediately reusable semaphores.
-    semaphores: BVec<vk::Semaphore, RhiRoot>,
+    semaphores: Vec<vk::Semaphore, RhiRoot>,
 
     /// A set of semaphores that are pending recycling and will be moved to the reusable set later.
-    to_recycle: BVec<vk::Semaphore, RhiRoot>,
+    to_recycle: Vec<vk::Semaphore, RhiRoot>,
 }

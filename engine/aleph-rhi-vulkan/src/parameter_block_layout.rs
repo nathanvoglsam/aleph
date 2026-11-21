@@ -30,7 +30,6 @@
 use std::num::NonZeroU64;
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::BVec;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedParameterBlockDesc;
 use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
@@ -45,7 +44,7 @@ pub struct ParameterBlockLayout {
     pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) descriptor_set_layout: vk::DescriptorSetLayout,
-    pub(crate) pool_sizes: BVec<vk::DescriptorPoolSize, RhiRoot>,
+    pub(crate) pool_sizes: Vec<vk::DescriptorPoolSize, RhiRoot>,
     pub(crate) desc: OwnedParameterBlockDesc,
 }
 

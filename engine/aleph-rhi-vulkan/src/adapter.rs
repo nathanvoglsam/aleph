@@ -32,7 +32,6 @@ use std::ffi::CStr;
 use std::mem::ManuallyDrop;
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_gpu_allocator::GpuAllocator;
 use aleph_rhi_api::*;
@@ -69,11 +68,11 @@ impl Adapter {
         queue_families: &[vk::QueueFamilyProperties],
     ) -> (
         [Option<QueueInfo>; 3],
-        BVec<vk::DeviceQueueCreateInfo<'_>, RhiRoot>,
+        Vec<vk::DeviceQueueCreateInfo<'_>, RhiRoot>,
     ) {
         // Produce a parallel list from 'queue_families'. Stores how many queues we've allocated
         // from each family.
-        let mut family_counts = BVec::new_in(RhiRoot::default());
+        let mut family_counts = Vec::new_in(RhiRoot::default());
         family_counts.extend((0..queue_families.len()).map(|_| 0u32));
 
         // Select a queue family for each RHI queue.
@@ -92,7 +91,7 @@ impl Adapter {
         ];
 
         // Generate the 'vk::DeviceQueueCreateInfo' we pass to Vulkan.
-        let mut queue_create_infos = BVec::with_capacity_in(3, RhiRoot::default());
+        let mut queue_create_infos = Vec::with_capacity_in(3, RhiRoot::default());
         for (index, &count) in family_counts.iter().enumerate() {
             // Simply add an entry for any family that isn't empty. Each family must appear only
             // once in the list.

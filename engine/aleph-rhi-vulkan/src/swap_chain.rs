@@ -31,8 +31,8 @@ use std::any::TypeId;
 use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
+use aleph_alloc::polyfills::drain::drain_vec;
 use aleph_nstr::{NStr, nstr};
 use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
@@ -172,7 +172,7 @@ impl ISwapChain for SwapChain {
                         index: i,
                         texture: Some(texture),
                         ready_semaphore: AtomicU64::new(ready_semaphore.as_raw()),
-                        work_semaphores: Mutex::new(BVec::new_in(Default::default())),
+                        work_semaphores: Mutex::new(Vec::new_in(Default::default())),
                         work_semaphore_pool: semaphore_pool,
                     });
                     if sub_optimal {
@@ -298,7 +298,7 @@ impl SwapChain {
 
         // Select our set of view-compatible formats
         let view_formats = config.format.compatible_view_formats();
-        let mut format_list = BVec::with_capacity_in(view_formats.len(), RhiRoot::default());
+        let mut format_list = Vec::with_capacity_in(view_formats.len(), RhiRoot::default());
         format_list.extend(view_formats.iter().copied().map(texture_format_to_vk));
         let mut format_flags = vk::SwapchainCreateFlagsKHR::empty();
         if format_list.len() > 1 {
@@ -353,7 +353,7 @@ impl SwapChain {
             nstr!(obj_name!("SwapImage-6")),
             nstr!(obj_name!("SwapImage-7")),
         ];
-        let mut new_images = BVec::with_capacity_in(images.len(), Default::default());
+        let mut new_images = Vec::with_capacity_in(images.len(), Default::default());
         let iter = images.iter().enumerate().map(|(i, image)| {
             use ResourceUsageFlags as F;
 
@@ -523,7 +523,7 @@ impl Drop for SwapChain {
                 }
             }
             unsafe {
-                for mut pool in inner.semaphore_pools.drain(..) {
+                for mut pool in drain_vec(&mut inner.semaphore_pools, ..) {
                     let pool = Arc::get_mut(&mut pool).unwrap();
                     pool.destroy(&self.device.device);
                 }
@@ -540,8 +540,8 @@ pub struct SwapChainState {
     pub present_mode: PresentationMode,
     pub vk_present_mode: vk::PresentModeKHR,
     pub extent: vk::Extent2D,
-    pub images: BVec<Arc<Object<Texture>>, RhiRoot>,
-    pub semaphore_pools: BVec<Arc<SemaphorePool>, RhiRoot>,
+    pub images: Vec<Arc<Object<Texture>>, RhiRoot>,
+    pub semaphore_pools: Vec<Arc<SemaphorePool>, RhiRoot>,
 }
 
 impl SwapChainState {

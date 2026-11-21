@@ -30,7 +30,6 @@
 use std::any::TypeId;
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::IAllocationCategory;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{Rhi, abort_on_unwind, try_clone_value_into_slot};
@@ -136,7 +135,7 @@ impl ISurface for Surface {
 
             // We assume config.buffer_count will not exceed 5, and create a fixed number of
             // semaphore pools accordingly.
-            let mut semaphore_pools = BVec::with_capacity_in(5, Default::default());
+            let mut semaphore_pools = Vec::with_capacity_in(5, Default::default());
             let iter = std::iter::repeat_n((), 5).map(|_| Arc::new(SemaphorePool::new()));
             semaphore_pools.extend(iter);
 
@@ -148,7 +147,7 @@ impl ISurface for Surface {
                 present_mode: config.present_mode,
                 vk_present_mode: Default::default(),
                 extent: Default::default(),
-                images: BVec::new_in(Default::default()),
+                images: Vec::new_in(Default::default()),
                 semaphore_pools,
             };
             let swap_chain = Rhi::with(|| {

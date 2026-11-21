@@ -27,10 +27,9 @@
 // SOFTWARE.
 //
 
+use std::alloc::Allocator;
 use std::hint::unreachable_unchecked;
 
-use aleph_alloc::BVec;
-use aleph_alloc::alloc::Allocator;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::parameter_block_layout_visitor::ParameterBlockLayoutVisitor;
 use ash::vk;
@@ -45,8 +44,8 @@ pub fn translate_descriptor_writes<'a, A: Allocator + Copy + 'a>(
     writes: &[ParameterWrite],
     set: vk::DescriptorSet,
     a: A,
-) -> BVec<vk::WriteDescriptorSet<'a>, A> {
-    let mut descriptor_writes = BVec::with_capacity_in(writes.len(), a);
+) -> Vec<vk::WriteDescriptorSet<'a>, A> {
+    let mut descriptor_writes = Vec::with_capacity_in(writes.len(), a);
 
     let visitor = ParameterBlockLayoutVisitor::new(layout_desc, base as u64, writes).unwrap();
     for v in visitor {
@@ -63,9 +62,9 @@ pub fn translate_descriptor_writes<'a, A: Allocator + Copy + 'a>(
             | ParameterType::ByteAddressBuffer
             | ParameterType::RWByteAddressBuffer => {
                 let translator = v.writes.iter().map(|v| unsafe { buffer_write_mapper(v) });
-                let mut buffer_infos = BVec::new_in(a);
+                let mut buffer_infos = Vec::new_in(a);
                 buffer_infos.extend(translator);
-                let buffer_infos = BVec::leak(buffer_infos);
+                let buffer_infos = Vec::leak(buffer_infos);
                 new_write = new_write.buffer_info(buffer_infos);
             }
             ParameterType::Buffer | ParameterType::RWBuffer => {
@@ -73,9 +72,9 @@ pub fn translate_descriptor_writes<'a, A: Allocator + Copy + 'a>(
                     .writes
                     .iter()
                     .map(|v| unsafe { texture_buffer_write_mapper(v) });
-                let mut buffer_views = BVec::new_in(a);
+                let mut buffer_views = Vec::new_in(a);
                 buffer_views.extend(translator);
-                let buffer_views = BVec::leak(buffer_views);
+                let buffer_views = Vec::leak(buffer_views);
                 new_write = new_write.texel_buffer_view(buffer_views);
             }
             ParameterType::Texture1D
@@ -97,16 +96,16 @@ pub fn translate_descriptor_writes<'a, A: Allocator + Copy + 'a>(
             | ParameterType::TextureCube
             | ParameterType::TextureCubeArray => {
                 let translator = v.writes.iter().map(|v| unsafe { image_write_mapper(v) });
-                let mut image_infos = BVec::new_in(a);
+                let mut image_infos = Vec::new_in(a);
                 image_infos.extend(translator);
-                let image_infos = BVec::leak(image_infos);
+                let image_infos = Vec::leak(image_infos);
                 new_write = new_write.image_info(image_infos);
             }
             ParameterType::SamplerState => {
                 let translator = v.writes.iter().map(|v| unsafe { sampler_write_mapper(v) });
-                let mut image_infos = BVec::new_in(a);
+                let mut image_infos = Vec::new_in(a);
                 image_infos.extend(translator);
-                let image_infos = BVec::leak(image_infos);
+                let image_infos = Vec::leak(image_infos);
                 new_write = new_write.image_info(image_infos)
             }
             ParameterType::AccelerationStructure => todo!(),

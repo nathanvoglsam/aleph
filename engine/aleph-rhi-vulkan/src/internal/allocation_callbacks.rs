@@ -27,12 +27,12 @@
 // SOFTWARE.
 //
 
+use std::alloc::Allocator;
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
-use aleph_alloc::BlinkAlloc;
-use aleph_alloc::alloc::Allocator;
+use aleph_alloc::blink_alloc::BlinkAlloc;
 use aleph_alloc::instrumentation::{Instrumented, system};
 use aleph_alloc::mallocator::Mallocator;
 use ash::vk;

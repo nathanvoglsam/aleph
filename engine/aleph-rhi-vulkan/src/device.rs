@@ -27,12 +27,11 @@
 // SOFTWARE.
 //
 
+use std::alloc::Allocator;
 use std::any::TypeId;
 use std::mem::{ManuallyDrop, MaybeUninit};
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::BVec;
-use aleph_alloc::alloc::Allocator;
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
 use aleph_gpu_allocator::{AllocationDesc, GpuAllocator, MemoryLocation};
 use aleph_object_system::Object;
@@ -182,7 +181,7 @@ impl IDevice for Device {
 
                 let mut sizes = [0; 11];
 
-                let mut bindings = BVec::with_capacity_in(desc.params.len(), bump.allocator());
+                let mut bindings = Vec::with_capacity_in(desc.params.len(), bump.allocator());
                 for (i, v) in desc.params.iter().enumerate() {
                     let binding = parameter_desc_to_vk(v)
                         .binding(i as u32)
@@ -193,7 +192,7 @@ impl IDevice for Device {
                     bindings.push(binding);
                 }
 
-                let mut pool_sizes = BVec::with_capacity_in(sizes.len(), Default::default());
+                let mut pool_sizes = Vec::with_capacity_in(sizes.len(), Default::default());
                 for (i, v) in sizes.iter().copied().enumerate() {
                     // Accumulate any non-zero pool size into the list
                     if v > 0 {
@@ -254,9 +253,9 @@ impl IDevice for Device {
                 let bump = bump_cell.scope();
 
                 let mut block_layouts =
-                    BVec::with_capacity_in(desc.parameter_block_layouts.len(), RhiRoot::default());
+                    Vec::with_capacity_in(desc.parameter_block_layouts.len(), RhiRoot::default());
                 let mut set_layouts =
-                    BVec::with_capacity_in(desc.parameter_block_layouts.len(), bump.allocator());
+                    Vec::with_capacity_in(desc.parameter_block_layouts.len(), bump.allocator());
                 for v in desc.parameter_block_layouts {
                     let v = unwrap::parameter_block_layout_d(v);
                     block_layouts.push(v._this.upgrade().unwrap());
@@ -329,9 +328,9 @@ impl IDevice for Device {
                     vk::PipelineDynamicStateCreateInfo::default().dynamic_states(&dynamic_states);
 
                 // Translate the vertex input state
-                let vertex_binding_descriptions: BVec<_, _> =
+                let vertex_binding_descriptions: Vec<_, _> =
                     Self::translate_vertex_bindings(bump.allocator(), desc);
-                let vertex_attribute_descriptions: BVec<_, _> =
+                let vertex_attribute_descriptions: Vec<_, _> =
                     Self::translate_vertex_attributes(bump.allocator(), desc);
                 let vertex_input_state = Self::translate_vertex_input_state(
                     &vertex_binding_descriptions,
@@ -352,7 +351,7 @@ impl IDevice for Device {
                 let depth_stencil_state = Self::translate_depth_stencil_state(desc);
 
                 let mut color_formats =
-                    BVec::with_capacity_in(desc.render_target_formats.len(), bump.allocator());
+                    Vec::with_capacity_in(desc.render_target_formats.len(), bump.allocator());
                 let mut dynamic_rendering =
                     Self::translate_framebuffer_info(desc, &mut color_formats);
 
@@ -360,7 +359,7 @@ impl IDevice for Device {
                 let color_blend_state = Self::translate_color_blend_state(&attachments);
 
                 let mut shader_modules =
-                    BVec::with_capacity_in(desc.shader_stages.len(), bump.allocator());
+                    Vec::with_capacity_in(desc.shader_stages.len(), bump.allocator());
                 for (i, v) in desc.shader_stages.iter().copied().enumerate() {
                     let stage = v.shader_type();
                     let module = unsafe {
@@ -374,7 +373,7 @@ impl IDevice for Device {
                     shader_modules.push((stage, module));
                 }
 
-                let mut stages = BVec::with_capacity_in(shader_modules.len(), bump.allocator());
+                let mut stages = Vec::with_capacity_in(shader_modules.len(), bump.allocator());
                 for &(shader_type, module) in shader_modules.iter() {
                     let info = vk::PipelineShaderStageCreateInfo::default()
                         .stage(shader_type_to_vk(shader_type))
@@ -505,7 +504,7 @@ impl IDevice for Device {
                 let layout = unwrap::parameter_block_layout(desc.layout);
 
                 let iter = layout.pool_sizes.iter().copied();
-                let mut pool_sizes = BVec::new_in(bump.allocator());
+                let mut pool_sizes = Vec::new_in(bump.allocator());
                 pool_sizes.extend(iter);
                 for size in &mut pool_sizes {
                     size.descriptor_count *= desc.num_blocks;
@@ -730,7 +729,7 @@ impl IDevice for Device {
                     .iter()
                     .copied()
                     .map(texture_format_to_vk);
-                let mut format_list = BVec::new_in(bump.allocator());
+                let mut format_list = Vec::new_in(bump.allocator());
                 format_list.extend(iter);
 
                 let mut format_flags = vk::ImageCreateFlags::empty();
@@ -926,7 +925,7 @@ impl IDevice for Device {
                         buffer: list.buffer,
                         list_type: list.list_type,
                         state: ListState::Empty,
-                        retired_timing_blocks: BVec::new_in(system()),
+                        retired_timing_blocks: Vec::new_in(system()),
                     });
                     return Ok(out);
                 }
@@ -988,7 +987,7 @@ impl IDevice for Device {
                     buffer: command_buffer,
                     list_type: desc.queue_type,
                     state: ListState::Empty,
-                    retired_timing_blocks: BVec::new_in(system()),
+                    retired_timing_blocks: Vec::new_in(system()),
                 });
 
                 Ok(out)
@@ -1098,7 +1097,7 @@ impl IDevice for Device {
                 }
 
                 let iter = fences.iter().copied().map(Fence::get).map(|v| v.semaphore);
-                let mut fences = BVec::new_in(bump.allocator());
+                let mut fences = Vec::new_in(bump.allocator());
                 fences.extend(iter);
 
                 let mut info = vk::SemaphoreWaitInfo::default();
@@ -1330,9 +1329,9 @@ impl Device {
 
         // We need to copy the data into a u32 buffer to satisfy alignment requirements
         let data_iter = data.chunks_exact(4).map(NativeEndian::read_u32);
-        let mut data = BVec::new_in(bump);
+        let mut data = Vec::new_in(bump);
         data.extend(data_iter);
-        let data = BVec::leak(data);
+        let data = Vec::leak(data);
 
         Ok(&*data)
     }
@@ -1340,14 +1339,14 @@ impl Device {
     fn translate_vertex_bindings<'a, A: Allocator + 'a>(
         bump: A,
         desc: &GraphicsPipelineDesc,
-    ) -> BVec<vk::VertexInputBindingDescription, A> {
+    ) -> Vec<vk::VertexInputBindingDescription, A> {
         let iter = desc.vertex_layout.input_bindings.iter().map(|v| {
             vk::VertexInputBindingDescription::default()
                 .binding(v.binding)
                 .stride(v.stride)
                 .input_rate(vertex_input_rate_to_vk(v.input_rate))
         });
-        let mut out = BVec::new_in(bump);
+        let mut out = Vec::new_in(bump);
         out.extend(iter);
         out
     }
@@ -1355,7 +1354,7 @@ impl Device {
     fn translate_vertex_attributes<'a, A: Allocator + 'a>(
         bump: A,
         desc: &GraphicsPipelineDesc,
-    ) -> BVec<vk::VertexInputAttributeDescription, A> {
+    ) -> Vec<vk::VertexInputAttributeDescription, A> {
         let iter = desc.vertex_layout.input_attributes.iter().map(|v| {
             vk::VertexInputAttributeDescription::default()
                 .location(v.location)
@@ -1363,7 +1362,7 @@ impl Device {
                 .offset(v.offset)
                 .format(vertex_format_to_vk(v.format))
         });
-        let mut out = BVec::new_in(bump);
+        let mut out = Vec::new_in(bump);
         out.extend(iter);
         out
     }
@@ -1447,7 +1446,7 @@ impl Device {
     fn translate_color_attachment_state<'a, A: Allocator + 'a>(
         bump: A,
         desc: &GraphicsPipelineDesc,
-    ) -> BVec<vk::PipelineColorBlendAttachmentState, A> {
+    ) -> Vec<vk::PipelineColorBlendAttachmentState, A> {
         let iter = desc.blend_state.attachments.iter().map(|v| {
             vk::PipelineColorBlendAttachmentState::default()
                 .blend_enable(v.blend_enabled)
@@ -1461,7 +1460,7 @@ impl Device {
                     v.color_write_mask.bits() as _
                 ))
         });
-        let mut out = BVec::new_in(bump);
+        let mut out = Vec::new_in(bump);
         out.extend(iter);
         out
     }
@@ -1478,7 +1477,7 @@ impl Device {
 
     fn translate_framebuffer_info<'a, A: Allocator + 'a>(
         desc: &GraphicsPipelineDesc,
-        color_formats: &'a mut BVec<vk::Format, A>,
+        color_formats: &'a mut Vec<vk::Format, A>,
     ) -> vk::PipelineRenderingCreateInfo<'a> {
         let builder = vk::PipelineRenderingCreateInfo::default();
 

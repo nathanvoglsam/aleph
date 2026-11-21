@@ -32,8 +32,8 @@ use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::BVec;
 use aleph_alloc::instrumentation::{IAllocationCategory, system};
+use aleph_alloc::polyfills::drain::drain_vec;
 use aleph_nstr::nstr;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{Rhi, RhiRoot, abort_on_unwind, try_clone_value_into_slot};
@@ -244,7 +244,7 @@ impl Queue {
 
             let swapchains = [swap_chain.swap_chain];
             let image_indices = [swap_image.index];
-            let mut wait_semaphores: BVec<_, RhiRoot> = BVec::new_in(system());
+            let mut wait_semaphores: Vec<_, RhiRoot> = Vec::new_in(system());
             wait_semaphores.extend(
                 swap_image
                     .work_semaphores
@@ -271,7 +271,7 @@ impl Queue {
                     // present operation because the image acquire will never give us this same
                     // image index again until the present op is retied.
                     let _ = swap_image.texture.take();
-                    let work_semaphores = swap_image.work_semaphores.get_mut().drain(..);
+                    let work_semaphores = drain_vec(swap_image.work_semaphores.get_mut(), ..);
                     for semaphore in work_semaphores {
                         swap_image
                             .work_semaphore_pool
@@ -288,14 +288,14 @@ impl Queue {
                     // Device lost means the semaphores are left in an undefined state. We will
                     // defer destruction to be managed by the queue via normal garbage collection.
                     let _ = swap_image.texture.take();
-                    let work_semaphores = swap_image.work_semaphores.get_mut().drain(..);
+                    let work_semaphores = drain_vec(swap_image.work_semaphores.get_mut(), ..);
                     defer_abandoned_semapore_destruction(&device, work_semaphores);
                     Err(QueuePresentError::DeviceLost)
                 }
                 Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => {
                     // The semaphores have been consumed, return them to the semaphore pool.
                     let _ = swap_image.texture.take();
-                    let work_semaphores = swap_image.work_semaphores.get_mut().drain(..);
+                    let work_semaphores = drain_vec(swap_image.work_semaphores.get_mut(), ..);
                     for semaphore in work_semaphores {
                         swap_image
                             .work_semaphore_pool
@@ -308,7 +308,7 @@ impl Queue {
                 // Err(vk::Result::ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT) => {
                 //     // The semaphores have been consumed, return them to the semaphore pool.
                 //     let _ = swap_image.texture.take();
-                //     let work_semaphores = swap_image.work_semaphores.get_mut().drain(..);
+                //     let work_semaphores = drain_vec(swap_image.work_semaphores.get_mut(), ..);
                 //     for semaphore in work_semaphores {
                 //         swap_image.semaphore_pool.push(semaphore.handle);
                 //     }
@@ -317,7 +317,7 @@ impl Queue {
                 Err(vk::Result::ERROR_SURFACE_LOST_KHR) => {
                     // The semaphores have been consumed, return them to the semaphore pool.
                     let _ = swap_image.texture.take();
-                    let work_semaphores = swap_image.work_semaphores.get_mut().drain(..);
+                    let work_semaphores = drain_vec(swap_image.work_semaphores.get_mut(), ..);
                     for semaphore in work_semaphores {
                         swap_image
                             .work_semaphore_pool
@@ -424,16 +424,16 @@ impl Queue {
                 //
                 // Or, in this case, before we stomp it with an undefined -> present src layout
                 // transition to make sure it's ready to present on the current queue.
-                let mut work_semaphores = BVec::new_in(RhiRoot::default());
-                work_semaphores.extend(swap_image.work_semaphores.get_mut().drain(..));
+                let mut work_semaphores = Vec::new_in(RhiRoot::default());
+                work_semaphores.extend(drain_vec(swap_image.work_semaphores.get_mut(), ..));
 
                 let mut submission = QueueSubmission {
                     swap_ready_semaphore: vk::Semaphore::null(),
-                    swap_work_semaphores: BVec::new_in(RhiRoot::default()),
+                    swap_work_semaphores: Vec::new_in(RhiRoot::default()),
                     swap_work_semaphore_pool: None,
-                    abandoned_semaphores: BVec::new_in(RhiRoot::default()),
+                    abandoned_semaphores: Vec::new_in(RhiRoot::default()),
                     index: 0,
-                    lists: BVec::new_in(RhiRoot::default()),
+                    lists: Vec::new_in(RhiRoot::default()),
                 };
 
                 let mut manager = SubmissionManager::default();
@@ -511,15 +511,15 @@ fn defer_abandoned_semapore_destruction(
             None => unreachable!(),
         };
         let mut in_flight = queue.in_flight.lock();
-        let mut abandoned_semaphores = BVec::new_in(RhiRoot::default());
+        let mut abandoned_semaphores = Vec::new_in(RhiRoot::default());
         abandoned_semaphores.push(semaphore.handle);
         let submission = QueueSubmission {
             swap_ready_semaphore: Default::default(),
-            swap_work_semaphores: BVec::new_in(RhiRoot::default()),
+            swap_work_semaphores: Vec::new_in(RhiRoot::default()),
             swap_work_semaphore_pool: None,
             abandoned_semaphores,
             index: semaphore.submission_index,
-            lists: BVec::new_in(RhiRoot::default()),
+            lists: Vec::new_in(RhiRoot::default()),
         };
         Rhi::with(|| in_flight.push_back(submission));
     }
@@ -653,7 +653,7 @@ impl IQueue for Queue {
                                 block.block.notify_profiler(timing, block.count);
                             }
                             timing.return_blocks(
-                                list.retired_timing_blocks.drain(..).map(|v| v.block),
+                                drain_vec(&mut list.retired_timing_blocks, ..).map(|v| v.block),
                             );
                         }
                     }
@@ -797,7 +797,7 @@ pub struct QueueSubmission {
     /// semaphore is known to be signalled we canreturn it to the device's semaphore pool for reuse.
     ///
     /// This semaphore will be signalled when the queue submission is complete.
-    pub swap_work_semaphores: BVec<vk::Semaphore, RhiRoot>,
+    pub swap_work_semaphores: Vec<vk::Semaphore, RhiRoot>,
 
     /// Handle to the semaphore pool we have to place the 'work' semaphores into. These will be
     /// waited by a present call which has some very inconvenient properties so they must be handled
@@ -810,34 +810,34 @@ pub struct QueueSubmission {
     /// retired.
     ///
     /// These can not be recycled.
-    pub abandoned_semaphores: BVec<vk::Semaphore, RhiRoot>,
+    pub abandoned_semaphores: Vec<vk::Semaphore, RhiRoot>,
 
     /// The index of the queue submission. Used for tracking when the work has been retired
     pub index: u64,
 
     /// We separate the command lists in the submission into their own list so they can be easily
     /// filtered out and recycled later
-    pub lists: BVec<Box<CommandList>, RhiRoot>,
+    pub lists: Vec<Box<CommandList>, RhiRoot>,
 }
 
 pub struct SubmissionManager {
-    pub wait_semaphores: BVec<vk::Semaphore, RhiRoot>,
-    pub wait_values: BVec<u64, RhiRoot>,
-    pub wait_dst_stage_masks: BVec<vk::PipelineStageFlags, RhiRoot>,
-    pub signal_semaphores: BVec<vk::Semaphore, RhiRoot>,
-    pub signal_values: BVec<u64, RhiRoot>,
-    pub command_buffers: BVec<vk::CommandBuffer, RhiRoot>,
+    pub wait_semaphores: Vec<vk::Semaphore, RhiRoot>,
+    pub wait_values: Vec<u64, RhiRoot>,
+    pub wait_dst_stage_masks: Vec<vk::PipelineStageFlags, RhiRoot>,
+    pub signal_semaphores: Vec<vk::Semaphore, RhiRoot>,
+    pub signal_values: Vec<u64, RhiRoot>,
+    pub command_buffers: Vec<vk::CommandBuffer, RhiRoot>,
 }
 
 impl<'a> Default for SubmissionManager {
     fn default() -> Self {
         Self {
-            wait_semaphores: BVec::new_in(RhiRoot::default()),
-            wait_values: BVec::new_in(RhiRoot::default()),
-            wait_dst_stage_masks: BVec::new_in(RhiRoot::default()),
-            signal_semaphores: BVec::new_in(RhiRoot::default()),
-            signal_values: BVec::new_in(RhiRoot::default()),
-            command_buffers: BVec::new_in(RhiRoot::default()),
+            wait_semaphores: Vec::new_in(RhiRoot::default()),
+            wait_values: Vec::new_in(RhiRoot::default()),
+            wait_dst_stage_masks: Vec::new_in(RhiRoot::default()),
+            signal_semaphores: Vec::new_in(RhiRoot::default()),
+            signal_values: Vec::new_in(RhiRoot::default()),
+            command_buffers: Vec::new_in(RhiRoot::default()),
         }
     }
 }
@@ -867,20 +867,20 @@ impl SubmissionManager {
         let swap_signal_num = if desc.swap_image.is_some() { 1 } else { 0 };
         let signal_num = caller_signal_num + internal_signal_num + swap_signal_num;
 
-        self.wait_semaphores = BVec::with_capacity_in(wait_num, RhiRoot::default());
-        self.wait_values = BVec::with_capacity_in(wait_num, RhiRoot::default());
-        self.wait_dst_stage_masks = BVec::with_capacity_in(wait_num, RhiRoot::default());
-        self.signal_semaphores = BVec::with_capacity_in(signal_num, RhiRoot::default());
-        self.signal_values = BVec::with_capacity_in(signal_num, RhiRoot::default());
-        self.command_buffers = BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
+        self.wait_semaphores = Vec::with_capacity_in(wait_num, RhiRoot::default());
+        self.wait_values = Vec::with_capacity_in(wait_num, RhiRoot::default());
+        self.wait_dst_stage_masks = Vec::with_capacity_in(wait_num, RhiRoot::default());
+        self.signal_semaphores = Vec::with_capacity_in(signal_num, RhiRoot::default());
+        self.signal_values = Vec::with_capacity_in(signal_num, RhiRoot::default());
+        self.command_buffers = Vec::with_capacity_in(desc.command_lists.len(), RhiRoot::default());
 
         let mut submission = QueueSubmission {
             swap_ready_semaphore: vk::Semaphore::null(),
-            swap_work_semaphores: BVec::new_in(RhiRoot::default()),
+            swap_work_semaphores: Vec::new_in(RhiRoot::default()),
             swap_work_semaphore_pool: None,
-            abandoned_semaphores: BVec::new_in(RhiRoot::default()),
+            abandoned_semaphores: Vec::new_in(RhiRoot::default()),
             index: 0,
-            lists: BVec::with_capacity_in(desc.command_lists.len(), RhiRoot::default()),
+            lists: Vec::with_capacity_in(desc.command_lists.len(), RhiRoot::default()),
         };
 
         self.handle_command_lists(desc, &mut submission)?;

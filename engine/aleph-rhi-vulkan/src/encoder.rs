@@ -30,7 +30,7 @@
 use std::any::TypeId;
 use std::sync::Arc;
 
-use aleph_alloc::{BVec, Blink, BlinkAlloc};
+use aleph_alloc::blink_alloc::{Blink, BlinkAlloc};
 use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind, try_clone_value_into_slot};
@@ -89,8 +89,8 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
     ) {
         abort_on_unwind(|| {
             {
-                let mut buffers = BVec::with_capacity_in(bindings.len(), self.arena.allocator());
-                let mut offsets = BVec::with_capacity_in(bindings.len(), self.arena.allocator());
+                let mut buffers = Vec::with_capacity_in(bindings.len(), self.arena.allocator());
+                let mut offsets = Vec::with_capacity_in(bindings.len(), self.arena.allocator());
                 for v in bindings.iter() {
                     let buffer = Buffer::get(v.buffer);
 
@@ -139,7 +139,7 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         abort_on_unwind(|| {
             {
                 let mut new_viewports =
-                    BVec::with_capacity_in(viewports.len(), self.arena.allocator());
+                    Vec::with_capacity_in(viewports.len(), self.arena.allocator());
                 for v in viewports {
                     new_viewports.push(
                         vk::Viewport::default()
@@ -166,7 +166,7 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
     unsafe fn __set_scissor_rects(&mut self, rects: &[Rect]) {
         abort_on_unwind(|| {
             {
-                let mut new_rects = BVec::with_capacity_in(rects.len(), self.arena.allocator());
+                let mut new_rects = Vec::with_capacity_in(rects.len(), self.arena.allocator());
                 for v in rects {
                     let mut rect = vk::Rect2D::default();
                     rect.offset.x = v.x as i32;
@@ -212,7 +212,7 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         abort_on_unwind(|| {
             {
                 let mut color_attachments =
-                    BVec::with_capacity_in(info.color_attachments.len(), self.arena.allocator());
+                    Vec::with_capacity_in(info.color_attachments.len(), self.arena.allocator());
                 for v in info.color_attachments {
                     let image_view: vk::ImageView = unsafe { std::mem::transmute(v.image_view) };
 
@@ -467,11 +467,11 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
         abort_on_unwind(|| {
             {
                 let mut translated_global_barriers =
-                    BVec::with_capacity_in(global_barriers.len(), self.arena.allocator());
+                    Vec::with_capacity_in(global_barriers.len(), self.arena.allocator());
                 let mut translated_buffer_barriers =
-                    BVec::with_capacity_in(buffer_barriers.len(), self.arena.allocator());
+                    Vec::with_capacity_in(buffer_barriers.len(), self.arena.allocator());
                 let mut translated_texture_barriers =
-                    BVec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
+                    Vec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
 
                 for barrier in global_barriers {
                     translated_global_barriers.push(
@@ -569,7 +569,7 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
                 let src = Buffer::get(src);
                 let dst = Buffer::get(dst);
 
-                let mut new_regions = BVec::with_capacity_in(regions.len(), self.arena.allocator());
+                let mut new_regions = Vec::with_capacity_in(regions.len(), self.arena.allocator());
                 for v in regions {
                     new_regions.push(
                         vk::BufferCopy::default()
@@ -603,7 +603,7 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
                 let src = Buffer::get(src);
                 let dst = Texture::get(dst);
 
-                let mut new_regions = BVec::with_capacity_in(regions.len(), self.arena.allocator());
+                let mut new_regions = Vec::with_capacity_in(regions.len(), self.arena.allocator());
                 for v in regions {
                     new_regions.push(
                         vk::BufferImageCopy::default()
@@ -658,7 +658,7 @@ impl<'a> ICommandEncoderAbi for Encoder<'a> {
                 // src_offset
                 // dst_subresource
                 // dst_offset
-                let mut new_regions = BVec::with_capacity_in(regions.len(), self.arena.allocator());
+                let mut new_regions = Vec::with_capacity_in(regions.len(), self.arena.allocator());
                 for v in regions {
                     let src_subresource = vk::ImageSubresourceLayers {
                         aspect_mask: texture_copy_aspect_to_vk(v.src.aspect),
@@ -848,7 +848,7 @@ impl Default for TimingState {
 
 unsafe fn next_query_id(
     state: &mut TimingState,
-    retired: &mut BVec<RetiredTimingQueryBlock, RhiRoot>,
+    retired: &mut Vec<RetiredTimingQueryBlock, RhiRoot>,
     manager: &QueueTimingQueryManager,
     device: &Device,
     command_buffer: vk::CommandBuffer,

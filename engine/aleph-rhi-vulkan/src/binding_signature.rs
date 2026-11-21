@@ -30,7 +30,6 @@
 use std::num::NonZeroU64;
 use std::sync::{Arc, Weak};
 
-use aleph_alloc::BVec;
 use aleph_rhi_api::IBindingSignature;
 use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
 use ash::vk;
@@ -44,7 +43,7 @@ pub struct BindingSignature {
     pub(crate) _device: Arc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) pipeline_layout: vk::PipelineLayout,
-    pub(crate) parameter_block_layouts: BVec<Arc<ParameterBlockLayout>, RhiRoot>,
+    pub(crate) parameter_block_layouts: Vec<Arc<ParameterBlockLayout>, RhiRoot>,
     pub(crate) push_constant_block: Option<vk::PushConstantRange>,
 }
 

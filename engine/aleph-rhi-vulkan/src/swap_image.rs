@@ -31,7 +31,6 @@ use std::any::TypeId;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use aleph_alloc::BVec;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{RhiRoot, abort_on_unwind};
 use ash::vk::{self, Handle};
@@ -46,7 +45,7 @@ pub struct SwapImage {
     pub(crate) index: u32,
     pub(crate) texture: Option<TextureHandle>,
     pub(crate) ready_semaphore: AtomicU64,
-    pub(crate) work_semaphores: Mutex<BVec<WorkSemaphore, RhiRoot>>,
+    pub(crate) work_semaphores: Mutex<Vec<WorkSemaphore, RhiRoot>>,
     pub(crate) work_semaphore_pool: Arc<SemaphorePool>,
 }
 
