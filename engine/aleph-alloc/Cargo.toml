@@ -56,9 +56,9 @@ uuid = { workspace = true }
 parking_lot = { workspace = true }
 
 [target.'cfg(all(target_os = "windows", target_env = "gnu"))'.dependencies]
-aleph-windows-thread-local = { workspace = true }
+aleph-windows-thread-local = { workspace = true, optional = true }
 
 [features]
 default = []
-instrumentation-enabled = []
+instrumentation-enabled = ["aleph-windows-thread-local"]
 force-system-alloc = []
