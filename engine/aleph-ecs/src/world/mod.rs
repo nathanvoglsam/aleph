@@ -212,7 +212,7 @@ impl World {
             );
 
             let id = components.push(v);
-            
+
             assert_eq!(
                 v.id, id,
                 "Generated ID does not match expected ID for auto-registered component type"

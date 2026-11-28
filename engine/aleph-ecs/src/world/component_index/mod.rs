@@ -36,6 +36,9 @@ use crate::component::{ComponentDescription, ComponentId};
 use crate::entity::EntityHandle;
 use crate::world::component_index::alloc::ComponentIndexRoot;
 
+#[cfg(test)]
+mod tests;
+
 /// This API maintains an append-only register of component types, indexable by the [`ComponentId`]
 /// assigned when a type is registered.
 ///

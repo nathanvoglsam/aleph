@@ -35,7 +35,7 @@ use crate::component::singleton::Singleton;
 use crate::register_component;
 use crate::type_layout::TypeLayoutBuf;
 use crate::world::World;
-use crate::world::query::{Has, Not, Read, Write};
+use crate::world::query::{ComponentQuery, Has, Not, Read, Write};
 
 #[derive(Clone, Default, PartialEq, Debug)]
 struct Position {
@@ -857,4 +857,31 @@ fn singleton_api() {
 
     assert!(!world.has_component::<Position>(p_id));
     assert!(!world.has_component::<Scale>(s_id));
+}
+
+#[test]
+fn write_query_reports_mutable() {
+    let write = Write::<Position>::query_info().next().unwrap();
+    assert!(write.required);
+    assert!(write.mutable);
+
+    let read = Read::<Position>::query_info().next().unwrap();
+    assert!(read.required);
+    assert!(!read.mutable);
+}
+
+#[test]
+fn query_excludes_denied_component_after_required_term() {
+    let mut world = World::new();
+    let position_only = world.insert(Position::new(1.0, 1.0));
+    let _with_scale = world.insert((Position::new(2.0, 2.0), Scale::new(3.0, 3.0)));
+
+    // A denied term that follows a required term must still be honored: the query must exclude
+    // the archetype that has `Scale` and match only the `Position`-only entity.
+    let matches: Vec<_> = world
+        .query::<(Read<Position>, Not<Scale>)>()
+        .map(|(id, _)| id)
+        .collect();
+
+    assert_eq!(matches, vec![position_only]);
 }

@@ -27,6 +27,9 @@
 // SOFTWARE.
 //
 
+#[cfg(test)]
+mod tests;
+
 use std::alloc::{Allocator, Global, Layout, LayoutError, handle_alloc_error};
 use std::cmp::Ordering;
 use std::ptr::NonNull;
