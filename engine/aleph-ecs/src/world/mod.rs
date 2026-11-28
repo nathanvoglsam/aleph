@@ -206,8 +206,17 @@ impl World {
     pub fn new() -> Self {
         let mut components = ComponentIndex::new();
         COMPONENTS.iter().enumerate().for_each(|(i, v)| {
-            assert_eq!(i, v.id.0 as usize);
-            components.push(v);
+            assert_eq!(
+                i, v.id.0 as usize,
+                "Auto-registered component ID does not match its expected index"
+            );
+
+            let id = components.push(v);
+            
+            assert_eq!(
+                v.id, id,
+                "Generated ID does not match expected ID for auto-registered component type"
+            );
         });
 
         let entities = EntityHandleArena::new_in();

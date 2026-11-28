@@ -70,12 +70,19 @@ impl ComponentIndex {
     /// component types. At least for __Rust__ component types.
     ///
     /// Dynamic component types are unaffected.
+    ///
+    /// # ID Field
+    ///
+    /// The 'ID' field of the component description is ignored when pushing a new type into the
+    /// index. The ID is assigned by the index itself and returned to the caller.
     pub fn push(&mut self, t: &ComponentDescription) -> ComponentId {
         let id = u32::try_from(self.components.len()).expect("Too many component types");
         let id = ComponentId(id);
 
+        let desc = ComponentDescription { id, ..t.clone() };
+
         self.components.push(ComponentEntry {
-            desc: t.clone(),
+            desc,
             archetypes: Default::default(),
             singleton: None,
         });
