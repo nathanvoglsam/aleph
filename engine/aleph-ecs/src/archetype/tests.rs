@@ -29,8 +29,8 @@
 
 use std::alloc::{AllocError, Allocator, Global, Layout};
 use std::ptr::NonNull;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::archetype::column::Column;
 
@@ -50,7 +50,12 @@ struct CountingAllocator {
 impl CountingAllocator {
     fn new() -> (Self, Arc<AllocCounters>) {
         let counters = Arc::new(AllocCounters::default());
-        (Self { counters: counters.clone() }, counters)
+        (
+            Self {
+                counters: counters.clone(),
+            },
+            counters,
+        )
     }
 }
 
@@ -185,7 +190,10 @@ fn column_grow_is_no_op_when_not_growing() {
     // Asking to grow to the same, or a smaller, count must not allocate.
     column.grow_to_fit(4);
     column.grow_to_fit(1);
-    assert_eq!(counters.alloc_count.load(Ordering::Relaxed), alloc_count_after_grow);
+    assert_eq!(
+        counters.alloc_count.load(Ordering::Relaxed),
+        alloc_count_after_grow
+    );
 
     // Data is still intact.
     unsafe {
