@@ -331,6 +331,8 @@ impl Archetype {
         for column in self.columns.iter_mut() {
             column.shrink_to_fit(new_capacity);
         }
+
+        self.capacity = new_capacity;
     }
 
     /// Clear the archetype of all entities, returning length to 0.
