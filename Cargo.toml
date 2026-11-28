@@ -101,7 +101,7 @@ authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 repository = "https://github.com/nathanvoglsam/aleph"
 license = "MIT"
 documentation = "https://github.com/nathanvoglsam/aleph"
-rust-version = "1.97"
+rust-version = "1.100"
 
 [workspace.dependencies]
 
