@@ -431,8 +431,14 @@ impl<I: Iterator<Item = usize>, Q: ComponentQuery> UnsafeQuery<I, Q> {
             match &mut self.state {
                 QueryState::FindingArchetype => {
                     let next = self.matches.next()?;
+                    let archetype = &world.archetypes[next];
 
-                    let ids = NonNull::from_ref(world.archetypes[next].entity_handles.as_slice());
+                    // Skip empty archetypes as they have no entities to iterate over anyway.
+                    if archetype.len() == 0 {
+                        continue;
+                    }
+
+                    let ids = NonNull::from_ref(archetype.entity_handles.as_slice());
                     let ids_start = ids.cast::<EntityHandle>();
 
                     // Safety: Safe by construction, pointer comes from a slice.
