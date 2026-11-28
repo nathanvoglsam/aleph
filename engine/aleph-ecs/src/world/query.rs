@@ -191,7 +191,7 @@ impl<T: Component> ComponentQuery for Write<T> {
         std::iter::once(ComponentQueryInfo {
             id: T::DESC.id,
             required: true,
-            mutable: false,
+            mutable: true,
         })
     }
 }
