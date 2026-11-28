@@ -170,9 +170,9 @@ impl ComponentDescription {
 /// ...Technically... We're still not entirely safe.
 ///
 /// We use the `ctor` crate which provides a mechanism to run Rust functions using
-/// `__attribute__((destructor))` or the equivalent for the target platform. This is the same
+/// `__attribute__((constructor))` or the equivalent for the target platform. This is the same
 /// mechanism C++ static initializers use. If someone were to, say, construct an ECS world _inside
-/// an `__attribute__((destructor))`_ function they are able to invoke the above problem.
+/// an `__attribute__((constructor))`_ function they are able to invoke the above problem.
 ///
 /// There's no guarantee that the ECS world isn't constructed after all the Rust component types
 /// have finished registering themselves. In which case, it's entirely possible for types to be
