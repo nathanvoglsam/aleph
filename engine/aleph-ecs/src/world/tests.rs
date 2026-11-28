@@ -27,12 +27,17 @@
 // SOFTWARE.
 //
 
+use std::alloc::Layout;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
+use crate::archetype::column::Column;
+use crate::component::Component;
 use crate::component::singleton::Singleton;
 use crate::register_component;
+use crate::type_layout::TypeLayoutBuf;
 use crate::world::World;
-use crate::world::query::{Has, Read, Write};
+use crate::world::query::{Has, Not, Read, Write};
 
 #[derive(Clone, Default, PartialEq, Debug)]
 struct Position {
@@ -384,6 +389,40 @@ fn remove_entity_array() {
 }
 
 #[test]
+fn remove_then_insert_preserves_dense_rows() {
+    let mut world = World::new();
+    let ids = world.bulk_insert([
+        Position::new(1.0, 1.0),
+        Position::new(2.0, 2.0),
+        Position::new(3.0, 3.0),
+    ]);
+
+    assert!(world.remove_entity(ids[0]).is_some());
+    assert_eq!(
+        world.get_component_ref::<Position>(ids[1]),
+        Some(&Position::new(2.0, 2.0))
+    );
+    assert_eq!(
+        world.get_component_ref::<Position>(ids[2]),
+        Some(&Position::new(3.0, 3.0))
+    );
+
+    let inserted = world.insert(Position::new(4.0, 4.0));
+    assert_eq!(
+        world.get_component_ref::<Position>(inserted),
+        Some(&Position::new(4.0, 4.0))
+    );
+    assert_eq!(
+        world.get_component_ref::<Position>(ids[1]),
+        Some(&Position::new(2.0, 2.0))
+    );
+    assert_eq!(
+        world.get_component_ref::<Position>(ids[2]),
+        Some(&Position::new(3.0, 3.0))
+    );
+}
+
+#[test]
 fn add_remove_component_test() {
     let mut world = World::new();
 
@@ -547,6 +586,45 @@ fn query_test() {
 }
 
 #[test]
+fn query_emptied_archetype_returns_no_entities() {
+    let mut world = World::new();
+    let ids = world.bulk_insert([Position::new(1.0, 1.0), Position::new(2.0, 2.0)]);
+
+    for id in ids {
+        assert!(world.remove_entity(id).is_some());
+    }
+
+    assert!(world.query::<Read<Position>>().next().is_none());
+}
+
+#[test]
+fn query_not_only_matches_entities_without_component() {
+    let mut world = World::new();
+    let without_scale = world.insert(Position::new(1.0, 1.0));
+    let _with_scale = world.insert((Position::new(2.0, 2.0), Scale::new(3.0, 3.0)));
+
+    let matches: Vec<_> = world.query::<Not<Scale>>().map(|(id, _)| id).collect();
+
+    assert_eq!(matches, vec![without_scale]);
+}
+
+#[test]
+fn query_excludes_each_denied_component() {
+    let mut world = World::new();
+    let position_only = world.insert(Position::new(1.0, 1.0));
+    let _with_scale = world.insert((Position::new(2.0, 2.0), Scale::new(3.0, 3.0)));
+    let _with_mesh = world.insert((Position::new(4.0, 4.0), Mesh::new(5)));
+    let _with_both = world.insert((Position::new(6.0, 6.0), Scale::new(7.0, 7.0), Mesh::new(8)));
+
+    let matches: Vec<_> = world
+        .query::<(Has<Position>, Not<Scale>, Not<Mesh>)>()
+        .map(|(id, _)| id)
+        .collect();
+
+    assert_eq!(matches, vec![position_only]);
+}
+
+#[test]
 fn query_one_test() {
     let mut world = World::new();
 
@@ -654,6 +732,94 @@ fn remove_matching_test() {
     drop(world);
 
     assert_eq!(Arc::strong_count(&counter), 1);
+}
+
+#[test]
+fn remove_matching_then_reuse_drops_each_component_once() {
+    // Pool of counters
+    static DROP_COUNTS: [AtomicUsize; 8] = [const { AtomicUsize::new(0) }; 8];
+
+    // Holds an index into DROP_COUNTS and increments the appropriate counter when dropped
+    //
+    // Used to track how many times each component is dropped, should only be dropped once.
+    #[derive(Debug)]
+    struct CountedDrop(usize);
+    register_component!(CountedDrop);
+
+    impl Drop for CountedDrop {
+        fn drop(&mut self) {
+            DROP_COUNTS[self.0].fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    // Clear counters
+    for counter in &DROP_COUNTS {
+        counter.store(0, Ordering::Relaxed);
+    }
+
+    let mut world = World::new();
+
+    // 4 entities, each taking a slot in DROP_COUNTS
+    let old_ids = world.bulk_insert((0..4).map(CountedDrop).collect::<Vec<_>>());
+
+    world.remove_matching::<Has<CountedDrop>>();
+    assert!(
+        DROP_COUNTS[0..4]
+            .iter()
+            .all(|count| count.load(Ordering::Relaxed) == 1)
+    );
+
+    let new_ids = world.bulk_insert(vec![CountedDrop(4), CountedDrop(5)]);
+    for &id in &new_ids {
+        assert!(world.remove_entity(id).is_some());
+    }
+    assert!(old_ids.iter().all(|&id| !world.is_live(id)));
+    for count in &DROP_COUNTS[0..4] {
+        assert_eq!(count.load(Ordering::Relaxed), 1);
+    }
+    assert_eq!(DROP_COUNTS[4].load(Ordering::Relaxed), 1);
+    assert_eq!(DROP_COUNTS[5].load(Ordering::Relaxed), 1);
+    assert_eq!(DROP_COUNTS[6].load(Ordering::Relaxed), 0);
+    assert_eq!(DROP_COUNTS[7].load(Ordering::Relaxed), 0);
+}
+
+#[test]
+fn type_layout_collection_deduplicates_component_ids() {
+    let id = Position::DESC.id;
+    let layout: TypeLayoutBuf = [id, id].into_iter().collect();
+
+    assert_eq!(layout.len(), 1);
+    assert_eq!(layout.index_of_component_type(id), Some(0));
+}
+
+#[test]
+fn column_resize_preserves_stored_elements() {
+    let mut column = Column::new_in(Layout::new::<u64>(), std::alloc::Global);
+    column.resize(4);
+
+    unsafe {
+        for (index, value) in [10_u64, 20, 30, 40].into_iter().enumerate() {
+            column
+                .get_at_index(index)
+                .unwrap()
+                .cast::<u64>()
+                .write(value);
+        }
+    }
+
+    column.resize(2);
+    unsafe {
+        assert_eq!(*column.get_at_index(0).unwrap().cast::<u64>().as_ref(), 10);
+        assert_eq!(*column.get_at_index(1).unwrap().cast::<u64>().as_ref(), 20);
+    }
+    assert!(column.get_at_index(2).is_none());
+
+    column.resize(4);
+    unsafe {
+        assert_eq!(*column.get_at_index(0).unwrap().cast::<u64>().as_ref(), 10);
+        assert_eq!(*column.get_at_index(1).unwrap().cast::<u64>().as_ref(), 20);
+        column.get_at_index(3).unwrap().cast::<u64>().write(50);
+    }
 }
 
 #[test]
