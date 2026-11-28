@@ -795,25 +795,25 @@ impl World {
     ///
     /// The `Singleton` component has no semantic meaning. It is just a utility to identify a
     /// singleton entity for query filtering purposes.
-    pub fn insert_singleton<T: Component>(&mut self, component: T) -> Result<EntityHandle, T> {
+    pub fn insert_singleton<T: Component>(&mut self, component: T) -> EntityHandle {
         let old = self.components[T::DESC.id].singleton;
         match old {
             None => {
                 // No existing singleton? We spawn a new entity, register it and return the handle
                 let handle = self.insert((Singleton, component));
                 self.components[T::DESC.id].singleton = Some(handle);
-                Ok(handle)
+                handle
             }
             Some(existing) => {
                 // Already have a singleton entity? Just replace the component, it has the same
                 // effect.
                 match self.add_component(existing, component) {
-                    Ok(_) => Ok(existing),
+                    Ok(_) => existing,
                     Err(component) => {
                         // Existing singleton handle is stale? We spawn a new entity.
                         let handle = self.insert((Singleton, component));
                         self.components[T::DESC.id].singleton = Some(handle);
-                        Ok(handle)
+                        handle
                     }
                 }
             }

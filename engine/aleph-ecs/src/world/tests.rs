@@ -830,10 +830,10 @@ fn singleton_api() {
     let p = Position::new(21.0, 420.0);
     let s = Scale::new(56.0, 360.0);
 
-    let p_id = world.insert_singleton(p.clone()).unwrap();
+    let p_id = world.insert_singleton(p.clone());
     assert_eq!(world.len(), 1);
 
-    let s_id = world.insert_singleton(s.clone()).unwrap();
+    let s_id = world.insert_singleton(s.clone());
     assert_eq!(world.len(), 2);
 
     assert!(world.has_component::<Singleton>(p_id));
