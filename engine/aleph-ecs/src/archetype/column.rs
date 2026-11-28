@@ -189,21 +189,21 @@ impl<A: Allocator> Column<A> {
         if index == last_index {
             // If we swap remove on the last element there's nothing to move, so this is a no-op.
             // The live length is decremented by the caller, not by this function.
+        } else {
+            // Otherwise we copy the last live element over the top of the one we want to remove.
+            let remove_offset = index * self.element_layout.size();
+            let last_offset = last_index * self.element_layout.size();
+
+            // Safety: Bounds checked by the above asserts. Column must always have an allocation
+            //         in self.ptr valid for at least self.count elements. Mutable borrow means we
+            //         have valid access and this branch is only taken if index != last index so
+            //         the copy is always non-overlapping.
+            unsafe {
+                let remove = self.ptr.add(remove_offset);
+                let last = self.ptr.add(last_offset);
+                remove.copy_from_nonoverlapping(last, self.element_layout.size());
+            };
         }
-
-        // Otherwise we copy the last live element over the top of the one we want to remove.
-        let remove_offset = index * self.element_layout.size();
-        let last_offset = last_index * self.element_layout.size();
-
-        // Safety: Bounds checked by the above asserts. Column must always have an allocation
-        //         in self.ptr valid for at least self.count elements. Mutable borrow means we
-        //         have valid access and this branch is only taken if index != last index so
-        //         the copy is always non-overlapping.
-        unsafe {
-            let remove = self.ptr.add(remove_offset);
-            let last = self.ptr.add(last_offset);
-            remove.copy_from_nonoverlapping(last, self.element_layout.size());
-        };
     }
 
     /// Project the single element layout on self to provide a [`Layout`] for an array of 'count'
