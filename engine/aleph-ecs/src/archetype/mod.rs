@@ -29,6 +29,9 @@
 
 pub mod column;
 
+#[cfg(test)]
+mod tests;
+
 use aleph_alloc::instrumentation::system;
 use aleph_gen_arena::HandleType;
 
