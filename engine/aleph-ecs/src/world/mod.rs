@@ -1416,7 +1416,7 @@ impl World {
                     required[required_count] = v.id;
                     required_count += 1;
                 } else {
-                    denied[required_count] = v.id;
+                    denied[denied_count] = v.id;
                     denied_count += 1;
                 }
             }
