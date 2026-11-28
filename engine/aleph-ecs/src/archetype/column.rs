@@ -164,53 +164,46 @@ impl<A: Allocator> Column<A> {
     }
 
     /// Removes the element at the given 'index' using a 'swap-n-pop' algorithm. Removing any
-    /// element other than the last will move the element at the end of the list into the place of
-    /// the element to be removed.
+    /// element other than the last will move the element at the end of the live region into the
+    /// place of the element to be removed.
+    ///
+    /// 'len' is the number of _live_ elements currently stored in the column. This must be less
+    /// than or equal to the column's allocated capacity. The column's capacity is _not_ changed by
+    /// a removal; the caller is responsible for tracking the live length separately.
     ///
     /// # Warning
     ///
     /// Does not drop the element, that is the caller's responsibility.
-    pub fn swap_remove(&mut self, index: usize) {
+    pub fn swap_remove(&mut self, index: usize, len: usize) {
         assert!(
-            index < self.count,
-            "Index '{index}' is out of bounds of column."
+            len <= self.count,
+            "Live length '{len}' exceeds the column capacity '{}'.",
+            self.count
+        );
+        assert!(
+            index < len,
+            "Index '{index}' is out of bounds of the live region of length '{len}'."
         );
 
-        let last_index = self.count - 1; // Can't be 0 here so can't underflow.
+        let last_index = len - 1; // len > 0 here so can't underflow.
         if index == last_index {
-            // If we swap remove on the last element is just a pop operation.
-            self.pop();
-        } else {
-            // Otherwise we copy the last element over the top of the one we want to remove.
-            let remove_offset = index * self.element_layout.size();
-            let last_offset = last_index * self.element_layout.size();
-
-            // Safety: Bounds checked by the above assert. Column must always have an allocation
-            //         in self.ptr valid for at least self.count elements. Mutable borrow means we
-            //         have valid access and this branch is only taken if index != last index so
-            //         the copy is always non-overlapping.
-            unsafe {
-                let remove = self.ptr.add(remove_offset);
-                let last = self.ptr.add(last_offset);
-                remove.copy_from_nonoverlapping(last, self.element_layout.size());
-            };
-
-            // Decrement count to 'pop' the swapped element off the end. It's impossible for count
-            // to == 0 if we reach this code so this can't underflow.
-            self.count -= 1;
+            // If we swap remove on the last element there's nothing to move, so this is a no-op.
+            // The live length is decremented by the caller, not by this function.
         }
-    }
 
-    /// Pop the element at the end of the column off the end.
-    ///
-    /// # Warning
-    ///
-    /// Does not drop the element, that is the caller's responsibility as 'Column' doesn't know the
-    /// type of what it holds.
-    pub fn pop(&mut self) {
-        // Saturating sub covers the case of popping from an empty column, which is a perfectly
-        // valid no-op operation.
-        self.count = self.count.saturating_sub(1);
+        // Otherwise we copy the last live element over the top of the one we want to remove.
+        let remove_offset = index * self.element_layout.size();
+        let last_offset = last_index * self.element_layout.size();
+
+        // Safety: Bounds checked by the above asserts. Column must always have an allocation
+        //         in self.ptr valid for at least self.count elements. Mutable borrow means we
+        //         have valid access and this branch is only taken if index != last index so
+        //         the copy is always non-overlapping.
+        unsafe {
+            let remove = self.ptr.add(remove_offset);
+            let last = self.ptr.add(last_offset);
+            remove.copy_from_nonoverlapping(last, self.element_layout.size());
+        };
     }
 
     /// Project the single element layout on self to provide a [`Layout`] for an array of 'count'

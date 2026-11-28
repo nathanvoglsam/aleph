@@ -823,6 +823,40 @@ fn column_resize_preserves_stored_elements() {
 }
 
 #[test]
+fn column_swap_remove_uses_live_len_not_capacity() {
+    let mut column = Column::new_in(Layout::new::<u64>(), std::alloc::Global);
+
+    // Allocate capacity for 4 elements, but only treat 3 as live.
+    column.resize(4);
+
+    unsafe {
+        for (index, value) in [10_u64, 20, 30].into_iter().enumerate() {
+            column
+                .get_at_index(index)
+                .unwrap()
+                .cast::<u64>()
+                .write(value);
+        }
+    }
+
+    // Removing the first live element must copy the last *live* element (index 2, value 30) into
+    // its place, not the last *allocated* element (index 3, uninitialized garbage).
+    column.swap_remove(0, 3);
+
+    unsafe {
+        assert_eq!(*column.get_at_index(0).unwrap().cast::<u64>().as_ref(), 30);
+        assert_eq!(*column.get_at_index(1).unwrap().cast::<u64>().as_ref(), 20);
+    }
+
+    // Capacity must be unchanged by a removal.
+    assert!(column.get_at_index(3).is_some());
+
+    // Removing the last live element is a no-op copy-wise; capacity is still untouched.
+    column.swap_remove(2, 3);
+    assert!(column.get_at_index(3).is_some());
+}
+
+#[test]
 fn zero_sized_component() {
     let mut world = World::new();
 

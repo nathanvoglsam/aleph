@@ -274,8 +274,13 @@ impl Archetype {
         };
 
         // Now perform the swap-remove operation on each component column in the archetype.
+        //
+        // Pass the live length (self.len) as the swap source bound. The entity-handle table has
+        // already been swap-removed above, so we must read the archetype's own `len` rather than
+        // `entity_handles.len()`.
+        let len = self.len;
         for column in self.columns.iter_mut() {
-            column.swap_remove(index);
+            column.swap_remove(index, len);
         }
 
         self.len -= 1;
