@@ -200,6 +200,7 @@ impl FromIterator<ComponentId> for TypeLayoutBuf<Global> {
     fn from_iter<T: IntoIterator<Item = ComponentId>>(iter: T) -> Self {
         let mut components = Vec::from_iter(iter);
         components.sort();
+        components.dedup();
         Self { components }
     }
 }
